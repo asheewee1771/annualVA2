@@ -1,0 +1,46 @@
+# OS and editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.iml
+*.swp
+
+# Build output and dependencies
+backend/target/
+frontend/node_modules/
+frontend/dist/
+frontend/*.tsbuildinfo
+frontend/.fallow/
+e2e/node_modules/
+e2e/test-results/
+e2e/allure-results/
+e2e/allure-report/
+
+# Local secrets, keys and logs (only base64 mock values inside application-dev-mcc.yml are committed)
+.env
+.env.*
+!.env.*.example
+*.pem
+*.log
+
+# Machine-local compose override (corporate proxy CA trust)
+compose.override.yml
+
+# Transient skill outputs (re-creatable from artifacts/run-config.json)
+artifacts/cache/
+artifacts/runs/
+artifacts/batch-*.json
+artifacts/run.json
+artifacts/stories.json
+artifacts/dp-*
+artifacts/*.log
+artifacts/*.before-*
+artifacts/e2e/
+
+# Local agent tooling
+.agents/
+agent/
+skills-lock.json
+.claude/*
+!.claude/launch.json

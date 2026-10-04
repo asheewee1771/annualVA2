@@ -1,0 +1,132 @@
+# Local development platform: the MCC mock stack from the mock-m-sso sibling repository
+# (../mock-m-sso) plus this project's PostgreSQL. Every credential here is a mock value.
+#
+# The six mock-m-sso service blocks are copied verbatim from the org bootstrap standard
+# (compatibility pins matched to the volume-mounted mock-m-sso source). Do not edit them.
+# Seam 1 tests never use this file: they start their own PostgreSQL through Testcontainers
+# and fake every boundary adapter in-process.
+#
+# Without ../mock-m-sso you can still start the project-owned services:
+#   docker compose up -d postgres localstack
+services:
+  localstack:
+    image: localstack/localstack:3
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: s3,kms
+    volumes:
+      - ./scripts/localstack-init:/etc/localstack/init/ready.d
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:4566/_localstack/health | grep -q 'running' || exit 1"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    ports:
+      - "9080:9080"
+    environment:
+      - KC_BOOTSTRAP_ADMIN_USERNAME=admin
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=admin
+      - KC_SPI_CONNECTIONS_HTTP_CLIENT_DEFAULT_DISABLE_TRUST_MANAGER=true
+    volumes:
+      - ../mock-m-sso/keycloak/data:/opt/keycloak/data/
+      - ../mock-m-sso/keycloak/providers:/opt/keycloak/providers/
+      - ../mock-m-sso/keycloak/certs:/opt/keycloak/conf
+    command:
+      - start-dev
+      - --log-level=info
+      - --log=file,console
+      - --https-port=9080
+      - --import-realm
+      - --https-certificate-file=/opt/keycloak/conf/mock-oidc.crt
+      - --https-certificate-key-file=/opt/keycloak/conf/mock-oidc.key
+      - --https-protocols=TLSv1.3,TLSv1.2
+      - --verbose
+    extra_hosts:
+      - "host.internal:${HOST_INTERNAL_IP:-host-gateway}"
+
+  mockpass:
+    image: docker.io/opengovsg/mockpass:latest
+    ports:
+      - "5156:5156"
+    environment:
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
+      - SHOW_LOGIN_PAGE=true
+      - MOCKPASS_NRIC=S8979373D
+      - SP_RP_JWKS_ENDPOINT=https://keycloak:9080/realms/SSO/protocol/openid-connect/certs
+      - MOCKPASS_STATELESS=true
+    volumes:
+      - ./scripts/mock-mockpass-assertions.js:/usr/src/mockpass/lib/assertions.js:ro
+
+  mock-mpds:
+    image: docker.io/maven:3-amazoncorretto-25
+    ports:
+      - "9081:8080"
+    volumes:
+      - ../mock-m-sso/mock-mpds/src:/opt/mock-mpds/src
+      - ../mock-m-sso/mock-mpds/pom.xml:/opt/mock-mpds/pom.xml
+      - ../mock-m-sso/mock-mpds/.m2:/root/.m2
+      - ../mock-m-sso/mock-mpds/payload:/opt/mock-mpds/payload
+    working_dir: /opt/mock-mpds/
+    command:
+      - mvn
+      - spring-boot:run
+
+  mock-mcns:
+    image: docker.io/maven:3-amazoncorretto-25
+    ports:
+      - "9082:8080"
+    volumes:
+      - ../mock-m-sso/mock-mcns/src:/opt/mock-mcns/src
+      - ../mock-m-sso/mock-mcns/pom.xml:/opt/mock-mcns/pom.xml
+      - ../mock-m-sso/mock-mcns/.m2:/root/.m2
+    working_dir: /opt/mock-mcns/
+    command:
+      - mvn
+      - spring-boot:run
+
+  mock-sfs:
+    image: docker.io/maven:3-amazoncorretto-25
+    ports:
+      - "9083:8080"
+    environment:
+      SFS_EXTERNAL_BASE_URL: http://localhost:9083
+      SFS_SCAN_DELAY_MS: 2000
+    volumes:
+      - ../mock-m-sso/mock-sfs/src:/opt/mock-sfs/src
+      - ../mock-m-sso/mock-sfs/pom.xml:/opt/mock-sfs/pom.xml
+      - ../mock-m-sso/mock-sfs/.m2:/root/.m2
+    working_dir: /opt/mock-sfs/
+    command:
+      - mvn
+      - spring-boot:run
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  # Project-owned: the application database. Mock credentials; Flyway creates the schema on start.
+  postgres:
+    image: postgres:17-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: annualva
+      POSTGRES_USER: annualva
+      POSTGRES_PASSWORD: annualva-local
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U annualva -d annualva"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+volumes:
+  pgdata: {}

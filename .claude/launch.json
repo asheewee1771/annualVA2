@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "frontend"],
+      "port": 5173,
+      "url": "https://localhost:5173"
+    },
+    {
+      "name": "backend",
+      "runtimeExecutable": "backend/mvnw.cmd",
+      "runtimeArgs": ["-f", "backend/pom.xml", "spring-boot:run", "-Dspring-boot.run.profiles=dev-mcc"],
+      "port": 8443,
+      "url": "https://localhost:8443"
+    }
+  ]
+}

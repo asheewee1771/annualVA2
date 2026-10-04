@@ -1,0 +1,28 @@
+# Copy to compose.override.yml (gitignored) when the maven:3 mock containers cannot download
+# dependencies behind a corporate TLS-intercepting proxy ("PKIX path building failed").
+# Point the volume at your corporate root CA and uncomment the lines. This only affects the
+# mock containers' Maven downloads; the application's own TLS trust is the Spring SSL bundle
+# in application-dev-mcc.yml.
+services:
+  mock-sfs:
+    volumes:
+      - ../mock-m-sso/mock-sfs/src:/opt/mock-sfs/src
+      - ../mock-m-sso/mock-sfs/pom.xml:/opt/mock-sfs/pom.xml
+      - ../mock-m-sso/mock-sfs/.m2:/root/.m2
+      # - /path/to/corporate-root-ca.crt:/tmp/corp-ca.crt:ro
+    # command: ["sh", "-c", "keytool -importcert -noprompt -cacerts -storepass changeit -alias corp -file /tmp/corp-ca.crt; mvn spring-boot:run"]
+  mock-mcns:
+    volumes:
+      - ../mock-m-sso/mock-mcns/src:/opt/mock-mcns/src
+      - ../mock-m-sso/mock-mcns/pom.xml:/opt/mock-mcns/pom.xml
+      - ../mock-m-sso/mock-mcns/.m2:/root/.m2
+      # - /path/to/corporate-root-ca.crt:/tmp/corp-ca.crt:ro
+    # command: ["sh", "-c", "keytool -importcert -noprompt -cacerts -storepass changeit -alias corp -file /tmp/corp-ca.crt; mvn spring-boot:run"]
+  mock-mpds:
+    volumes:
+      - ../mock-m-sso/mock-mpds/src:/opt/mock-mpds/src
+      - ../mock-m-sso/mock-mpds/pom.xml:/opt/mock-mpds/pom.xml
+      - ../mock-m-sso/mock-mpds/.m2:/root/.m2
+      - ../mock-m-sso/mock-mpds/payload:/opt/mock-mpds/payload
+      # - /path/to/corporate-root-ca.crt:/tmp/corp-ca.crt:ro
+    # command: ["sh", "-c", "keytool -importcert -noprompt -cacerts -storepass changeit -alias corp -file /tmp/corp-ca.crt; mvn spring-boot:run"]
