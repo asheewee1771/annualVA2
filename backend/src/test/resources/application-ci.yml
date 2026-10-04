@@ -1,0 +1,20 @@
+# Seam 1 test profile (test classpath only). The database comes from Testcontainers through
+# @ServiceConnection, which overrides the datasource values below; the boundary adapters are the
+# in-process fakes in sg.annualva.harness.
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/overridden-by-testcontainers
+    username: ci
+    password: ci
+
+server:
+  ssl:
+    enabled: false
+  servlet:
+    session:
+      cookie:
+        secure: false
+
+annualva:
+  scheduling:
+    enabled: false

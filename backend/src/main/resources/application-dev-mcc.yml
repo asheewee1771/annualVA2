@@ -1,0 +1,59 @@
+# Local development against the mock-m-sso stack (compose.yml). Every value here is a mock.
+spring:
+  datasource:
+    url: ${ANNUALVA_DB_URL:jdbc:postgresql://localhost:5432/annualva}
+    username: ${ANNUALVA_DB_USERNAME:annualva}
+    password: ${ANNUALVA_DB_PASSWORD:annualva-local}
+  ssl:
+    bundle:
+      pem:
+        mcc-trust:
+          truststore:
+            # Keycloak self-signed certificate from the sibling repo. The path is relative to backend/
+            # when running ./mvnw spring-boot:run from there.
+            certificate: file:../../mock-m-sso/keycloak/certs/mock-oidc.crt
+
+server:
+  ssl:
+    enabled: true
+    key-store: classpath:dev-keystore.p12
+    key-store-type: PKCS12
+    key-store-password: ${DEV_KEYSTORE_PASSWORD:changeit}
+    key-alias: mcc-dev
+
+annualva:
+  mcc:
+    # Explicit endpoints, never issuer-uri (discovery would bypass the SSL bundle). Wired by the sign-in slice.
+    issuer: https://localhost:9080/realms/SSO
+    authorization-uri: https://localhost:9080/realms/SSO/protocol/openid-connect/auth
+    token-uri: https://localhost:9080/realms/SSO/protocol/openid-connect/token
+    jwk-set-uri: https://localhost:9080/realms/SSO/protocol/openid-connect/certs
+    user-info-uri: https://localhost:9080/realms/SSO/protocol/openid-connect/userinfo
+    login-client-id: app-appfw
+    service-client-id: svc-appfw
+    idp-hint: singpass
+    signing-key:
+      kid: mcc-dev-ec521
+      # Filled by scripts/gen-dev-keys.sh (base64 PKCS#8 / SPKI). Mock values.
+      private: ${ANNUALVA_MCC_SIGNING_PRIVATE:}
+      public: ${ANNUALVA_MCC_SIGNING_PUBLIC:}
+  aws:
+    endpoint: http://localhost:4566
+    region: us-east-1
+    quarantine-bucket: annualva-quarantine-dev
+    clean-bucket: annualva-clean-dev
+    kms-key-alias: alias/annualva-dev
+  sfs:
+    base-url: http://localhost:9083
+  mcns:
+    base-url: http://localhost:9082
+  dev:
+    # MockPass personas carry a uuid but no email; the System Register works by email.
+    identities:
+      11111111-0000-4000-8000-000000000001: smo.a@dev.annualva.test
+      11111111-0000-4000-8000-000000000002: smo.b@dev.annualva.test
+      11111111-0000-4000-8000-000000000003: cm.a@dev.annualva.test
+      11111111-0000-4000-8000-000000000004: cm.b@dev.annualva.test
+      11111111-0000-4000-8000-000000000005: poc.1@dev.annualva.test
+      11111111-0000-4000-8000-000000000006: poc.2@dev.annualva.test
+  va-pocs: poc.1@dev.annualva.test,poc.2@dev.annualva.test

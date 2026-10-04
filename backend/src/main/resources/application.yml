@@ -1,0 +1,66 @@
+# Base configuration: the production shape. Environment-specific or secret values appear only as
+# ${ENV_VAR} bindings; literals here are the same in every environment. Profiles layer on top:
+#   dev-mcc  local development against ../mock-m-sso + LocalStack + compose PostgreSQL
+#   ci       Seam 1 tests (src/test/resources/application-ci.yml; Testcontainers + in-process fakes)
+#   sit      first deployed target (added by the first SIT-bound ticket)
+spring:
+  application:
+    name: annualva
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: ${ANNUALVA_DB_URL}
+    username: ${ANNUALVA_DB_USERNAME}
+    password: ${ANNUALVA_DB_PASSWORD}
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  servlet:
+    multipart:
+      # Container ceiling. Each report type has its own, lower limit in the upload pipeline (as-1).
+      max-file-size: 50MB
+      max-request-size: 52MB
+
+server:
+  port: 8443
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      # as-11 backstop: 30 minutes idle. The absolute 8-hour limit is enforced by the access module.
+      timeout: 30m
+      cookie:
+        http-only: true
+        secure: true
+        same-site: lax
+  error:
+    # as-13: nothing about the failure in an error body beyond RFC 9457 title/status and the traceId.
+    include-message: never
+    include-binding-errors: never
+    include-stacktrace: never
+    include-exception: false
+    include-path: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  structured:
+    # lm-15: one ECS JSON schema for application and audit logs.
+    format:
+      console: ecs
+    ecs:
+      service:
+        name: annualva
+
+annualva:
+  # Business calendar for VA Cycle, Quarter and Window arithmetic (timestamps are stored in UTC).
+  time-zone: Asia/Singapore
+  # IM8 dp-8 banner shown on every screen (assumption A-1: single report Restricted / Sensitive-Normal).
+  classification:
+    banner: RESTRICTED / SENSITIVE-NORMAL
+  scheduling:
+    enabled: true
