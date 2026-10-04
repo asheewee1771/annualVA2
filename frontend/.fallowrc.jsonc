@@ -1,0 +1,12 @@
+{
+  // fallow audit runs in `npm run check`. CRAP scores need test coverage data; this project has no
+  // front-end unit tests by decision (ADR 0009), so the CRAP rule is off and the plain complexity
+  // ceilings do the work.
+  "health": {
+    "maxCyclomatic": 12,
+    "maxCognitive": 15,
+  },
+  "rules": {
+    "complexity-crap": "off",
+  },
+}
