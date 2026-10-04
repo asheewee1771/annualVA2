@@ -1,0 +1,630 @@
+# Converted from .scratch/annual-va/spec.md (Annual VA early-draft TRD, Gate 1 approved 2026-09-29) on 2026-10-04.
+# Two releases per the spec's Releases section; story 20 split into 20 (upload pipeline) plus parser stories 20a-20d.
+# Source stories have no separate acceptance criteria, so each story statement is its single criterion.
+
+groups:
+- id: va_cycle_and_system_register
+  name: VA Cycle and System Register
+- id: starting_and_preparing_a_va_submission
+  name: Starting and preparing a VA Submission
+- id: exemptions
+  name: Exemptions
+- id: review_by_the_cyber_manager
+  name: Review by the Cyber Manager
+- id: rework_by_the_smo_tech_lead
+  name: Rework by the SMO/Tech Lead
+- id: endorsement_by_a_va_poc
+  name: Endorsement by a VA POC
+- id: roles_and_access
+  name: Roles and access
+- id: exports_and_audit
+  name: Exports and audit
+- id: notifications
+  name: Notifications
+releases:
+- number: 1
+  description: Run one Quarter end to end (go-live Monday 2 August 2027 at Q3 of VA Cycle 2027; Release 1 build done by about 18 June 2027)
+- number: 2
+  description: 'After the first live Quarter: carry-over between cycles, mid-cycle System Register changes, Auditor pack and role, weekly FYI digest, Cyber Manager detailed export'
+stories:
+- id: "1"
+  title: As a VA POC, I want to download a fixed Excel template for the System Register (System ID, System Name, SMO/Tech Lead email, Cyber Manager email, Quarter), so that I plan the year, including who reviews each System, in a tool I already use.
+  group: va_cycle_and_system_register
+  release: 1
+  acceptance_criteria:
+  - As a VA POC, I want to download a fixed Excel template for the System Register (System ID, System Name, SMO/Tech Lead email, Cyber Manager email, Quarter), so that I plan the year, including who reviews each System, in a tool I already use.
+- id: "2"
+  title: As a VA POC, I want to upload the filled-in template and see a preview of every change before it applies, so that I don't break in-flight work by accident.
+  group: va_cycle_and_system_register
+  release: 1
+  acceptance_criteria:
+  - As a VA POC, I want to upload the filled-in template and see a preview of every change before it applies, so that I don't break in-flight work by accident.
+- id: "3"
+  title: As a VA POC, I want a re-upload to update and add Systems matched by System ID rather than replace the Register, so that history and in-flight VA Submissions survive.
+  group: va_cycle_and_system_register
+  release: 1
+  acceptance_criteria:
+  - As a VA POC, I want a re-upload to update and add Systems matched by System ID rather than replace the Register, so that history and in-flight VA Submissions survive.
+- id: "4"
+  title: As a VA POC, I want a System that is missing from a new upload to be marked retired rather than deleted, so that its past VA Submissions stay auditable.
+  group: va_cycle_and_system_register
+  release: 1
+  acceptance_criteria:
+  - As a VA POC, I want a System that is missing from a new upload to be marked retired rather than deleted, so that its past VA Submissions stay auditable.
+- id: "5"
+  title: As a VA POC, I want the preview to group the effects on in-flight work under *Will withdraw*, *Will move*, *Will transfer* and *Blocked*, so that I understand the consequences before confirming.
+  group: va_cycle_and_system_register
+  release: 1
+  acceptance_criteria:
+  - As a VA POC, I want the preview to group the effects on in-flight work under *Will withdraw*, *Will move*, *Will transfer* and *Blocked*, so that I understand the consequences before confirming.
+- id: "6"
+  title: As a VA POC, I want to confirm each retirement of a System that has an in-flight VA Submission, so that nothing is withdrawn silently.
+  group: va_cycle_and_system_register
+  release: 1
+  acceptance_criteria:
+  - As a VA POC, I want to confirm each retirement of a System that has an in-flight VA Submission, so that nothing is withdrawn silently.
+- id: "7"
+  title: As a VA POC, I want a retired System's in-flight VA Submission to become Withdrawn, read-only and excluded from counts and reminders, so that dashboards stay accurate and the audit record stays intact.
+  group: va_cycle_and_system_register
+  release: 1
+  acceptance_criteria:
+  - As a VA POC, I want a retired System's in-flight VA Submission to become Withdrawn, read-only and excluded from counts and reminders, so that dashboards stay accurate and the audit record stays intact.
+- id: "8"
+  title: As a VA POC, I want to move a Not Started or Draft System to another Quarter, with its Draft intact, so that I can rebalance the Quarters.
+  group: va_cycle_and_system_register
+  release: 2
+  acceptance_criteria:
+  - As a VA POC, I want to move a Not Started or Draft System to another Quarter, with its Draft intact, so that I can rebalance the Quarters.
+- id: "9"
+  title: As a VA POC, I want a move of a System whose submission is In Review or later to be blocked, so that I don't pull work out from under a Cyber Manager.
+  group: va_cycle_and_system_register
+  release: 2
+  acceptance_criteria:
+  - As a VA POC, I want a move of a System whose submission is In Review or later to be blocked, so that I don't pull work out from under a Cyber Manager.
+- id: "10"
+  title: As a VA POC, I want a System added partway through its Quarter to get its own two-week Submission Window and two-week Review Window from the date it was added, so that it isn't Overdue the moment it appears.
+  group: va_cycle_and_system_register
+  release: 2
+  acceptance_criteria:
+  - As a VA POC, I want a System added partway through its Quarter to get its own two-week Submission Window and two-week Review Window from the date it was added, so that it isn't Overdue the moment it appears.
+- id: "11"
+  title: As a VA POC, I want the preview to suggest the next Quarter when fewer than 4 weeks remain, so that I don't set impossible deadlines.
+  group: va_cycle_and_system_register
+  release: 2
+  acceptance_criteria:
+  - As a VA POC, I want the preview to suggest the next Quarter when fewer than 4 weeks remain, so that I don't set impossible deadlines.
+- id: "12"
+  title: As a VA POC, I want a System whose SMO email doesn't match any sign-in yet to show as Unlinked SMO, so that I can chase the right person.
+  group: va_cycle_and_system_register
+  release: 1
+  acceptance_criteria:
+  - As a VA POC, I want a System whose SMO email doesn't match any sign-in yet to show as Unlinked SMO, so that I can chase the right person.
+- id: "13"
+  title: As a VA POC, I want a System whose notification emails bounce to show as SMO Unreachable, so that I can fix the Register.
+  group: va_cycle_and_system_register
+  release: 1
+  acceptance_criteria:
+  - As a VA POC, I want a System whose notification emails bounce to show as SMO Unreachable, so that I can fix the Register.
+- id: "14"
+  title: As a VA POC, I want the preview to block a Register row with no Cyber Manager, or with the System's own SMO as its Cyber Manager, so that every System has an independent reviewer.
+  group: va_cycle_and_system_register
+  release: 1
+  acceptance_criteria:
+  - As a VA POC, I want the preview to block a Register row with no Cyber Manager, or with the System's own SMO as its Cyber Manager, so that every System has an independent reviewer.
+- id: "15"
+  title: As a VA POC, I want a change of Cyber Manager partway through to hand the submission to the new Cyber Manager, who re-reviews only what isn't yet confirmed, with the old Cyber Manager losing access, so that reviews continue when people change.
+  group: va_cycle_and_system_register
+  release: 2
+  acceptance_criteria:
+  - As a VA POC, I want a change of Cyber Manager partway through to hand the submission to the new Cyber Manager, who re-reviews only what isn't yet confirmed, with the old Cyber Manager losing access, so that reviews continue when people change.
+- id: "16"
+  title: As a VA POC, I want the VA Cycle to run February to January in four 13-week Quarters, each starting on the first Monday of February, May, August and November, named after its starting year, so that the app matches our planning year.
+  group: va_cycle_and_system_register
+  release: 1
+  acceptance_criteria:
+  - As a VA POC, I want the VA Cycle to run February to January in four 13-week Quarters, each starting on the first Monday of February, May, August and November, named after its starting year, so that the app matches our planning year.
+- id: "17"
+  title: As a VA POC, I want a VA Cycle to close 4 weeks after its Q4 ends, or earlier if I choose, with a Cycle selector while two Cycles overlap, so that late Q4 endorsements still have time.
+  group: va_cycle_and_system_register
+  release: 1
+  acceptance_criteria:
+  - As a VA POC, I want a VA Cycle to close 4 weeks after its Q4 ends, or earlier if I choose, with a Cycle selector while two Cycles overlap, so that late Q4 endorsements still have time.
+- id: "18"
+  title: As an SMO/Tech Lead, I want to see my Systems for the current Quarter, with what I need to do and by when, so that I know where to start.
+  group: starting_and_preparing_a_va_submission
+  release: 1
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want to see my Systems for the current Quarter, with what I need to do and by when, so that I know where to start.
+- id: "19"
+  title: As an SMO/Tech Lead, I want to start the VA Submission for my System myself, so that I control when the work begins.
+  group: starting_and_preparing_a_va_submission
+  release: 1
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want to start the VA Submission for my System myself, so that I control when the work begins.
+- id: "20"
+  title: As an SMO/Tech Lead, I want every Scan Report file to go through one upload pipeline (quarantine, malware scan, type allowlist, schema check, storage) before anything reads it, so that a bad file is rejected before it can do harm and one or more files can be uploaded for each of the three Scan Report types.
+  group: starting_and_preparing_a_va_submission
+  release: 1
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want to upload one or more files for each of the three Scan Report types, so that a System with several components or hosts still has one Scan Report of each type.
+  - Every upload is quarantined, malware-scanned, type-checked against the allowlist for its Scan Report type and schema-checked, in that order, before it is read; a malware verdict, a disallowed type, an unreadable or schema-invalid file, or a scan dated in the future is rejected.
+  - A malware scan that times out is retried twice, then the upload is rejected with a plain message telling the SMO/Tech Lead to upload again.
+  - A file cannot be viewed or downloaded until it has passed the malware scan, and only by someone allowed to see that System.
+- id: "20a"
+  title: As an SMO/Tech Lead, I want the OWASP Dependency-Check, XML or JSON parser, so that my Findings are read automatically from that machine-readable format.
+  group: starting_and_preparing_a_va_submission
+  release: 1
+  acceptance_criteria:
+  - Dependency-Check XML and JSON exports are read; each vulnerability (CVE or GHSA) plus package becomes one Finding with its severity, with one occurrence per component or file; the scan date and target are pre-filled from the file.
+  - Parsing is tested through the upload endpoint with sample exports made from a throwaway test target, plus malformed, disallowed-type, too-old and future-dated files.
+- id: "20b"
+  title: As an SMO/Tech Lead, I want the SCAP ARF/XCCDF results from CIS-CAT Pro or OpenSCAP parser, so that my Findings are read automatically from that machine-readable format.
+  group: starting_and_preparing_a_va_submission
+  release: 1
+  acceptance_criteria:
+  - ARF and XCCDF results XML are read; failed checks (fail) and checks that did not complete (error, unknown) become Findings identified by rule id, one occurrence per host; passed, not-applicable and not-checked results are ignored; the scan end time and target are pre-filled.
+  - Parsing is tested through the upload endpoint with sample exports made from a throwaway test target, plus malformed, disallowed-type, too-old and future-dated files.
+- id: "20c"
+  title: As an SMO/Tech Lead, I want the Nessus .nessus compliance audit parser, so that my Findings are read automatically from that machine-readable format.
+  group: starting_and_preparing_a_va_submission
+  release: 1
+  acceptance_criteria:
+  - A .nessus export is read; compliance results FAILED and WARNING, and ERROR checks that did not complete, become Findings identified by check id, one occurrence per host; PASSED and non-compliance items are ignored; the scan date and target hosts are pre-filled.
+  - Parsing is tested through the upload endpoint with sample exports made from a throwaway test target, plus malformed, disallowed-type, too-old and future-dated files.
+- id: "20d"
+  title: As an SMO/Tech Lead, I want the Burp Suite XML issue export parser, so that my Findings are read automatically from that machine-readable format.
+  group: starting_and_preparing_a_va_submission
+  release: 1
+  acceptance_criteria:
+  - The Burp XML issue export is read; every issue becomes a Finding identified by issue type, host and path, with its severity and confidence shown so Tentative ones can be marked False Positive; the export time is pre-filled and flagged as export time only.
+  - Parsing is tested through the upload endpoint with sample exports made from a throwaway test target, plus malformed, disallowed-type, too-old and future-dated files.
+- id: "21"
+  title: As an SMO/Tech Lead, I want the app to accept only the machine-readable formats (Dependency-Check XML or JSON; ARF/XCCDF results XML or `.nessus` for Secure Configuration; the Burp XML issue export), so that my Findings can be read automatically.
+  group: starting_and_preparing_a_va_submission
+  release: 1
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want the app to accept only the machine-readable formats (Dependency-Check XML or JSON; ARF/XCCDF results XML or `.nessus` for Secure Configuration; the Burp XML issue export), so that my Findings can be read automatically.
+- id: "22"
+  title: As an SMO/Tech Lead, I want to attach PDF or HTML reports as supporting evidence only, so that I can include what my tool produces for people to read.
+  group: starting_and_preparing_a_va_submission
+  release: 1
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want to attach PDF or HTML reports as supporting evidence only, so that I can include what my tool produces for people to read.
+- id: "23"
+  title: As an SMO/Tech Lead whose tool can't export a machine-readable format, I want to tick a box saying so and enter Findings by hand, so that I can still submit. They're marked Manually Entered.
+  group: starting_and_preparing_a_va_submission
+  release: 1
+  acceptance_criteria:
+  - As an SMO/Tech Lead whose tool can't export a machine-readable format, I want to tick a box saying so and enter Findings by hand, so that I can still submit. They're marked Manually Entered.
+- id: "24"
+  title: As an SMO/Tech Lead, I want every upload to be malware-scanned, type-checked and schema-checked before it's read, so that a bad file is rejected before it can do harm.
+  group: starting_and_preparing_a_va_submission
+  release: 1
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want every upload to be malware-scanned, type-checked and schema-checked before it's read, so that a bad file is rejected before it can do harm.
+- id: "25"
+  title: As an SMO/Tech Lead, I want the scan date and target pre-filled from the file for me to confirm, so that I only correct what the tool got wrong (Burp only records its export time).
+  group: starting_and_preparing_a_va_submission
+  release: 1
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want the scan date and target pre-filled from the file for me to confirm, so that I only correct what the tool got wrong (Burp only records its export time).
+- id: "26"
+  title: As an SMO/Tech Lead, I want submitting to be blocked if **any file** is more than 90 days old at submission, or dated in the future, with the message naming that file, so that I don't submit stale evidence.
+  group: starting_and_preparing_a_va_submission
+  release: 1
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want submitting to be blocked if **any file** is more than 90 days old at submission, or dated in the future, with the message naming that file, so that I don't submit stale evidence.
+- id: "27"
+  title: As an SMO/Tech Lead, I want to be told plainly when a malware scan times out and my upload was rejected, so that I know to upload again.
+  group: starting_and_preparing_a_va_submission
+  release: 1
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want to be told plainly when a malware scan times out and my upload was rejected, so that I know to upload again.
+- id: "28"
+  title: As an SMO/Tech Lead, I want every Finding read from my reports listed with its report, identifier, package or rule, severity and source file, so that I can deal with each one.
+  group: starting_and_preparing_a_va_submission
+  release: 1
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want every Finding read from my reports listed with its report, identifier, package or rule, severity and source file, so that I can deal with each one.
+- id: "29"
+  title: As an SMO/Tech Lead, I want failed Secure Configuration checks (XCCDF `fail`, Nessus `FAILED` and `WARNING`) to become Findings and passed or not-applicable checks to be ignored, so that I only handle real deviations.
+  group: starting_and_preparing_a_va_submission
+  release: 1
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want failed Secure Configuration checks (XCCDF `fail`, Nessus `FAILED` and `WARNING`) to become Findings and passed or not-applicable checks to be ignored, so that I only handle real deviations.
+- id: "30"
+  title: As an SMO/Tech Lead, I want every Burp issue to become a Finding with its confidence shown, so that I can mark Tentative ones False Positive with a reason.
+  group: starting_and_preparing_a_va_submission
+  release: 1
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want every Burp issue to become a Finding with its confidence shown, so that I can mark Tentative ones False Positive with a reason.
+- id: "31"
+  title: As an SMO/Tech Lead, I want Findings from last time pre-filled with their earlier status and marked Carried Over, so that I don't retype justifications I already wrote.
+  group: starting_and_preparing_a_va_submission
+  release: 2
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want Findings from last time pre-filled with their earlier status and marked Carried Over, so that I don't retype justifications I already wrote.
+- id: "32"
+  title: As an SMO/Tech Lead, I want to re-confirm Carried Over Findings one at a time or in bulk, so that the annual re-confirmation is quick.
+  group: starting_and_preparing_a_va_submission
+  release: 2
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want to re-confirm Carried Over Findings one at a time or in bulk, so that the annual re-confirmation is quick.
+- id: "33"
+  title: As an SMO/Tech Lead, I want a Remediation Planned Finding whose target date has passed to be flagged Target Date Missed, and to be made to give a new date with a reason or choose another status, so that deferred fixes don't roll on unnoticed.
+  group: starting_and_preparing_a_va_submission
+  release: 2
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want a Remediation Planned Finding whose target date has passed to be flagged Target Date Missed, and to be made to give a new date with a reason or choose another status, so that deferred fixes don't roll on unnoticed.
+- id: "34"
+  title: As an SMO/Tech Lead, I want Risk Accepted Findings to need re-justifying every VA Cycle, starting from last year's text, so that accepted risks are reviewed once a year.
+  group: starting_and_preparing_a_va_submission
+  release: 2
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want Risk Accepted Findings to need re-justifying every VA Cycle, starting from last year's text, so that accepted risks are reviewed once a year.
+- id: "35"
+  title: 'As an SMO/Tech Lead, I want to propose a Finding Status for every Finding, with the field each status requires (Remediated: evidence; False Positive: justification; Risk Accepted: reason, plus the approver''s name and role as free text and an optional approval memo; Remediation Planned: plan and target date), so that the Cyber Manager has what they need.'
+  group: starting_and_preparing_a_va_submission
+  release: 1
+  acceptance_criteria:
+  - 'As an SMO/Tech Lead, I want to propose a Finding Status for every Finding, with the field each status requires (Remediated: evidence; False Positive: justification; Risk Accepted: reason, plus the approver''s name and role as free text and an optional approval memo; Remediation Planned: plan and target date), so that the Cyber Manager has what they need.'
+- id: "36"
+  title: As an SMO/Tech Lead, I want a spreadsheet-style list with filter chips (Needs attention, All, Carried Over, Target Date Missed, Disputed, Critical/High), tick boxes and select-all, so that I can work through 100–200 Findings.
+  group: starting_and_preparing_a_va_submission
+  release: 1
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want a spreadsheet-style list with filter chips (Needs attention, All, Carried Over, Target Date Missed, Disputed, Critical/High), tick boxes and select-all, so that I can work through 100–200 Findings.
+- id: "37"
+  title: As an SMO/Tech Lead, I want a sticky bulk bar that applies one status, one detail and one target date to every selected Finding, so that I can deal with groups such as all the CVEs in one package in one step.
+  group: starting_and_preparing_a_va_submission
+  release: 1
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want a sticky bulk bar that applies one status, one detail and one target date to every selected Finding, so that I can deal with groups such as all the CVEs in one package in one step.
+- id: "38"
+  title: As an SMO/Tech Lead, I want a progress bar showing how many Findings have a proposed status, with counts of Carried Over, Target Date Missed and Disputed, so that I know how much is left.
+  group: starting_and_preparing_a_va_submission
+  release: 1
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want a progress bar showing how many Findings have a proposed status, with counts of Carried Over, Target Date Missed and Disputed, so that I know how much is left.
+- id: "39"
+  title: As an SMO/Tech Lead, I want to replace a Scan Report and have matching Findings keep their status and history, new Findings added, and missing ones set to Remediated with the rescan as evidence, so that uploading a rescan never loses work.
+  group: starting_and_preparing_a_va_submission
+  release: 1
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want to replace a Scan Report and have matching Findings keep their status and history, new Findings added, and missing ones set to Remediated with the rescan as evidence, so that uploading a rescan never loses work.
+- id: "40"
+  title: As an SMO/Tech Lead, I want Submit to stay disabled until every Finding has a proposed status and I've ticked the fixed Declaration text, so that I can't submit something incomplete.
+  group: starting_and_preparing_a_va_submission
+  release: 1
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want Submit to stay disabled until every Finding has a proposed status and I've ticked the fixed Declaration text, so that I can't submit something incomplete.
+- id: "41"
+  title: As an SMO/Tech Lead, I want the exact Declaration wording I agreed to stored with my submission, so that the record shows what I declared.
+  group: starting_and_preparing_a_va_submission
+  release: 1
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want the exact Declaration wording I agreed to stored with my submission, so that the record shows what I declared.
+- id: "42"
+  title: As an SMO/Tech Lead, I want to keep working after the Submission Window has passed, with my submission marked Overdue, so that a missed deadline doesn't lock me out.
+  group: starting_and_preparing_a_va_submission
+  release: 1
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want to keep working after the Submission Window has passed, with my submission marked Overdue, so that a missed deadline doesn't lock me out.
+- id: "43"
+  title: As an SMO/Tech Lead, I want to request an Exemption at any time before endorsement, with evidence of a VA done within the 3 months before the Quarter or one scheduled within the 3 months after, so that my System isn't assessed twice.
+  group: exemptions
+  release: 1
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want to request an Exemption at any time before endorsement, with evidence of a VA done within the 3 months before the Quarter or one scheduled within the 3 months after, so that my System isn't assessed twice.
+- id: "44"
+  title: As an SMO/Tech Lead, I want my submission frozen while the Exemption request is pending, and returned to exactly its previous state if the request is rejected, so that I don't lose work.
+  group: exemptions
+  release: 1
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want my submission frozen while the Exemption request is pending, and returned to exactly its previous state if the request is rejected, so that I don't lose work.
+- id: "45"
+  title: As a VA POC, I want a list of Exemption requests waiting on my dashboard, so that I can decide them promptly.
+  group: exemptions
+  release: 1
+  acceptance_criteria:
+  - As a VA POC, I want a list of Exemption requests waiting on my dashboard, so that I can decide them promptly.
+- id: "46"
+  title: As a VA POC, I want to approve or reject an Exemption, with approval making the submission Exempted while keeping its work for audit, so that the outcome is clear and traceable.
+  group: exemptions
+  release: 1
+  acceptance_criteria:
+  - As a VA POC, I want to approve or reject an Exemption, with approval making the submission Exempted while keeping its work for audit, so that the outcome is clear and traceable.
+- id: "47"
+  title: As a VA POC, I want an Exemption based on a future VA to stay conditional, and, if that VA doesn't happen within 3 months, the System to be flagged and returned to its previous state (or Not Started) with new 2-week windows from the date it's flagged and endorsement due by the later of its Quarter's end and the Cycle's close, so that Exemptions can't be used to dodge the VA.
+  group: exemptions
+  release: 1
+  acceptance_criteria:
+  - As a VA POC, I want an Exemption based on a future VA to stay conditional, and, if that VA doesn't happen within 3 months, the System to be flagged and returned to its previous state (or Not Started) with new 2-week windows from the date it's flagged and endorsement due by the later of its Quarter's end and the Cycle's close, so that Exemptions can't be used to dodge the VA.
+- id: "48"
+  title: As a Cyber Manager, I want an action inbox of VA Submissions for the Systems assigned to me in the System Register, with Overdue ones first, so that I work in the right order.
+  group: review_by_the_cyber_manager
+  release: 1
+  acceptance_criteria:
+  - As a Cyber Manager, I want an action inbox of VA Submissions for the Systems assigned to me in the System Register, with Overdue ones first, so that I work in the right order.
+- id: "49"
+  title: As a Cyber Manager, I want a Quarter board as a second tab, with one column per state, so that I can see the whole Quarter at once.
+  group: review_by_the_cyber_manager
+  release: 1
+  acceptance_criteria:
+  - As a Cyber Manager, I want a Quarter board as a second tab, with one column per state, so that I can see the whole Quarter at once.
+- id: "50"
+  title: As a Cyber Manager, I want to confirm each proposed Finding Status, or mark it Disputed with a comment, so that I only send back what's wrong.
+  group: review_by_the_cyber_manager
+  release: 1
+  acceptance_criteria:
+  - As a Cyber Manager, I want to confirm each proposed Finding Status, or mark it Disputed with a comment, so that I only send back what's wrong.
+- id: "51"
+  title: As a Cyber Manager, I want Bulk-set Findings grouped by batch, and to confirm or Dispute a whole batch, so that reviewing bulk work doesn't take longer than doing it.
+  group: review_by_the_cyber_manager
+  release: 1
+  acceptance_criteria:
+  - As a Cyber Manager, I want Bulk-set Findings grouped by batch, and to confirm or Dispute a whole batch, so that reviewing bulk work doesn't take longer than doing it.
+- id: "52"
+  title: As a Cyber Manager, I want Manually Entered Findings clearly marked, so that I check them more closely.
+  group: review_by_the_cyber_manager
+  release: 1
+  acceptance_criteria:
+  - As a Cyber Manager, I want Manually Entered Findings clearly marked, so that I check them more closely.
+- id: "53"
+  title: As a Cyber Manager, I want to see a Carried Over Finding's earlier status, who confirmed it, and how many cycles it's been open (for example "Risk Accepted, 3rd cycle"), so that I can challenge long-running Deviations.
+  group: review_by_the_cyber_manager
+  release: 2
+  acceptance_criteria:
+  - As a Cyber Manager, I want to see a Carried Over Finding's earlier status, who confirmed it, and how many cycles it's been open (for example "Risk Accepted, 3rd cycle"), so that I can challenge long-running Deviations.
+- id: "54"
+  title: As a Cyber Manager, I want Target Date Missed Findings highlighted, so that I notice fixes that keep slipping.
+  group: review_by_the_cyber_manager
+  release: 2
+  acceptance_criteria:
+  - As a Cyber Manager, I want Target Date Missed Findings highlighted, so that I notice fixes that keep slipping.
+- id: "55"
+  title: As a Cyber Manager, I want to return a submission for rework with the Disputed Findings attached, and have confirmed Findings stay confirmed, so that the next review is shorter.
+  group: review_by_the_cyber_manager
+  release: 1
+  acceptance_criteria:
+  - As a Cyber Manager, I want to return a submission for rework with the Disputed Findings attached, and have confirmed Findings stay confirmed, so that the next review is shorter.
+- id: "56"
+  title: As a Cyber Manager, I want to re-review only the Findings that changed when a submission comes back, including after a VA POC return, so that I don't repeat work.
+  group: review_by_the_cyber_manager
+  release: 1
+  acceptance_criteria:
+  - As a Cyber Manager, I want to re-review only the Findings that changed when a submission comes back, including after a VA POC return, so that I don't repeat work.
+- id: "57"
+  title: As a Cyber Manager, I want the submission to go to the VA POCs only once every Finding is confirmed, so that nothing reaches endorsement unchecked.
+  group: review_by_the_cyber_manager
+  release: 1
+  acceptance_criteria:
+  - As a Cyber Manager, I want the submission to go to the VA POCs only once every Finding is confirmed, so that nothing reaches endorsement unchecked.
+- id: "58"
+  title: As a Cyber Manager, I want to be blocked from reviewing a VA Submission I acted on at another step, so that segregation of duties holds even if I also hold another role.
+  group: review_by_the_cyber_manager
+  release: 1
+  acceptance_criteria:
+  - As a Cyber Manager, I want to be blocked from reviewing a VA Submission I acted on at another step, so that segregation of duties holds even if I also hold another role.
+- id: "59"
+  title: As a Cyber Manager, I want a detailed export of Findings (CVE, rule or issue, severity, Finding Status and target date) for the Systems I review, so that I can analyse them outside the app.
+  group: review_by_the_cyber_manager
+  release: 2
+  acceptance_criteria:
+  - As a Cyber Manager, I want a detailed export of Findings (CVE, rule or issue, severity, Finding Status and target date) for the Systems I review, so that I can analyse them outside the app.
+- id: "60"
+  title: As an SMO/Tech Lead whose submission was Returned for Rework, I want a guided queue that takes me one Finding at a time (Disputed, then Target Date Missed, then Carried Over to re-confirm, then new Critical/High, then new Medium/Low), so that I fix exactly what was raised.
+  group: rework_by_the_smo_tech_lead
+  release: 1
+  acceptance_criteria:
+  - As an SMO/Tech Lead whose submission was Returned for Rework, I want a guided queue that takes me one Finding at a time (Disputed, then Target Date Missed, then Carried Over to re-confirm, then new Critical/High, then new Medium/Low), so that I fix exactly what was raised.
+- id: "61"
+  title: As an SMO/Tech Lead, I want to see the Cyber Manager's Dispute comment on each Finding, so that I know what to change.
+  group: rework_by_the_smo_tech_lead
+  release: 1
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want to see the Cyber Manager's Dispute comment on each Finding, so that I know what to change.
+- id: "62"
+  title: As an SMO/Tech Lead, I want keyboard shortcuts in the rework queue (1–4 picks a status, Enter saves and moves on), so that rework is fast.
+  group: rework_by_the_smo_tech_lead
+  release: 1
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want keyboard shortcuts in the rework queue (1–4 picks a status, Enter saves and moves on), so that rework is fast.
+- id: "63"
+  title: As an SMO/Tech Lead, I want a return from the VA POC to come back to me, and my resubmission to go through the Cyber Manager again, so that the chain of confirmation stays whole.
+  group: rework_by_the_smo_tech_lead
+  release: 1
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want a return from the VA POC to come back to me, and my resubmission to go through the Cyber Manager again, so that the chain of confirmation stays whole.
+- id: "64"
+  title: As a VA POC, I want a board for the current Quarter and a matrix of the whole VA Cycle (a strip showing all four Quarters, then one row per System with its milestone dots against their due weeks), as two tabs, so that I see both today's work and the year.
+  group: endorsement_by_a_va_poc
+  release: 1
+  acceptance_criteria:
+  - As a VA POC, I want a board for the current Quarter and a matrix of the whole VA Cycle (a strip showing all four Quarters, then one row per System with its milestone dots against their due weeks), as two tabs, so that I see both today's work and the year.
+- id: "65"
+  title: As a VA POC, I want to endorse a VA Submission that is Awaiting Endorsement, so that the System's VA for this Cycle is complete.
+  group: endorsement_by_a_va_poc
+  release: 1
+  acceptance_criteria:
+  - As a VA POC, I want to endorse a VA Submission that is Awaiting Endorsement, so that the System's VA for this Cycle is complete.
+- id: "66"
+  title: As a VA POC, I want to return a submission to the SMO/Tech Lead with comments, so that I can challenge something the Cyber Manager confirmed.
+  group: endorsement_by_a_va_poc
+  release: 1
+  acceptance_criteria:
+  - As a VA POC, I want to return a submission to the SMO/Tech Lead with comments, so that I can challenge something the Cyber Manager confirmed.
+- id: "67"
+  title: As a VA POC, I want to endorse after week 13, with the submission marked Endorsed Late, so that late work still completes and the lateness stays visible.
+  group: endorsement_by_a_va_poc
+  release: 1
+  acceptance_criteria:
+  - As a VA POC, I want to endorse after week 13, with the submission marked Endorsed Late, so that late work still completes and the lateness stays visible.
+- id: "68"
+  title: As a VA POC, I want any VA Submission that isn't Endorsed or Exempted when the VA Cycle closes (4 weeks after Q4 ends, or earlier if I close it) to become Not Endorsed, so that each Cycle's report is final.
+  group: endorsement_by_a_va_poc
+  release: 1
+  acceptance_criteria:
+  - As a VA POC, I want any VA Submission that isn't Endorsed or Exempted when the VA Cycle closes (4 weeks after Q4 ends, or earlier if I close it) to become Not Endorsed, so that each Cycle's report is final.
+- id: "69"
+  title: As one of the two VA POCs, I want items the other VA POC has handled to clear from my list with "handled by (name)", so that we don't duplicate work.
+  group: endorsement_by_a_va_poc
+  release: 1
+  acceptance_criteria:
+  - As one of the two VA POCs, I want items the other VA POC has handled to clear from my list with "handled by (name)", so that we don't duplicate work.
+- id: "70"
+  title: As a VA POC, I want to be blocked from endorsing a VA Submission I acted on at another step, for example as its SMO, so that the other VA POC endorses it.
+  group: endorsement_by_a_va_poc
+  release: 1
+  acceptance_criteria:
+  - As a VA POC, I want to be blocked from endorsing a VA Submission I acted on at another step, for example as its SMO, so that the other VA POC endorses it.
+- id: "71"
+  title: As a VA POC, I want to see Systems in the Quarter that have no VA Submission yet as Not Started, and Overdue after week 2, so that I can chase SMOs who haven't begun.
+  group: endorsement_by_a_va_poc
+  release: 1
+  acceptance_criteria:
+  - As a VA POC, I want to see Systems in the Quarter that have no VA Submission yet as Not Started, and Overdue after week 2, so that I can chase SMOs who haven't begun.
+- id: "72"
+  title: As any user, I want to sign in through the organisation's single sign-on, with MFA at every sign-in, so that I don't manage another password and a stolen password alone can't get in (assumption A-4).
+  group: roles_and_access
+  release: 1
+  acceptance_criteria:
+  - As any user, I want to sign in through the organisation's single sign-on, with MFA at every sign-in, so that I don't manage another password and a stolen password alone can't get in (assumption A-4).
+- id: "73"
+  title: As a VA POC, I want the Cyber Manager role to come from the Cyber Manager column of the System Register, scoped to the Systems assigned to each person, so that reviewer access follows the plan.
+  group: roles_and_access
+  release: 1
+  acceptance_criteria:
+  - As a VA POC, I want the Cyber Manager role to come from the Cyber Manager column of the System Register, scoped to the Systems assigned to each person, so that reviewer access follows the plan.
+- id: "74"
+  title: As a VA POC, I want to grant an auditor a time-limited, read-only Auditor role, so that evidence is viewed in the app rather than emailed around.
+  group: roles_and_access
+  release: 2
+  acceptance_criteria:
+  - As a VA POC, I want to grant an auditor a time-limited, read-only Auditor role, so that evidence is viewed in the app rather than emailed around.
+- id: "75"
+  title: As a system administrator, I want to set up the two VA POCs at deployment, and change them only through a change request, so that the highest-privilege role is controlled.
+  group: roles_and_access
+  release: 1
+  acceptance_criteria:
+  - As a system administrator, I want to set up the two VA POCs at deployment, and change them only through a change request, so that the highest-privilege role is controlled.
+- id: "76"
+  title: As any user, I want to be unable to grant a role to myself, so that privileges can't be escalated.
+  group: roles_and_access
+  release: 1
+  acceptance_criteria:
+  - As any user, I want to be unable to grant a role to myself, so that privileges can't be escalated.
+- id: "77"
+  title: As any user, I want sensitive actions (endorsing, approving an Exemption, uploading the Register, changing roles, approving the disposal list, bulk or detailed export) to require a fresh MFA sign-in, so that a hijacked session can't do damage (assumption A-5).
+  group: roles_and_access
+  release: 1
+  acceptance_criteria:
+  - As any user, I want sensitive actions (endorsing, approving an Exemption, uploading the Register, changing roles, approving the disposal list, bulk or detailed export) to require a fresh MFA sign-in, so that a hijacked session can't do damage (assumption A-5).
+- id: "78"
+  title: As an SMO/Tech Lead, I want to see only my own Systems' reports and Findings, so that sensitive data is shared only with those who need it.
+  group: roles_and_access
+  release: 1
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want to see only my own Systems' reports and Findings, so that sensitive data is shared only with those who need it.
+- id: "79"
+  title: As a former SMO/Tech Lead, I want my access to end as soon as the Register names a new SMO, so that leavers keep no access.
+  group: roles_and_access
+  release: 1
+  acceptance_criteria:
+  - As a former SMO/Tech Lead, I want my access to end as soon as the Register names a new SMO, so that leavers keep no access.
+- id: "80a"
+  title: As a VA POC, I want any role unused for 90 days to lapse automatically and come back only when a Register upload names that person again, and anyone no longer named, or disabled at the IdP, to lose access at once, so that no dormant access remains while annual SMOs aren't locked out.
+  group: roles_and_access
+  release: 1
+  acceptance_criteria:
+  - As a VA POC, I want any role unused for 90 days to lapse automatically and come back only when a Register upload names that person again, and anyone no longer named, or disabled at the IdP, to lose access at once, so that no dormant access remains while annual SMOs aren't locked out.
+- id: "80"
+  title: As a new SMO/Tech Lead, I want the Draft handed to me with the previous SMO's proposals marked "proposed by (previous SMO)", so that I can re-confirm them rather than start over.
+  group: roles_and_access
+  release: 2
+  acceptance_criteria:
+  - As a new SMO/Tech Lead, I want the Draft handed to me with the previous SMO's proposals marked "proposed by (previous SMO)", so that I can re-confirm them rather than start over.
+- id: "81"
+  title: As a VA POC, I want a management summary export (counts by Quarter and state, Endorsed Late, and a by-System table with SMO, state, Overdue and the number of open Deviations) in Excel or PDF, with no vulnerability details, so that it's safe to circulate.
+  group: exports_and_audit
+  release: 1
+  acceptance_criteria:
+  - As a VA POC, I want a management summary export (counts by Quarter and state, Endorsed Late, and a by-System table with SMO, state, Overdue and the number of open Deviations) in Excel or PDF, with no vulnerability details, so that it's safe to circulate.
+- id: "82"
+  title: As an Auditor, I want an evidence pack for the Quarters and Systems I choose (Findings, Finding Statuses, who proposed and who confirmed each, and the audit trail), mainly in Excel with PDF also available, so that I can check the process.
+  group: exports_and_audit
+  release: 2
+  acceptance_criteria:
+  - As an Auditor, I want an evidence pack for the Quarters and Systems I choose (Findings, Finding Statuses, who proposed and who confirmed each, and the audit trail), mainly in Excel with PDF also available, so that I can check the process.
+- id: "83"
+  title: As an Auditor, I want to browse the same evidence read-only in the app, so that I don't need copies.
+  group: exports_and_audit
+  release: 2
+  acceptance_criteria:
+  - As an Auditor, I want to browse the same evidence read-only in the app, so that I don't need copies.
+- id: "84"
+  title: As a VA POC or Auditor, I want an append-only audit log of every view, download, upload, status change, confirmation, Dispute, return, endorsement, Exemption decision, Register change, role change and export, so that every action is accountable.
+  group: exports_and_audit
+  release: 1
+  acceptance_criteria:
+  - As a VA POC or Auditor, I want an append-only audit log of every view, download, upload, status change, confirmation, Dispute, return, endorsement, Exemption decision, Register change, role change and export, so that every action is accountable.
+- id: "85"
+  title: As a Cyber Manager, I want to see the audit history of the VA Submissions I reviewed, so that I can trace what happened to them.
+  group: exports_and_audit
+  release: 1
+  acceptance_criteria:
+  - As a Cyber Manager, I want to see the audit history of the VA Submissions I reviewed, so that I can trace what happened to them.
+- id: "86"
+  title: As anyone receiving an export, I want it watermarked with its classification (Confidential when it covers the whole set), so that its handling rules are obvious.
+  group: exports_and_audit
+  release: 1
+  acceptance_criteria:
+  - As anyone receiving an export, I want it watermarked with its classification (Confidential when it covers the whole set), so that its handling rules are obvious.
+- id: "87"
+  title: As a VA POC, I want to approve a list of records due for disposal after their retention period, with a fresh MFA sign-in, so that data is deleted on time, with approval, and never by a hijacked session.
+  group: exports_and_audit
+  release: 1
+  acceptance_criteria:
+  - As a VA POC, I want to approve a list of records due for disposal after their retention period, with a fresh MFA sign-in, so that data is deleted on time, with approval, and never by a hijacked session.
+- id: "88"
+  title: As an SMO/Tech Lead, I want reminders 5 days before and on the end of week 2, then weekly while Overdue with the Cyber Manager copied in, so that I don't miss my window.
+  group: notifications
+  release: 1
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want reminders 5 days before and on the end of week 2, then weekly while Overdue with the Cyber Manager copied in, so that I don't miss my window.
+- id: "89"
+  title: As the Cyber Manager assigned to a System, I want the same pattern of reminders against the end of week 4, with the VA POCs copied in, and to be the Cyber Manager copied in on that System's SMO reminders, so that reviews don't stall.
+  group: notifications
+  release: 1
+  acceptance_criteria:
+  - As the Cyber Manager assigned to a System, I want the same pattern of reminders against the end of week 4, with the VA POCs copied in, and to be the Cyber Manager copied in on that System's SMO reminders, so that reviews don't stall.
+- id: "90"
+  title: As a VA POC, I want reminders 2 weeks and 1 week before the end of week 13, so that endorsements finish within the Quarter.
+  group: notifications
+  release: 1
+  acceptance_criteria:
+  - As a VA POC, I want reminders 2 weeks and 1 week before the end of week 13, so that endorsements finish within the Quarter.
+- id: "91"
+  title: As any user, I want emails to carry only the System, state, action needed, due date and a link, never Finding details, so that a forwarded email leaks nothing.
+  group: notifications
+  release: 1
+  acceptance_criteria:
+  - As any user, I want emails to carry only the System, state, action needed, due date and a link, never Finding details, so that a forwarded email leaks nothing.
+- id: "92"
+  title: As any user, I want an in-app list of all my notifications, so that I can look back at them.
+  group: notifications
+  release: 1
+  acceptance_criteria:
+  - As any user, I want an in-app list of all my notifications, so that I can look back at them.
+- id: "93"
+  title: As any user, I want FYI events (Endorsed, Carried Over confirmed) in an optional weekly digest, while deadline, Overdue, rework, Disputed and Register-change messages always come, so that I get the essentials without noise.
+  group: notifications
+  release: 2
+  acceptance_criteria:
+  - As any user, I want FYI events (Endorsed, Carried Over confirmed) in an optional weekly digest, while deadline, Overdue, rework, Disputed and Register-change messages always come, so that I get the essentials without noise.
+- id: "94"
+  title: As an SMO/Tech Lead, I want to be told when my System is moved to another Quarter, transferred to or from me, or withdrawn, so that I'm not surprised.
+  group: notifications
+  release: 1
+  acceptance_criteria:
+  - As an SMO/Tech Lead, I want to be told when my System is moved to another Quarter, transferred to or from me, or withdrawn, so that I'm not surprised.
