@@ -16,6 +16,25 @@ The sibling repo `D:\projects\annual-va` is an earlier attempt (~20–25 % of Re
 
 Sources consulted: `spec.md`; `D:\projects\App-Standards` (retired bootstrap standard recovered from git at `ff5ab82^`, SSO/Shared-Auth, File/SFS, MCNS, Logging standards); `D:\projects\docs\agents\*.md` (tracker conventions); installed skills (`do-work`, `build-check`, `code-reviewer`, `e2e`, `to-tickets`, `convert-stories`, `dependency-orchestrator`).
 
+## Status (updated 2026-10-05)
+
+Step 1 of this plan (section 8) is done and committed on `main` (8 commits, clean tree):
+
+| Area | State |
+|---|---|
+| Scaffold | Repo layout, `compose.yml` (verbatim mock blocks + Postgres), LocalStack init scripts, dev keys, personas, README, AGENTS, CONTEXT, ADRs 0001 to 0012, reviewer decisions |
+| Backend skeleton | Spring Boot 4.0.8 / Java 21, deny-by-default chain, synchronizer CSRF, RFC 9457 problems with traceId, IM8 headers, ECS logs, Seam 1 harness (Testcontainers, mutable clock), ArchUnit; `./mvnw verify` green with 22 tests and the coverage gate met |
+| Frontend skeleton | Vite 8 + React 19 + TypeScript 5.9, shell with classification banner, typed fetch client; `npm run check` green |
+| Planning artefacts | `spec.stories.yaml` (99 stories), dependency DAG and dev report (`reports/`), `artifacts/dag-repair-notes.md` |
+| Tracker | 59 Release 1 tickets in `.scratch/annual-va/issues/` (section 7), vetted; ticket 02 closed, 01, 24 and 54 to 59 ready-for-human, the rest ready-for-agent |
+| Verified | Postgres and LocalStack up with the KMS alias and the SSE-KMS buckets; the backend under `dev-mcc` reaches the database step without `mock-m-sso` present |
+| Not verified | Browser sign-in, scanning and mail (need ticket 01); backend start against Postgres end to end (Docker Desktop was down at the last check) |
+
+Deviations from the plan as first written, each recorded where it applies: the shared properties record lives in a leaf `config` package; the frontend code-health gate runs `fallow dead-code && fallow health` over the whole project because `fallow audit` needs a git base branch a new repository lacks; TypeScript is pinned to 5.9 for dependency-cruiser compatibility; malware-infected quarantine bytes are discarded rather than retained; Will move and Will transfer Register rows are classified but blocked in Release 1; the orchestrator's merged DAG needed hand repair (exclusive node ownership, 17 edge cuts) and its report generator a one-line patch.
+
+Next action: `/do-work` picks ticket 03 (sign in through MCC SSO). Ticket 01 (obtain `mock-m-sso`) is the human prerequisite for every browser demo.
+
+
 ---
 
 ## 1. Repository layout
@@ -53,6 +72,7 @@ annualVA2/
 |---|---|---|
 | `app` | `@SpringBootApplication`, security filter chain, session/CSRF, virtual threads, scheduling switch, profile guard | everything |
 | `web` | RFC 9457 `ProblemDetail` advice (+`traceId`), correlation-id MDC filter, security headers (CSP, HSTS…), pagination | none |
+| `config` | Validated configuration records shared by more than one module (prefix `annualva`); leaf | none |
 | `boundary` | The five adapter interfaces: `IdentityProvider`, `MalwareScanner`, `MailRelay`, `FileStore`, `java.time.Clock` bean | none |
 | `audit` | Append-only `audit_entry` (DB trigger), `AuditLog.record`, `recordRefused` (REQUIRES_NEW), scoped read API, ECS audit events | boundary |
 | `cycle` | VA Cycle/Quarter calendar, windows, first live Quarter, `BusinessTime` in `Asia/Singapore` | none |
@@ -131,7 +151,7 @@ Rejections: 409 `invalid-transition`, 403 `forbidden`/`sod-conflict`/`step-up-re
 
 ### 2.5 Upload pipeline and scanner adapter
 
-Stage order (tests assert it): request validation → **quarantine** to DIRTY store + sha-256 → **malware scan** (async) → **type allowlist** (magic bytes + root element / JSON shape vs declared slot) → **schema check** → **parse** → **pre-fill** scan date/target → **age** (future-dated rejected now; > 90 days enforced at submit). `pipeline_status`: QUARANTINED → SCAN_SUBMITTED → SCANNING → SCAN_CLEAN → TYPE_OK → SCHEMA_OK → PARSED → READY, or REJECTED_{MALWARE, SCAN_TIMEOUT, TYPE, SCHEMA, UNREADABLE, FUTURE_DATED, HASH_MISMATCH}. Upload returns 202; client polls file status; bytes never served before SCAN_CLEAN.
+Stage order (tests assert it): request validation → **quarantine** to DIRTY store + sha-256 → **malware scan** (async) → **type allowlist** (magic bytes + root element / JSON shape vs declared slot) → **schema check** → **parse** → **pre-fill** scan date/target → **age** (future-dated rejected now; > 90 days enforced at submit). `pipeline_status`: QUARANTINED → SCAN_SUBMITTED → SCANNING → SCAN_CLEAN → TYPE_OK → SCHEMA_OK → PARSED → READY, or REJECTED_{MALWARE (quarantined bytes are discarded: malware is never retained, a decision recorded beside the retention rules), SCAN_TIMEOUT, TYPE, SCHEMA, UNREADABLE, FUTURE_DATED, HASH_MISMATCH}. Upload returns 202; client polls file status; bytes never served before SCAN_CLEAN.
 
 `MalwareScanner`: `submit(dirtyRef, displayName, mime) → ticket`, `check(ticket) → PROCESSING|CLEAN_UNCHANGED|CLEAN_SANITIZED|BLOCKED|ERROR`, `fetchClean(ticket)`. SFS adapter: POST /put → PUT presigned → POST /get until Allowed/Blocked → GET clean → hash check (Unchanged must equal upload hash). `ScanPoller`: ≤ 10 in flight, `scheduler_lock` + `SKIP LOCKED`, attempt timeout (prod 10 min, dev 2 min, ci set by test), **3 attempts total** (= spec "retried twice") then REJECTED_SCAN_TIMEOUT with the story-27 message. Never log presigned URLs or file names. No `scanner.enabled=false` bypass: dev-mcc uses mock-SFS keyword verdicts (`_quarantined` in display name), ci uses the fake.
 
@@ -161,7 +181,7 @@ Formats and limits (ADR, human confirms): DC XML/JSON 25 MB; XCCDF results 25 MB
 
 ## 3. Frontend architecture (lighter stack)
 
-- `package.json` scripts: `dev`, `build` (`tsc -b && vite build`), `typecheck`, `format`/`format:check` (Prettier), `audit:code` (`fallow audit`), `arch:check` (`depcruise src --config .dependency-cruiser.cjs`), `lint:no-raw-html` (fails on `dangerouslySetInnerHTML`/`innerHTML`), `check` (all gates). Deps: `react`, `react-dom`; dev: `typescript`, `vite`, `@vitejs/plugin-react`, `@vitejs/plugin-basic-ssl`, types, `prettier`, `fallow`, `dependency-cruiser`. Nothing else (depcruise rule).
+- `package.json` scripts: `dev`, `build` (`tsc -b && vite build`), `typecheck`, `format`/`format:check` (Prettier), `audit:code` (`fallow dead-code && fallow health`, whole project: `fallow audit` needs a git base branch, and its CRAP score needs coverage data this project does not produce, so the CRAP rule is off in `.fallowrc.jsonc`), `arch:check` (`depcruise src --config .dependency-cruiser.cjs`), `lint:no-raw-html` (fails on `dangerouslySetInnerHTML`/`innerHTML`), `check` (all gates). Deps: `react`, `react-dom`; dev: `typescript`, `vite`, `@vitejs/plugin-react`, `@vitejs/plugin-basic-ssl`, types, `prettier`, `fallow`, `dependency-cruiser`. Nothing else (depcruise rule).
 - `vite.config.ts`: `basicSsl()`, port 5173 strict, proxy `/api`, `/oauth2`, `/login`, `/logout`, `/auth`, `/.well-known` → `https://localhost:8443` with `secure:false`, `changeOrigin:false`, `xfwd:true`; backend `server.forward-headers-strategy: framework` so cookies/redirects stay on 5173.
 - `tsconfig`: strict, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noUnusedLocals/Parameters`, `verbatimModuleSyntax`, `noEmit`, bundler resolution.
 - Layout: `src/main.tsx`, `styles.css` (CSS variables from the prototypes, light/dark); `src/app/` (App session state machine, Shell with ClassificationBanner + role nav + CycleSelector, `router.ts` ~40 lines: `parse(pathname) → Route` union + `navigate()` via `history.pushState` + `useRoute()`, StepUpInterstitial, SignedOutScreen, ErrorBoundary, idle timer); `src/api/` (`client.ts` + one module per resource); `src/hooks/` (`useResource`, `useAction` with in-flight + step-up intercept, `useSelection`, `useKeyboardShortcuts`); `src/components/` (ClassificationBanner, ClassifiedField, FilterChips, BulkBar, ProgressBar, StateBadge, SeverityBadge, DataTable, ErrorPanel, FileDrop, Tabs, Dialog, Button, EmptyState); `src/screens/{smo,cyber-manager,va-poc,auditor,shared}/`.
@@ -266,76 +286,92 @@ Write when the slice lands: 0013 SFS polling semantics (3 attempts, Sanitized ac
 
 ### 6.5 Questions for the PO (raise via tickets marked needs-info)
 
-Bounce semantics under MCNS · step-up mechanism and 5-min freshness · "every view" audit granularity for list endpoints (one entry per request with ids) · watermark wording per classification and whether a multi-System auditor pack is the "whole set" · Auditor scope granularity and default expiry · Overdue/reminders for Unlinked/Unreachable SMOs · step-up for Auditor-run packs and CM detailed export · size limits · 30-min idle vs 15 · 1 concurrent session · Informational severity in chips · rejecting SFS-sanitized machine-readable reports · story 50 split · audit entries never disposed early.
+Release 1 handling of Will move and Will transfer Register rows (classified, blocked until the Release 2 mid-cycle tickets) · Bounce semantics under MCNS · step-up mechanism and 5-min freshness · "every view" audit granularity for list endpoints (one entry per request with ids) · watermark wording per classification and whether a multi-System auditor pack is the "whole set" · Auditor scope granularity and default expiry · Overdue/reminders for Unlinked/Unreachable SMOs · step-up for Auditor-run packs and CM detailed export · size limits · 30-min idle vs 15 · 1 concurrent session · Informational severity in chips · rejecting SFS-sanitized machine-readable reports · story 50 split · audit entries never disposed early.
 
 ---
 
-## 7. Build order (Release 1 slices → `/to-tickets` input)
+## 7. Build order: the Release 1 ticket set
 
-Each slice is demoable through the API with Seam-1 tests; H = human. This table is the ordering guide for ticket generation (one ticket per slice, numbered in this order, blockers first).
+The tickets live in `.scratch/annual-va/issues/NN-slug.md`, numbered in dependency order (blockers first). Each agent ticket is demoable through the API with Seam 1 tests; H marks ready-for-human tickets. The set was vetted before publishing (every Release 1 story covered, no forward blockers, Release 2 behaviour kept out), which split the original slices for the VA POC board and endorsement, the role lapse and the role-holder review, and added the audit and state-table completeness ticket.
 
-| # | Slice | Stories | Blocked by |
-|---|---|---|---|
-| H0 | Obtain `mock-m-sso`; pick base package; proxy CA | — | — |
-| S01 | Walking skeleton: repo scaffold (§1), compose + keys + LocalStack init, Boot 4.0.x/Java 21, Flyway V1, Seam-1 harness + 5 fakes, ArchUnit, JaCoCo 80/80, ECS logging + correlation id, ProblemDetail, security headers + CSP/HSTS, deny-all, `/actuator/health`, frontend shell + banner + gates, tracker seeded (§8) | — | — |
-| S02 | Sign-in via MCC SSO: oauth2Login + private_key_jwt + JWKS, Spring Session JDBC, 30m/8h/1 session, CSRF, logout, `app_user` linking, `/api/session`, signed-out screen | 72 | S01 |
-| S03 | Role store + deny-by-default + ownership 404 + VA POC config + `/api/session.roles` | 75, 76, 78 | S02 |
-| S04 | Audit log core: table + trigger, writer, refused-request logging, sign-in/out events, POC read endpoint + viewer screen | 84 (part) | S03 |
-| S05 | Calendar: cycles, Quarters, windows, first live Quarter, `GET /api/cycles`, Cycle selector | 16, 71 (dates) | S01 |
-| S06 | Register template download | 1 | S03 |
-| S07 | Register upload → preview (ADD/UPDATE/RETIRE, blocked rows, Unlinked SMO) + preview screen | 2, 12, 14 | S06, S05 |
-| S08 | Step-up mechanism + interstitial | 77 | S02 |
-| S09 | Register apply with step-up; SMO/CM grants; immediate removal | 2, 3, 4, 73, 79 | S07, S08, S04 |
-| S10 | SMO inbox (read model + screen) | 18, 71 | S09 |
-| S11 | Start submission + state-machine frame + participation | 19 | S10 |
-| S12 | Upload pipeline: quarantine, scanner boundary + poller + timeout/retries, type/schema hooks, status polling, download with ownership, Scan Report cards | 20 (pipeline), 24, 27, 78 | S11 |
-| S13–S16 | Parsers in parallel: DC XML/JSON; XCCDF/ARF; `.nessus`; Burp (samples + PROVENANCE, schema, findings + occurrences + metadata) | 20a–20d, 21, 25, 28, 29, 30 | S12 |
-| S17 | Evidence attachments (PDF/HTML) | 22 | S12 |
-| S18 | Findings list + propose status with required fields + history (spreadsheet screen) | 28, 35 | any of S13–S16 |
-| S19 | Filter chips, select-all, bulk bar, progress bar / readiness | 36, 37, 38 | S18 |
-| S20 | Replace a Scan Report file | 39 | S18 |
-| S21 | Not-applicable slots + manual entry | 23, grill decision | S18 |
-| S22 | Scan date/target confirm + age rules | 25, 26 | S13–S16 |
-| H1 | Declaration text | 41 | — |
-| S23 | Declaration + submit → In Review | 40, 41 | S19, S21, S22, H1 |
-| S24 | Overdue flag + sweep | 42, 71 | S23 |
-| S25 | CM inbox + Quarter board | 48, 49 | S24 |
-| S26 | Review engine 1: SoD guard + single confirm/dispute + slot review | 50 (part), 58 | S25 |
-| S27 | Review engine 2: batch review; Manual/N/A marking | 51, 52 | S26 |
-| S28 | Return for rework + pass to endorsement | 55, 57 | S26 |
-| S29 | Rework guided queue + Dispute comments + shortcuts | 60, 61, 62 | S28 |
-| S30 | Review engine 3: re-review only what changed | 56 | S29 |
-| S31 | VA POC board + Cycle matrix + endorse (step-up, SoD across POCs, Endorsed Late) | 64, 65, 67, 70 | S28, S08 |
-| S32 | VA POC return + resubmission through CM | 66, 63 | S31 |
-| S33 | In-app notifications + POC pair clearing | 92, 69 | S31 |
-| S34 | Mail outbox + `MailRelay` + content rules + hand-off messages | 91, 94 | S33 |
-| S35 | Reminder schedule | 88, 89, 90 | S34, S24 |
-| S36 | Bounce → SMO Unreachable | 13 | S34 |
-| S37 | Exemptions: request/freeze/decide + POC queue | 43–46 | S31 |
-| S38 | Conditional Exemption lapse | 47 | S37, S24 |
-| S39 | Cycle lifecycle: auto-open, overlap selector, close (manual step-up + auto), Not Endorsed | 17, 68 | S31, S05 |
-| S40 | Register retirement effects: preview groups, confirm, withdraw, notifications | 5, 6, 7 | S09, S11, S34 |
-| S41 | Management summary xlsx (job queue, watermark, step-up, download) | 81, 86 | S31 |
-| S42 | Management summary PDF (OpenPDF) | 81, 86 | S41 |
-| S43 | Role lapse, Quarter-start/hand-off return, role-holder review + suspend | 80a, ac-3/4 | S09, S28 |
-| S44 | CM audit history + audit completeness matrix | 85, 84 | S30, S04 |
-| S45 | Retention: disposal list, approval, executor, tombstone | 87 | S41, S20 |
-| S46 | Real adapters under `dev-mcc`: S3 (SSE-KMS), SFS scanner, MCNS relay, M2M client; LocalStack scripts; platform-tagged tests | — | S12, S34 |
-| S47 | Monitoring meters + system documentation (`/tech-arch-doc`, runbook) | lm-16, pm-6 | S46 |
-| S48 | e2e foundation (after sign-in works against `mock-m-sso`) then campaign scenarios S1–S5 | 36–38, 40, 60–62, 18, 48, 49, 64, 45, 81, 86 | S19, S29, S31, S41, H0 |
-| H2–H7 | SIT profile + MCC SSO/MCNS onboarding, real samples, assumptions, pentest, UAT, provisioning | — | per §6.3 |
+| # | Ticket | Stories | Blocked by | Status |
+|---|---|---|---|---|
+| 01 | Obtain the mock-m-sso stack and prepare the developer machine | none (prerequisite) | none | H |
+| 02 | Walking skeleton: repository, security baseline and Seam 1 harness | none (foundation) | none | closed |
+| 03 | Sign in through MCC SSO and see my session | 72 | 02 | agent |
+| 04 | Roles held in the app and every endpoint denied by default | 75, 76, 78 | 03 | agent |
+| 05 | Append-only audit log with refused-request logging | 84 (part) | 04 | agent |
+| 06 | VA Cycle and Quarter calendar | 16, 71 (dates) | 02 | agent |
+| 07 | Download the System Register template | 1 | 04 | agent |
+| 08 | Upload the System Register and preview every change | 2, 12, 14 | 07, 06 | agent |
+| 09 | Step-up: a fresh sign-in before sensitive actions | 77 | 03 | agent |
+| 10 | Apply a Register preview; SMO and Cyber Manager roles follow the Register | 2, 3, 4, 73, 79 | 08, 09, 05 | agent |
+| 11 | SMO inbox: my Systems and what to do by when | 18, 71 (Not Started) | 10 | agent |
+| 12 | Start a VA Submission | 19 | 11 | agent |
+| 13 | Scan Report upload pipeline: quarantine, scan, check, store | 20 (pipeline), 24, 27, 78 | 12 | agent |
+| 14 | Dependency-Check parser (XML and JSON) | 20a, 21, 25, 28 | 13 | agent |
+| 15 | Secure Configuration parser: SCAP ARF and XCCDF results | 20b, 21, 25, 28, 29 | 13 | agent |
+| 16 | Secure Configuration parser: Nessus compliance audit | 20c, 21, 25, 28, 29 | 13 | agent |
+| 17 | Burp Suite parser: XML issue export | 20d, 21, 25, 28, 30 | 13 | agent |
+| 18 | Attach PDF or HTML reports as supporting evidence | 22 | 13 | agent |
+| 19 | List Findings and propose a Finding Status | 28, 35 | 14, 18 | agent |
+| 20 | Filter chips, select-all, bulk bar and progress bar | 36, 37, 38 | 19 | agent |
+| 21 | Replace a Scan Report file without losing work | 39 | 19 | agent |
+| 22 | Mark a Scan Report not applicable or enter Findings by hand | 23 | 19 | agent |
+| 23 | Confirm scan date and target; enforce the age rules | 25, 26 | 14 | agent |
+| 24 | Agree the Declaration text and its owner | 41 | none | H |
+| 25 | Tick the Declaration and submit for review | 40, 41 | 20, 22, 23, 15, 24 | agent |
+| 26 | Overdue is a flag: soft windows, nothing locks | 42, 71 | 25 | agent |
+| 27 | Cyber Manager inbox and Quarter board | 48, 49 | 26 | agent |
+| 28 | Review engine 1: segregation of duties and single confirm or Dispute | 50 (part), 58 | 27 | agent |
+| 29 | Review engine 2: confirm or Dispute a Bulk-set batch | 51, 52 | 28 | agent |
+| 30 | Return for rework or pass to endorsement | 55, 57 | 28 | agent |
+| 31 | Guided rework queue with Dispute comments and keyboard shortcuts | 60, 61, 62 | 30 | agent |
+| 32 | Review engine 3: re-review only what changed | 56 | 30 | agent |
+| 33 | VA POC Quarter board and Cycle matrix | 64 | 27 | agent |
+| 34 | Endorse a VA Submission | 65, 67, 70 | 30, 09 | agent |
+| 35 | VA POC return with comments; resubmission goes through the Cyber Manager | 66, 63 | 34, 32 | agent |
+| 36 | In-app notifications and clearing between the two VA POCs | 92, 69 | 34 | agent |
+| 37 | Email through the mail relay with the content rules | 91, 94, 88 to 90 (plumbing) | 36 | agent |
+| 38 | Deadline reminders for SMOs, Cyber Managers and VA POCs | 88, 89, 90 | 37, 26 | agent |
+| 39 | A rejected address marks the System SMO Unreachable | 13 | 37 | agent |
+| 40 | Request, freeze and decide an Exemption | 43, 44, 45, 46 | 34, 36 | agent |
+| 41 | VA Cycle lifecycle: open, overlap, close | 17, 68 | 34, 06 | agent |
+| 42 | Conditional Exemption: record the VA, confirm it, or lapse | 47 | 40, 26, 41 | agent |
+| 43 | Register preview effects on in-flight work: withdraw, and block the rest | 5, 6, 7 | 10, 12, 36 | agent |
+| 44 | Management summary export (Excel), watermarked, no vulnerability detail | 81, 86 | 34, 33 | agent |
+| 45 | Management summary export (PDF) with a diagonal watermark | 81, 86 | 44 | agent |
+| 46 | Roles lapse after 90 days and return automatically | 80a (lapse), ac-3 | 10, 30, 42 | agent |
+| 47 | Role-holder review, suspension and identity-provider disablement | 80a (removal), ac-3, ac-4 | 46 | agent |
+| 48 | Cyber Manager audit history | 85 | 28, 05 | agent |
+| 49 | Retention: disposal list, approval and hard delete | 87 | 44, 21 | agent |
+| 50 | Completeness: every audited action and every row of the state table | 84, state table, Testing Decisions | 40, 41, 42, 43, 44, 47, 49 | agent |
+| 51 | Production adapters: S3 with SSE-KMS, SFS scanner, MCNS mail, MCC service client | none (adapters) | 13, 37, 01 | agent |
+| 52 | Key-signal monitoring and system documentation | lm-16, pm-6 | 51 | agent |
+| 53 | Seam 2: Playwright foundation and the acceptance scenarios | 36 to 38, 40, 60 to 62, 18, 48, 49, 64, 45, 81, 86 | 20, 31, 33, 34, 40, 44, 01 | agent |
+| 54 | Confirm assumptions A-1 to A-9 with the cyber team | assumptions A-1 to A-9 | none | H |
+| 55 | Choose platform products and non-functional targets | open questions for the dev team | none | H |
+| 56 | Onboard the application to MCC SSO through MTM | 72, 77 (SIT) | 03, 09 | H |
+| 57 | Onboard the notification templates to MCNS | 88 to 94 (SIT) | 37 | H |
+| 58 | Produce real sample exports from throwaway targets | 20a to 20d | 14, 15, 16, 17 | H |
+| 59 | Pre-go-live milestones: pentest booking, UAT plan, environments, VA POC names | releases and timeline | none | H |
 
-Release 2 (schema already allows; tickets generated later): carry-over 31–34, 53, 54; mid-cycle moves/transfers 8–11, 15, 80; Auditor role/pack 74, 82, 83; weekly digest 93; CM detailed export 59.
+Release 2 (the schema already allows it; tickets are generated later and numbered on): carry-over 31 to 34, 53, 54; mid-cycle moves and transfers 8 to 11, 15, 80 (unblocks the Will move and Will transfer rows); Auditor role and pack 74, 82, 83; weekly digest 93; Cyber Manager detailed export 59.
 
 ---
 
-## 8. Implementation step 1 (what happens right after this plan is approved)
+## 8. Implementation step 1 (done 2026-10-04 and 2026-10-05)
 
-1. **Scaffold** per §1 and §4: `git mv spec.md spec.pdf .scratch/annual-va/`; write `AGENTS.md`, `README.md`, `.gitignore`, `.gitattributes`, `compose.yml`, `scripts/*`, `.claude/launch.json`; copy `D:\projects\docs\agents\*.md` into `docs/agents/`; seed `docs/agents/reviewer-decisions.md` (Java 21; no frontend unit tests; `Asia/Singapore`; semgrep via Docker; `mock-m-sso` as platform; step-up = fresh OIDC login; deferred IM8 controls are tracked, not blocking, when the owning ticket is named; compose mock blocks verbatim); write `CONTEXT.md` with `/domain-modeling` from the spec glossary terms; write ADRs 0001–0012.
-2. **Backend skeleton**: Maven wrapper (download the wrapper distribution; no system mvn), `pom.xml` (Boot 4.0.x parent, Java 21, starters, POI, Testcontainers, ArchUnit, JaCoCo gate, `-XDstringConcat=inline`), `application*.yml`, `V1__app_user.sql`, `web` + `boundary` + harness + arch tests, `/actuator/health`.
-3. **Frontend skeleton**: Vite + React + TS + gates (§3), shell with ClassificationBanner and signed-out screen.
-4. **Tracker seeding**: `/convert-stories` on `.scratch/annual-va/spec.md` → `spec.stories.yaml` (9 groups, 2 releases, story 20 split into 20 + 20a–20d; 82 Release-1 / 17 Release-2 stories; validate with the orchestrator's `validate-stories.py`); `/dependency-orchestrator` (Developer, team 2) → `artifacts/processor-output.json`, `reports/dev-report.*`; `/to-tickets` using §7 as the ordering guide → `.scratch/annual-va/issues/NN-slug.md` (format: `# NN: Title`, `**Spec:**` link + stories, `**Release:**`, `**What to build:**`, `**Blocked by:**`, `**Status:** ready-for-agent`, acceptance checklist incl. "covered by Seam 1 tests", `## Comments`); H0–H7 as `ready-for-human`; then `/issue-verification`.
-5. **Commit** in Conventional Commits (scaffold, docs, tracker as separate commits) and hand over to `/do-work` starting at ticket 01.
+1. **Scaffold** (commit `ea72f69`): repo layout, `compose.yml`, LocalStack init scripts, `scripts/gen-dev-keys.sh`, MockPass personas, `.claude/launch.json`, README, AGENTS.
+2. **Docs** (`80d0602`): CONTEXT.md, ADRs 0001 to 0012, reviewer decisions, agent conventions, the spec and the structured stories.
+3. **Backend skeleton** (`e161235`): section 2 for `app`, `config`, `web` and `boundary`; the Seam 1 harness with Testcontainers and the mutable clock; ArchUnit; the JaCoCo gate. Three fixes on the way: tests name the application class explicitly because it sits in `sg.annualva.app`; the harness clock bean must not reuse the production bean name; `traceId` is added in `createResponseEntity`, which runs after the problem body exists.
+4. **Frontend skeleton** (`3a011e6`): the section 3 shell and client; two dependency-cruiser rules were scoped so `src/app` may wire the client and components may import API types.
+5. **Plan, keys and planning artefacts** (`5b6f574`, `b4e66b8`, `272ee0d`): this document as Markdown and PDF, the mock signing key in `dev-mcc`, the dependency DAG, processor output and dev report with the repair notes.
+6. **Tracker** (`eb148d1`): the 59-ticket set of section 7, generated from the build order with the orchestrator's effort per ticket and vetted before publishing.
+
+Hand-over to `/do-work` starts at ticket 03.
+
+---
 
 ## 9. Verification
 
@@ -353,3 +389,5 @@ Release 2 (schema already allows; tickets generated later): carry-over 31–34, 
 | Mail and scan (with H0) | upload `report_quarantined.xml`; `docker compose logs -f mock-mcns \| grep Event=email` | plain rejection message; email line with System/state/due/link and no Finding detail |
 | Tracker | `ls .scratch/annual-va/issues`; `/do-work` picks 01 | tickets in §7 order; `reports/dev-report.html` present |
 | Review gate | `/code-reviewer` on the scaffold branch | `artifacts/code-reviewer/01-*-compliance.html` PASS (im8 deferrals named) |
+
+Results on 2026-10-05: the toolchain, keys, compose (without ticket 01), backend gate and frontend gate rows pass. The backend run row reached the database connection (Docker Desktop was not running at the last check), which also shows that the missing `mock-m-sso` certificate path does not block startup. The sign-in, step-up, mail and scan rows wait for ticket 01. The tracker row passes (59 tickets; `/do-work` will pick 03). The review-gate row runs with the first `/do-work` ticket.
