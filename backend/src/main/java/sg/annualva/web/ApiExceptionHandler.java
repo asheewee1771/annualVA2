@@ -39,6 +39,15 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return ProblemResponses.problem(HttpStatus.NOT_FOUND, "not-found", "There is no such resource.");
     }
 
+    /** A sensitive command needs a fresh sign-in first (ADR 0004); the problem says where to start one. */
+    @ExceptionHandler(StepUpRequiredException.class)
+    ProblemDetail handleStepUpRequired(StepUpRequiredException ex) {
+        ProblemDetail problem = ProblemResponses.problem(HttpStatus.FORBIDDEN, "step-up-required",
+                "Sign in again to do this.");
+        problem.setProperty("stepUpPath", ex.stepUpPath());
+        return problem;
+    }
+
     /** A method-level rule refused the caller: raised inside the controller, so the filter chain never sees it. */
     @ExceptionHandler(AccessDeniedException.class)
     ProblemDetail handleForbidden() {

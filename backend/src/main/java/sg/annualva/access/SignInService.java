@@ -64,7 +64,7 @@ public class SignInService {
         if (authTime == null) {
             throw new SignInRefusedException(MISSING_AUTH_TIME);
         }
-        if (properties.requireMfaClaim() && !mfaEvidenced(identity)) {
+        if (properties.requireMfaClaim() && !properties.evidencesMfa(identity)) {
             throw new SignInRefusedException(MFA_NOT_EVIDENCED);
         }
         // An email the provider sent must be asserted as verified: it links the person to Register roles.
@@ -107,11 +107,5 @@ public class SignInService {
         // A role granted by email before this person had signed in attaches now, to this user and no other.
         grants.attachPending(user.id(), user.email());
         return new SessionUser(user.id(), user.email(), user.displayName(), authTime, now);
-    }
-
-    private boolean mfaEvidenced(Identity identity) {
-        boolean byAmr = identity.amr().stream().anyMatch(properties.mfaAmrValues()::contains);
-        boolean byAcr = identity.acr() != null && properties.mfaAcrValues().contains(identity.acr());
-        return byAmr || byAcr;
     }
 }

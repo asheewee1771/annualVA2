@@ -101,3 +101,11 @@ annualva:
     absolute-timeout: 8h
     # as-4: sessions one client address may start per minute without being signed in; each is a store row.
     anonymous-sessions-per-minute: 60
+  # ac-2, story 77, ADR 0004: a sensitive action needs a sign-in within the freshness window.
+  step-up:
+    freshness-window: 5m
+    # How far before the step-up started the provider's auth_time may fall (the two clocks differ a little).
+    clock-skew: 30s
+    # prompt-login: ask MCC SSO for a fresh sign-in (prompt=login, max_age=0). full-sign-in: for an MCC SSO that
+    # ignores them (verified at SIT), end the session and make the person sign in from the start.
+    mode: prompt-login

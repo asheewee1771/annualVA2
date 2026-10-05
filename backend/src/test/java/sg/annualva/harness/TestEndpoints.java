@@ -32,6 +32,7 @@ import sg.annualva.access.AppUserStore;
 import sg.annualva.access.GrantSource;
 import sg.annualva.access.Need;
 import sg.annualva.access.Role;
+import sg.annualva.access.StepUp;
 import sg.annualva.access.RoleGrantStore;
 import sg.annualva.web.ProblemResponses;
 import sg.annualva.web.ResourceNotFoundException;
@@ -90,14 +91,16 @@ public class TestEndpoints {
         private final AppUserStore users;
         private final RoleGrantStore grants;
         private final AccessGuard guard;
+        private final StepUp stepUp;
         private final JdbcClient jdbc;
         private final Clock clock;
 
-        public TestController(AppUserStore users, RoleGrantStore grants, AccessGuard guard, JdbcClient jdbc,
+        public TestController(AppUserStore users, RoleGrantStore grants, AccessGuard guard, StepUp stepUp, JdbcClient jdbc,
                 Clock clock) {
             this.users = users;
             this.grants = grants;
             this.guard = guard;
+            this.stepUp = stepUp;
             this.jdbc = jdbc;
             this.clock = clock;
         }
@@ -174,6 +177,14 @@ public class TestEndpoints {
         @GetMapping("/api/probe/whoami")
         public Map<String, String> whoami(Authentication authentication) {
             return Map.of("name", authentication.getName());
+        }
+
+        /** Stands in for a sensitive command (the Register apply, endorsing): it must ask for a fresh sign-in first. */
+        @PostMapping("/api/probe/sensitive")
+        @PreAuthorize("isAuthenticated()")
+        public Map<String, String> sensitive() {
+            stepUp.require("probe-sensitive");
+            return Map.of("done", "yes");
         }
 
         @GetMapping("/api/probe/va-poc")

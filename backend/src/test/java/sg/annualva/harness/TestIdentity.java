@@ -55,6 +55,12 @@ public record TestIdentity(
                 extraClaims);
     }
 
+    /** Asserts that the provider authenticated the person at this instant, stale or fresh. */
+    public TestIdentity withAuthTime(@Nullable Instant newAuthTime) {
+        return new TestIdentity(ssoId, email, name, newAuthTime, amr, acr, nestedAfcasClaim, emailVerified,
+                tamperedNonce, extraClaims);
+    }
+
     public TestIdentity withAmr(@Nullable List<String> newAmr) {
         return new TestIdentity(ssoId, email, name, authTime, newAmr, acr, nestedAfcasClaim, emailVerified,
                 tamperedNonce, extraClaims);

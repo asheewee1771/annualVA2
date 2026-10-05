@@ -7,6 +7,7 @@ import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
+import sg.annualva.boundary.IdentityProvider.Identity;
 
 /**
  * Sign-in and session rules (prefix {@code annualva.sign-in}).
@@ -32,4 +33,12 @@ public record SignInProperties(
         @DefaultValue List<String> mfaAcrValues,
         @NotNull Duration idleTimeout,
         @NotNull Duration absoluteTimeout,
-        @Positive int anonymousSessionsPerMinute) {}
+        @Positive int anonymousSessionsPerMinute) {
+
+    /** True when the token shows multi-factor evidence by {@code amr} or {@code acr}. */
+    boolean evidencesMfa(Identity identity) {
+        boolean byAmr = identity.amr().stream().anyMatch(mfaAmrValues::contains);
+        boolean byAcr = identity.acr() != null && mfaAcrValues.contains(identity.acr());
+        return byAmr || byAcr;
+    }
+}

@@ -14,7 +14,7 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
  * needs an {@link OidcUser} to finish the login, and the success handler then replaces it with a
  * {@link SessionAuthentication} so the id token never reaches the session store.
  */
-final class SignedInOidcUser implements OidcUser {
+class SignedInOidcUser implements OidcUser {
 
     private final SessionUser user;
     private final OidcIdToken idToken;

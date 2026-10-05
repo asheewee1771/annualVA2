@@ -35,8 +35,8 @@ public class SignInSecurity {
     private final OAuth2AuthorizationRequestResolver authorizationRequestResolver;
     private final OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest> tokenResponseClient;
     private final OidcSignInUserService userService;
-    private final SignInSuccessHandler successHandler;
-    private final SignInFailureHandler failureHandler;
+    private final SignInCallbackHandler callbackHandler;
+    private final StepUpAuthenticationProvider stepUpProvider;
     private final SignOutHandler signOutHandler;
     private final SecurityContextRepository securityContextRepository;
     private final SessionRegistry sessionRegistry;
@@ -47,15 +47,15 @@ public class SignInSecurity {
 
     SignInSecurity(OAuth2AuthorizationRequestResolver authorizationRequestResolver,
             OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest> tokenResponseClient,
-            OidcSignInUserService userService, SignInSuccessHandler successHandler,
-            SignInFailureHandler failureHandler, SignOutHandler signOutHandler,
+            OidcSignInUserService userService, SignInCallbackHandler callbackHandler,
+            StepUpAuthenticationProvider stepUpProvider, SignOutHandler signOutHandler,
             SecurityContextRepository securityContextRepository, SessionRegistry sessionRegistry,
             Clock clock, SignInProperties properties, RoleResolver roleResolver) {
         this.authorizationRequestResolver = authorizationRequestResolver;
         this.tokenResponseClient = tokenResponseClient;
         this.userService = userService;
-        this.successHandler = successHandler;
-        this.failureHandler = failureHandler;
+        this.callbackHandler = callbackHandler;
+        this.stepUpProvider = stepUpProvider;
         this.signOutHandler = signOutHandler;
         this.securityContextRepository = securityContextRepository;
         this.sessionRegistry = sessionRegistry;
@@ -72,6 +72,8 @@ public class SignInSecurity {
     public void apply(HttpSecurity http, AuthenticationEntryPoint unauthenticated,
             AccessDeniedHandler tooManyRequests) throws Exception {
         http
+                // A step-up callback is taken by its own provider, ahead of the standard one (ADR 0004).
+                .authenticationProvider(stepUpProvider)
                 .securityContext(context -> context.securityContextRepository(securityContextRepository))
                 .oauth2Login(login -> login
                         // No generated login page: sign-in starts only at /oauth2/authorization/mcc-sso-login.
@@ -79,8 +81,8 @@ public class SignInSecurity {
                         .authorizationEndpoint(endpoint -> endpoint.authorizationRequestResolver(authorizationRequestResolver))
                         .tokenEndpoint(endpoint -> endpoint.accessTokenResponseClient(tokenResponseClient))
                         .userInfoEndpoint(endpoint -> endpoint.oidcUserService(userService))
-                        .successHandler(successHandler)
-                        .failureHandler(failureHandler))
+                        .successHandler(callbackHandler)
+                        .failureHandler(callbackHandler))
                 .logout(logout -> logout
                         .logoutUrl(LOGOUT_PATH)
                         .addLogoutHandler(signOutHandler)

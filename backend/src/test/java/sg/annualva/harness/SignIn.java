@@ -29,6 +29,23 @@ public final class SignIn {
         return new Flow(authorizationRequest, callback);
     }
 
+    /**
+     * Drives a step-up from the signed-in browser: starts at the given application path, follows the
+     * redirect to the fake issuer (which asserts {@code identity}) and then back to the callback.
+     *
+     * @param start the application path that starts the step-up, such as {@code /auth/step-up?intent=probe-sensitive}
+     */
+    public static Flow stepUp(ApiClient api, FakeOidcIssuer issuer, String start, TestIdentity identity) {
+        issuer.nextSignIn(identity);
+        var started = api.get(start);
+        assertThat(started.status()).as("the application sends the browser to the issuer").isEqualTo(302);
+        String authorizeUrl = started.header("location");
+        var authorizationRequest = FakeOidcIssuer.decode(URI.create(authorizeUrl).getRawQuery());
+        var authorized = api.getUrl(authorizeUrl);
+        assertThat(authorized.status()).as("the issuer redirects back with a code").isEqualTo(302);
+        return new Flow(authorizationRequest, api.getUrl(authorized.header("location")));
+    }
+
     /** Signs in and asserts the application accepted it (redirect to the front end). */
     public static ApiClient signedIn(ApiClient api, FakeOidcIssuer issuer, TestIdentity identity) {
         var flow = through(api, issuer, identity);

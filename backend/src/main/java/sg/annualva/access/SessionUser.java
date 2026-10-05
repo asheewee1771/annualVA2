@@ -21,6 +21,11 @@ public record SessionUser(UUID id, String email, @Nullable String displayName, I
     @Serial
     private static final long serialVersionUID = 1L;
 
+    /** The same session after a step-up: only the freshness changes, never when the session began. */
+    public SessionUser withAuthTime(Instant freshAuthTime) {
+        return new SessionUser(id, email, displayName, freshAuthTime, signedInAt);
+    }
+
     /** The principal name: the user id, which also indexes the session store for the one-session rule. */
     @Override
     public String getName() {
