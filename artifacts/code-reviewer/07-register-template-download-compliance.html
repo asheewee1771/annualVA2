@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Code Review — 07-register-template-download</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall: PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">build WARN &middot; C 0 / H 0 / M 1 / L 0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN &middot; C 0 / H 0 / M 4 / L 6</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN &middot; C 0 / H 0 / M 0 / L 6</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">semgrep WARN &middot; C 0 / H 0 / M 6 / L 0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN &middot; C 0 / H 0 / M 3 / L 0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react WARN &middot; C 0 / H 0 / M 1 / L 4</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN &middot; C 0 / H 0 / M 0 / L 4</span>
+      <span class="font-mono text-sm text-slate-500 ml-auto">main</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+<div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+  <div>
+    <h2 class="text-xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report</h2>
+    <p class="text-xs text-slate-500 mt-1">Ticket 07, Download the System Register template. Seven checks run against the uncommitted changes. Overall: PASS (no Critical or High finding in any check).</p>
+  </div>
+  <table class="w-full text-sm text-left border border-slate-100">
+    <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50"><th class="px-4 py-2">Check</th><th class="px-4 py-2">Status</th><th class="px-4 py-2">Findings</th><th class="px-4 py-2">Summary</th></tr></thead>
+    <tbody>
+      <tr class="border-t border-slate-100 align-top">
+        <td class="px-4 py-2 font-medium">build</td>
+        <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+        <td class="px-4 py-2 font-mono text-xs whitespace-nowrap">C 0 / H 0 / M 1 / L 0</td>
+        <td class="px-4 py-2 text-slate-600">Front end npm run check and back end clean verify both pass (223 tests, coverage 96.4 % line / 88.6 % branch). One transient failure of the architecture test in a first run did not reproduce.</td>
+      </tr>
+      <tr class="border-t border-slate-100 align-top">
+        <td class="px-4 py-2 font-medium">thermo-nuclear</td>
+        <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+        <td class="px-4 py-2 font-mono text-xs whitespace-nowrap">C 0 / H 0 / M 4 / L 6</td>
+        <td class="px-4 py-2 text-slate-600">No file is near 1k lines and the layering is tight. Four Medium and six Low maintainability points, best fixed before ticket 08 builds on this code.</td>
+      </tr>
+      <tr class="border-t border-slate-100 align-top">
+        <td class="px-4 py-2 font-medium">code-review</td>
+        <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+        <td class="px-4 py-2 font-mono text-xs whitespace-nowrap">C 0 / H 0 / M 0 / L 6</td>
+        <td class="px-4 py-2 text-slate-600">All four acceptance criteria of ticket 07 are met and proven; no hard violation of documented standards. Six Low judgement calls plus two Info notes.</td>
+      </tr>
+      <tr class="border-t border-slate-100 align-top">
+        <td class="px-4 py-2 font-medium">semgrep</td>
+        <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+        <td class="px-4 py-2 font-mono text-xs whitespace-nowrap">C 0 / H 0 / M 6 / L 0</td>
+        <td class="px-4 py-2 text-slate-600">Semgrep (p/security-audit + p/default, via Docker) found nothing in ticket 07 code. Six pre-existing findings in other files are listed for information; none relate to this ticket.</td>
+      </tr>
+      <tr class="border-t border-slate-100 align-top">
+        <td class="px-4 py-2 font-medium">im8</td>
+        <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+        <td class="px-4 py-2 font-mono text-xs whitespace-nowrap">C 0 / H 0 / M 3 / L 0</td>
+        <td class="px-4 py-2 text-slate-600">No Critical or High finding in this change. Four controls (lm-16, pm-6, ac-3, ac-4) are nominally High but are tracked deferrals owned by later tickets under the recorded reviewer decision, and are not weakened. Three Medium WARN items.</td>
+      </tr>
+      <tr class="border-t border-slate-100 align-top">
+        <td class="px-4 py-2 font-medium">react</td>
+        <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+        <td class="px-4 py-2 font-mono text-xs whitespace-nowrap">C 0 / H 0 / M 1 / L 4</td>
+        <td class="px-4 py-2 text-slate-600">No correctness, purity, key, effect or state defects. One cross-browser reliability concern and four Low points.</td>
+      </tr>
+      <tr class="border-t border-slate-100 align-top">
+        <td class="px-4 py-2 font-medium">springboot</td>
+        <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+        <td class="px-4 py-2 font-mono text-xs whitespace-nowrap">C 0 / H 0 / M 0 / L 4</td>
+        <td class="px-4 py-2 text-slate-600">Security, web, data, logging and test posture are correct for the ticket (all seven skills combined). Four Low items, optional hardening.</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="space-y-3 pt-3 border-t border-slate-100">
+    <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+    <p class="text-sm text-slate-600">None. No check raised a Critical or High finding. Worth fixing before ticket 08: the shared Column model in <span class="font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterTemplate.java</span>, the silent unattributed-actor fallback in <span class="font-mono text-xs">backend/src/main/java/sg/annualva/access/AuditActor.java</span>, the 0 ms object-URL revoke in <span class="font-mono text-xs">frontend/src/screens/shared/saveFile.ts</span>, and a non-empty guard in the architecture test import.</p>
+    <p class="text-sm text-slate-600">Also outstanding outside code review: run the dependency vulnerability scan on the new <span class="font-mono text-xs">org.apache.poi:poi-ooxml:5.4.1</span> tree (reported by build, im8, semgrep and springboot).</p>
+  </div>
+</div>
+    <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+      <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+        <span class="font-medium">build</span>
+        <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN &middot; C 0 / H 0 / M 1 / L 0</span>
+      </summary>
+      <p class="px-5 pb-3 text-sm text-slate-600">Front end npm run check and back end clean verify both pass (223 tests, coverage 96.4 % line / 88.6 % branch). One transient failure of the architecture test in a first run did not reproduce.</p>
+      <table class="w-full text-sm border-t border-slate-100">
+        <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left"><th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th></tr></thead>
+        <tbody>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/arch/ArchitectureTest.java</td><td class="px-4 py-2 font-mono text-xs">importMain</td><td class="px-4 py-2">ArchitectureTest failed once in a full clean verify (6 of 9 tests) because importPackages(&quot;sg.annualva&quot;) imported zero classes in that JVM (&quot;Layer is empty&quot;); it passed on re-run and on a second full run. Likely contention with the concurrent front-end build. The gate may be intermittently red or vacuous; add a guard that the imported class set is non-empty.</td></tr>
+        </tbody>
+      </table>
+    </details>
+    <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+      <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+        <span class="font-medium">thermo-nuclear</span>
+        <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN &middot; C 0 / H 0 / M 4 / L 6</span>
+      </summary>
+      <p class="px-5 pb-3 text-sm text-slate-600">No file is near 1k lines and the layering is tight. Four Medium and six Low maintainability points, best fixed before ticket 08 builds on this code.</p>
+      <table class="w-full text-sm border-t border-slate-100">
+        <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left"><th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th></tr></thead>
+        <tbody>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/RegisterTemplate.java</td><td class="px-4 py-2 font-mono text-xs">42-67</td><td class="px-4 py-2">Five parallel structures (HEADERS, HINTS, EXAMPLE, COLUMN_WIDTHS, hand-kept column indexes) plus hard-coded cell references &quot;C2&quot;/&quot;D2&quot; can drift apart silently. A single Column model would drive header, hint, example and width, and is the natural shared contract for ticket 08.</td></tr>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/AuditActor.java</td><td class="px-4 py-2 font-mono text-xs">19</td><td class="px-4 py-2">AuditActor.attribute silently returns an unattributed event when the authentication is not a RoleAuthentication (unreachable here, but would record a download by nobody), and duplicates the same expression in AccessAudit.refused (~line 93). Make the actor required for domain commands and reuse one place.</td></tr>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/RegisterTemplates.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">RegisterTemplate and RegisterTemplates differ by one letter; the Template(fileName, byte[]) record is a single-use carrier with array identity equals/hashCode. Return byte[] and rename the builder.</td></tr>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/screens/va-poc/RegisterScreen.tsx</td><td class="px-4 py-2 font-mono text-xs">7</td><td class="px-4 py-2">The &quot;server could not be reached&quot; problem is duplicated with hooks/useResource.ts line 33, and the busy/problem try-catch-finally block will be pasted into every later user-triggered action. Share one constant and add a small useAction hook.</td></tr>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/api/client.ts</td><td class="px-4 py-2 font-mono text-xs">88</td><td class="px-4 py-2">The file name is defined on the back end, as a client fallback literal and re-parsed from Content-Disposition with a regex that ignores filename*=. Keep one source.</td></tr>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/api/files.ts</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">A six-line module holding one interface (Download); define it next to download() in client.ts.</td></tr>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/screens/va-poc/VaPocArea.tsx</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Third route added to an if (path === ...) ladder; a path-to-screen lookup would make the next page a one-liner.</td></tr>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/harness/ApiClient.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">download() copies send()&#x27;s exception handling and header lower-casing; make send generic over the BodyHandler. RegisterTemplateTest also uses an inline fully qualified StandardCharsets.</td></tr>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/RegisterTemplate.java</td><td class="px-4 py-2 font-mono text-xs">addChecks</td><td class="px-4 py-2">setSuppressDropDownArrow(true) on the Quarter list is not asserted by any test; a later change to the apparently inverted flag would silently hide the arrow.</td></tr>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/RegisterTemplate.java</td><td class="px-4 py-2 font-mono text-xs">build</td><td class="px-4 py-2">Three near-identical style constructions (column, header, example); fold into one small Styles record.</td></tr>
+        </tbody>
+      </table>
+    </details>
+    <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+      <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+        <span class="font-medium">code-review</span>
+        <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN &middot; C 0 / H 0 / M 0 / L 6</span>
+      </summary>
+      <p class="px-5 pb-3 text-sm text-slate-600">All four acceptance criteria of ticket 07 are met and proven; no hard violation of documented standards. Six Low judgement calls plus two Info notes.</p>
+      <table class="w-full text-sm border-t border-slate-100">
+        <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left"><th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th></tr></thead>
+        <tbody>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/RegisterTemplate.java</td><td class="px-4 py-2 font-mono text-xs">addChecks</td><td class="px-4 py-2">Quarter drop-down arrow flag is not asserted (POI writes showDropDown = !suppress, so the code is correct, but a later fix of the apparently inverted flag would remove the arrow).</td></tr>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/screens/va-poc/RegisterScreen.tsx</td><td class="px-4 py-2 font-mono text-xs">7</td><td class="px-4 py-2">Duplicate &quot;server could not be reached&quot; Problem constant, also built inline in hooks/useResource.ts line 33.</td></tr>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/AuditActor.java</td><td class="px-4 py-2 font-mono text-xs">19</td><td class="px-4 py-2">Repeats the attribution expression already used by AccessAudit (line 93); one place should decide how an actor is named.</td></tr>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/RegisterTemplate.java</td><td class="px-4 py-2 font-mono text-xs">HEADERS</td><td class="px-4 py-2">Column names and Q1 to Q4 are duplicated across back end, screen copy, README and ADR 0016; ticket 08 must not add a fourth copy.</td></tr>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/RegisterTemplates.java</td><td class="px-4 py-2 font-mono text-xs">download</td><td class="px-4 py-2">The workbook is built inside the transaction, holding a pooled connection for the build; acceptable, optional to build first.</td></tr>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/register/RegisterTemplateTest.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Inline fully qualified java.nio.charset.StandardCharsets.UTF_8 instead of an import.</td></tr>
+        </tbody>
+      </table>
+    </details>
+    <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+      <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+        <span class="font-medium">semgrep</span>
+        <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN &middot; C 0 / H 0 / M 6 / L 0</span>
+      </summary>
+      <p class="px-5 pb-3 text-sm text-slate-600">Semgrep (p/security-audit + p/default, via Docker) found nothing in ticket 07 code. Six pre-existing findings in other files are listed for information; none relate to this ticket.</p>
+      <table class="w-full text-sm border-t border-slate-100">
+        <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left"><th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th></tr></thead>
+        <tbody>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">artifacts/code-reviewer/03-sign-in-via-mcc-sso-compliance.html</td><td class="px-4 py-2 font-mono text-xs">6</td><td class="px-4 py-2">html.security.audit.missing-integrity: generated report loads the Tailwind CDN without SRI (pre-existing, internal artefact, not ticket 07).</td></tr>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">artifacts/code-reviewer/04-role-store-and-deny-by-default-compliance.html</td><td class="px-4 py-2 font-mono text-xs">7</td><td class="px-4 py-2">missing-integrity (pre-existing, not ticket 07).</td></tr>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">artifacts/code-reviewer/05-audit-log-core-compliance.html</td><td class="px-4 py-2 font-mono text-xs">7</td><td class="px-4 py-2">missing-integrity (pre-existing, not ticket 07).</td></tr>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">artifacts/code-reviewer/06-va-cycle-calendar-compliance.html</td><td class="px-4 py-2 font-mono text-xs">7</td><td class="px-4 py-2">missing-integrity (pre-existing, not ticket 07).</td></tr>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">artifacts/code-reviewer/09-step-up-authentication-compliance.html</td><td class="px-4 py-2 font-mono text-xs">7</td><td class="px-4 py-2">missing-integrity (pre-existing, not ticket 07).</td></tr>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">scripts/mock-mockpass-assertions.js</td><td class="px-4 py-2 font-mono text-xs">11</td><td class="px-4 py-2">path-join-resolve-traversal in a dev-only mock script (pre-existing, not ticket 07).</td></tr>
+        </tbody>
+      </table>
+    </details>
+    <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+      <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+        <span class="font-medium">im8</span>
+        <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN &middot; C 0 / H 0 / M 3 / L 0</span>
+      </summary>
+      <p class="px-5 pb-3 text-sm text-slate-600">No Critical or High finding in this change. Four controls (lm-16, pm-6, ac-3, ac-4) are nominally High but are tracked deferrals owned by later tickets under the recorded reviewer decision, and are not weakened. Three Medium WARN items.</p>
+      <table class="w-full text-sm border-t border-slate-100">
+        <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left"><th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th></tr></thead>
+        <tbody>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/api/client.ts</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">as-1 (carried from tickets 04 to 06, not new): no runtime schema validation of API responses; request&lt;T&gt; still casts as T.</td></tr>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/RegisterTemplates.java</td><td class="px-4 py-2 font-mono text-xs">download</td><td class="px-4 py-2">lm-4: back end audit passes; the front end sends no client request id (defence in depth only, the server generates the correlation id).</td></tr>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">docs/adr/0016-the-register-template-is-a-fixed-five-column-sheet.md</td><td class="px-4 py-2 font-mono text-xs">point 4</td><td class="px-4 py-2">dp-8: the downloaded workbook, where Register data is entered, carries no classification marking (a considered ADR decision; a header/footer and document property would not move the header row).</td></tr>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500 italic">Deferred</td><td class="px-4 py-2 font-mono text-xs break-all">(ticket 52)</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">lm-16 key signals monitoring and pm-6 system documentation (OpenAPI spec, architecture and data-flow docs): tracked deferrals, not weakened, not blocking.</td></tr>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500 italic">Deferred</td><td class="px-4 py-2 font-mono text-xs break-all">(tickets 46, 47)</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">ac-3 inactive/expired account job and ac-4 access review job: tracked deferrals, not weakened, not blocking.</td></tr>
+        </tbody>
+      </table>
+    </details>
+    <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+      <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+        <span class="font-medium">react</span>
+        <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN &middot; C 0 / H 0 / M 1 / L 4</span>
+      </summary>
+      <p class="px-5 pb-3 text-sm text-slate-600">No correctness, purity, key, effect or state defects. One cross-browser reliability concern and four Low points.</p>
+      <table class="w-full text-sm border-t border-slate-100">
+        <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left"><th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th></tr></thead>
+        <tbody>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/screens/shared/saveFile.ts</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">The object URL is revoked on a 0 ms timer; some browsers start the download asynchronously, so an early revoke can produce an intermittent failed or empty download. Use a longer delay (for example 30 s).</td></tr>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/screens/va-poc/RegisterScreen.tsx</td><td class="px-4 py-2 font-mono text-xs">catch</td><td class="px-4 py-2">Every non-ApiError failure (including blob() or DOM errors) is reported as &quot;The server could not be reached&quot;.</td></tr>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/screens/va-poc/RegisterScreen.tsx</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">The busy state is not announced to screen readers (no aria-busy or live region).</td></tr>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/api/audit.ts</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">REGISTER_TEMPLATE_DOWNLOADED is appended at the end of ACTION_LABELS, which drives the filter dropdown order; group by area as actions grow.</td></tr>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/api/client.ts</td><td class="px-4 py-2 font-mono text-xs">88</td><td class="px-4 py-2">Content-Disposition regex handles only quoted filename=, not filename*=; safe now thanks to the fallback, a gap for later non-ASCII names.</td></tr>
+        </tbody>
+      </table>
+    </details>
+    <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+      <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+        <span class="font-medium">springboot</span>
+        <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN &middot; C 0 / H 0 / M 0 / L 4</span>
+      </summary>
+      <p class="px-5 pb-3 text-sm text-slate-600">Security, web, data, logging and test posture are correct for the ticket (all seven skills combined). Four Low items, optional hardening.</p>
+      <table class="w-full text-sm border-t border-slate-100">
+        <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left"><th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th></tr></thead>
+        <tbody>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/RegisterTemplates.java</td><td class="px-4 py-2 font-mono text-xs">download</td><td class="px-4 py-2">The workbook is built inside the transaction, holding a pooled connection during POI generation (CPU only); optional to build first.</td></tr>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/SystemRegisterController.java</td><td class="px-4 py-2 font-mono text-xs">template</td><td class="px-4 py-2">No produces on the mapping, so a non-matching Accept still gets the file; adding it would give 406 (check 401/403 problems still win).</td></tr>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/RegisterTemplate.java</td><td class="px-4 py-2 font-mono text-xs">build</td><td class="px-4 py-2">The template is rebuilt on every request although its content is constant; caching the bytes would remove POI cost and the Clock dependency.</td></tr>
+      <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/register/RegisterTemplateTest.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Loop over String[][] with inline qualified StandardCharsets (use @ParameterizedTest); email validation formulas and first-cell references (C2, D2) are not asserted.</td></tr>
+        </tbody>
+      </table>
+    </details>
+    </main>
+  </body>
+</html>
