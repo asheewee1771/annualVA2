@@ -12,21 +12,27 @@ import org.springframework.security.web.header.writers.CrossOriginOpenerPolicyHe
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
 import org.springframework.security.web.header.writers.StaticHeadersWriter;
 import org.springframework.security.web.util.matcher.AnyRequestMatcher;
+import sg.annualva.access.SignInSecurity;
 import sg.annualva.web.ProblemResponses;
 
 /**
  * Deny by default (IM8 ac-1): only the endpoints listed in {@link #PUBLIC_PATHS} are reachable
  * without a session; everything else needs an authenticated session and, at method level, a
- * {@code @PreAuthorize} rule (enforced by the architecture tests). Sign-in itself is wired by the
- * access module.
+ * {@code @PreAuthorize} rule (enforced by the architecture tests). Sign-in, sign-out and the
+ * session limits are wired by the access module ({@link SignInSecurity}).
  */
 @Configuration(proxyBeanMethods = false)
 @EnableMethodSecurity
 class SecurityConfig {
 
-    /** Anonymous endpoints. Keep this list short and mirrored in the architecture tests. */
+    /**
+     * Anonymous endpoints. Keep this list short and mirrored in the architecture tests.
+     * {@code /oauth2/**} and {@code /login/**} are the OIDC round trip (handled by Spring Security's
+     * filters); anything else under them, such as {@code POST /login}, reaches no handler and is 404.
+     */
     static final String[] PUBLIC_PATHS = {
-        "/actuator/health", "/actuator/info", "/api/session", "/api/csrf",
+        "/actuator/health", "/actuator/info", "/api/session", "/api/csrf", "/.well-known/jwks.json",
+        "/oauth2/**", "/login/**",
         "/", "/index.html", "/favicon.ico", "/assets/**"
     };
 
@@ -36,10 +42,11 @@ class SecurityConfig {
             + "connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http, ProblemResponses problems) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, ProblemResponses problems, SignInSecurity signIn)
+            throws Exception {
         var csrfTokenRequestHandler = new CsrfTokenRequestAttributeHandler();
         csrfTokenRequestHandler.setCsrfRequestAttributeName(null);
-        return http
+        http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_PATHS).permitAll()
                         .anyRequest().authenticated())
@@ -65,7 +72,8 @@ class SecurityConfig {
                         .crossOriginOpenerPolicy(coop -> coop.policy(CrossOriginOpenerPolicy.SAME_ORIGIN))
                         .addHeaderWriter(new StaticHeadersWriter("Permissions-Policy",
                                 "camera=(), microphone=(), geolocation=(), payment=(), usb=()"))
-                        .addHeaderWriter(new StaticHeadersWriter("X-Permitted-Cross-Domain-Policies", "none")))
-                .build();
+                        .addHeaderWriter(new StaticHeadersWriter("X-Permitted-Cross-Domain-Policies", "none")));
+        signIn.apply(http, problems.unauthenticatedEntryPoint(), problems.tooManyRequestsHandler());
+        return http.build();
     }
 }

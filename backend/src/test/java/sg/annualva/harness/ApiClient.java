@@ -9,27 +9,29 @@ import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * A browser-like HTTP client for Seam 1: keeps cookies, fetches the CSRF token when asked, and
- * parses JSON. Tests assert only on what it returns.
+ * A browser-like HTTP client for Seam 1: keeps cookies, never follows redirects on its own,
+ * fetches the CSRF token when asked, and parses JSON. Tests assert only on what it returns.
  */
 public final class ApiClient {
 
     public record Response(int status, Map<String, List<String>> headers, String body) {
-        public String header(String name) {
+        public @Nullable String header(String name) {
             var values = headers.get(name.toLowerCase());
             return values == null || values.isEmpty() ? null : values.get(0);
         }
     }
 
     private static final ObjectMapper JSON = new ObjectMapper();
-    private final HttpClient http = HttpClient.newBuilder().cookieHandler(new CookieManager()).build();
+    private final CookieManager cookies = new CookieManager();
+    private final HttpClient http = HttpClient.newBuilder().cookieHandler(cookies).build();
     private final String baseUrl;
-    private String csrfHeader;
-    private String csrfToken;
+    private @Nullable String csrfHeader;
+    private @Nullable String csrfToken;
 
     public ApiClient(int port) {
         this.baseUrl = "http://localhost:" + port;
@@ -40,7 +42,16 @@ public final class ApiClient {
     }
 
     public Response get(String path, Map<String, String> headers) {
-        var request = HttpRequest.newBuilder(URI.create(baseUrl + path)).GET();
+        return getUrl(baseUrl + path, headers);
+    }
+
+    /** Follows a redirect the application or the issuer handed out: an absolute URL on any host. */
+    public Response getUrl(String absoluteUrl) {
+        return getUrl(absoluteUrl, Map.of());
+    }
+
+    private Response getUrl(String absoluteUrl, Map<String, String> headers) {
+        var request = HttpRequest.newBuilder(URI.create(absoluteUrl)).GET();
         headers.forEach(request::header);
         return send(request.build());
     }
@@ -49,10 +60,15 @@ public final class ApiClient {
         var request = HttpRequest.newBuilder(URI.create(baseUrl + path))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(json));
-        if (csrfToken != null) {
+        if (csrfToken != null && csrfHeader != null) {
             request.header(csrfHeader, csrfToken);
         }
         return send(request.build());
+    }
+
+    /** A bodiless POST, the way the SPA signs out. */
+    public Response post(String path) {
+        return postJson(path, "");
     }
 
     /** Bootstraps the synchronizer token the way the SPA does. */
@@ -61,6 +77,15 @@ public final class ApiClient {
         this.csrfHeader = csrf.get("headerName").asString();
         this.csrfToken = csrf.get("token").asString();
         return this;
+    }
+
+    /** The value of a cookie the application set, or null. */
+    public @Nullable String cookie(String name) {
+        return cookies.getCookieStore().get(URI.create(baseUrl)).stream()
+                .filter(cookie -> cookie.getName().equals(name))
+                .map(java.net.HttpCookie::getValue)
+                .findFirst()
+                .orElse(null);
     }
 
     public static JsonNode json(Response response) {

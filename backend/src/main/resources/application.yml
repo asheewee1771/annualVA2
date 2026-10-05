@@ -16,6 +16,10 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  session:
+    jdbc:
+      # Flyway owns the schema (V3__spring_session.sql).
+      initialize-schema: never
   servlet:
     multipart:
       # Container ceiling. Each report type has its own, lower limit in the upload pipeline (as-1).
@@ -27,7 +31,8 @@ server:
   forward-headers-strategy: framework
   servlet:
     session:
-      # as-11 backstop: 30 minutes idle. The absolute 8-hour limit is enforced by the access module.
+      # as-11 wall-clock backstop in the session store: keep equal to annualva.sign-in.idle-timeout, which the
+      # access module enforces by the application clock together with the absolute limit.
       timeout: 30m
       cookie:
         http-only: true
@@ -64,3 +69,32 @@ annualva:
     banner: RESTRICTED / SENSITIVE-NORMAL
   scheduling:
     enabled: true
+  # MCC SSO: explicit endpoints (never issuer-uri discovery), private_key_jwt with the EC P-521 key below.
+  mcc:
+    issuer: ${ANNUALVA_MCC_ISSUER}
+    authorization-uri: ${ANNUALVA_MCC_AUTHORIZATION_URI}
+    token-uri: ${ANNUALVA_MCC_TOKEN_URI}
+    jwk-set-uri: ${ANNUALVA_MCC_JWK_SET_URI}
+    user-info-uri: ${ANNUALVA_MCC_USER_INFO_URI}
+    # Outbound calls to MCC SSO (token endpoint, JWKS): a stalled provider must not hold request threads.
+    connect-timeout: 3s
+    read-timeout: 10s
+    login-client-id: ${ANNUALVA_MCC_LOGIN_CLIENT_ID}
+    idp-hint: ${ANNUALVA_MCC_IDP_HINT}
+    signing-key:
+      kid: ${ANNUALVA_MCC_SIGNING_KID}
+      private: ${ANNUALVA_MCC_SIGNING_PRIVATE}
+      public: ${ANNUALVA_MCC_SIGNING_PUBLIC}
+  sign-in:
+    # ac-2: a token without multi-factor evidence (amr or acr) is refused. Set per environment from what the
+    # identity provider emits (SSO onboarding ticket); disabling it is logged at startup, never silent.
+    require-mfa-claim: true
+    # The email links a person to Register roles: a token whose email is not asserted verified is refused.
+    # Set per environment from what the provider emits (SSO onboarding ticket); disabling it is logged.
+    require-verified-email: true
+    mfa-amr-values: mfa,otp,hwk
+    # as-11 (ADR 0008): 30 minutes idle, 8 hours at most, by the application clock.
+    idle-timeout: 30m
+    absolute-timeout: 8h
+    # as-4: sessions one client address may start per minute without being signed in; each is a store row.
+    anonymous-sessions-per-minute: 60

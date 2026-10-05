@@ -40,11 +40,16 @@ class ArchitectureTest {
                 .layer("web").definedBy("sg.annualva.web..")
                 .layer("config").definedBy("sg.annualva.config..")
                 .layer("boundary").definedBy("sg.annualva.boundary..")
+                .layer("access").definedBy("sg.annualva.access..")
+                .layer("adapters").definedBy("sg.annualva.adapters..")
                 // app is the composition root: it may import everything and nothing imports it
                 .whereLayer("app").mayNotBeAccessedByAnyLayer()
-                .whereLayer("web").mayOnlyBeAccessedByLayers("app")
-                .whereLayer("config").mayOnlyBeAccessedByLayers("app", "web")
-                .whereLayer("boundary").mayOnlyBeAccessedByLayers("app", "web")
+                .whereLayer("web").mayOnlyBeAccessedByLayers("app", "adapters")
+                .whereLayer("config").mayOnlyBeAccessedByLayers("app", "web", "access", "adapters")
+                .whereLayer("boundary").mayOnlyBeAccessedByLayers("app", "web", "access", "adapters")
+                .whereLayer("access").mayOnlyBeAccessedByLayers("app")
+                // production adapters are wired by Spring type only; no module imports them
+                .whereLayer("adapters").mayNotBeAccessedByAnyLayer()
                 .check(main);
     }
 
@@ -78,7 +83,8 @@ class ArchitectureTest {
                 .and().areDeclaredInClassesThat().resideOutsideOfPackage("sg.annualva.web")
                 .should().beAnnotatedWith(PreAuthorize.class)
                 .because("every endpoint is denied by default and opened only to roles in the permission matrix (ac-1);"
-                        + " the only anonymous endpoints live in sg.annualva.web and are listed in SecurityConfig")
+                        + " the few anonymous endpoints are listed in SecurityConfig.PUBLIC_PATHS and, outside"
+                        + " sg.annualva.web, say so with @PreAuthorize(\"permitAll()\")")
                 .allowEmptyShould(true)
                 .check(main);
     }
@@ -90,6 +96,14 @@ class ArchitectureTest {
                 .orShould().haveSimpleNameContaining("InMemory")
                 .orShould().haveSimpleNameContaining("Mutable")
                 .because("boundary fakes live only in the Seam 1 harness")
+                .check(main);
+    }
+
+    @Test
+    void boundaryPortsAreImplementedOnlyByAdapters() {
+        noClasses().that().resideOutsideOfPackage("sg.annualva.adapters..")
+                .should().implement(sg.annualva.boundary.IdentityProvider.class)
+                .because("production implementations of the boundary ports live under sg.annualva.adapters")
                 .check(main);
     }
 

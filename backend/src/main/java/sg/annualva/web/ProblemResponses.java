@@ -35,6 +35,15 @@ public class ProblemResponses {
                 problem(HttpStatus.UNAUTHORIZED, "unauthenticated", "Sign in to continue."));
     }
 
+    /** 429 for throttled anonymous session creation (as-4); the client may retry after the current minute. */
+    public AccessDeniedHandler tooManyRequestsHandler() {
+        return (request, response, exception) -> {
+            response.setHeader("Retry-After", "60");
+            write(response, problem(HttpStatus.TOO_MANY_REQUESTS, "too-many-requests",
+                    "Too many sign-in attempts from this address. Wait a minute and try again."));
+        };
+    }
+
     /** 403s: a missing or stale CSRF token gets its own problem type so the SPA can refresh the token. */
     public AccessDeniedHandler accessDeniedHandler() {
         AccessDeniedHandler csrfRejected = (request, response, exception) -> write(response,

@@ -1,6 +1,7 @@
 # Seam 1 test profile (test classpath only). The database comes from Testcontainers through
 # @ServiceConnection, which overrides the datasource values below; the boundary adapters are the
-# in-process fakes in sg.annualva.harness.
+# in-process fakes in sg.annualva.harness. The MCC SSO endpoints and the signing key come from the
+# fake OIDC issuer through @DynamicPropertySource in Seam1Test.
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/overridden-by-testcontainers
@@ -18,3 +19,18 @@ server:
 annualva:
   scheduling:
     enabled: false
+  mcc:
+    login-client-id: app-appfw
+    # Short, so the stalled-provider tests finish quickly; the fake answers normally in milliseconds.
+    read-timeout: 2s
+    idp-hint: singpass
+  sign-in:
+    require-mfa-claim: true
+    # Every test shares one client address; a dedicated test lowers this.
+    anonymous-sessions-per-minute: 100000
+    # One acr level the fake issuer can assert instead of amr, to prove the acr path.
+    mfa-acr-values: urn:annualva:ci:mfa
+  dev:
+    # A persona that carries no email claim, resolved like a MockPass persona under dev-mcc.
+    identities:
+      "[11111111-0000-4000-8000-000000000099]": persona.no-email@ci.annualva.test

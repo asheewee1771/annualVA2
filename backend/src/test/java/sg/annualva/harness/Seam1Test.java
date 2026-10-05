@@ -6,6 +6,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import sg.annualva.app.AnnualVaApplication;
 
 /**
@@ -17,6 +19,9 @@ import sg.annualva.app.AnnualVaApplication;
 @Import({TestcontainersConfig.class, HarnessConfig.class, TestEndpoints.class})
 public abstract class Seam1Test {
 
+    /** The identity-provider fake; started before the context so the client registration can point at it. */
+    protected static final FakeOidcIssuer issuer = FakeOidcIssuer.start();
+
     @LocalServerPort
     private int port;
 
@@ -25,8 +30,19 @@ public abstract class Seam1Test {
 
     protected ApiClient api;
 
+    @DynamicPropertySource
+    static void identityProvider(DynamicPropertyRegistry registry) {
+        issuer.registerProperties(registry);
+    }
+
     @BeforeEach
     void freshClient() {
         api = new ApiClient(port);
+        issuer.clientJwksUrl("http://localhost:" + port + "/.well-known/jwks.json");
+    }
+
+    /** A second browser, for tests about concurrent sessions. */
+    protected ApiClient anotherBrowser() {
+        return new ApiClient(port);
     }
 }
