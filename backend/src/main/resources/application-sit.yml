@@ -1,0 +1,46 @@
+# SIT (first deployed target, ADR 0005): the production shape with a ${VAR:dev-default} binding for each
+# environment value, so the profile also starts from a clean checkout. The defaults are the local mock stack's
+# non-secret values and are never the SIT values: set the real ones in the SIT environment (or in
+# backend/.env.sit, copied from .env.sit.example). Secrets (the database password, the signing key pair and the
+# VA POCs) have no default on purpose: a SIT deployment missing one fails at start rather than using a mock.
+spring:
+  config:
+    import:
+      # Optional dotenv file in the working directory (backend/). Real environment variables win over it.
+      - optional:file:./.env.sit[.properties]
+  datasource:
+    url: ${ANNUALVA_DB_URL:jdbc:postgresql://localhost:5432/annualva}
+    username: ${ANNUALVA_DB_USERNAME:annualva}
+  ssl:
+    bundle:
+      pem:
+        mcc-trust:
+          truststore:
+            # The CA that signed MCC SSO's SIT certificate, on the classpath (src/main/resources/sit/).
+            # Supplied by the SSO onboarding (ticket 56); the bundle is opened on the first call to MCC SSO.
+            certificate: ${ANNUALVA_MCC_TRUST_CERTIFICATE:classpath:sit/mcc-sso-ca.crt}
+
+annualva:
+  mcc:
+    issuer: ${ANNUALVA_MCC_ISSUER:https://localhost:9080/realms/SSO}
+    authorization-uri: ${ANNUALVA_MCC_AUTHORIZATION_URI:https://localhost:9080/realms/SSO/protocol/openid-connect/auth}
+    token-uri: ${ANNUALVA_MCC_TOKEN_URI:https://localhost:9080/realms/SSO/protocol/openid-connect/token}
+    jwk-set-uri: ${ANNUALVA_MCC_JWK_SET_URI:https://localhost:9080/realms/SSO/protocol/openid-connect/certs}
+    user-info-uri: ${ANNUALVA_MCC_USER_INFO_URI:https://localhost:9080/realms/SSO/protocol/openid-connect/userinfo}
+    ssl-bundle: mcc-trust
+    login-client-id: ${ANNUALVA_MCC_LOGIN_CLIENT_ID:app-appfw}
+    idp-hint: ${ANNUALVA_MCC_IDP_HINT:singpass}
+    signing-key:
+      # The kid registered with the EC public key for the login client. The key pair itself has no default.
+      kid: ${ANNUALVA_MCC_SIGNING_KID:annualva-sit-ec521}
+  sign-in:
+    # What MCC SSO emits is confirmed in SIT (ticket 56). Both checks stay on until that is recorded; turning one
+    # off is a per-environment decision and is logged at startup.
+    require-mfa-claim: ${ANNUALVA_SIGNIN_REQUIRE_MFA_CLAIM:true}
+    require-verified-email: ${ANNUALVA_SIGNIN_REQUIRE_VERIFIED_EMAIL:true}
+    mfa-amr-values: ${ANNUALVA_SIGNIN_MFA_AMR_VALUES:mfa,otp,hwk}
+    # The acr values that count as multi-factor evidence, when MCC SSO signals MFA by acr and not by amr.
+    mfa-acr-values: ${ANNUALVA_SIGNIN_MFA_ACR_VALUES:}
+  step-up:
+    # prompt-login, or full-sign-in when SIT shows that MCC SSO ignores prompt=login (ADR 0004).
+    mode: ${ANNUALVA_STEPUP_MODE:prompt-login}

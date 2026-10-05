@@ -2,7 +2,7 @@
 # ${ENV_VAR} bindings; literals here are the same in every environment. Profiles layer on top:
 #   dev-mcc  local development against ../mock-m-sso + LocalStack + compose PostgreSQL
 #   ci       Seam 1 tests (src/test/resources/application-ci.yml; Testcontainers + in-process fakes)
-#   sit      first deployed target (added by the first SIT-bound ticket)
+#   sit      first deployed target (application-sit.yml: ${VAR:dev-default}; optional backend/.env.sit)
 spring:
   application:
     name: annualva
