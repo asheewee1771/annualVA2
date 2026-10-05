@@ -1,4 +1,5 @@
 import { ApiError, problemFrom } from "./problem.ts";
+import { stepUpNeededFrom, type StepUpNeeded } from "./stepUp.ts";
 
 /**
  * The one place the SPA talks HTTP. Same-origin cookies carry the session; state-changing calls
@@ -14,9 +15,15 @@ interface CsrfToken {
 
 let csrf: CsrfToken | null = null;
 let onSignedOut: () => void = () => {};
+let onStepUpRequired: (needed: StepUpNeeded) => void = () => {};
 
 export function setSignedOutHandler(handler: () => void): void {
   onSignedOut = handler;
+}
+
+/** The app shows its step-up explanation when a sensitive command is refused for want of a fresh sign-in. */
+export function setStepUpRequiredHandler(handler: (needed: StepUpNeeded) => void): void {
+  onStepUpRequired = handler;
 }
 
 async function safeJson(response: Response): Promise<unknown> {
@@ -57,6 +64,8 @@ export async function request<T>(method: Method, path: string, body?: unknown): 
   if (response.status === 403) {
     const problem = problemFrom(403, await safeJson(response));
     if (problem.type.endsWith("/csrf-rejected")) csrf = null;
+    const needed = stepUpNeededFrom(problem, body);
+    if (needed) onStepUpRequired(needed);
     throw new ApiError(problem);
   }
   if (!response.ok) {

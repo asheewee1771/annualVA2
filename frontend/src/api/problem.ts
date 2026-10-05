@@ -6,6 +6,8 @@ export interface Problem {
   detail?: string;
   instance?: string;
   traceId?: string;
+  /** Only on `step-up-required`: the server path that starts the fresh sign-in. */
+  stepUpPath?: string;
 }
 
 export class ApiError extends Error {
@@ -28,6 +30,10 @@ export function problemFrom(status: number, body: unknown): Problem {
       ...(candidate.detail !== undefined ? { detail: candidate.detail } : {}),
       ...(candidate.instance !== undefined ? { instance: candidate.instance } : {}),
       ...(candidate.traceId !== undefined ? { traceId: candidate.traceId } : {}),
+      // Only a path of the server's own step-up endpoint is ever followed.
+      ...(typeof candidate.stepUpPath === "string" && candidate.stepUpPath.startsWith("/auth/step-up?")
+        ? { stepUpPath: candidate.stepUpPath }
+        : {}),
     };
   }
   return { type: "about:blank", title: `Request failed (${status})`, status };
