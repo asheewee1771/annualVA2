@@ -67,6 +67,11 @@ annualva:
   # IM8 dp-8 banner shown on every screen (assumption A-1: single report Restricted / Sensitive-Normal).
   classification:
     banner: RESTRICTED / SENSITIVE-NORMAL
+  # Story 16: VA Cycle 2027 goes live at Q3 (Monday 2 August 2027); earlier Quarters of that Cycle, and every earlier
+  # Cycle, are Handled outside the app. A one-off setting, the same in every environment.
+  calendar:
+    first-live-cycle: 2027
+    first-live-quarter: 3
   scheduling:
     enabled: true
   # IM8 ac-1, story 75: exactly two VA POC email addresses (comma-separated), set at deployment and changed only
