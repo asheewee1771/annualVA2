@@ -81,6 +81,12 @@ Starting a sign-in (`/oauth2/authorization/**`) or bootstrapping CSRF (`/api/csr
 
 Calls from the app to MCC SSO (token endpoint, JWKS) time out after `annualva.mcc.connect-timeout` (3 s) and `annualva.mcc.read-timeout` (10 s); a timeout is a refused sign-in with reason `provider-error`.
 
+## Step-up before sensitive actions
+
+A sensitive command calls `StepUp.require("<intent>")` first (intent: a lower-case code such as `register-apply`). It is refused with `403 step-up-required` and a `stepUpPath` unless the session's `auth_time` is within `annualva.step-up.freshness-window` (5 minutes). The SPA sends the browser to `GET /auth/step-up?intent=...&returnTo=/route`, which starts a new authorization request with `prompt=login` and `max_age=0`. The callback refuses a token whose `auth_time` is absent or older than the step-up's start (less `annualva.step-up.clock-skew`, 30 s), that lacks MFA evidence, or that belongs to another person; otherwise it only refreshes `auth_time` (never the 8-hour limit) and redirects to `returnTo?stepup=done` (or `?stepup=refused&reason=<code>`). The action is never replayed. Successful and refused step-ups are ECS events (`step-up`, `step-up-refused`) carrying the user id and the intent.
+
+If SIT shows MCC SSO ignores `prompt=login`, set `annualva.step-up.mode: full-sign-in` (environment variable `ANNUALVA_STEPUP_MODE`): step-up then ends the app session and sends the person through a normal sign-in (ADR 0004). That only helps if the single sign-on session is also gone or re-authenticates; confirm with the SSO onboarding ticket.
+
 ## Roles and access
 
 Roles are held in the app (table `role_grant`), never taken from token claims, and are read from the store on every request, so a revoked, lapsed, suspended or expired grant stops working on the next call (ADR 0011).
