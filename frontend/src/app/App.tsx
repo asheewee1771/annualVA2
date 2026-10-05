@@ -5,10 +5,11 @@ import { ErrorPanel } from "../components/ErrorPanel.tsx";
 import { useResource } from "../hooks/useResource.ts";
 import { Shell } from "./Shell.tsx";
 import { SignedOutScreen } from "./SignedOutScreen.tsx";
+import { Workspace } from "./Workspace.tsx";
 
 /**
  * Session state machine: loading, signed-out, or signed-in. Any 401 from any call flips the app to
- * signed-out. Role screens mount here once the access module exists.
+ * signed-out. The signed-in workspace (role navigation and landing areas) is mounted by Workspace.
  */
 export function App() {
   const [signedOut, setSignedOut] = useState(false);
@@ -52,12 +53,7 @@ export function App() {
 
   return (
     <Shell session={session.data} onSignedOut={() => setSignedOut(true)}>
-      <main id="main" className="shell-main">
-        <div className="card">
-          <h2>Welcome</h2>
-          <p className="muted">Your dashboard appears here once roles are assigned.</p>
-        </div>
-      </main>
+      <Workspace session={session.data} />
     </Shell>
   );
 }
