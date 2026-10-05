@@ -72,6 +72,15 @@ Switch persona by signing out, signing in again and picking another NRIC on the 
 - **Malware verdicts (mock-SFS):** the verdict follows a keyword in the file's display name: `quarantined` is blocked, `sanitized` is allowed after sanitisation, `unchanged` or anything else is allowed unchanged. Upload `report_quarantined.xml` to see a malware rejection. `SFS_SCAN_DELAY_MS` in `compose.yml` sets the scan delay.
 - **Email (mock-MCNS):** nothing is stored; read sent messages from the container log: `docker compose logs -f mock-mcns | grep "Event=email"`. A message carries only the System, state, action, due date and a link.
 
+## Sign-in and the anonymous-session cap
+
+Starting a sign-in (`/oauth2/authorization/**`) or bootstrapping CSRF (`/api/csrf`) without a session writes a row to the session store, so the app caps how many such sessions one client may start per minute (`annualva.sign-in.anonymous-sessions-per-minute`, default 60; requests that carry a session are not counted). Two limits to know about:
+
+- The cap is per client address as the app sees it. Behind a single gateway or load-balancer address every user shares one counter, so it acts as a global backstop; whether to throttle per client (real client address from the edge, or at the WAF) is a hosting decision (ticket 55).
+- It is only a partial IM8 as-4 mitigation. Brute-force protection of the sign-in credentials belongs to the identity provider (MCC SSO), not to this app.
+
+Calls from the app to MCC SSO (token endpoint, JWKS) time out after `annualva.mcc.connect-timeout` (3 s) and `annualva.mcc.read-timeout` (10 s); a timeout is a refused sign-in with reason `provider-error`.
+
 ## Quality gates
 
 | Gate | Command | Passes when |
