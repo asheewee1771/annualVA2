@@ -41,15 +41,17 @@ export function App() {
   }
 
   if (signedOut || !session.data?.authenticated) {
+    // Keep only the classification once signed out: the header must not show a person who has no session.
+    const classification = session.data?.classification;
     return (
-      <Shell session={session.data}>
+      <Shell session={classification ? { authenticated: false, classification } : undefined}>
         <SignedOutScreen />
       </Shell>
     );
   }
 
   return (
-    <Shell session={session.data}>
+    <Shell session={session.data} onSignedOut={() => setSignedOut(true)}>
       <main id="main" className="shell-main">
         <div className="card">
           <h2>Welcome</h2>
