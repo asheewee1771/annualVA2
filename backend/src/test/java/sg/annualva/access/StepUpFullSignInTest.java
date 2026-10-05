@@ -43,5 +43,11 @@ class StepUpFullSignInTest extends Seam1Test {
         api.withCsrf();
         assertThat(issuer.lastAuthorizationRequest()).doesNotContainKey("prompt");
         assertThat(api.post("/api/probe/sensitive").status()).as("the full sign-in is the fresh one").isEqualTo(200);
+
+        var reader = anotherBrowser();
+        SignIn.signedIn(reader, issuer, TestIdentity.of("af-5002", "poc.two@ci.annualva.test", "POC Two"));
+        var audited = ApiClient.json(reader.get("/api/audit-entries?action=STEP_UP_FULL_SIGN_IN&actor=" + userId));
+        assertThat(audited.get("total").asInt()).isEqualTo(1);
+        assertThat(audited.get("items").get(0).get("detail").get("intent").asString()).isEqualTo("probe-sensitive");
     }
 }

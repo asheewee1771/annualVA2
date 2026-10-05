@@ -243,7 +243,8 @@ class StepUpTest extends Seam1Test {
 
         List<String> events = output.getAll().lines().filter(line -> line.contains(userId)).toList();
         assertThat(events).anySatisfy(line -> assertThat(line)
-                .contains("\"action\":\"step-up-required\"").contains("probe-sensitive"));
+                .contains("\"action\":\"request-refused\"").contains("\"reason\":\"step-up-required\"")
+                .contains("probe-sensitive"));
         assertThat(events).anySatisfy(line -> assertThat(line)
                 .contains("\"action\":\"step-up-refused\"").contains("\"reason\":\"stale-auth-time\"")
                 .contains("\"outcome\":\"failure\"").contains("probe-sensitive"));

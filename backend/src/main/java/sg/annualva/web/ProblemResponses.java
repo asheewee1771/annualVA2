@@ -17,7 +17,8 @@ import tools.jackson.databind.ObjectMapper;
 
 /**
  * Writes RFC 9457 problem responses for refusals that happen in the security filter chain,
- * before any controller runs (as-13: no internal detail; every body carries the traceId).
+ * before any controller runs (as-13: no internal detail; every body carries the traceId). Each 401 and 403 it
+ * writes is first reported to the {@link RefusalListener} (lm-4); a 429 is not.
  */
 @Component
 public class ProblemResponses {
@@ -25,14 +26,18 @@ public class ProblemResponses {
     public static final String TYPE_BASE = "https://annualva/problems/";
 
     private final ObjectMapper objectMapper;
+    private final RefusalListener refusals;
 
-    public ProblemResponses(ObjectMapper objectMapper) {
+    public ProblemResponses(ObjectMapper objectMapper, RefusalListener refusals) {
         this.objectMapper = objectMapper;
+        this.refusals = refusals;
     }
 
     public AuthenticationEntryPoint unauthenticatedEntryPoint() {
-        return (request, response, exception) -> write(response,
-                problem(HttpStatus.UNAUTHORIZED, "unauthenticated", "Sign in to continue."));
+        return (request, response, exception) -> {
+            refusals.refused(new RefusalListener.Refusal(HttpStatus.UNAUTHORIZED.value(), "unauthenticated"));
+            write(response, problem(HttpStatus.UNAUTHORIZED, "unauthenticated", "Sign in to continue."));
+        };
     }
 
     /** 429 for throttled anonymous session creation (as-4); the client may retry after the current minute. */
@@ -46,11 +51,15 @@ public class ProblemResponses {
 
     /** 403s: a missing or stale CSRF token gets its own problem type so the SPA can refresh the token. */
     public AccessDeniedHandler accessDeniedHandler() {
-        AccessDeniedHandler csrfRejected = (request, response, exception) -> write(response,
-                problem(HttpStatus.FORBIDDEN, "csrf-rejected",
-                        "The request did not carry a valid CSRF token. Reload and try again."));
-        AccessDeniedHandler forbidden = (request, response, exception) -> write(response,
-                problem(HttpStatus.FORBIDDEN, "forbidden", "You are not allowed to do this."));
+        AccessDeniedHandler csrfRejected = (request, response, exception) -> {
+            refusals.refused(new RefusalListener.Refusal(HttpStatus.FORBIDDEN.value(), "csrf-rejected"));
+            write(response, problem(HttpStatus.FORBIDDEN, "csrf-rejected",
+                    "The request did not carry a valid CSRF token. Reload and try again."));
+        };
+        AccessDeniedHandler forbidden = (request, response, exception) -> {
+            refusals.refused(new RefusalListener.Refusal(HttpStatus.FORBIDDEN.value(), "forbidden"));
+            write(response, problem(HttpStatus.FORBIDDEN, "forbidden", "You are not allowed to do this."));
+        };
         LinkedHashMap<Class<? extends AccessDeniedException>, AccessDeniedHandler> byType = new LinkedHashMap<>();
         byType.put(CsrfException.class, csrfRejected);
         return new DelegatingAccessDeniedHandler(byType, forbidden);

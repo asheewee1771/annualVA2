@@ -4,15 +4,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.stereotype.Component;
+import sg.annualva.audit.AuditOutcome;
 
 /**
- * A refused sign-in: no session, one ECS event with a fixed reason code, and a redirect to the
+ * A refused sign-in: no session, one audit entry with a fixed reason code, and a redirect to the
  * front end carrying that code. Nothing from the token or the exception reaches the browser.
  */
 @Component
@@ -27,7 +26,11 @@ class SignInFailureHandler implements AuthenticationFailureHandler {
             "invalid_id_token", "invalid_nonce", "invalid_state_parameter", "authorization_request_not_found",
             "client_registration_not_found", "invalid_redirect_uri_parameter", "invalid_user_info_response");
 
-    private static final Logger log = LoggerFactory.getLogger(SignInFailureHandler.class);
+    private final AccessAudit audit;
+
+    SignInFailureHandler(AccessAudit audit) {
+        this.audit = audit;
+    }
 
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
@@ -37,14 +40,8 @@ class SignInFailureHandler implements AuthenticationFailureHandler {
                         && KNOWN_ERROR_CODES.contains(oauth.getError().getErrorCode())
                 ? oauth.getError().getErrorCode()
                 : "other";
-        log.atWarn()
-                .setMessage("Sign-in refused")
-                .addKeyValue("event.action", "sign-in-refused")
-                .addKeyValue("event.category", "authentication")
-                .addKeyValue("event.outcome", "failure")
-                .addKeyValue("event.reason", reason)
-                .addKeyValue("error.code", errorCode)
-                .log();
+        audit.signInFailed(reason, errorCode,
+                exception instanceof SignInRefusedException ? AuditOutcome.REFUSED : AuditOutcome.FAILED);
         response.sendRedirect(request.getContextPath() + "/?signin=refused&reason=" + reason);
     }
 }

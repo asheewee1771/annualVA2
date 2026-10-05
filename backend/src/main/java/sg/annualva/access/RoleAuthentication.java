@@ -6,6 +6,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -53,6 +55,11 @@ public final class RoleAuthentication extends AbstractAuthenticationToken {
     /** The roles held, each once, highest privilege first. */
     public List<Role> roles() {
         return Arrays.stream(Role.values()).filter(this::holds).toList();
+    }
+
+    /** The roles as an audit entry records them (highest privilege first, comma-separated), or null for none. */
+    static @Nullable String audited(List<Role> roles) {
+        return roles.isEmpty() ? null : roles.stream().map(Role::name).collect(Collectors.joining(","));
     }
 
     boolean holds(Role role) {

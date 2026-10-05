@@ -23,6 +23,11 @@ public final class StepUpRequiredException extends RuntimeException {
         this.intent = intent;
     }
 
+    /** The fixed code of the sensitive action that was refused. */
+    public String intent() {
+        return intent;
+    }
+
     /** The path the front end sends the person to, without a return route (the client adds that). */
     public String stepUpPath() {
         return START_PATH + "?intent=" + intent;

@@ -15,12 +15,14 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,6 +35,11 @@ import sg.annualva.access.GrantSource;
 import sg.annualva.access.Need;
 import sg.annualva.access.Role;
 import sg.annualva.access.StepUp;
+import sg.annualva.audit.AuditAction;
+import sg.annualva.audit.AuditEvent;
+import sg.annualva.audit.AuditLog;
+import sg.annualva.audit.AuditOutcome;
+import sg.annualva.audit.DetailKey;
 import sg.annualva.access.RoleGrantStore;
 import sg.annualva.web.ProblemResponses;
 import sg.annualva.web.ResourceNotFoundException;
@@ -94,15 +101,64 @@ public class TestEndpoints {
         private final StepUp stepUp;
         private final JdbcClient jdbc;
         private final Clock clock;
+        private final AuditLog audit;
+        private final TransactionTemplate transaction;
 
         public TestController(AppUserStore users, RoleGrantStore grants, AccessGuard guard, StepUp stepUp, JdbcClient jdbc,
-                Clock clock) {
+                Clock clock, AuditLog audit, TransactionTemplate transaction) {
             this.users = users;
             this.grants = grants;
             this.guard = guard;
             this.stepUp = stepUp;
             this.jdbc = jdbc;
             this.clock = clock;
+            this.audit = audit;
+            this.transaction = transaction;
+        }
+
+        /**
+         * Stands in for a domain command that audits what it does. It writes one entry about the given System,
+         * VA Submission and Finding (ROLE_GRANTED is only the action that exists today) in the way the
+         * {@code ending} says, then ends:
+         * <ul>
+         *   <li>{@code commit}: the entry is written in the command's transaction, which commits
+         *   <li>{@code rollback}: the same, then the command fails with a 403 and its transaction rolls back
+         *   <li>{@code independent-rollback}: the entry is written in a transaction of its own, then the same 403
+         *   <li>{@code no-transaction}: the entry is written with no transaction open at all
+         * </ul>
+         */
+        @PostMapping("/api/probe/audited")
+        @PreAuthorize("isAuthenticated()")
+        public Map<String, String> audited(@RequestParam UUID system, @RequestParam UUID submission,
+                @RequestParam UUID finding, @RequestParam String ending, Authentication caller) {
+            var entry = AuditEvent.of(AuditAction.ROLE_GRANTED, AuditOutcome.SUCCESS)
+                    .by(UUID.fromString(caller.getName()), null)
+                    .onSystem(system).onSubmission(submission).onFinding(finding)
+                    .with(DetailKey.COUNT, 3);
+            if ("no-transaction".equals(ending)) {
+                audit.record(entry);
+            } else {
+                transaction.executeWithoutResult(status -> {
+                    if ("independent-rollback".equals(ending)) {
+                        audit.recordIndependently(entry);
+                    } else {
+                        audit.record(entry);
+                    }
+                    if (!"commit".equals(ending)) {
+                        throw new AccessDeniedException("The command is refused after it wrote");
+                    }
+                });
+            }
+            return Map.of("ending", ending);
+        }
+
+        /** Hands the allow-list a value that is not a code, as a careless caller might hand it free text. */
+        @PostMapping("/api/probe/audit-free-text")
+        @PreAuthorize("isAuthenticated()")
+        public Map<String, String> freeText(@RequestParam String text) {
+            transaction.executeWithoutResult(status -> audit.record(
+                    AuditEvent.of(AuditAction.ROLE_GRANTED, AuditOutcome.SUCCESS).with(DetailKey.REASON, text)));
+            return Map.of("written", "yes");
         }
 
         @GetMapping("/api/test/boom")

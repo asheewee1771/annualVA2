@@ -7,8 +7,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizationRequestRepository;
@@ -46,22 +44,22 @@ public class StepUp {
     private static final Pattern SAFE_RETURN_PATH = Pattern.compile("/[A-Za-z0-9._~/-]{0,199}");
     private static final Pattern INTENT = Pattern.compile(INTENT_PATTERN);
 
-    private static final Logger log = LoggerFactory.getLogger(StepUp.class);
-
     private final Clock clock;
     private final StepUpProperties properties;
     private final SignInProperties signIn;
     private final AppUserStore users;
+    private final AccessAudit audit;
     private final OAuth2AuthorizationRequestResolver authorizationRequests;
     private final HttpSessionOAuth2AuthorizationRequestRepository savedRequests =
             new HttpSessionOAuth2AuthorizationRequestRepository();
 
-    StepUp(Clock clock, StepUpProperties properties, SignInProperties signIn, AppUserStore users,
+    StepUp(Clock clock, StepUpProperties properties, SignInProperties signIn, AppUserStore users, AccessAudit audit,
             OAuth2AuthorizationRequestResolver authorizationRequests) {
         this.clock = clock;
         this.properties = properties;
         this.signIn = signIn;
         this.users = users;
+        this.audit = audit;
         this.authorizationRequests = authorizationRequests;
     }
 
@@ -79,14 +77,8 @@ public class StepUp {
         if (user != null && !user.authTime().plus(properties.freshnessWindow()).isBefore(clock.instant())) {
             return;
         }
-        log.atWarn()
-                .setMessage("Step-up required")
-                .addKeyValue("event.action", "step-up-required")
-                .addKeyValue("event.category", "authentication")
-                .addKeyValue("event.outcome", "failure")
-                .addKeyValue("labels.intent", intent)
-                .addKeyValue("user.id", user != null ? user.getName() : null)
-                .log();
+        // The refusal is audited where the 403 is written (the exception handler), once, after the command's own
+        // transaction has ended.
         throw new StepUpRequiredException(intent);
     }
 
@@ -108,7 +100,7 @@ public class StepUp {
             if (session != null) {
                 session.invalidate();
             }
-            audit("step-up-full-sign-in", "success", user.getName(), intent, null);
+            audit.stepUpFullSignIn(user, intent);
             return request.getContextPath() + "/oauth2/authorization/" + LOGIN_REGISTRATION_ID;
         }
         OAuth2AuthorizationRequest base = authorizationRequests.resolve(request, LOGIN_REGISTRATION_ID);
@@ -124,7 +116,7 @@ public class StepUp {
                 .attributes(attributes -> attributes.put(StepUpIntent.ATTRIBUTE, inProgress))
                 .build();
         savedRequests.saveAuthorizationRequest(started, request, response);
-        audit("step-up-started", "success", user.getName(), intent, null);
+        audit.stepUpStarted(user, intent);
         return started.getAuthorizationRequestUri();
     }
 
@@ -158,29 +150,6 @@ public class StepUp {
             throw new SignInRefusedException(STALE_AUTH_TIME);
         }
         return new SteppedUpOidcUser(current.withAuthTime(authTime), idToken, started);
-    }
-
-    void recordCompleted(SessionUser user, StepUpIntent started) {
-        audit("step-up", "success", user.getName(), started.intent(), null);
-    }
-
-    void recordRefused(@Nullable Object userId, StepUpIntent started, String reason) {
-        audit("step-up-refused", "failure", userId, started.intent(), reason);
-    }
-
-    private static void audit(String action, String outcome, @Nullable Object userId, String intent,
-            @Nullable String reason) {
-        var event = log.atInfo()
-                .setMessage("Step-up event")
-                .addKeyValue("event.action", action)
-                .addKeyValue("event.category", "authentication")
-                .addKeyValue("event.outcome", outcome)
-                .addKeyValue("labels.intent", intent)
-                .addKeyValue("user.id", userId);
-        if (reason != null) {
-            event = event.addKeyValue("event.reason", reason);
-        }
-        event.log();
     }
 
     private static @Nullable SessionUser currentSessionUser() {

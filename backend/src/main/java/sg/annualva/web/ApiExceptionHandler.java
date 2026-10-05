@@ -2,6 +2,7 @@ package sg.annualva.web;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.TypeMismatchException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -17,12 +18,20 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 /**
  * One handler for every controller error (as-13). Framework exceptions become RFC 9457 problems
  * with the traceId added; anything unexpected becomes a generic 500 and is logged once, here,
- * with the exception. Report content never reaches an error body.
+ * with the exception. Report content never reaches an error body. A 403 it answers is first reported to the
+ * {@link RefusalListener} (lm-4); it runs after the command's own transaction has ended, so the refusal is
+ * recorded whether or not that transaction rolled back.
  */
 @RestControllerAdvice
 public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
+
+    private final RefusalListener refusals;
+
+    ApiExceptionHandler(RefusalListener refusals) {
+        this.refusals = refusals;
+    }
 
     @Override
     protected ResponseEntity<Object> createResponseEntity(@Nullable Object body, HttpHeaders headers,
@@ -31,6 +40,14 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             ProblemResponses.withTraceId(problem);
         }
         return super.createResponseEntity(body, headers, statusCode, request);
+    }
+
+    /** Spring's own text for a value that cannot be converted quotes the value; a request value is never echoed (as-13). */
+    @Override
+    protected ResponseEntity<Object> handleTypeMismatch(TypeMismatchException ex, HttpHeaders headers,
+            HttpStatusCode status, WebRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, "A request parameter has a value of the wrong form.");
+        return handleExceptionInternal(ex, problem, headers, status, request);
     }
 
     /** The same answer whether the resource is missing or the caller has no scope over it (ac-1). */
@@ -42,6 +59,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     /** A sensitive command needs a fresh sign-in first (ADR 0004); the problem says where to start one. */
     @ExceptionHandler(StepUpRequiredException.class)
     ProblemDetail handleStepUpRequired(StepUpRequiredException ex) {
+        refusals.refused(new RefusalListener.Refusal(HttpStatus.FORBIDDEN.value(), "step-up-required", ex.intent()));
         ProblemDetail problem = ProblemResponses.problem(HttpStatus.FORBIDDEN, "step-up-required",
                 "Sign in again to do this.");
         problem.setProperty("stepUpPath", ex.stepUpPath());
@@ -51,6 +69,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     /** A method-level rule refused the caller: raised inside the controller, so the filter chain never sees it. */
     @ExceptionHandler(AccessDeniedException.class)
     ProblemDetail handleForbidden() {
+        refusals.refused(new RefusalListener.Refusal(HttpStatus.FORBIDDEN.value(), "forbidden"));
         return ProblemResponses.problem(HttpStatus.FORBIDDEN, "forbidden", "You are not allowed to do this.");
     }
 

@@ -51,13 +51,16 @@ class ArchitectureTest {
                 .layer("web").definedBy("sg.annualva.web..")
                 .layer("config").definedBy("sg.annualva.config..")
                 .layer("boundary").definedBy("sg.annualva.boundary..")
+                .layer("audit").definedBy("sg.annualva.audit..")
                 .layer("access").definedBy("sg.annualva.access..")
                 .layer("adapters").definedBy("sg.annualva.adapters..")
                 // app is the composition root: it may import everything and nothing imports it
                 .whereLayer("app").mayNotBeAccessedByAnyLayer()
-                .whereLayer("web").mayOnlyBeAccessedByLayers("app", "adapters", "access")
-                .whereLayer("config").mayOnlyBeAccessedByLayers("app", "web", "access", "adapters")
+                .whereLayer("web").mayOnlyBeAccessedByLayers("app", "adapters", "access", "audit")
+                .whereLayer("config").mayOnlyBeAccessedByLayers("app", "web", "access", "adapters", "audit")
                 .whereLayer("boundary").mayOnlyBeAccessedByLayers("app", "web", "access", "adapters")
+                // the audit log is written by the modules that act (access today)
+                .whereLayer("audit").mayOnlyBeAccessedByLayers("app", "access")
                 .whereLayer("access").mayOnlyBeAccessedByLayers("app")
                 // production adapters are wired by Spring type only; no module imports them
                 .whereLayer("adapters").mayNotBeAccessedByAnyLayer()

@@ -4,8 +4,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -16,20 +14,20 @@ import org.springframework.stereotype.Component;
 
 /**
  * Finishes a sign-in: swaps the OIDC principal (which carries the id token) for the lean
- * {@link SessionAuthentication}, stamps the session for the idle and absolute limits, logs the
- * ECS event and sends the browser to the front end. The session id was already rotated and the
+ * {@link SessionAuthentication}, stamps the session for the idle and absolute limits, records the
+ * sign-in in the audit log and sends the browser to the front end. The session id was already rotated and the
  * older session of the same person already ended by the session authentication strategies.
  */
 @Component
 class SignInSuccessHandler implements AuthenticationSuccessHandler {
 
-    private static final Logger log = LoggerFactory.getLogger(SignInSuccessHandler.class);
-
     private final SecurityContextRepository securityContextRepository;
     private final SecurityContextHolderStrategy contextHolder = SecurityContextHolder.getContextHolderStrategy();
+    private final AccessAudit audit;
 
-    SignInSuccessHandler(SecurityContextRepository securityContextRepository) {
+    SignInSuccessHandler(SecurityContextRepository securityContextRepository, AccessAudit audit) {
         this.securityContextRepository = securityContextRepository;
+        this.audit = audit;
     }
 
     @Override
@@ -47,13 +45,7 @@ class SignInSuccessHandler implements AuthenticationSuccessHandler {
         session.setAttribute(SessionAttributes.LAST_SEEN_AT, user.signedInAt());
         session.setAttribute(SessionAttributes.USER_ID, user.getName());
 
-        log.atInfo()
-                .setMessage("Signed in")
-                .addKeyValue("event.action", "sign-in")
-                .addKeyValue("event.category", "authentication")
-                .addKeyValue("event.outcome", "success")
-                .addKeyValue("user.id", user.getName())
-                .log();
+        audit.signedIn(user);
         response.sendRedirect(request.getContextPath() + "/");
     }
 }

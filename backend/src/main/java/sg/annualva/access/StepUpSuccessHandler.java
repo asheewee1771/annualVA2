@@ -12,7 +12,7 @@ import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Component;
 
 /**
- * Finishes a step-up: saves the session user with the fresher {@code auth_time}, logs the event and
+ * Finishes a step-up: saves the session user with the fresher {@code auth_time}, records the step-up in the audit log and
  * sends the browser back. It touches nothing else: when the session began and its idle clock stay as
  * they were, so a step-up never extends the session.
  */
@@ -21,11 +21,11 @@ class StepUpSuccessHandler implements AuthenticationSuccessHandler {
 
     private final SecurityContextRepository securityContextRepository;
     private final SecurityContextHolderStrategy contextHolder = SecurityContextHolder.getContextHolderStrategy();
-    private final StepUp stepUp;
+    private final AccessAudit audit;
 
-    StepUpSuccessHandler(SecurityContextRepository securityContextRepository, StepUp stepUp) {
+    StepUpSuccessHandler(SecurityContextRepository securityContextRepository, AccessAudit audit) {
         this.securityContextRepository = securityContextRepository;
-        this.stepUp = stepUp;
+        this.audit = audit;
     }
 
     @Override
@@ -38,7 +38,7 @@ class StepUpSuccessHandler implements AuthenticationSuccessHandler {
         contextHolder.setContext(context);
         securityContextRepository.saveContext(context, request, response);
 
-        stepUp.recordCompleted(principal.user(), principal.started());
+        audit.stepUpCompleted(principal.user(), principal.started().intent());
         response.sendRedirect(request.getContextPath() + principal.started().returnTo() + "?stepup=done");
     }
 }

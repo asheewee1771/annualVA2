@@ -10,6 +10,8 @@
  * Cyber Manager grants will come from the System Register apply. {@link sg.annualva.access.AccessGuard}
  * is the per-System ownership check every service path that addresses a System must call (ADR 0013).
  * Step-up ({@link sg.annualva.access.StepUp}) makes a sensitive command require a sign-in within the last
- * five minutes and runs the fresh sign-in round trip (ADR 0004). Depends on boundary, config and web only.
+ * five minutes and runs the fresh sign-in round trip (ADR 0004). Everything it does that must be accountable (sign-in,
+ * sign-out, step-up, refused requests, VA POC role changes) goes to the audit log through {@link sg.annualva.access.AccessAudit}.
+ * Depends on audit, boundary, config and web only.
  */
 package sg.annualva.access;
