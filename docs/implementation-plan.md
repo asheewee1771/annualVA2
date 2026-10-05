@@ -95,7 +95,7 @@ annualVA2/
 | `app_user` | email unique, sso_id (afcas.uuid) unique null, display_name, linked_at, idp_disabled_at |
 | `role_grant` | role (SMO, CYBER_MANAGER, VA_POC, AUDITOR), user_id null, email, system_id null, source (CONFIG, REGISTER, GRANT), granted_at/by, expires_at, last_used_at, lapsed_at, suspended_at, revoked_at |
 | `auditor_scope` | grant_id, system_id null, cycle_year null |
-| `va_cycle` | year pk, q1..q4_start, q4_end, closes_on (q4_end+28), closed_at/by, first_live_quarter null |
+| `va_cycle` | year pk, closed_at/by, closes_on override. Added by ticket 41; until then the calendar (q1..q4_start, q4_end, closes_on = q4_end+28) is computed and the first live Quarter is configuration, not a column (ADR 0015, reviewer-decisions.md) |
 | `va_system` | id (business System ID), name, smo_email, cm_email, quarter, added_on, retired_at, smo_unlinked, smo_unreachable(_since) |
 | `register_upload`, `register_preview_row` | upload status (PREVIEW/APPLIED/DISCARDED); per row change, effect, reason, requires_confirmation, confirmed, before/after jsonb |
 | `va_submission` | system_id, cycle_year, quarter, state (10 states), previous_state, overdue(+since), endorsed_late, submit_due, review_due, endorse_due, windows_reset_on, started/submitted/endorsed_at/by, version; unique(system_id, cycle_year) |

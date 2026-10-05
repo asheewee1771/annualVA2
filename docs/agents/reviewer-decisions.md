@@ -50,3 +50,17 @@ Human decisions on reviewer findings. Check here before asking again. Each entry
 - **Finding:** controls not yet built are marked FAIL even when the plan assigns them to a later ticket; under a strict reading every ticket fails until the last one lands.
 - **Chosen action:** a control that fails only because a later ticket owns it does not block the current ticket, provided the finding names the owning ticket and the change does not weaken the control. It stays FAIL in the report as a tracked deferral. A control the current ticket owns, or weakens, still blocks. Decided 2026-10-04.
 - **When to reuse:** every gate run; the owning ticket's own gate must then show the control passing.
+
+## VA Cycle calendar is computed, the va_cycle table arrives with ticket 41
+
+- **Area:** VA Cycle and Quarter calendar (ticket 06, ADR 0015), data model in `docs/implementation-plan.md`
+- **Finding:** ticket 06 computes the Quarters, windows and due dates from the year, the `Clock` bean and two properties and adds no `va_cycle` table, whereas the implementation plan's data model lists one (Quarter starts, `closes_on`, `closed_at/by`, `first_live_quarter`). Ticket 41 needs a table for the close record and an early-close override of `closes_on`.
+- **Chosen action:** accept the computed calendar and keep ADR 0015. The `va_cycle` table is added by ticket 41 (VA Cycle lifecycle) with the close record; the plan and ticket 41 say so. Decided 2026-10-05.
+- **When to reuse:** any finding that the calendar has no table or deviates from the plan's data model; any ticket that needs a stored Cycle record before 41 should raise it rather than add the table ad hoc.
+
+## First live Quarter is configuration until someone needs to change it
+
+- **Area:** VA Cycle calendar (ticket 06, ADR 0015), the one-off first live Quarter
+- **Finding:** the spec calls it "a one-off first live Quarter setting" and the plan puts it in `va_cycle.first_live_quarter`, but ticket 06 reads it from `annualva.calendar.first-live-cycle` (2027) and `first-live-quarter` (3), validated at startup, so changing it needs a deployment and a VA POC cannot change it in the app.
+- **Chosen action:** keep configuration for now. Add a stored setting only if the cyber team asks to change it without a deployment; the plan's `va_cycle` row says it is configuration until then. Decided 2026-10-05.
+- **When to reuse:** any finding that the first live Quarter is not stored or not editable in the app; revisit only on a request to change it without a deployment.
