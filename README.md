@@ -48,7 +48,7 @@ The first start of the three `maven:3` mock containers takes several minutes whi
 | (base) `application.yml` | `backend/src/main/resources` | production shape: `${ENV_VAR}` bindings only, invariant literals |
 | `dev-mcc` | `backend/src/main/resources` | local development against the mock stack; mock literals |
 | `ci` | `backend/src/test/resources` | Seam 1 tests: Testcontainers PostgreSQL, in-process fakes, plain HTTP |
-| `sit` | added by the first SIT-bound ticket | `${VAR:dev-default}` plus `.env.sit.example` |
+| `sit` | `backend/src/main/resources` | first deployed target: `${VAR:dev-default}` bindings (mock-stack defaults for non-secrets, none for secrets), optional `backend/.env.sit` copied from `backend/.env.sit.example` |
 
 Select with `SPRING_PROFILES_ACTIVE=dev-mcc` or `-Dspring-boot.run.profiles=dev-mcc`.
 
@@ -86,6 +86,20 @@ Calls from the app to MCC SSO (token endpoint, JWKS) time out after `annualva.mc
 A sensitive command calls `StepUp.require("<intent>")` first (intent: a lower-case code such as `register-apply`). It is refused with `403 step-up-required` and a `stepUpPath` unless the session's `auth_time` is within `annualva.step-up.freshness-window` (5 minutes). The SPA sends the browser to `GET /auth/step-up?intent=...&returnTo=/route`, which starts a new authorization request with `prompt=login` and `max_age=0`. The callback refuses a token whose `auth_time` is absent or older than the step-up's start (less `annualva.step-up.clock-skew`, 30 s), that lacks MFA evidence, or that belongs to another person; otherwise it only refreshes `auth_time` (never the 8-hour limit) and redirects to `returnTo?stepup=done` (or `?stepup=refused&reason=<code>`). The action is never replayed. Successful and refused step-ups are ECS events (`step-up`, `step-up-refused`) carrying the user id and the intent.
 
 If SIT shows MCC SSO ignores `prompt=login`, set `annualva.step-up.mode: full-sign-in` (environment variable `ANNUALVA_STEPUP_MODE`): step-up then ends the app session and sends the person through a normal sign-in (ADR 0004). That only helps if the single sign-on session is also gone or re-authenticates; confirm with the SSO onboarding ticket.
+
+## SIT onboarding checks (ticket 56)
+
+The `sit` profile (`application-sit.yml`, values in `backend/.env.sit.example`) is ready; what MCC SSO in SIT actually does is confirmed by a person with SIT access, once the MTM onboarding has registered the login and service clients, the EC public key (kid in `ANNUALVA_MCC_SIGNING_KID`) and the redirect URI `https://<sit-host>/login/oauth2/code/mcc-sso-login`. Put the SIT CA certificate (PEM text) at `backend/src/main/resources/sit/mcc-sso-ca.crt`, or point `ANNUALVA_MCC_TRUST_CERTIFICATE` at another `classpath:` or `file:` location. Then sign in and read the ECS log lines (they carry user id and fixed codes only, never claim values):
+
+| Question | How to check | What decides |
+|---|---|---|
+| Does MCC SSO supply `amr` or `acr` for MFA? | Sign in with `ANNUALVA_SIGNIN_REQUIRE_MFA_CLAIM=true`. | `event.action=sign-in` means yes. `sign-in-refused` with reason `mfa-not-evidenced` means the claim is absent or has other values: read the `amr`/`acr` values in the browser's id token (SIT test account), set `ANNUALVA_SIGNIN_MFA_AMR_VALUES` or `ANNUALVA_SIGNIN_MFA_ACR_VALUES`; only if MCC SSO supplies neither, record that and turn the check off for SIT (logged at startup as `sign-in-mfa-check-disabled`). |
+| Is `email_verified` a boolean `true`? | Same sign-in. | Reason `email-not-verified` means it is missing, a string or false: record what is sent; only then set `ANNUALVA_SIGNIN_REQUIRE_VERIFIED_EMAIL=false` (logged at startup). |
+| Is `auth_time` returned? | Same sign-in. | Reason `missing-auth-time`: the provider must be configured to return it; there is no application fallback (sign-in and step-up fail closed). |
+| Is `afcas.uuid` mapped? | Same sign-in. | Reason `missing-identity`: the `afcas.uuid` mapper is missing on the client. |
+| Does MCC SSO honour `prompt=login` and `max_age=0`? | Signed in, open `/auth/step-up?intent=sit-check&returnTo=/` in the same browser. | A password and MFA prompt appears and the log shows `step-up` success: yes. No prompt and `step-up-refused` with reason `stale-auth-time`: it does not. Set `ANNUALVA_STEPUP_MODE=full-sign-in`, re-run the same check through a sensitive action once ticket 10 exists, and update ADR 0004. If MCC SSO keeps its own browser session, an application-only sign-out is not enough: an end-session call to MCC SSO is then needed and is a new ticket. |
+
+Record each answer under ticket 56's Comments.
 
 ## Roles and access
 
