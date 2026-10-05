@@ -1,0 +1,21 @@
+{
+  "role": "dev",
+  "project_name": "Annual VA",
+  "model": "claude-sonnet-5-5",
+  "prompt_version": "1",
+  "project_type": "web_fullstack",
+  "stories_path": "D:/projects/annualVA2/.scratch/annual-va/spec.stories.yaml",
+  "mode": "fresh",
+  "known_constraints": [
+    "Sign-in (story 72) and the role store (stories 73, 75, 76) come first: every other story needs an authenticated, role-scoped caller.",
+    "Story 20 (upload pipeline) is built before the four parser stories 20a-20d, which are independent of each other and can run in parallel.",
+    "Submitting a VA Submission (story 40) needs the declaration (41), proposing statuses (35) and at least one parser.",
+    "Cyber Manager review (stories 48-58) needs a submitted VA Submission (40); endorsement (64-71) needs a reviewed one (57).",
+    "Exemptions (43-47) and Register retirement effects (5-7) need the VA Submission state machine (19, 40, 57, 65).",
+    "Reminders (88-90) need the Quarter windows and the Overdue flag (16, 42, 71) and the notification outbox (91, 92)."
+  ],
+  "team_size": 2,
+  "max_concurrent_mappers": 20,
+  "max_batch_attempts": 3,
+  "monorepo": true
+}
