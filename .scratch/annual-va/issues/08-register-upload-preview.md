@@ -6,6 +6,7 @@
 **Blocked by:** 07 (Download the System Register template), 06 (VA Cycle and Quarter calendar)
 **Status:** ready-for-agent
 **Effort (orchestrator estimate):** about 13.0 developer days across stories 2 (10.0*), 12 (2.0), 14 (1.0); `*` marks the critical path. See `reports/dev-report.md`.
+**Template note (2026-10-05):** ticket 07 fixed the five header texts in `RegisterTemplate.HEADERS` (upload must match them as written), the Quarter notation `Q1` to `Q4`, and an example row `EXAMPLE-001`. Block a System ID that starts `EXAMPLE-` so an unchanged example row cannot be uploaded as a real System. See ADR 0016.
 
 - [ ] `POST /api/system-register/uploads` (VA POC, multipart, `.xlsx` up to 2 MB, content sniffed) parses the template and returns a preview id plus rows classified ADD, UPDATE, RETIRE or NO CHANGE by System ID, each with before and after values.
 - [ ] A row with no Cyber Manager, with the System's own SMO as its Cyber Manager, with an invalid email or Quarter, or with a duplicate System ID is marked Blocked with a reason; a preview with any Blocked row cannot be applied.
