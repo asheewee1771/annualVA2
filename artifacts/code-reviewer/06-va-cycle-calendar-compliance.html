@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Code Review — 06-va-cycle-calendar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">build PASS · C0 H0 M0 L2</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo WARN · C0 H0 M4 L7</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN · C0 H0 M0 L10</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">semgrep WARN · C0 H0 M1 L4</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN · C0 H0 M7 L3</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react WARN · C0 H0 M2 L3</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN · C0 H0 M0 L8</span>
+      <span class="font-mono text-sm text-slate-500 ml-auto">main</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report</h1>
+          <p class="text-sm text-slate-500 mt-1">Ticket 06: VA Cycle and Quarter calendar (<span class="font-mono">06-va-cycle-calendar</span>). Uncommitted changes against HEAD b97f230.</p>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Executive Summary</h2>
+          <p class="text-xs text-slate-500 mt-1">Overall <span class="font-semibold">PASS</span>: no check has a Critical or High finding that blocks this ticket. Six of seven checks carry warnings (Medium or Low only). Counts are Critical / High / Medium / Low; Info items are counted under Low.</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <th class="px-4 py-2">Check</th><th class="px-4 py-2">Status</th><th class="px-4 py-2">C / H / M / L</th><th class="px-4 py-2">Summary</th>
+          </tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-medium">Build (build-check)</td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 2</td><td class="px-4 py-2 text-slate-600">Both gates green: frontend npm run check (Prettier, tsc -b, vite build, dependency-cruiser, fallow) and backend clean verify (213 tests, 0 failures, JaCoCo 80 % met; every cycle class has 0 missed instructions and branches). ArchUnit passes with the new cycle layer.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-medium">Thermo-nuclear review</td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 4 / 7</td><td class="px-4 py-2 text-slate-600">Sound shape and small files. Four Medium: three clock reads per request, first-live-Quarter fact held four ways, window logic in three parallel switches, speculative CyclePhase.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-medium">Code review (Standards and Spec)</td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 10</td><td class="px-4 py-2 text-slate-600">All six acceptance criteria met and verified (72 targeted tests pass). Ten Low or Info items: parameterised test rather than a property library, extra phase surface, repeated clock reads, role literal, comment drift.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-medium">Semgrep</td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 4</td><td class="px-4 py-2 text-slate-600">No findings in any ticket 06 file (untracked cycle package and front-end files scanned; 387 rules, Docker runner per recorded decision). Five pre-existing P2 findings in untouched files.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-medium">IM8 Application Technical Controls</td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 7 / 3</td><td class="px-4 py-2 text-slate-600">Ticket 06 owns no IM8 control outright and weakens none (two read-only role-gated GETs, a config record, a header). Four nominal High are tracked deferrals (lm-16, pm-6, ac-3, ac-4).</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-medium">React review</td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 2 / 3</td><td class="px-4 py-2 text-slate-600">Clean render and effect patterns, no business rules in the browser. Two Medium: the header does not wrap at narrow widths, and load or failure states are not announced and not recoverable.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-medium">Spring Boot review (7 skills)</td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 8</td><td class="px-4 py-2 text-slate-600">No Critical or High. Three Low (repeated clock reads, role literal, loose 404-or-405 assertion) and five Info. Data and batch skills not applicable; logging PASS.</td></tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-xs text-slate-500">No blocking Critical or High findings. The items below are tracked deferrals (nominal High) and the themes raised by more than one check.</p>
+          <ul class="list-disc pl-5 space-y-2 text-sm">
+            <li><span class="text-orange-600 font-semibold">Tracked deferral (nominal High)</span> · im8 lm-16 metrics: owned by ticket 52. Not weakened by ticket 06.</li>
+            <li><span class="text-orange-600 font-semibold">Tracked deferral (nominal High)</span> · im8 pm-6 system documentation (OpenAPI, architecture, network): owned by ticket 52. ADR 0015 and the README section were added; add the two calendar endpoints to the spec then.</li>
+            <li><span class="text-orange-600 font-semibold">Tracked deferral (nominal High)</span> · im8 ac-3 (tickets 46 and 47) and ac-4 (ticket 47) role lapse and review jobs. Does not block under the recorded decision &quot;IM8 controls owned by a later ticket&quot;.</li>
+            <li><span class="text-amber-600 font-semibold">Raised by four checks</span> · <span class="font-mono text-xs">GET /api/cycles</span> reads the clock three times, so <span class="font-mono text-xs">businessDate</span>, <span class="font-mono text-xs">currentCycle</span> and the list can disagree across Singapore midnight (thermo-nuclear 1 Medium, code-review T-1, springboot F1). Pass one <span class="font-mono text-xs">LocalDate today</span> down.</li>
+            <li><span class="text-amber-600 font-semibold">Raised by three checks</span> · the role list <span class="font-mono text-xs">hasAnyRole(...)</span> duplicates the <span class="font-mono text-xs">Role</span> enum (thermo-nuclear 5, code-review T-2, springboot F2). Add an every-role test or a shared constant.</li>
+            <li><span class="text-amber-600 font-semibold">Medium, thermo-nuclear</span> · first-live-Quarter state is carried four ways (finding 2), window logic sits in three parallel switches (finding 3), and CyclePhase pre-decides the rule for ticket 41 (finding 4; code-review S-2 agrees).</li>
+            <li><span class="text-amber-600 font-semibold">Medium, react</span> · the header does not wrap at narrow widths (react 1) and the loading or error state is not announced or recoverable (react 2); aria-label on a paragraph is raised by react 3 and code-review T-6.</li>
+          </ul>
+        </div>
+      </div>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">Build (build-check) <span class="font-mono text-xs text-slate-500 ml-2">C0 H0 M0 L2</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <p class="px-5 pb-3 text-xs text-slate-500">Both gates run and pass. Front-end Vitest and coverage not run by recorded decision (ADR 0009). Prior decisions on the computed calendar and first live Quarter honoured.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+            <th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th>
+          </tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">-</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Generic Vitest and coverage step skipped under the recorded no-front-end-unit-tests decision; not a finding against this ticket.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/resources/application.yml; backend/src/test/java/sg/annualva/arch/ArchitectureTest.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Git warns of CRLF line endings that will be normalised to LF on next touch. Cosmetic; no gate flags it.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">Thermo-nuclear review <span class="font-mono text-xs text-slate-500 ml-2">C0 H0 M4 L7</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-xs text-slate-500">No structural regression, no file-size or spaghetti problem. Findings 1 to 4 recommended for this ticket.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+            <th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th>
+          </tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/cycle/CycleController.java; backend/src/main/java/sg/annualva/cycle/CycleCalendar.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">1: three clock reads per GET /api/cycles; businessDate, currentCycle and the list can disagree across Singapore midnight. Make CycleCalendar a pure function of a date and read the clock once in the controller.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/cycle/CycleCalendar.java; backend/src/main/java/sg/annualva/cycle/VaCycle.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">2: the first-live-Quarter fact is carried four ways (Quarter.handledOutsideApp, VaCycle.firstLiveQuarter as a nullable Integer, CycleView.firstLiveQuarter, CurrentView.handledOutsideApp) with three re-deriving branches. Keep the per-Quarter flag only.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/cycle/Quarter.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">3: window logic spread over windowOn, windowStarts and windowEnds plus hard-coded +13 and +27 offsets; four places to edit. Give Quarter one windows() list.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/cycle/CyclePhase.java; backend/src/main/java/sg/annualva/cycle/VaCycle.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">4: CyclePhase and the closing notion are speculative scope that pre-decide the rule for ticket 41 (ADR 0015 point 3). Remove until ticket 41 or state in ticket 41 that it is the inherited contract.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/cycle/CycleController.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">5: ANY_ROLE string literal duplicates the Role enum; a fifth role is silently locked out. AuditController has its own literal, so the pattern will multiply.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/cycle/CycleCalendar.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">6: business-zone conversion lives in CycleCalendar.today() and again in AuditController. Extract one BusinessTime bean in config.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/api/cycles.ts</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">7: presentation logic (WINDOW_LABELS, dayLabel, summarise) in the API module, with dead fallbacks and a hard-coded handledOutsideApp: false. Move beside CycleStatus.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/Shell.tsx</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">8: ad-hoc role predicate instead of areasFor(session.roles); header fetches once and goes stale in a long-lived tab.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/cycle/Quarter.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">9: cast-precedence trap in (int) (DAYS.between(...) + 1) / 7 and silent preconditions on weekOf and windowOn. Use Math.toIntExact.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/cycle/</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">10: repeated lookup helpers across CurrentPositionTest, QuarterRulesTest and FirstLiveQuarterTest; fully qualified AssertJ and java.util names inline; accumulator in the every-role test.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/arch/ArchitectureTest.java; backend/src/main/java/sg/annualva/cycle/CalendarProperties.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">11: rule comment says domain modules will read the calendar but the rule allows only app; CalendarProperties and CycleCalendar form a package cycle over the FIRST_YEAR and LAST_YEAR constants.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">Code review (Standards and Spec) <span class="font-mono text-xs text-slate-500 ml-2">C0 H0 M0 L10</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-xs text-slate-500">Spec: 3 Low. Standards: 5 Low and 2 Info (Info counted under Low). Full clean verify and JaCoCo were not run by this check; the build check covers them and passes.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+            <th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th>
+          </tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/cycle/QuarterRulesTest.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">S-1: the &#x27;property-based test&#x27; is a parameterised example test over 2026 to 2035 with an independent oracle; exhaustive for the closed range. Record in reviewer-decisions.md if a literal reading matters.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/cycle/CycleView.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">S-2: unrequested surface (phase, weeks, firstLiveQuarter, windows list, closing note) that ticket 41 must now honour.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/CycleStatus.tsx</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">S-3: a Submission Window deadline is shown beside &#x27;Handled outside the app&#x27;, which may suggest in-app obligations. UX judgement.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/cycle/CycleController.java; backend/src/main/java/sg/annualva/cycle/CycleCalendar.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">T-1: three clock reads per GET /api/cycles; fix by passing a LocalDate today.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/cycle/CycleController.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">T-2: role list duplicated as a string literal; add a test iterating Role.values().</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/arch/ArchitectureTest.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">T-3: comment says domain modules will read the calendar but the rule permits only app; package-info claims config and web only without a rule.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/cycle/CycleCalendar.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">T-4: second place that derives the business date (also AuditController); consider one BusinessClock bean.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/cycle/Quarter.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">T-5 (Info): Quarter.cycle component is never read; Speculative Generality.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/CycleStatus.tsx</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">T-6: aria-label on a generic paragraph is not reliably exposed; use role=status or role=note.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/cycle/</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">T-7 (Info): test style nits; the no-write-path test accepts 404 or 405.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">Semgrep <span class="font-mono text-xs text-slate-500 ml-2">C0 H0 M1 L4</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-xs text-slate-500">Run from the semgrep/semgrep Docker image. Test directories are skipped by .semgrepignore. Pre-existing items are listed for follow-up outside this ticket.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+            <th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th>
+          </tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">scripts/mock-mockpass-assertions.js</td><td class="px-4 py-2 font-mono text-xs">11</td><td class="px-4 py-2">Pre-existing, not ticket 06: path.join with possible input flagged for path traversal (path-join-resolve-traversal). Dev-only mock-IdP helper.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">artifacts/code-reviewer/03-sign-in-via-mcc-sso-compliance.html</td><td class="px-4 py-2 font-mono text-xs">6</td><td class="px-4 py-2">Pre-existing generated report: missing-integrity on the Tailwind CDN script tag (report template behaviour).</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">artifacts/code-reviewer/04-role-store-and-deny-by-default-compliance.html</td><td class="px-4 py-2 font-mono text-xs">7</td><td class="px-4 py-2">Same as above.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">artifacts/code-reviewer/05-audit-log-core-compliance.html</td><td class="px-4 py-2 font-mono text-xs">7</td><td class="px-4 py-2">Same as above.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">artifacts/code-reviewer/09-step-up-authentication-compliance.html</td><td class="px-4 py-2 font-mono text-xs">7</td><td class="px-4 py-2">Same as above.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">IM8 Application Technical Controls <span class="font-mono text-xs text-slate-500 ml-2">C0 H0 M7 L3</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-xs text-slate-500">Recorded decision applied (IM8 controls owned by a later ticket): lm-16 and pm-6 (ticket 52), ac-3 (tickets 46 and 47) and ac-4 (ticket 47) are shown FAIL at nominal High, are not weakened by ticket 06, and do not block it. Under a strict reading with no deferral rule the four would make this check FAIL, as in the ticket 05 report. Counts exclude those four. The IM8 artifact headline says 9 carried Medium; its control table lists 7 (as-1, as-4, as-7, as-11, ac-8, ac-12, dp-3), which is what is shown here. pm-6: ADR 0015 and the README section improve it; add the two endpoints to the OpenAPI spec when ticket 52 produces it.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+            <th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th>
+          </tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/api/cycles.ts</td><td class="px-4 py-2 font-mono text-xs">41</td><td class="px-4 py-2">as-1: fetchCycles casts the JSON without runtime validation (carried pattern, ADR 0002). Backend validation is correct.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/Shell.tsx</td><td class="px-4 py-2 font-mono text-xs">27</td><td class="px-4 py-2">as-7: header calendar is gated on session roles but there is no central 403 redirect (carried, ticket 04). Backend enforces access.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">-</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">as-4: anonymous-session cap only (carried).</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">-</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">as-11: idle timeout 30 min against the 15 min default, recorded deviation ADR 0008 (carried).</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">-</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">ac-8: JIT provisioning exists, deprovisioning is ticket 47 (carried).</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">-</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">ac-12: roles held in the app by design, not mapped from IdP groups, ADR 0011 (carried).</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">-</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">dp-3: TLS configured in the dev profile; base config relies on the hosting layer, ticket 55 (carried).</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">docs/adr/0015-the-calendar-is-computed-not-stored.md; backend/src/main/java/sg/annualva/cycle/CycleController.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L1 (lm-4): cites ADR 0014 for &#x27;reads are not actions&#x27; but ADR 0014 does not say that. Decide it explicitly in ADR 0015.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/cycle/CycleAccessTest.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L2 (lm-4): proves 401 and 403 but not that the refusal reaches audit_entry for the new paths; the mechanism is generic and covered elsewhere.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/api/cycles.ts</td><td class="px-4 py-2 font-mono text-xs">41</td><td class="px-4 py-2">L3 (as-1): one more unvalidated response cast; close together with the carried as-1 Medium.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">React review <span class="font-mono text-xs text-slate-500 ml-2">C0 H0 M2 L3</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-xs text-slate-500">npm run check exits 0. No Critical or High finding.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+            <th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th>
+          </tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/styles.css; frontend/src/app/Shell.tsx</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">1: .shell-header has no flex-wrap and .cycle-status is flex: 1 without min-width: 0; at narrow widths or 200 % zoom the status line is squeezed or the page scrolls horizontally (WCAG 1.4.10).</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/CycleStatus.tsx</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">2: loading and error states are plain paragraphs with no role=status, and the unused reload from useResource leaves a transient failure stuck until a full page reload.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/CycleStatus.tsx</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">3: aria-label on a plain paragraph is not reliably exposed; use role=group or drop it.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/CycleStatus.tsx</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">4: position fetched once on mount goes stale in a long-lived tab; display nuisance only, the server is authoritative.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/api/cycles.ts; frontend/src/app/CycleStatus.tsx</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">5: minor presentation detail (summarise on every render is cheap; dayLabel fallback; confirm dark-theme --warning contrast).</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">Spring Boot review (7 skills) <span class="font-mono text-xs text-slate-500 ml-2">C0 H0 M0 L8</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-xs text-slate-500">Surefire reports for the six cycle test classes (63 tests) show 0 failures; the Maven gate was not re-run by this check (the build check passes). Info items are counted under Low.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+            <th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th>
+          </tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/cycle/CycleController.java; backend/src/main/java/sg/annualva/cycle/CycleCalendar.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">F1: one response reads the clock several times; read today once and pass it down.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/cycle/CycleController.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">F2: ANY_ROLE string duplicates the Role enum; iterate Role.values() in the every-role test or add a note next to the constant.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/cycle/CycleAccessTest.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">F3: thereIsNoWayToChangeTheCalendarThroughTheApi accepts 404 or 405; pin the observed status per path.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/cycle/Quarter.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">F4 (Info): integer-cast precedence is correct but easy to misread; use Math.toIntExact.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/cycle/CycleController.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">F5 (Info): out-of-range year is a 404 from a manual check; matches project style, no change needed.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/cycle/CycleSeam1.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">F6 (Info): Seam 1 tests use the full SpringBootTest context by project convention; cache and container hygiene is good.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/cycle/CycleSeam1.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">F7 (Info): the shared MutableClock is safe only while tests run sequentially.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/cycle/QuarterRulesTest.java; backend/src/test/java/sg/annualva/cycle/CurrentPositionTest.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">F8 (Info): a little logic in test helpers; justified as an independent oracle and lookup helpers.</td></tr>
+          </tbody>
+        </table>
+      </details>
+    </main>
+  </body>
+</html>
