@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review — 03-sign-in-via-mcc-sso</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="bg-emerald-100 text-emerald-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">Overall PASS</span>
+      <span class="bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">build WARN C0 H0 M0 L1</span>
+      <span class="bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">thermo-nuclear WARN C0 H0 M3 L9</span>
+      <span class="bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">code-review WARN C0 H0 M4 L16</span>
+      <span class="bg-emerald-100 text-emerald-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">semgrep PASS C0 H0 M0 L0</span>
+      <span class="bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">im8 WARN C0 H0 M5 L0</span>
+      <span class="bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">react WARN C0 H0 M0 L4</span>
+      <span class="bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">springboot WARN C0 H0 M6 L14</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">main</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Executive Summary</h2>
+          <p class="text-xs text-slate-500 mt-1">Ticket 03, sign in via MCC SSO (rerun after the correction pass). Overall PASS: no check has a Critical or High finding. Totals: Critical 0, High 0, Medium 18, Low 44.</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2">Check</th><th class="px-4 py-2">Status</th><th class="px-4 py-2">C / H / M / L</th><th class="px-4 py-2">Summary</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-medium">Build (build-check)</td><td class="px-4 py-2"><span class="bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">WARN</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 1</td><td class="px-4 py-2 text-slate-600">Full gates pass: npm run check, mvnw clean verify (57 tests, ArchUnit 7, JaCoCo line 94.5 %, branch 81.7 %). One deprecated-for-removal API warning.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-medium">Thermo-nuclear (maintainability)</td><td class="px-4 py-2"><span class="bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">WARN</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 3 / 9</td><td class="px-4 py-2 text-slate-600">No giant files; layering enforced by ArchUnit. Three structural Medium items: repeated ECS event construction, dev-persona branch in core sign-in rules, limiter prune cost.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-medium">Code review (Standards + Spec)</td><td class="px-4 py-2"><span class="bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">WARN</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 4 / 16</td><td class="px-4 py-2 text-slate-600">All eight acceptance bullets implemented. Medium: restart survival weakly proven, unrequested anonymous-session limiter, IdentityProvider port never faked, dev email map not profile-gated.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-medium">Semgrep</td><td class="px-4 py-2"><span class="bg-emerald-100 text-emerald-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">PASS</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 0</td><td class="px-4 py-2 text-slate-600">Official Docker image, p/security-audit and p/default, 168 targets including untracked files. No findings in code changed by this ticket.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-medium">IM8 Application Technical Controls</td><td class="px-4 py-2"><span class="bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">WARN</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 5 / 0</td><td class="px-4 py-2 text-slate-600">No Critical or High blocking findings. Five Medium WARN controls; six tracked deferrals owned by later tickets (nominal severity shown, none weakened by this change).</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-medium">React (react-review)</td><td class="px-4 py-2"><span class="bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">WARN</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 4</td><td class="px-4 py-2 text-slate-600">No render-phase, effect or state defects; ticket front-end acceptance met. Four Low items.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-medium">Spring Boot (7 spring-* reviews)</td><td class="px-4 py-2"><span class="bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">WARN</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 6 / 14</td><td class="px-4 py-2 text-slate-600">spring-batch not applicable. Six Medium: dev identity map gating, limiter keyed on getRemoteAddr behind a proxy, missing id-token validation tests, untested disabled-check modes, MutableClock never reset, implicit RS256 and per-sign-in decoder.</td></tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-600">No Critical or High findings. IM8 deferrals with a nominal High severity (lm-16, ck-2, pm-6) are owned by tickets 52 and 56 and are not weakened by this change. The Medium items that recur across checks and merit action before commit are listed below.</p>
+          <ul class="list-disc pl-5 text-sm text-slate-700 space-y-1">
+            <li>Dev identity map is not profile-gated in code (code-review T-2, thermo-nuclear M2, springboot M1): <span class="font-mono text-xs">backend/src/main/java/sg/annualva/access/DevIdentityProperties.java</span></li>
+            <li>Anonymous-session limiter is out of scope, keyed on getRemoteAddr and has an unbounded prune path (code-review S-2, thermo-nuclear M3, springboot M2, im8 as-4): <span class="font-mono text-xs">backend/src/main/java/sg/annualva/access/AnonymousSessionLimiter.java</span></li>
+            <li>Id-token validation controls and disabled-check modes are untested (springboot M3, M4): <span class="font-mono text-xs">backend/src/test/java/sg/annualva/harness/FakeOidcIssuer.java</span></li>
+            <li>Id-token decoder pins RS256 implicitly and is rebuilt per sign-in (springboot M6): <span class="font-mono text-xs">backend/src/main/java/sg/annualva/adapters/oidc/MccClientConfig.java</span></li>
+          </ul>
+        </div>
+      </div>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">Build (build-check)</span>
+          <span class="bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+              <th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/oidc/MccHttp.java</td><td class="px-4 py-2 font-mono text-xs">51</td><td class="px-4 py-2">RestClient.Builder.messageConverters(Consumer) is deprecated for removal; the only compiler warning. Move to configureMessageConverters when convenient.</td></tr>
+          </tbody>
+        </table>
+        <p class="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">Info: branch coverage headroom is thin (81.7 % against 80 %). Info: an earlier invalid run came from a concurrent mvnw clean in the same backend directory; serialise reviewer runs.</p>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">Thermo-nuclear (maintainability)</span>
+          <span class="bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+              <th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">access/SignInSuccessHandler, SignOutHandler, SignInFailureHandler, SessionLimitsFilter, SignInSecurity, AnonymousSessionLimiter, SignInService</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">M1: hand-rolled ECS event construction repeated eight times, session-ended built in two places. Introduce one AuthEvents helper.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/SignInService.java; backend/src/main/java/sg/annualva/access/DevIdentityProperties.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">M2: dev-persona email substitution is a branch inside core sign-in rules and skips the verified-email check; only an empty map keeps it off outside dev. Move to a @Profile adapter or decorator.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/AnonymousSessionLimiter.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">M3: admit() can re-scan an unbounded map on every request once above 10,000 same-minute keys; limiter is per node and beyond the ticket scope. Use Caffeine, defer to the edge, or drop it.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/SessionController.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L1: /api/session returns an untyped LinkedHashMap; use a SessionView record.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/resources/application.yml</td><td class="px-4 py-2 font-mono text-xs">34</td><td class="px-4 py-2">L2: idle timeout duplicated in server.servlet.session.timeout and annualva.sign-in.idle-timeout; derive one from the other.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/SignedInOidcUser.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L3: re-implements DefaultOidcUser with 60 lines of delegation.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/AppUserStore.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L4: write then second SELECT per operation (use RETURNING); refresh updates on every sign-in; preRegister is public only for the test harness.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/SignInService.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L5: nested retry try/catch duplicates a lambda, constructor side-effect logging, hand-chained validation of Identity.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/SignInSecurity.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L6: ten-argument constructor and web handlers passed as method parameters to satisfy the arch rule.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/arch/ArchitectureTest.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L7: arch rules loosened beyond need (adapters to web); PUBLIC_PATHS &quot;mirrored in the architecture tests&quot; claim is not true.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/Shell.tsx; frontend/src/app/App.tsx</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L8: optional onSignedOut prop never optional in use; hand-built partial Session for the signed-out state.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/harness/TestIdentity.java; backend/src/test/java/sg/annualva/access/SessionLifecycleTest.java</td><td class="px-4 py-2 font-mono text-xs">86</td><td class="px-4 py-2">L9: auth_time uses Instant.now() rather than the harness clock; POST /login 404 asserted only with a CSRF token.</td></tr>
+          </tbody>
+        </table>
+        <p class="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">Info I1: id-token decoder silently pins RS256; state it or make the algorithm a property.</p>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">Code review (Standards + Spec)</span>
+          <span class="bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+              <th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/access/SessionStoreTest.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">S-1: &quot;sessions survive an application restart&quot; is not proven; no test re-reads a session from a fresh context or store.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/AnonymousSessionLimiter.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">S-2: scope creep. Limiter, 429 handler, property, README section and test are not in any acceptance bullet; ineffective behind a load balancer. Remove or record the decision and ticket it.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/boundary/IdentityProvider.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">T-1: port has one implementation and is never faked (ADR 0003 expects two); record the decision or drop the port.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/DevIdentityProperties.java; backend/src/main/java/sg/annualva/access/SignInService.java</td><td class="px-4 py-2 font-mono text-xs">73</td><td class="px-4 py-2">T-2: dev email map is not profile-gated in code; any profile or env var can assign an email to a uuid. Gate with @Profile or fail startup outside dev-mcc and ci.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/SignInService.java</td><td class="px-4 py-2 font-mono text-xs">42</td><td class="px-4 py-2">S-3: MFA flag-off path untested.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/SignInService.java</td><td class="px-4 py-2 font-mono text-xs">65</td><td class="px-4 py-2">S-4: with the flag on, a token lacking amr/acr is refused; stricter than the spec wording. Confirm at onboarding.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/oidc/MccClientConfig.java</td><td class="px-4 py-2 font-mono text-xs">86</td><td class="px-4 py-2">S-5: id-token decoder is RS256-only; confirm provider algorithm at SIT.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/oidc/MccClientConfig.java</td><td class="px-4 py-2 font-mono text-xs">90</td><td class="px-4 py-2">S-6: JwtTimestampValidator uses the system clock, not the Clock bean.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/oidc/MccHttp.java; backend/src/main/java/sg/annualva/access/SignInService.java</td><td class="px-4 py-2 font-mono text-xs">86</td><td class="px-4 py-2">S-7: unrequested additions (timeouts and ProviderTimeoutTest, identity-conflict retry, always-on verified-email, session-ended log, public preRegister, unused idp_disabled_at).</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/AppUserStore.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">S-8: REFRESH silently keeps the old email when the new one is held by another user.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/SessionController.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">S-9: /api/session uuid is app_user.id, not afcas.uuid; document it.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/resources/application.yml</td><td class="px-4 py-2 font-mono text-xs">34</td><td class="px-4 py-2">S-10: session timeout and idle-timeout must be equal by hand.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/resources/application-dev-mcc.yml</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">S-11: dev-mcc persona map has two entries, unverifiable without mock-m-sso.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/resources/application.yml</td><td class="px-4 py-2 font-mono text-xs">72</td><td class="px-4 py-2">T-3: ANNUALVA_MCC_USER_INFO_URI is required but never used; MFA and verified-email literals contradict the &quot;per environment&quot; comment.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/resources/db/migration/V3__spring_session.sql</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">T-4: CHAR(36) keys against ADR 0010 uuid rule; add an exception note.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/access/SessionStoreTest.java; backend/src/test/java/sg/annualva/harness/TestEndpoints.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">T-5: tests touch the database directly and preRegister is public for tests.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">(working tree)</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">T-6: working tree mixes several logical changes; split into Conventional Commits.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/SessionLimitsFilter.java</td><td class="px-4 py-2 font-mono text-xs">48</td><td class="px-4 py-2">T-7: per-request LAST_SEEN_AT write.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/app/SecurityConfig.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">T-8: wide /oauth2/** and /login/** public globs; comment on architecture-test mirroring no longer true.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/adapters/oidc/ProviderTimeoutTest.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">T-9: about 2 s sleeps and mutation of a JVM-wide static FakeOidcIssuer; fragile under parallel execution.</td></tr>
+          </tbody>
+        </table>
+        <p class="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">Smells noted (judgement): duplicated ECS builder, string refusal reasons mirrored in SignedOutScreen.tsx, TestIdentity data clump, constant named UUID shadowing java.util.UUID.</p>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">Semgrep</span>
+          <span class="bg-emerald-100 text-emerald-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">PASS</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+              <th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td></tr>
+          </tbody>
+        </table>
+        <p class="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">Pre-existing, documented only (not counted): Low, javascript.lang.security.audit.path-traversal.path-join-resolve-traversal at scripts/mock-mockpass-assertions.js:11, developer-controlled constants in dev-only mock tooling, likely false positive.</p>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">IM8 Application Technical Controls</span>
+          <span class="bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+              <th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/api/client.ts; frontend/src/api/session.ts</td><td class="px-4 py-2 font-mono text-xs">30</td><td class="px-4 py-2">as-1: no runtime validation of API responses (as casts); no exploitable path today.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/AnonymousSessionLimiter.java</td><td class="px-4 py-2 font-mono text-xs">24</td><td class="px-4 py-2">as-4: no bucket4j; custom per-IP limiter on getRemoteAddr() covers only anonymous session creation; FE does not handle 429; credential brute-force delegated to MCC SSO.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/resources/application-dev-mcc.yml</td><td class="px-4 py-2 font-mono text-xs">41</td><td class="px-4 py-2">as-8: mock EC private key, DB password and keystore password committed as dev-mcc defaults (pre-existing pattern); ensure SIT/UAT/prod profiles carry no defaults.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/api/session.ts</td><td class="px-4 py-2 font-mono text-xs">11</td><td class="px-4 py-2">as-11: FE ignores idleTimeoutSeconds and absoluteExpiresAt (no warning or auto sign-out); server enforcement is authoritative. 30 min idle is accepted by ADR 0008.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/oidc/MccClientConfig.java</td><td class="px-4 py-2 font-mono text-xs">63</td><td class="px-4 py-2">ac-2: authorization request sends no prompt or max_age and auth_time is checked for presence only, so a live IdP session may sign in without a fresh second factor. Confirm at SIT.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500 italic">Deferred</td><td class="px-4 py-2 font-mono text-xs break-all">lm-4 (ticket 05, nominal Medium)</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Append-only audit store and refused-request logging; ECS sign-in events meet this ticket.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500 italic">Deferred</td><td class="px-4 py-2 font-mono text-xs break-all">lm-16 (ticket 52, nominal High)</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">No sign-in meters or FE error reporting; actuator baseline present.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500 italic">Deferred</td><td class="px-4 py-2 font-mono text-xs break-all">ck-2 (ticket 56, nominal High)</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Single-key JWKS, no rotation path for the MCC client-assertion key.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500 italic">Deferred</td><td class="px-4 py-2 font-mono text-xs break-all">pm-6 (ticket 52, nominal High)</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">No architecture, data-flow or network document and no committed OpenAPI spec.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500 italic">Deferred</td><td class="px-4 py-2 font-mono text-xs break-all">ac-3 / ac-1 (tickets 04, 46, nominal Medium)</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">idp_disabled_at unused; per-request authority resolution not yet built.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500 italic">Deferred</td><td class="px-4 py-2 font-mono text-xs break-all">ac-4 (ticket 47, nominal Medium)</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Role-holder review arrives later.</td></tr>
+          </tbody>
+        </table>
+        <p class="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">ck-4 is a FAIL against the literal check (dev-keystore.p12 tracked on the main classpath, mock key literal) but pre-existing, accepted mock material, catalogue level N/A, not introduced by this change. Manual review checklist is in the source artifact.</p>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">React (react-review)</span>
+          <span class="bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+              <th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/SignOutButton.tsx; frontend/src/app/Shell.tsx</td><td class="px-4 py-2 font-mono text-xs">21</td><td class="px-4 py-2">1: shell-header__session class applied to two nested elements; let one owner hold layout, return a fragment from the button.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/api/client.ts</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">2: cached CSRF token is not discarded after a successful sign-out.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/SignedOutScreen.tsx</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">3: role=&quot;alert&quot; on content present at first render may not be announced.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/SignOutButton.tsx</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">4: disabling the button during sign-out drops keyboard focus on failure.</td></tr>
+          </tbody>
+        </table>
+        <p class="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">Info: refusal() reads window.location during render; Shell sign-out button depends on an optional prop and name ?? email does not fall back on an empty string.</p>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">Spring Boot (7 spring-* reviews)</span>
+          <span class="bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+              <th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/DevIdentityProperties.java; backend/src/main/java/sg/annualva/access/SignInService.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">M1 [security]: dev identity map gated only by a property; no profile guard or fail-fast outside dev-mcc and ci.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/AnonymousSessionLimiter.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">M2 [security]: limiter keys on getRemoteAddr(); behind a proxy all users share one bucket, per-node counters.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/harness/FakeOidcIssuer.java; backend/src/test/java/sg/annualva/harness/TestIdentity.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">M3 [test]: no test for wrong iss, aud, exp, signature, unknown kid or alg=none; only the nonce can be tampered.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/SignInService.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">M4 [test]: require-mfa-claim=false and require-verified-email=false modes and their startup WARN events are untested.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/harness/Seam1Test.java; backend/src/test/java/sg/annualva/harness/MutableClock.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">M5 [test]: MutableClock never reset between tests; order-dependent results, workaround advances in AnonymousSessionLimitTest.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/oidc/MccClientConfig.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">M6 [security]: id-token algorithm implicitly RS256 and a new decoder with an empty JWKS cache is built per sign-in; cache per registration and make the algorithm configurable.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/AppUserStore.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L1 [data]: LINK update has no sso_id IS NULL guard or row-count check; concurrent identities can overwrite.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/oidc/SigningKeys.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L2 [security]: private and public key halves are not checked for consistency.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/oidc/MccClientConfig.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L3 [security]: redirect_uri built from {baseUrl} follows Host and X-Forwarded-*.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/resources/application.yml</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L4 [security]: SameSite=Lax is correct for the OIDC callback but has no ADR note.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/SignInProperties.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L5 [core]: no positive-duration checks, no idle/store timeout tie, empty MFA lists lock everyone out silently.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/oidc/MccClientConfig.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L6 [core]: JwtTimestampValidator uses the system clock; document the exception.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/arch/ArchitectureTest.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L7 [core]: adapters-to-web allowance and package-info claim are stale.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/SessionController.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L8 [web]: Map&lt;String,Object&gt; response; use a typed record.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/SessionController.java; backend/src/main/java/sg/annualva/web/ProblemResponses.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L9 [web]: no explicit produces on the session endpoint; Retry-After is a constant 60.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/SessionLimitsFilter.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L10 [data]: one session-attribute write on every request.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/SignInFailureHandler.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L11 [logging]: provider-error refusals carry no error.type diagnostic.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/SignInSuccessHandler.java; backend/src/main/java/sg/annualva/access/SignInFailureHandler.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L12 [logging]: no source.ip on sign-in events; store-side expiry not logged.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/harness/TestIdentity.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L13 [test]: auth_time from wall clock while app clock reads 2027; will break when step-up compares them.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/access/SessionStoreTest.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L14 [test]: restart survival only partly proven.</td></tr>
+          </tbody>
+        </table>
+        <p class="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">Eight Info items (wiring, JDBC use, strengths, logging, Seam 1 conventions) are in the source artifact.</p>
+      </details>
+    </main>
+  </body>
+</html>
