@@ -52,6 +52,7 @@ const ACTION_LABELS: Readonly<Record<string, string>> = {
   REQUEST_REFUSED: "Request refused",
   ROLE_GRANTED: "Role granted",
   ROLE_REVOKED: "Role revoked",
+  REGISTER_TEMPLATE_DOWNLOADED: "System Register template downloaded",
 };
 
 export const AUDIT_ACTIONS: readonly string[] = Object.keys(ACTION_LABELS);

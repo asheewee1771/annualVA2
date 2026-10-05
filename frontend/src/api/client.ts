@@ -1,3 +1,4 @@
+import type { Download } from "./files.ts";
 import { ApiError, problemFrom } from "./problem.ts";
 import { stepUpNeededFrom, type StepUpNeeded } from "./stepUp.ts";
 
@@ -43,6 +44,24 @@ async function csrfToken(): Promise<CsrfToken> {
   return csrf;
 }
 
+/**
+ * Turns a non-2xx response into an ApiError. A 401 also tells the app the session is gone; a 403 may mean the CSRF
+ * token is stale or a fresh sign-in is needed first, and the app is told about the second.
+ */
+async function rejection(response: Response, body: unknown): Promise<ApiError> {
+  if (response.status === 401) {
+    csrf = null;
+    onSignedOut();
+  }
+  const problem = problemFrom(response.status, await safeJson(response));
+  if (response.status === 403) {
+    if (problem.type.endsWith("/csrf-rejected")) csrf = null;
+    const needed = stepUpNeededFrom(problem, body);
+    if (needed) onStepUpRequired(needed);
+  }
+  return new ApiError(problem);
+}
+
 export async function request<T>(method: Method, path: string, body?: unknown): Promise<T> {
   const headers: Record<string, string> = { Accept: "application/json" };
   const init: RequestInit = { method, credentials: "same-origin", headers };
@@ -57,20 +76,15 @@ export async function request<T>(method: Method, path: string, body?: unknown): 
     init.body = JSON.stringify(body);
   }
   const response = await fetch(path, init);
-  if (response.status === 401) {
-    csrf = null;
-    onSignedOut();
-  }
-  if (response.status === 403) {
-    const problem = problemFrom(403, await safeJson(response));
-    if (problem.type.endsWith("/csrf-rejected")) csrf = null;
-    const needed = stepUpNeededFrom(problem, body);
-    if (needed) onStepUpRequired(needed);
-    throw new ApiError(problem);
-  }
-  if (!response.ok) {
-    throw new ApiError(problemFrom(response.status, await safeJson(response)));
-  }
+  if (!response.ok) throw await rejection(response, body);
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
+}
+
+/** GET a file. Errors arrive as ApiError, exactly as for `request`. */
+export async function download(path: string, fallbackName: string): Promise<Download> {
+  const response = await fetch(path, { method: "GET", credentials: "same-origin", headers: { Accept: "*/*" } });
+  if (!response.ok) throw await rejection(response, undefined);
+  const named = /filename="([^"\\]+)"/.exec(response.headers.get("Content-Disposition") ?? "");
+  return { content: await response.blob(), fileName: named?.[1] ?? fallbackName };
 }
