@@ -26,6 +26,14 @@ public final class ApiClient {
         }
     }
 
+    /** A response whose body is bytes, such as a file download; the text {@link Response} would corrupt it. */
+    public record Download(int status, Map<String, List<String>> headers, byte[] body) {
+        public @Nullable String header(String name) {
+            var values = headers.get(name.toLowerCase());
+            return values == null || values.isEmpty() ? null : values.get(0);
+        }
+    }
+
     private static final ObjectMapper JSON = new ObjectMapper();
     private final CookieManager cookies = new CookieManager();
     private final HttpClient http = HttpClient.newBuilder().cookieHandler(cookies).build();
@@ -43,6 +51,19 @@ public final class ApiClient {
 
     public Response get(String path, Map<String, String> headers) {
         return getUrl(baseUrl + path, headers);
+    }
+
+    public Download download(String path) {
+        var request = HttpRequest.newBuilder(URI.create(baseUrl + path)).GET().build();
+        try {
+            HttpResponse<byte[]> response = http.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            return new Download(response.statusCode(), lowerCased(response.headers().map()), response.body());
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(e);
+        }
     }
 
     /** Follows a redirect the application or the issuer handed out: an absolute URL on any host. */

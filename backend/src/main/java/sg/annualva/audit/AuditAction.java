@@ -18,7 +18,9 @@ public enum AuditAction {
     /** A request answered 401 or 403: not signed in, not allowed, no CSRF token, or a step-up needed. */
     REQUEST_REFUSED("request-refused", "web"),
     ROLE_GRANTED("role-granted", "iam"),
-    ROLE_REVOKED("role-revoked", "iam");
+    ROLE_REVOKED("role-revoked", "iam"),
+    /** A VA POC downloaded the System Register template; it names no System and holds no data. */
+    REGISTER_TEMPLATE_DOWNLOADED("register-template-downloaded", "file");
 
     private final String ecs;
     private final String category;

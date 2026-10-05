@@ -54,15 +54,19 @@ class ArchitectureTest {
                 .layer("audit").definedBy("sg.annualva.audit..")
                 .layer("cycle").definedBy("sg.annualva.cycle..")
                 .layer("access").definedBy("sg.annualva.access..")
+                .layer("register").definedBy("sg.annualva.register..")
                 .layer("adapters").definedBy("sg.annualva.adapters..")
                 // app is the composition root: it may import everything and nothing imports it
                 .whereLayer("app").mayNotBeAccessedByAnyLayer()
                 .whereLayer("web").mayOnlyBeAccessedByLayers("app", "adapters", "access", "audit", "cycle")
                 .whereLayer("config").mayOnlyBeAccessedByLayers("app", "web", "access", "adapters", "audit", "cycle")
                 .whereLayer("boundary").mayOnlyBeAccessedByLayers("app", "web", "access", "adapters")
-                // the audit log is written by the modules that act (access today)
-                .whereLayer("audit").mayOnlyBeAccessedByLayers("app", "access")
-                .whereLayer("access").mayOnlyBeAccessedByLayers("app")
+                // the audit log is written by the modules that act (access and the register today)
+                .whereLayer("audit").mayOnlyBeAccessedByLayers("app", "access", "register")
+                // the domain modules ask access who is acting and whether they may reach a System
+                .whereLayer("access").mayOnlyBeAccessedByLayers("app", "register")
+                // the register is a domain module: nothing but the composition root reads it yet
+                .whereLayer("register").mayOnlyBeAccessedByLayers("app")
                 // the calendar is a leaf below the domain modules; they will read it, nothing it reads reads back
                 .whereLayer("cycle").mayOnlyBeAccessedByLayers("app")
                 // production adapters are wired by Spring type only; no module imports them
