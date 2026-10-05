@@ -81,6 +81,16 @@ Starting a sign-in (`/oauth2/authorization/**`) or bootstrapping CSRF (`/api/csr
 
 Calls from the app to MCC SSO (token endpoint, JWKS) time out after `annualva.mcc.connect-timeout` (3 s) and `annualva.mcc.read-timeout` (10 s); a timeout is a refused sign-in with reason `provider-error`.
 
+## Roles and access
+
+Roles are held in the app (table `role_grant`), never taken from token claims, and are read from the store on every request, so a revoked, lapsed, suspended or expired grant stops working on the next call (ADR 0011).
+
+- **VA POCs:** `annualva.va-pocs` (environment variable `ANNUALVA_VA_POCS`) is a comma-separated list of exactly two distinct email addresses. The application refuses to start with fewer or more. At startup it grants each of them `VA_POC` (source `CONFIG`) and revokes a `CONFIG` grant for anyone no longer listed; changing a VA POC is a configuration change request plus a restart. `dev-mcc` lists the two VA POC personas.
+- **SMO/Tech Leads and Cyber Managers:** granted per System by the System Register apply (a later ticket). A grant made by email before the person has signed in attaches to them at their first sign-in.
+- **Nobody grants themselves a role:** there is no endpoint that grants one, and an architecture test lists the only classes allowed to write `role_grant`.
+- **Seeing a System:** every service path that addresses a System calls `AccessGuard` (ADR 0013); a System the caller may not see answers `404 not-found`, exactly like one that does not exist.
+- **Front end:** `GET /api/session` lists the roles held, highest privilege first. The shell shows one nav entry per role and lands the person on the first role's area (`/va-poc`, `/cyber-manager`, `/smo`, `/auditor`); deep links need the host to serve `index.html` for those paths (a hosting decision, ticket 55).
+
 ## Quality gates
 
 | Gate | Command | Passes when |
