@@ -3,17 +3,23 @@ import type { Session } from "../api/session.ts";
 import { AuditorLanding } from "../screens/auditor/Landing.tsx";
 import { CyberManagerLanding } from "../screens/cyber-manager/Landing.tsx";
 import { SmoLanding } from "../screens/smo/Landing.tsx";
-import { VaPocLanding } from "../screens/va-poc/Landing.tsx";
+import type { AreaProps } from "../screens/shared/AreaProps.ts";
+import { VaPocArea } from "../screens/va-poc/VaPocArea.tsx";
 import { RoleNav } from "./RoleNav.tsx";
-import { areasFor, type Role } from "./roles.ts";
+import { areasFor, type Area, type Role } from "./roles.ts";
 import { navigate, usePath } from "./router.ts";
 
-const LANDINGS: Readonly<Record<Role, () => React.JSX.Element>> = {
-  VA_POC: VaPocLanding,
+const LANDINGS: Readonly<Record<Role, (props: AreaProps) => React.JSX.Element>> = {
+  VA_POC: VaPocArea,
   CYBER_MANAGER: CyberManagerLanding,
   SMO: SmoLanding,
   AUDITOR: AuditorLanding,
 };
+
+/** The area a path belongs to: the area's own path or anything beneath it. */
+function areaOf(areas: Area[], path: string): Area | undefined {
+  return areas.find((area) => path === area.path || path.startsWith(`${area.path}/`));
+}
 
 /**
  * The signed-in person's place in the app: a nav entry for each role held, and the area for the
@@ -23,7 +29,7 @@ const LANDINGS: Readonly<Record<Role, () => React.JSX.Element>> = {
 export function Workspace({ session }: { session: Session }) {
   const areas = areasFor(session.roles);
   const path = usePath();
-  const current = areas.find((area) => area.path === path);
+  const current = areaOf(areas, path);
   const first = areas[0];
 
   useEffect(() => {
@@ -47,9 +53,9 @@ export function Workspace({ session }: { session: Session }) {
   const Landing = current ? LANDINGS[current.role] : undefined;
   return (
     <>
-      <RoleNav areas={areas} currentPath={path} />
+      <RoleNav areas={areas} currentPath={current?.path} />
       <main id="main" className="shell-main">
-        {Landing ? <Landing /> : null}
+        {Landing ? <Landing path={path} classification={session.classification} /> : null}
       </main>
     </>
   );
