@@ -272,6 +272,7 @@ public final class FakeOidcIssuer {
         if (identity.acr() != null) {
             claims.claim("acr", identity.acr());
         }
+        identity.extraClaims().forEach(claims::claim);
         try {
             var jwt = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(issuerKey.getKeyID()).build(),
                     claims.build());

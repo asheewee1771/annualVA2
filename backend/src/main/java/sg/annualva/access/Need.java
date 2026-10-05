@@ -1,0 +1,16 @@
+package sg.annualva.access;
+
+/**
+ * What a caller wants to do with a System, named after the steps of the VA Submission flow. Each
+ * need maps to the roles that hold it: who may view, who submits, who reviews and who endorses.
+ */
+public enum Need {
+    /** Read the System's reports and Findings: its SMO/Tech Lead, its Cyber Manager, any VA POC. */
+    VIEW,
+    /** Prepare and submit: the SMO/Tech Lead named for the System. */
+    SUBMIT,
+    /** Confirm or Dispute Findings, return, pass on: the Cyber Manager assigned to the System. */
+    REVIEW,
+    /** Endorse, return or decide an Exemption: a VA POC, for any System. */
+    ENDORSE
+}

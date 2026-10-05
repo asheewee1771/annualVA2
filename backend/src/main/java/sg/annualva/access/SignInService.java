@@ -27,15 +27,17 @@ public class SignInService {
     private static final Logger log = LoggerFactory.getLogger(SignInService.class);
 
     private final AppUserStore users;
+    private final RoleGrantStore grants;
     private final SignInProperties properties;
     private final DevIdentityProperties devIdentities;
     private final Clock clock;
     private final TransactionTemplate transaction;
 
-    SignInService(AppUserStore users, SignInProperties properties, DevIdentityProperties devIdentities, Clock clock,
-            TransactionTemplate transaction) {
+    SignInService(AppUserStore users, RoleGrantStore grants, SignInProperties properties,
+            DevIdentityProperties devIdentities, Clock clock, TransactionTemplate transaction) {
         this.transaction = transaction;
         this.users = users;
+        this.grants = grants;
         this.properties = properties;
         this.devIdentities = devIdentities;
         this.clock = clock;
@@ -102,6 +104,8 @@ public class SignInService {
                 .or(() -> users.findUnlinkedByEmail(email)
                         .map(preRegistered -> users.link(preRegistered.id(), ssoId, identity.displayName(), now)))
                 .orElseGet(() -> users.create(ssoId, email, identity.displayName(), now));
+        // A role granted by email before this person had signed in attaches now, to this user and no other.
+        grants.attachPending(user.id(), user.email());
         return new SessionUser(user.id(), user.email(), user.displayName(), authTime, now);
     }
 

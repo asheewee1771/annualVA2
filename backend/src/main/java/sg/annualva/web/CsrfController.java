@@ -1,6 +1,7 @@
 package sg.annualva.web;
 
 import java.util.Map;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class CsrfController {
 
     @GetMapping("/api/csrf")
+    @PreAuthorize("permitAll()")
     public Map<String, String> csrf(CsrfToken token) {
         return Map.of(
                 "headerName", token.getHeaderName(),

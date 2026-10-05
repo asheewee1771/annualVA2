@@ -19,6 +19,8 @@ server:
 annualva:
   scheduling:
     enabled: false
+  # Two VA POCs for the role store; the tests sign in as them.
+  va-pocs: poc.one@ci.annualva.test,poc.two@ci.annualva.test
   mcc:
     login-client-id: app-appfw
     # Short, so the stalled-provider tests finish quickly; the fake answers normally in milliseconds.

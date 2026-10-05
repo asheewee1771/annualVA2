@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.jspecify.annotations.Nullable;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -30,6 +31,18 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             ProblemResponses.withTraceId(problem);
         }
         return super.createResponseEntity(body, headers, statusCode, request);
+    }
+
+    /** The same answer whether the resource is missing or the caller has no scope over it (ac-1). */
+    @ExceptionHandler(ResourceNotFoundException.class)
+    ProblemDetail handleNotFound() {
+        return ProblemResponses.problem(HttpStatus.NOT_FOUND, "not-found", "There is no such resource.");
+    }
+
+    /** A method-level rule refused the caller: raised inside the controller, so the filter chain never sees it. */
+    @ExceptionHandler(AccessDeniedException.class)
+    ProblemDetail handleForbidden() {
+        return ProblemResponses.problem(HttpStatus.FORBIDDEN, "forbidden", "You are not allowed to do this.");
     }
 
     @ExceptionHandler(Exception.class)

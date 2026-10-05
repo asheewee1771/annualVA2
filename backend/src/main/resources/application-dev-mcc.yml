@@ -62,4 +62,5 @@ annualva:
       11111111-0000-4000-8000-000000000004: cm.b@dev.annualva.test
       11111111-0000-4000-8000-000000000005: poc.1@dev.annualva.test
       11111111-0000-4000-8000-000000000006: poc.2@dev.annualva.test
+  # Exactly two, the VA POC personas; the role store grants them VA_POC at startup.
   va-pocs: poc.1@dev.annualva.test,poc.2@dev.annualva.test

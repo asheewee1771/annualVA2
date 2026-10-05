@@ -30,6 +30,9 @@ public abstract class Seam1Test {
 
     protected ApiClient api;
 
+    /** Arranges Systems and role grants through the test-only endpoints, from a separate browser. */
+    protected Arrange arrange;
+
     @DynamicPropertySource
     static void identityProvider(DynamicPropertyRegistry registry) {
         issuer.registerProperties(registry);
@@ -38,6 +41,7 @@ public abstract class Seam1Test {
     @BeforeEach
     void freshClient() {
         api = new ApiClient(port);
+        arrange = new Arrange(new ApiClient(port).withCsrf());
         issuer.clientJwksUrl("http://localhost:" + port + "/.well-known/jwks.json");
     }
 

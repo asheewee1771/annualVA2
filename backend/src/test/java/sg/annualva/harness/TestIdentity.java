@@ -1,7 +1,9 @@
 package sg.annualva.harness;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -18,6 +20,7 @@ import org.jspecify.annotations.Nullable;
  * @param nestedAfcasClaim true for {@code "afcas": {"uuid": ...}}, false for the flat {@code "afcas.uuid"} claim
  * @param emailVerified the {@code email_verified} claim, or null to omit it
  * @param tamperedNonce true to echo a wrong nonce so the id token fails validation at the client
+ * @param extraClaims further id-token claims the provider might send (for example a claimed role)
  */
 public record TestIdentity(
         @Nullable String ssoId,
@@ -28,42 +31,60 @@ public record TestIdentity(
         @Nullable String acr,
         boolean nestedAfcasClaim,
         @Nullable Boolean emailVerified,
-        boolean tamperedNonce) {
+        boolean tamperedNonce,
+        Map<String, Object> extraClaims) {
 
     /** A well-formed MFA sign-in: nested afcas.uuid, auth_time now, amr [pwd, mfa]. */
     public static TestIdentity of(String ssoId, String email, String name) {
-        return new TestIdentity(ssoId, email, name, Instant.now(), List.of("pwd", "mfa"), null, true, true, false);
+        return new TestIdentity(ssoId, email, name, Instant.now(), List.of("pwd", "mfa"), null, true, true, false,
+                Map.of());
     }
 
     public TestIdentity withoutSsoId() {
-        return new TestIdentity(null, email, name, authTime, amr, acr, nestedAfcasClaim, emailVerified, tamperedNonce);
+        return new TestIdentity(null, email, name, authTime, amr, acr, nestedAfcasClaim, emailVerified, tamperedNonce,
+                extraClaims);
     }
 
     public TestIdentity withEmail(@Nullable String newEmail) {
-        return new TestIdentity(ssoId, newEmail, name, authTime, amr, acr, nestedAfcasClaim, emailVerified, tamperedNonce);
+        return new TestIdentity(ssoId, newEmail, name, authTime, amr, acr, nestedAfcasClaim, emailVerified,
+                tamperedNonce, extraClaims);
     }
 
     public TestIdentity withoutAuthTime() {
-        return new TestIdentity(ssoId, email, name, null, amr, acr, nestedAfcasClaim, emailVerified, tamperedNonce);
+        return new TestIdentity(ssoId, email, name, null, amr, acr, nestedAfcasClaim, emailVerified, tamperedNonce,
+                extraClaims);
     }
 
     public TestIdentity withAmr(@Nullable List<String> newAmr) {
-        return new TestIdentity(ssoId, email, name, authTime, newAmr, acr, nestedAfcasClaim, emailVerified, tamperedNonce);
+        return new TestIdentity(ssoId, email, name, authTime, newAmr, acr, nestedAfcasClaim, emailVerified,
+                tamperedNonce, extraClaims);
     }
 
     public TestIdentity withAcr(@Nullable String newAcr) {
-        return new TestIdentity(ssoId, email, name, authTime, amr, newAcr, nestedAfcasClaim, emailVerified, tamperedNonce);
+        return new TestIdentity(ssoId, email, name, authTime, amr, newAcr, nestedAfcasClaim, emailVerified,
+                tamperedNonce, extraClaims);
     }
 
     public TestIdentity flatAfcasClaim() {
-        return new TestIdentity(ssoId, email, name, authTime, amr, acr, false, emailVerified, tamperedNonce);
+        return new TestIdentity(ssoId, email, name, authTime, amr, acr, false, emailVerified, tamperedNonce,
+                extraClaims);
     }
 
     public TestIdentity withTamperedNonce() {
-        return new TestIdentity(ssoId, email, name, authTime, amr, acr, nestedAfcasClaim, emailVerified, true);
+        return new TestIdentity(ssoId, email, name, authTime, amr, acr, nestedAfcasClaim, emailVerified, true,
+                extraClaims);
     }
 
     public TestIdentity withEmailVerified(@Nullable Boolean verified) {
-        return new TestIdentity(ssoId, email, name, authTime, amr, acr, nestedAfcasClaim, verified, tamperedNonce);
+        return new TestIdentity(ssoId, email, name, authTime, amr, acr, nestedAfcasClaim, verified, tamperedNonce,
+                extraClaims);
+    }
+
+    /** Adds a claim to the id token, as an identity provider asserting a role or group would. */
+    public TestIdentity withClaim(String claim, Object value) {
+        var merged = new LinkedHashMap<>(extraClaims);
+        merged.put(claim, value);
+        return new TestIdentity(ssoId, email, name, authTime, amr, acr, nestedAfcasClaim, emailVerified,
+                tamperedNonce, merged);
     }
 }

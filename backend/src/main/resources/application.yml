@@ -69,6 +69,9 @@ annualva:
     banner: RESTRICTED / SENSITIVE-NORMAL
   scheduling:
     enabled: true
+  # IM8 ac-1, story 75: exactly two VA POC email addresses (comma-separated), set at deployment and changed only
+  # through its change request. The application refuses to start with fewer or more; roles are synced at startup.
+  va-pocs: ${ANNUALVA_VA_POCS}
   # MCC SSO: explicit endpoints (never issuer-uri discovery), private_key_jwt with the EC P-521 key below.
   mcc:
     issuer: ${ANNUALVA_MCC_ISSUER}
