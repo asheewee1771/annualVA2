@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Code Review — 09-step-up-authentication</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">build PASS · C0 H0 M0 L2</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN · C0 H0 M7 L7</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN · C0 H0 M3 L17</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">semgrep PASS · C0 H0 M0 L0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN · C0 H0 M3 L7</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react WARN · C0 H0 M2 L4</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN · C0 H0 M2 L11</span>
+      <span class="font-mono text-sm text-slate-500 ml-auto">main</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report</h2>
+          <p class="text-xs text-slate-500 mt-1">Ticket 09, step-up authentication (uncommitted changes against HEAD dc3511a). No check reports a Critical or High finding, so the gate passes with warnings. Totals: C0 H0 M17 L48.</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2">Check</th><th class="px-4 py-2">Status</th><th class="px-4 py-2">C / H / M / L</th><th class="px-4 py-2">Summary</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 font-medium">build</td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td><td class="px-4 py-2 font-mono text-xs">C0 H0 M0 L2</td><td class="px-4 py-2 text-slate-600">Backend clean verify (114 tests, JaCoCo gate), frontend npm run check components, fallow. All green.</td></tr>
+            <tr><td class="px-4 py-2 font-medium">thermo-nuclear</td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td><td class="px-4 py-2 font-mono text-xs">C0 H0 M7 L7</td><td class="px-4 py-2 text-slate-600">Maintainability review: structure, not mechanism. No file near the size limit.</td></tr>
+            <tr><td class="px-4 py-2 font-medium">code-review</td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td><td class="px-4 py-2 font-mono text-xs">C0 H0 M3 L17</td><td class="px-4 py-2 text-slate-600">Standards and Spec axes. Spec criteria 1, 5 and 6 met; 2, 3 and 4 partial.</td></tr>
+            <tr><td class="px-4 py-2 font-medium">semgrep</td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td><td class="px-4 py-2 font-mono text-xs">C0 H0 M0 L0</td><td class="px-4 py-2 text-slate-600">362 rules on 33 files, 0 findings. Run via Docker image per recorded decision. Manual redirect spot check also clean.</td></tr>
+            <tr><td class="px-4 py-2 font-medium">im8</td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td><td class="px-4 py-2 font-mono text-xs">C0 H0 M3 L7</td><td class="px-4 py-2 text-slate-600">Ticket-owned control ac-2 is WARN only. ac-4 (ticket 47), pm-6 and lm-16 (ticket 52) are nominal High, tracked deferrals under "IM8 controls owned by a later ticket"; not weakened, so not counted as High.</td></tr>
+            <tr><td class="px-4 py-2 font-medium">react</td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td><td class="px-4 py-2 font-mono text-xs">C0 H0 M2 L4</td><td class="px-4 py-2 text-slate-600">Front end npm run check exits 0. No finding contradicts a recorded decision.</td></tr>
+            <tr><td class="px-4 py-2 font-medium">springboot</td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td><td class="px-4 py-2 font-mono text-xs">C0 H0 M2 L11</td><td class="px-4 py-2 text-slate-600">Seven skills: core, web, security, logging, test applied; data and batch not applicable.</td></tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-600">No Critical or High findings. The Medium items below are the ones to fix or consciously accept before merge; several checks raised the same defects.</p>
+          <ul class="list-disc pl-5 text-sm space-y-2 text-slate-700">
+            <li><span class="font-semibold">auth_time freshness is loosely bounded</span> (code-review C1, springboot M1, im8 F8): the 30 s skew accepts an auth_time that is not fresher than the step-up, and a future-dated auth_time is accepted. <span class="font-mono text-xs">backend/src/main/java/sg/annualva/access/StepUp.java</span></li>
+            <li><span class="font-semibold">State-changing GET /auth/step-up</span> (code-review, springboot M2, im8 F3, thermo M5): full-sign-in mode ends the session on a cross-site navigation and bypasses the sign-out path. <span class="font-mono text-xs">backend/src/main/java/sg/annualva/access/StepUpController.java</span></li>
+            <li><span class="font-semibold">IdP-side refusals are not audited as step-up refusals</span> (code-review A1, im8 F4, thermo L2, springboot L8). <span class="font-mono text-xs">backend/src/main/java/sg/annualva/access/StepUpAuthenticationProvider.java</span></li>
+            <li><span class="font-semibold">Front-end arrival handling</span> (react M1 and M2, thermo M6): import-time side effect, and the arrival is never consumed. <span class="font-mono text-xs">frontend/src/app/useStepUp.ts</span></li>
+            <li><span class="font-semibold">Duplicated sign-in rules and mixed-responsibility StepUp</span> (thermo M1 to M3), and a half-built draft feature behind a fallow suppression (thermo M4).</li>
+            <li><span class="font-semibold">Tracked deferrals (not counted):</span> IM8 ac-4 (ticket 47), pm-6 and lm-16 (ticket 52) are nominal High and stay FAIL in the im8 table per the recorded decision; this change does not weaken them.</li>
+          </ul>
+        </div>
+      </div>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build <span class="text-xs text-slate-400 font-normal ml-2">C0 H0 M0 L2</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <p class="px-5 pb-3 text-xs text-slate-500">Backend clean verify (114 tests, JaCoCo gate), frontend npm run check components, fallow. All green.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+            <tr><th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 align-top">
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUpRefusedException.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">A refused step-up is logged at ERROR with a stack trace by Spring Security (it extends InternalAuthenticationServiceException by design). No data leaks, but normal refusals look like errors and may add alert noise.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUp.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Branch coverage in StepUp is 75 % (33/44), above the 80 % aggregate gate but the weakest class touched, and it is the security-critical freshness and intent logic.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear <span class="text-xs text-slate-400 font-normal ml-2">C0 H0 M7 L7</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-xs text-slate-500">Maintainability review: structure, not mechanism. No file near the size limit.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+            <tr><th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 align-top">
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUp.java, SignInService.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">M1: StepUp.complete copies the null-ssoId, null-authTime and MFA checks from SignInService.signIn and re-aliases three reason constants. Extract one shared Identity proof step.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUp.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">M2: StepUp mixes the public gate require() with authorization-request building, callback verification, audit emission and return-path sanitising. Split the gate from a package-private round-trip class.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUpAuthenticationProvider.java, SteppedUpOidcUser.java, SignInCallbackHandler.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">M3: "this callback is a step-up" is derived three ways (request attribute, instanceof on principal, instanceof on exception); SignedInOidcUser lost final to allow subclassing.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/api/stepUp.ts, api/client.ts</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">M4: draft restore is half-built; takeRestoredDraft has no caller and its dead-code warning is silenced with fallow-ignore, while refused request bodies are written to sessionStorage for nothing.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUp.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">M5: full-sign-in mode calls session.invalidate() directly, bypassing SignOutHandler (no Clear-Site-Data, no sign-out event); mode flag lives inside begin().</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/useStepUp.ts</td><td class="px-4 py-2 font-mono text-xs">10</td><td class="px-4 py-2">M6: takeStepUpArrival() runs at module import, rewriting the address bar and draining sessionStorage; arrival is never cleared after being applied.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/App.tsx</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">M7: a tri-state signedIn is threaded through App only for the hook cleanup; mount a StepUpHost in the signed-in branch instead.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUpFailureHandler.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L1: re-reads the user id from the session by untyped attribute and passes Object; StepUpIntent already carries a typed userId.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUpAuthenticationProvider.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L2: flattens every failure to provider-error and drops the error.code logging that sign-in has.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUpAuthenticationProvider.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L3: builds an OidcAuthorizationCodeAuthenticationProvider on every callback.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUp.java, StepUpController.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L4: ambient SecurityContextHolder read inside the authentication path; manual instanceof SessionUser checks.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/api/stepUp.ts, app/StepUpInterstitial.tsx</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L5: user-facing copy lives in api/; interstitial hard-codes "five minutes" though the window is configurable; ACTIONS names a non-existent register-apply.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/StepUpNotice.tsx, app/useStepUp.ts</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L6: unreachable undefined outcome on the notice prop; conditional re-spreading in the hook.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/styles.css; TestEndpoints.java; StepUpRequiredException.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L7: hard-coded notice width, out-of-order import, intent concatenated into a URL without encoding.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review <span class="text-xs text-slate-400 font-normal ml-2">C0 H0 M3 L17</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-xs text-slate-500">Standards and Spec axes. Spec criteria 1, 5 and 6 met; 2, 3 and 4 partial.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+            <tr><th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 align-top">
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUp.java, application.yml (clock-skew 30s)</td><td class="px-4 py-2 font-mono text-xs">157</td><td class="px-4 py-2">C1: freshness check accepts an auth_time up to 30 s before the step-up began, so an IdP that ignores prompt=login can pass with a recent sign-in; the spec says "not fresher than the intent". Skew is not in the spec or ADR 0004; needs a human decision.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUpAuthenticationProvider.java, SignInCallbackHandler.java</td><td class="px-4 py-2 font-mono text-xs">46</td><td class="px-4 py-2">A1: IdP error responses (access_denied, login_required) and bad state never reach the step-up provider; they are audited as sign-in-refused, redirect to /?signin=refused and lose the intent. Untested.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUp.java, StepUpController.java</td><td class="px-4 py-2 font-mono text-xs">106</td><td class="px-4 py-2">In full-sign-in mode a GET to /auth/step-up invalidates the session; SameSite=lax lets a cross-site navigation log the user out, bypassing the normal logout path.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/useStepUp.ts, api/stepUp.ts</td><td class="px-4 py-2 font-mono text-xs">114</td><td class="px-4 py-2">A2: takeRestoredDraft has no caller (fallow-ignore); draft restore is not wired and the draft lingers up to 15 minutes after a successful return.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUp.java</td><td class="px-4 py-2 font-mono text-xs">82</td><td class="px-4 py-2">step-up-required is logged at WARN on an ordinary expected path; INFO fits.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUp.java</td><td class="px-4 py-2 font-mono text-xs">35</td><td class="px-4 py-2">New event.action values and labels.intent are not in the org ECS Log_Schema.md.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">README.md</td><td class="px-4 py-2 font-mono text-xs">84</td><td class="px-4 py-2">README documents only step-up and step-up-refused; code also emits step-up-required, step-up-started, step-up-full-sign-in.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/api/stepUp.ts</td><td class="px-4 py-2 font-mono text-xs">69</td><td class="px-4 py-2">Raw JSON body of a refused command is kept in sessionStorage for up to 15 minutes.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUp.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">StepUp.complete and StepUp.require bound auth_time only from below; a future-dated auth_time is accepted.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUp.java</td><td class="px-4 py-2 font-mono text-xs">106</td><td class="px-4 py-2">B2: session.invalidate() runs on a GET in full-sign-in mode.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUp.java</td><td class="px-4 py-2 font-mono text-xs">46</td><td class="px-4 py-2">C2: returnTo allow-list can point at /api/... paths (no open redirect).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">StepUp.java, SignInSuccessHandler.java, StepUpSuccessHandler.java, problem.ts</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Smell baseline (9 Low calls): duplicated sign-in checks and context-swap block, hard-coded /auth/step-up in two places, divergent change in StepUp, vague StepUpIntent name, Object userId, step-up decided three ways, middle-man handlers, refused bequest in SteppedUpOidcUser, feature envy in SignInProperties.evidencesMfa, speculative takeRestoredDraft and ACTIONS.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep <span class="text-xs text-slate-400 font-normal ml-2">C0 H0 M0 L0</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <p class="px-5 pb-3 text-xs text-slate-500">362 rules on 33 files, 0 findings. Run via Docker image per recorded decision. Manual redirect spot check also clean.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+            <tr><th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 align-top">
+            <tr><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8 <span class="text-xs text-slate-400 font-normal ml-2">C0 H0 M3 L7</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-xs text-slate-500">Ticket-owned control ac-2 is WARN only. ac-4 (ticket 47), pm-6 and lm-16 (ticket 52) are nominal High, tracked deferrals under "IM8 controls owned by a later ticket"; not weakened, so not counted as High.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+            <tr><th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 align-top">
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUp.java, frontend/src/app/StepUpInterstitial.tsx</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">ac-2 F1: StepUp.require has no production call site yet and no annotation or ArchUnit rule forces sensitive commands to call it. Expected until ticket 10; add a mechanical rule or checklist item there.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUp.java, application.yml</td><td class="px-4 py-2 font-mono text-xs">150</td><td class="px-4 py-2">ac-2 F2: the second factor is entirely MCC SSO; the MFA check is skipped when require-mfa-claim is false. Prove at SIT that MCC honours prompt=login and max_age=0; consider refusing start with the flag off outside dev-mcc and ci.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUp.java</td><td class="px-4 py-2 font-mono text-xs">111</td><td class="px-4 py-2">lm-4 F4 (deferred to ticket 05): step-up events are ECS log events, not durable audit entries; a callback with no matching authorization request is logged as sign-in-refused.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUp.java, StepUpController.java</td><td class="px-4 py-2 font-mono text-xs">106</td><td class="px-4 py-2">as-7 F3: state-changing GET (full-sign-in invalidates the session; SameSite=lax).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/api/stepUp.ts</td><td class="px-4 py-2 font-mono text-xs">69</td><td class="px-4 py-2">as-8 F5: form draft held in sessionStorage in clear text; expiry enforced on read only.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUpController.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">as-4 F7: no per-session throttle on /auth/step-up.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUp.java</td><td class="px-4 py-2 font-mono text-xs">79</td><td class="px-4 py-2">ac-2 F8: auth_time not bounded above in complete or require.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/StepUpInterstitial.tsx</td><td class="px-4 py-2 font-mono text-xs">37</td><td class="px-4 py-2">as-7 F9: idle session between the 403 and the click leads to a bare JSON 401 on top-level navigation.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUp.java</td><td class="px-4 py-2 font-mono text-xs">106</td><td class="px-4 py-2">F10: full-sign-in fallback may loop if MCC SSO keeps its own session (fails closed); full sign-in sends no prompt=login.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUp.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Design note: freshness is session-wide and not single-use; matches story 77 but should be recorded in the ADR.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react <span class="text-xs text-slate-400 font-normal ml-2">C0 H0 M2 L4</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-xs text-slate-500">Front end npm run check exits 0. No finding contradicts a recorded decision.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+            <tr><th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 align-top">
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/useStepUp.ts</td><td class="px-4 py-2 font-mono text-xs">10</td><td class="px-4 py-2">M1: module-scope side effect on import (reads and deletes sessionStorage, calls history.replaceState); HMR re-evaluation wipes the saved route and draft.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/useStepUp.ts</td><td class="px-4 py-2 font-mono text-xs">28</td><td class="px-4 py-2">M2: arrival is never marked consumed; the effect re-navigates and re-shows the notice whenever signedIn flips to true again.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/useStepUp.ts, app/Workspace.tsx</td><td class="px-4 py-2 font-mono text-xs">32</td><td class="px-4 py-2">L1: route restore races the Workspace first-landing redirect; extra render and two replaceState calls.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/StepUpNotice.tsx</td><td class="px-4 py-2 font-mono text-xs">3</td><td class="px-4 py-2">L2: prop type admits an undefined outcome that never occurs; comment is wrong.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/StepUpNotice.tsx, app/App.tsx</td><td class="px-4 py-2 font-mono text-xs">13</td><td class="px-4 py-2">L3: notice sits outside any landmark; role=status inserted already populated is announced inconsistently.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/StepUpInterstitial.tsx</td><td class="px-4 py-2 font-mono text-xs">37</td><td class="px-4 py-2">L4: saveForStepUp runs in onClick only; middle-click or open-in-new-tab skips the save (degrades safely).</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot <span class="text-xs text-slate-400 font-normal ml-2">C0 H0 M2 L11</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-xs text-slate-500">Seven skills: core, web, security, logging, test applied; data and batch not applicable.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+            <tr><th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 align-top">
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUp.java, SessionUser.java</td><td class="px-4 py-2 font-mono text-xs">157</td><td class="px-4 py-2">M1: future-dated auth_time is accepted (no upper bound), keeping the session fresh for hours; withAuthTime can also move auth_time backwards. Same gap pre-exists in SignInService.signIn.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUpController.java, StepUp.java</td><td class="px-4 py-2 font-mono text-xs">106</td><td class="px-4 py-2">M2: GET /auth/step-up changes state without a CSRF defence; in full-sign-in mode it ends the session, in prompt-login mode it replaces the pending authorization request. Suggest a Sec-Fetch-Site guard.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUp.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L1: full-sign-in ends the session without sign-out hygiene; logs outcome=success before anything is proven; drops returnTo.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUpAuthenticationProvider.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L2: provider is both a @Component and added to the chain, so it is also wired into the global AuthenticationManager.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUp.java</td><td class="px-4 py-2 font-mono text-xs">56</td><td class="px-4 py-2">L3: StepUp creates its own HttpSessionOAuth2AuthorizationRequestRepository; must match the one oauth2Login uses.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUpProperties.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L4: no range validation on freshness-window or clock-skew (zero, negative or 8h accepted).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/SteppedUpOidcUser.java, SignedInOidcUser.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L5: SteppedUpOidcUser extends a de-finalised SignedInOidcUser; SignInSuccessHandler would accept it silently. Use a sealed type or composition.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUpRequiredException.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L6: intent is any lower-case code and is concatenated into the URL without validation or encoding.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUp.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L7: unsafe returnTo is silently coerced to /.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUpAuthenticationProvider.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L8: refused step-up drops the OAuth error.code that sign-in logs.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUp.java</td><td class="px-4 py-2 font-mono text-xs">82</td><td class="px-4 py-2">L9: step-up-required logged at WARN for an expected flow.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/access/StepUpTest.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L10: negative callback paths untested (tampered nonce, IdP error response, SESSION_ENDED, MISSING_IDENTITY, replayed callback, missing authorization request, non-SessionUser branch).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/access/StepUpTest.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L11: loops inside tests where a ParameterizedTest would report per value.</td></tr>
+          </tbody>
+        </table>
+      </details>
+    </main>
+  </body>
+</html>
