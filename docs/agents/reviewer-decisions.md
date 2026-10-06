@@ -78,3 +78,10 @@ Human decisions on reviewer findings. Check here before asking again. Each entry
 - **Finding:** ticket 08 parses the Register `.xlsx` with Apache POI with no malware scan, because no scanner boundary exists in the code yet. The im8 check reports as-12 as FAIL; ticket 13's text covered Scan Reports only, so the Register upload had no owner until ticket 08 added notes.
 - **Chosen action:** accept the tracked deferral under "IM8 controls owned by a later ticket". Ticket 13 builds the scanner boundary and must also route the Register workbook through quarantine and scan (an acceptance checkbox on ticket 13); ticket 51 builds the production adapter. Mitigations until then: bytes-sniffed type, 2 MB and archive caps, no macros, formulas never evaluated, DOCTYPE refused, file never stored, VA POC only. Do not build a scanner in ticket 08. Decided 2026-10-06.
 - **When to reuse:** any gate finding that the Register upload is not malware-scanned; the control must pass in ticket 13's own gate, including the choice between a synchronous scan and a pending state.
+
+## Reading the Register list is not audited
+
+- **Area:** System Register read (`GET /api/systems`, ticket 10, ADR 0018 item 7), spec story 84 (audit of every view)
+- **Finding:** story 84 asks for an audit entry for "every view, download, upload ... Register change, role change and export", but the Register list names no report or Finding, only System names and SMO and Cyber Manager emails. The template download and the preview read are audited.
+- **Chosen action:** keep `GET /api/systems` unaudited; the Register list is not report or Finding data and an entry per page load is low value. Decided 2026-10-06.
+- **When to reuse:** any finding that a Register or System list read is not audited. Reads of reports, Findings and previews stay audited; revisit if the list begins to carry report content.
