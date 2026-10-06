@@ -64,3 +64,17 @@ Human decisions on reviewer findings. Check here before asking again. Each entry
 - **Finding:** the spec calls it "a one-off first live Quarter setting" and the plan puts it in `va_cycle.first_live_quarter`, but ticket 06 reads it from `annualva.calendar.first-live-cycle` (2027) and `first-live-quarter` (3), validated at startup, so changing it needs a deployment and a VA POC cannot change it in the app.
 - **Chosen action:** keep configuration for now. Add a stored setting only if the cyber team asks to change it without a deployment; the plan's `va_cycle` row says it is configuration until then. Decided 2026-10-05.
 - **When to reuse:** any finding that the first live Quarter is not stored or not editable in the app; revisit only on a request to change it without a deployment.
+
+## System Register data model: uuid id plus code, Unlinked SMO computed
+
+- **Area:** System Register (ticket 08, ADR 0017), the `va_system` table and the Unlinked SMO flag
+- **Finding:** spec line 159 says the Register "holds the Unlinked SMO flag" and the plan's `va_system` row had the business System ID as `id` and a stored `smo_unlinked` column. Ticket 08 builds `va_system` with a uuid `id` plus a unique citext `code` (the System ID) and computes Unlinked SMO from `app_user.sso_id` when a preview is built or read, so it clears the moment the person signs in. The table is created in ticket 08; only ticket 10 writes it.
+- **Chosen action:** accept as built and keep ADR 0017. The flag is computed, not stored; ticket 10's Register table recomputes it when it reads. No stored `smo_unlinked` column and no refresh hook on sign-in. Decided 2026-10-06.
+- **When to reuse:** any finding that the Register's flag is not a stored column or that `va_system` deviates from the plan's data model; revisit only if listing the Register by Unlinked SMO becomes too slow to compute.
+
+## Register workbook malware scan is a tracked deferral to ticket 13
+
+- **Area:** System Register upload (ticket 08, ADR 0017), IM8 as-12 (uploads are malware-scanned before they are read)
+- **Finding:** ticket 08 parses the Register `.xlsx` with Apache POI with no malware scan, because no scanner boundary exists in the code yet. The im8 check reports as-12 as FAIL; ticket 13's text covered Scan Reports only, so the Register upload had no owner until ticket 08 added notes.
+- **Chosen action:** accept the tracked deferral under "IM8 controls owned by a later ticket". Ticket 13 builds the scanner boundary and must also route the Register workbook through quarantine and scan (an acceptance checkbox on ticket 13); ticket 51 builds the production adapter. Mitigations until then: bytes-sniffed type, 2 MB and archive caps, no macros, formulas never evaluated, DOCTYPE refused, file never stored, VA POC only. Do not build a scanner in ticket 08. Decided 2026-10-06.
+- **When to reuse:** any gate finding that the Register upload is not malware-scanned; the control must pass in ticket 13's own gate, including the choice between a synchronous scan and a pending state.

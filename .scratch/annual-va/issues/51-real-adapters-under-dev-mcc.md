@@ -12,3 +12,7 @@
 - [ ] The platform-tagged suite passes against the mock stack, and the Seam 1 suite and both gates stay green.
 
 ## Comments
+
+### Note from ticket 08 (2026-10-06): scanner adapter also serves the Register upload
+
+The SFS scanner adapter built here is also what ticket 13 will put in front of the System Register workbook upload (see the note on ticket 13). Nothing extra is needed in the adapter; check that the platform-tagged suite scans a small `.xlsx` as well as a report.

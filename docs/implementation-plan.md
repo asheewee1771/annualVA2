@@ -96,8 +96,8 @@ annualVA2/
 | `role_grant` | role (SMO, CYBER_MANAGER, VA_POC, AUDITOR), user_id null, email, system_id null, source (CONFIG, REGISTER, GRANT), granted_at/by, expires_at, last_used_at, lapsed_at, suspended_at, revoked_at |
 | `auditor_scope` | grant_id, system_id null, cycle_year null |
 | `va_cycle` | year pk, closed_at/by, closes_on override. Added by ticket 41; until then the calendar (q1..q4_start, q4_end, closes_on = q4_end+28) is computed and the first live Quarter is configuration, not a column (ADR 0015, reviewer-decisions.md) |
-| `va_system` | id (business System ID), name, smo_email, cm_email, quarter, added_on, retired_at, smo_unlinked, smo_unreachable(_since) |
-| `register_upload`, `register_preview_row` | upload status (PREVIEW/APPLIED/DISCARDED); per row change, effect, reason, requires_confirmation, confirmed, before/after jsonb |
+| `va_system` | id (uuid), code (business System ID, citext unique), name, smo_email, cm_email, quarter, added_on, retired_at; `smo_unreachable(_since)` added by ticket 39. Created by ticket 08 (read-only there; ticket 10 writes it); Unlinked SMO is read from `app_user`, not stored (ADR 0017) |
+| `register_upload` | upload status (PREVIEW/APPLIED/DISCARDED), created_by/at, expires_at, and `rows` jsonb: the whole preview as one list, each row with one outcome (ADD, UPDATE, RETIRE, NO_CHANGE, BLOCKED) and its reasons, before/after (ADR 0017); no `register_preview_row` table |
 | `va_submission` | system_id, cycle_year, quarter, state (10 states), previous_state, overdue(+since), endorsed_late, submit_due, review_due, endorse_due, windows_reset_on, started/submitted/endorsed_at/by, version; unique(system_id, cycle_year) |
 | `submission_participation` | (submission_id, user_id, step SUBMIT/REVIEW/DECIDE) pk, first_at — the SoD record |
 | `submission_return` | by_role (CM/VA_POC), comment, at |
