@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review — 08-register-upload-preview</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="bg-red-100 text-red-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">Overall FAIL</span>
+      <span class="bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">build WARN 0/0/0/1</span>
+      <span class="bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">thermo-nuclear WARN 0/0/4/11</span>
+      <span class="bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">code-review WARN 0/0/3/6</span>
+      <span class="bg-emerald-100 text-emerald-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">semgrep PASS 0/0/0/0</span>
+      <span class="bg-red-100 text-red-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">im8 FAIL 1/1/3/0</span>
+      <span class="bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">react WARN 0/0/3/5</span>
+      <span class="bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">springboot WARN 0/0/1/8</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">main (ticket 08, run 2)</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report</h2>
+          <p class="text-xs text-slate-500 mt-1">Ticket 08, System Register upload and preview. Rerun after the correction pass. Counts are Critical / High / Medium / Low.</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr>
+              <th class="px-4 py-2">Check</th>
+              <th class="px-4 py-2">Status</th>
+              <th class="px-4 py-2">C / H / M / L</th>
+              <th class="px-4 py-2">Summary</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 font-medium">build</td>
+              <td class="px-4 py-2 text-amber-600 font-semibold">WARN</td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 1</td>
+              <td class="px-4 py-2">Back end verify green twice (268 tests, line 96.4 %, branch 88.5 %). Front end check green. One deprecation warning in unchanged code.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">thermo-nuclear</td>
+              <td class="px-4 py-2 text-amber-600 font-semibold">WARN</td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 4 / 11</td>
+              <td class="px-4 py-2">Earlier High resolved. Remaining: stored Unlinked SMO flag, nullable PreviewRow, PreviewBuilder split, four duplicate tables.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">code-review</td>
+              <td class="px-4 py-2 text-amber-600 font-semibold">WARN</td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 3 / 6</td>
+              <td class="px-4 py-2">Every acceptance criterion implemented and tested. Decision/ADR wording mismatch on the Unlinked SMO flag, loose unpack memory bound, tracked malware-scan deferral.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">semgrep</td>
+              <td class="px-4 py-2 text-emerald-700 font-semibold">PASS</td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 0</td>
+              <td class="px-4 py-2">328 rules on 43 files, no findings. Manual grep spot check clean.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">im8</td>
+              <td class="px-4 py-2 text-red-700 font-semibold">FAIL</td>
+              <td class="px-4 py-2 font-mono text-xs">1 / 1 / 3 / 0</td>
+              <td class="px-4 py-2">as-12 backend: no malware scan before the workbook is parsed (tracked deferral, owned by tickets 13 and 51). as-12 front end: no zero-byte or extension pre-check.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">react</td>
+              <td class="px-4 py-2 text-amber-600 font-semibold">WARN</td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 3 / 5</td>
+              <td class="px-4 py-2">Live region mounted with content, stale in-flight upload response, dark-mode warning contrast.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">springboot</td>
+              <td class="px-4 py-2 text-amber-600 font-semibold">WARN</td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 8</td>
+              <td class="px-4 py-2">Expired previews never purged. Container multipart ceiling 50 MB, zip guard and parse heap, Jackson read-path logging, test style.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <ul class="space-y-3 text-sm">
+            <li>
+              <span class="text-red-700 font-semibold">Critical</span> — im8 as-12 (backend).
+              <span class="font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterUploads.java</span>,
+              <span class="font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterSheetReader.java</span>:
+              the uploaded workbook is opened with Apache POI with no malware scan first. Tracked deferral: tickets 13 and 51, ADR 0017 and the README own it, and the reviewer decision "IM8 controls owned by a later ticket" says it does not weaken a control. The check still reports FAIL, so the overall status is FAIL.
+            </li>
+            <li>
+              <span class="text-orange-600 font-semibold">High</span> — im8 as-12 (front end).
+              <span class="font-mono text-xs">frontend/src/screens/va-poc/RegisterScreen.tsx</span>:
+              the submit handler does not reject a zero-byte file or a name that is not <span class="font-mono text-xs">.xlsx</span> before uploading. The server enforces both, so practical impact is Low. The fix is two lines.
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build</span>
+          <span class="bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/adapters/oidc/MccHttp.java</td>
+              <td class="px-4 py-2">51</td>
+              <td class="px-4 py-2">javac deprecation warning for <span class="font-mono text-xs">messageConverters(Consumer)</span>. Unchanged code from an earlier ticket, identical in both runs. Fix when ticket 51 touches adapters.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">Back end <span class="font-mono">./mvnw -B -ntp clean verify</span> passed twice: 268 tests, 0 failures, JaCoCo gate met (line 96.4 %, branch 88.5 %). Front end <span class="font-mono">npm run check</span> passed (Prettier, tsc, vite build, no raw HTML, dependency-cruiser, fallow 87 A). Front-end tests are not applicable by recorded decision.</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear</span>
+          <span class="bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">register/PreviewBuilder.java, RegisterUploads.java, V6__system_register.sql</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">M1. Unlinked SMO flag is frozen into the stored document and not recomputed on read, contradicting the migration comment and the reviewer decision. Compute it when a preview becomes a view, or fix the wording and add a sign-in-between test.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">register/PreviewRow.java, SystemSnapshot.java, RegisterPreviewPanel.tsx</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">M2. PreviewRow is a bag of nullables whose validity depends on the outcome. Model the five cases as a sealed hierarchy and a TypeScript discriminated union.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">register/PreviewBuilder.java, RegisterSheetReader.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">M3. PreviewBuilder (328 lines) holds classification, row rules, email grammar and Unicode sanitising, and the reader imports it (wrong direction). Split into CellText, EmailAddress, RowRules.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/RegisterPreviewPanel.tsx</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">M4. Four near-identical table components. Replace with one OutcomeTable driven by column data.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">register/Preview.java, SystemRegisterController.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L1 to L3. Stringly-typed status (constant WAITING holds PREVIEW), controller needs a Clock only for canApply, PreviewView restates Preview.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">register/UploadRejection.java, RegisterFileException.java, RegisterUploads.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L4 to L6. Refusal modelled with three types, duplicated size checks, mixed transaction styles.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">access/CurrentUser.java, app/SecurityConfig.java, SystemRegisterController.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L7, L8. Third copy of the caller lookup, role rule written in three places with string literals.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">RegisterPreviewPanel.tsx, RegisterScreen.tsx, register_upload table</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L9, L10. Expired previews never purged though the screen says discarded. Limits and a date formatter duplicated in the front end.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/harness/ApiClient.java, Arrange.java, TestEndpoints.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L11. Inline fully qualified names, JSON built by concatenation, added_on stamped with the UTC date.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review</span>
+          <span class="bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">docs/agents/reviewer-decisions.md, docs/adr/0017-*.md, register/RegisterUnlinkedSmoTest.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">S-1. The decision says the Unlinked SMO flag is computed when a preview is built or read. The ADR and test keep the upload-time value on read. Recompute on read or align the wording.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">register/RegisterSheetReader.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">S-5 (tracked deferral, tickets 13 and 51). The workbook is parsed with no malware scan. Handled in ADR 0017, README and notes on both tickets.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">register/RegisterSheetReader.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">ST-1. A 20 MB unpack cap with XSSFWorkbook DOM loading bounds memory loosely. Consider a lower cap or a streaming reader.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">.scratch/annual-va/issues/08-register-upload-preview.md</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">S-2. Acceptance boxes unticked and status still ready-for-agent. Expected before the verification commit.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/application.yml</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">ST-2. Container multipart ceiling is 50 MB, above the 2 MB endpoint limit, and no test covers a body over it.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">register/ExistingSystem.java, SystemSnapshot.java, Preview.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">ST-3. Quarter and status are strings (possible primitive obsession).</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">register/PreviewBuilder.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">ST-4. About 350 lines changing for four reasons. Split when a second user appears.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/RegisterPreviewPanel.tsx, RegisterScreen.tsx</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">ST-5. Table scaffold repeated four times, 2 MB limit hard-coded beside the server constant.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">register/ExistingSystem.java, RegisterRow.java, harness/ApiClient.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">ST-6 (nit). Lines past 120 columns and inline fully qualified names.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep</span>
+          <span class="bg-emerald-100 text-emerald-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">PASS</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8</span>
+          <span class="bg-red-100 text-red-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">FAIL</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 text-red-700 font-semibold">Critical</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterUploads.java, RegisterSheetReader.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">as-12. No malware scan before the workbook is opened with POI. Tracked deferral owned by tickets 13 and 51 (ADR 0017, README, ticket notes); no control was weakened and mitigations are in code and tested (byte sniffing, 2 MB cap, entry and unpack caps, macro refusal, never stored, VA POC only). Residual risk until ticket 13.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-orange-600 font-semibold">High</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/RegisterScreen.tsx</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">as-12 (front end). The submit handler has no zero-byte or extension check; <span class="font-mono text-xs">accept</span> is bypassable. Server enforces both, so practical impact is Low.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/application.yml, frontend/src/api/client.ts</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">as-1. Container multipart ceiling is 50 MB so the 2 MB cap applies after spooling. The front end casts responses with <span class="font-mono text-xs">as T</span> (existing pattern).</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/register/SystemRegisterController.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">lm-4. A container-level oversize or malformed multipart refusal is not audited as register-upload-rejected.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">README.md</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">pm-6 (pre-existing). No committed OpenAPI spec or architecture document. Endpoints are described in the README only.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react</span>
+          <span class="bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/RegisterPreviewPanel.tsx</td>
+              <td class="px-4 py-2">192, 205</td>
+              <td class="px-4 py-2">M1. The polite live region is mounted with its content and nests a role=alert, so the upload result may not be announced. Keep one persistent status region in RegisterScreen.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/RegisterScreen.tsx</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">M2. The file input is not disabled while busy, so a stale response can show the preview of the old file under a new selection. Re-picking an edited file may fail with a misleading error.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/styles.css</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">M3. The warning token is not redefined for dark mode, so the Unlinked SMO flag is about 2.7:1 on dark surfaces.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/RegisterPreviewPanel.tsx</td>
+              <td class="px-4 py-2">13-15</td>
+              <td class="px-4 py-2">L1 to L5. Index in the list key, unknown block reason renders an empty item, Group repeats its heading as aria-label, four near-identical tables, expired preview stays on screen.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot</span>
+          <span class="bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V6__system_register.sql, register/RegisterStore.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">M-1. Expired previews are never deleted, so names and emails stay in register_upload. Add a purge and an index on expires_at, or record the retention decision.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/application.yml, web/ApiExceptionHandler.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L-1. 2 MB limit applied after the container accepts up to 50 MB. A file over 50 MB gets a different problem type with no audit entry.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">register/RegisterSheetReader.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L-2. The zip guard walks local headers while POI uses the central directory, and the DOM parse can use a lot of heap.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">register/RegisterStore.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L-3. Jackson exceptions on the read and write path are not made content-free before the generic handler logs them.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">register/PreviewRow.java, SystemSnapshot.java, SystemRegisterController.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L-4, L-5. Stored JSON shape doubles as the API shape. Controller reads a second clock and builds Location from a literal.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">register/PreviewBuilder.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L-6. Java lowercasing can disagree with the citext key for exotic characters. Re-check in the database at apply time.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/register/</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L-7, L-8. Looping multi-case tests, an isIn(401, 403) assertion, whole-table resets and a shared mutable clock without a resource lock.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+    </main>
+  </body>
+</html>
