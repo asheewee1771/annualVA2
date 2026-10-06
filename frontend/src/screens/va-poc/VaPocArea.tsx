@@ -26,7 +26,7 @@ export function VaPocArea({ path, classification }: AreaProps) {
   if (path === REGISTER_PATH) {
     return (
       <SubPage>
-        <RegisterScreen />
+        <RegisterScreen classification={classification} />
       </SubPage>
     );
   }
