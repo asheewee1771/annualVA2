@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -28,7 +30,7 @@ import sg.annualva.web.ResourceNotFoundException;
 /**
  * The System Register upload (stories 2, 12 and 14): reads a filled-in template, works out what it would change and
  * keeps that as a preview for an hour. Nothing in the Register changes here; applying a preview is a later command
- * with a step-up of its own (ticket 10).
+ * with a step-up of its own ({@link RegisterApply}).
  *
  * <p>The file is untrusted. It is read, and refused if it is wrong, before any transaction opens, so the refusal is
  * recorded in an entry of its own (a fixed code, never content) and cannot be lost to a rollback; the preview and
@@ -101,7 +103,12 @@ public class RegisterUploads {
     private Preview createPreview(List<RegisterRow> rows) {
         Instant now = clock.instant();
         Set<String> signedIn = store.signedIn(PreviewBuilder.smoEmails(rows));
-        List<PreviewRow> changes = PreviewBuilder.build(rows, store.systems(), signedIn);
+        List<ExistingSystem> existing = store.systems();
+        // The Register's System ID is a citext column: it, not Java, decides which IDs are the same System.
+        Set<String> ids = new HashSet<>(PreviewBuilder.matchable(rows));
+        existing.forEach(system -> ids.add(system.code()));
+        Map<String, String> keys = store.foldedIds(ids);
+        List<PreviewRow> changes = PreviewBuilder.build(rows, existing, signedIn, id -> keys.getOrDefault(id, id));
         Instant expiresAt = now.plus(PREVIEW_LIFETIME);
         UUID id = store.insertUpload(user.id(), now, expiresAt, changes);
         audit.record(actor.attribute(AuditEvent.of(AuditAction.REGISTER_PREVIEWED, AuditOutcome.SUCCESS)

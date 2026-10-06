@@ -21,7 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 /**
  * The System Register, for the VA POCs only (the path is also restricted to them in the security chain, so a file
  * from anyone else is refused before it is read): the template to fill in, the upload of the filled-in file and the
- * preview of what it would change. Applying a preview arrives with ticket 10.
+ * preview of what it would change, and the apply of a confirmed preview (a step-up action, ADR 0018).
  */
 @RestController
 public class SystemRegisterController {
@@ -31,11 +31,13 @@ public class SystemRegisterController {
 
     private final RegisterTemplates templates;
     private final RegisterUploads uploads;
+    private final RegisterApply apply;
     private final Clock clock;
 
-    SystemRegisterController(RegisterTemplates templates, RegisterUploads uploads, Clock clock) {
+    SystemRegisterController(RegisterTemplates templates, RegisterUploads uploads, RegisterApply apply, Clock clock) {
         this.templates = templates;
         this.uploads = uploads;
+        this.apply = apply;
         this.clock = clock;
     }
 
@@ -82,6 +84,28 @@ public class SystemRegisterController {
     @PreAuthorize("hasRole('VA_POC')")
     public ResponseEntity<PreviewView> preview(@PathVariable UUID id) {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(view(uploads.preview(id)));
+    }
+
+    /**
+     * What an apply did: the preview, when, how many Systems were added, updated, retired and left as they were, and how
+     * many role grants were given and revoked.
+     */
+    public record ApplyView(
+            UUID previewId, String status, Instant appliedAt, int added, int updated, int retired, int unchanged,
+            int rolesGranted, int rolesRevoked) {}
+
+    /**
+     * Applies a confirmed preview (stories 2 to 4, 73, 79): the step-up action for the Register, so it is refused with
+     * {@code step-up-required} unless the caller signed in again within five minutes. Answers 409 for a preview that
+     * has been applied, has expired, has a blocked row or was made against a Register that has since changed.
+     */
+    @PostMapping("/api/system-register/previews/{id}/apply")
+    @PreAuthorize("hasRole('VA_POC')")
+    public ResponseEntity<ApplyView> apply(@PathVariable UUID id) {
+        RegisterApply.Applied applied = apply.apply(id);
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(new ApplyView(applied.previewId(), "APPLIED",
+                applied.appliedAt(), applied.added(), applied.updated(), applied.retired(), applied.unchanged(),
+                applied.rolesGranted(), applied.rolesRevoked()));
     }
 
     private PreviewView view(Preview preview) {

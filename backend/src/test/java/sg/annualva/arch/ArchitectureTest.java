@@ -67,8 +67,8 @@ class ArchitectureTest {
                 .whereLayer("access").mayOnlyBeAccessedByLayers("app", "register")
                 // the register is a domain module: nothing but the composition root reads it yet
                 .whereLayer("register").mayOnlyBeAccessedByLayers("app")
-                // the calendar is a leaf below the domain modules; they will read it, nothing it reads reads back
-                .whereLayer("cycle").mayOnlyBeAccessedByLayers("app")
+                // the calendar is a leaf below the domain modules (the register dates a System by it); nothing it reads reads back
+                .whereLayer("cycle").mayOnlyBeAccessedByLayers("app", "register")
                 // production adapters are wired by Spring type only; no module imports them
                 .whereLayer("adapters").mayNotBeAccessedByAnyLayer()
                 .check(main);
@@ -174,7 +174,7 @@ class ArchitectureTest {
 
     /**
      * Story 76 by construction: roles change only through the role store, and only the classes named
-     * here write to it. A new writer (the Register apply, the role-holder review) is added to this list
+     * here write to it. RegisterRoles is the Register apply's writer; a new one (the role-holder review) is added to this list
      * on purpose, in the ticket that brings it, and never a controller reached by a person's own request.
      */
     @Test
@@ -182,6 +182,7 @@ class ArchitectureTest {
         noClasses().that().areNotAssignableTo(RoleGrantStore.class)
                 .and().doNotHaveFullyQualifiedName("sg.annualva.access.VaPocSync")
                 .and().doNotHaveFullyQualifiedName("sg.annualva.access.RoleResolver")
+                .and().doNotHaveFullyQualifiedName("sg.annualva.access.RegisterRoles")
                 .and().doNotHaveFullyQualifiedName("sg.annualva.access.SignInService")
                 .should().dependOnClassesThat().areAssignableTo(RoleGrantStore.class)
                 .because("roles are given only by configuration, a System Register apply and the role-holder review;"

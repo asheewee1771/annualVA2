@@ -139,7 +139,7 @@ class RegisterFileChecksTest extends RegisterSeam1 {
 
     @Test
     void aSheetWithNoRowsIsRefusedBecauseItWouldRetireEverySystem() {
-        arrange.registered("SYS-SAFE", "Safe", "safe.smo@ci.annualva.test", "safe.cm@ci.annualva.test", 1, false);
+        registered(listed("SYS-SAFE", "Safe", "safe.smo@ci.annualva.test", "safe.cm@ci.annualva.test", "Q1"));
         ApiClient poc = vaPoc();
 
         var headersOnly = upload(poc, RegisterXlsx.register().build());

@@ -26,7 +26,15 @@ public enum DetailKey {
     SOURCE,
     GRANT_ID,
     /** The Register change preview an entry is about. */
-    PREVIEW_ID;
+    PREVIEW_ID,
+    /** What a Register apply did, as counts: Systems added, updated, retired and left as they were. */
+    ADDED,
+    UPDATED,
+    RETIRED,
+    UNCHANGED,
+    /** The role grants a Register apply gave and revoked. */
+    ROLES_GRANTED,
+    ROLES_REVOKED;
 
     /** The key as stored: lower-case with underscores. */
     String json() {

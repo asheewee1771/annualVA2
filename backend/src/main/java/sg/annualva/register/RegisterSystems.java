@@ -1,0 +1,63 @@
+package sg.annualva.register;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import org.jspecify.annotations.Nullable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import sg.annualva.access.AccessGuard;
+import sg.annualva.access.Need;
+import sg.annualva.access.SystemScope;
+
+/**
+ * The Register table (stories 2 and 12): the Systems the caller may see, each with its SMO/Tech Lead, Cyber Manager,
+ * Quarter, whether it is retired and, for a VA POC, whether its SMO/Tech Lead is an Unlinked SMO. A VA POC sees every
+ * System; an SMO/Tech Lead or Cyber Manager sees only the Systems their roles name (ADR 0013). The Unlinked SMO flag is
+ * read when asked, so it clears the moment the person signs in (ADR 0017), and is shown to the VA POCs only: it is
+ * theirs to fix. A read of the list is not audited: it names no one System's reports and changes nothing.
+ */
+@Service
+public class RegisterSystems {
+
+    /**
+     * @param id the System's own id, which every other part of the app refers to it by
+     * @param systemId the System ID as the VA POC typed it in the template
+     * @param quarter {@code Q1} to {@code Q4}
+     * @param unlinkedSmo whether the SMO/Tech Lead's email matches no sign-in yet; null for anyone but a VA POC, and
+     *     false for a retired System
+     */
+    public record SystemView(
+            UUID id, String systemId, String name, String smoEmail, String cyberManagerEmail, String quarter,
+            boolean retired, @Nullable Boolean unlinkedSmo) {}
+
+    private final RegisterStore store;
+    private final AccessGuard guard;
+
+    RegisterSystems(RegisterStore store, AccessGuard guard) {
+        this.store = store;
+        this.guard = guard;
+    }
+
+    @Transactional(readOnly = true)
+    public List<SystemView> list() {
+        SystemScope scope = guard.scope(Need.VIEW);
+        List<ExistingSystem> visible = store.systems().stream().filter(system -> scope.contains(system.id())).toList();
+        Set<String> signedIn = Set.of();
+        if (scope.all()) {
+            Set<String> smos = new HashSet<>();
+            visible.forEach(system -> smos.add(system.snapshot().smoEmail()));
+            signedIn = store.signedIn(smos);
+        }
+        Set<String> linked = signedIn;
+        return visible.stream().map(system -> view(system, scope.all(), linked)).toList();
+    }
+
+    private static SystemView view(ExistingSystem system, boolean vaPoc, Set<String> signedIn) {
+        SystemSnapshot snapshot = system.snapshot();
+        Boolean unlinked = vaPoc ? !system.retired() && !signedIn.contains(snapshot.smoEmail()) : null;
+        return new SystemView(system.id(), system.code(), snapshot.name(), snapshot.smoEmail(),
+                snapshot.cyberManagerEmail(), snapshot.quarter(), system.retired(), unlinked);
+    }
+}

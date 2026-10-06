@@ -77,7 +77,7 @@ public class TestEndpoints {
 
         public record PreRegister(@NotBlank String email) {}
 
-        /** @param source CONFIG, REGISTER or GRANT; defaults to REGISTER, what a Register apply will write */
+        /** @param source CONFIG, REGISTER or GRANT; defaults to REGISTER; a grant in a state the apply never makes (a lapsed one, say) is arranged here */
         public record GrantRequest(
                 @NotBlank String role,
                 @NotBlank String email,
@@ -89,7 +89,7 @@ public class TestEndpoints {
         private static final String SUSPEND = "UPDATE role_grant SET suspended_at = :now WHERE id = :id";
         private static final String LAPSE = "UPDATE role_grant SET lapsed_at = :now WHERE id = :id";
         private static final String LIST_GRANTS =
-                "SELECT id, role, source, system_id, user_id IS NOT NULL AS attached, last_used_at "
+                "SELECT id, role, source, system_id, user_id IS NOT NULL AS attached, last_used_at, revoked_at IS NOT NULL AS revoked "
                 + "FROM role_grant WHERE email = CAST(:email AS citext) ORDER BY granted_at, id";
 
         /** The Systems that "exist", standing in for the System Register's table. */
@@ -177,54 +177,42 @@ public class TestEndpoints {
             return Map.of("uuid", users.preRegister(body.email(), clock.instant()).id().toString());
         }
 
-        /** What a Register apply will do: a System comes into existence. */
+        private static final String INSERT_SYSTEM =
+                "INSERT INTO va_system (code, name, smo_email, cm_email, quarter, added_on) "
+                + "VALUES (:code, 'Test System', :smo, :cm, 1, CAST(:addedOn AS date)) RETURNING id";
+
+        /**
+         * A System exists, for the tests of other modules that need one to address (the row has the Register's own shape:
+         * a role grant for a System now needs a System). It stands in for nothing the Register does: the Register's own
+         * Systems and grants come from an upload and its apply, which are never arranged here.
+         */
         @PostMapping("/api/test/systems")
         public Map<String, String> createSystem() {
-            UUID id = UUID.randomUUID();
+            String code = "TEST-" + UUID.randomUUID();
+            UUID id = jdbc.sql(INSERT_SYSTEM)
+                    .param("code", code)
+                    .param("smo", code + ".smo@arranged.annualva.test")
+                    .param("cm", code + ".cm@arranged.annualva.test")
+                    .param("addedOn", java.time.LocalDate.ofInstant(clock.instant(), java.time.ZoneOffset.UTC).toString())
+                    .query(UUID.class)
+                    .single();
             systems.add(id);
             return Map.of("id", id.toString());
         }
 
-        public record RegisteredSystem(
-                @NotBlank String code,
-                @NotBlank String name,
-                @NotBlank String smoEmail,
-                @NotBlank String cyberManagerEmail,
-                int quarter,
-                boolean retired) {}
-
-        private static final String INSERT_SYSTEM =
-                "INSERT INTO va_system (code, name, smo_email, cm_email, quarter, added_on, retired_at) "
-                + "VALUES (CAST(:code AS citext), :name, CAST(:smo AS citext), CAST(:cm AS citext), :quarter, "
-                + "CAST(:addedOn AS date), :retiredAt) RETURNING id";
-
-        /** What a Register apply will do for an ADD: the System exists in the Register, as the apply would write it. */
-        @PostMapping("/api/test/register-systems")
-        public Map<String, String> registerSystem(@Valid @RequestBody RegisteredSystem body) {
-            UUID id = jdbc.sql(INSERT_SYSTEM)
-                    .param("code", body.code())
-                    .param("name", body.name())
-                    .param("smo", body.smoEmail())
-                    .param("cm", body.cyberManagerEmail())
-                    .param("quarter", body.quarter())
-                    .param("addedOn", java.time.LocalDate.ofInstant(clock.instant(), java.time.ZoneOffset.UTC).toString())
-                    .param("retiredAt", body.retired() ? clock.instant().atOffset(java.time.ZoneOffset.UTC) : null)
-                    .query(UUID.class)
-                    .single();
-            return Map.of("id", id.toString());
-        }
-
-        /** Empties the Register and its previews between tests; the suite shares one database. */
+        /** Empties the Register, its previews and the grants scoped to a System between tests; the suite shares one database. */
         @PostMapping("/api/test/register-reset")
         public Map<String, String> resetRegister() {
             transaction.executeWithoutResult(status -> {
+                jdbc.sql("DELETE FROM role_grant WHERE system_id IS NOT NULL").update();
                 jdbc.sql("DELETE FROM register_upload").update();
                 jdbc.sql("DELETE FROM va_system").update();
             });
+            systems.clear();
             return Map.of("reset", "yes");
         }
 
-        /** What a Register apply, configuration and the later Auditor grant will do: write a role grant. */
+        /** What configuration and the later Auditor grant will do, and a state the apply never makes: write a role grant. */
         @PostMapping("/api/test/grants")
         public Map<String, String> grant(@Valid @RequestBody GrantRequest body) {
             var grant = grants.grant(
@@ -262,6 +250,7 @@ public class TestEndpoints {
                 view.put("systemId", rs.getObject("system_id", UUID.class) == null ? null
                         : rs.getObject("system_id", UUID.class).toString());
                 view.put("attached", rs.getBoolean("attached"));
+                view.put("revoked", rs.getBoolean("revoked"));
                 var lastUsed = rs.getObject("last_used_at", java.time.OffsetDateTime.class);
                 view.put("lastUsedAt", lastUsed == null ? null : lastUsed.toInstant().toString());
                 return view;

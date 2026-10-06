@@ -15,7 +15,7 @@ import org.springframework.stereotype.Repository;
 /**
  * The role_grant table. Constant SQL, named parameters (as-2). Roles change only through this
  * store, and only its callers write: configuration ({@link VaPocSync}), sign-in (attaching grants
- * made by email) and, in later slices, a Register apply and the role-holder review. No controller
+ * made by email), a Register apply ({@link RegisterRoles}) and, in a later slice, the role-holder review. No controller
  * may depend on it (an architecture test holds that line).
  */
 @Repository

@@ -59,11 +59,12 @@ class RegisterPreviewTest extends RegisterSeam1 {
 
     @Test
     void rowsAreMatchedToTheRegisterBySystemIdAndClassifiedAddUpdateRetireOrNoChange() {
-        arrange.registered("SYS-SAME", "Same", "same.smo@ci.annualva.test", "same.cm@ci.annualva.test", 2, false);
-        arrange.registered("SYS-EDIT", "Old name", "edit.smo@ci.annualva.test", "edit.cm@ci.annualva.test", 1, false);
-        arrange.registered("SYS-GONE", "Gone", "gone.smo@ci.annualva.test", "gone.cm@ci.annualva.test", 3, false);
-        arrange.registered("SYS-ALREADY", "Already retired", "old.smo@ci.annualva.test", "old.cm@ci.annualva.test", 4, true);
-        arrange.registered("SYS-BACK", "Coming back", "back.smo@ci.annualva.test", "back.cm@ci.annualva.test", 2, true);
+        registered(
+                List.of(listed("SYS-SAME", "Same", "same.smo@ci.annualva.test", "same.cm@ci.annualva.test", "Q2"),
+                        listed("SYS-EDIT", "Old name", "edit.smo@ci.annualva.test", "edit.cm@ci.annualva.test", "Q1"),
+                        listed("SYS-GONE", "Gone", "gone.smo@ci.annualva.test", "gone.cm@ci.annualva.test", "Q3")),
+                List.of(listed("SYS-ALREADY", "Already retired", "old.smo@ci.annualva.test", "old.cm@ci.annualva.test", "Q4"),
+                        listed("SYS-BACK", "Coming back", "back.smo@ci.annualva.test", "back.cm@ci.annualva.test", "Q2")));
         ApiClient poc = vaPoc();
 
         JsonNode preview = preview(poc, RegisterXlsx.register()
@@ -134,7 +135,7 @@ class RegisterPreviewTest extends RegisterSeam1 {
 
     @Test
     void anUploadChangesNothing() {
-        arrange.registered("SYS-KEEP", "Keep", "keep.smo@ci.annualva.test", "keep.cm@ci.annualva.test", 1, false);
+        registered(listed("SYS-KEEP", "Keep", "keep.smo@ci.annualva.test", "keep.cm@ci.annualva.test", "Q1"));
         ApiClient poc = vaPoc();
         RegisterXlsx file = RegisterXlsx.register()
                 .row("SYS-FRESH", "Fresh", "fresh.smo@ci.annualva.test", "fresh.cm@ci.annualva.test", "Q2");

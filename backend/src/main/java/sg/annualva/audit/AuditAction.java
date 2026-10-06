@@ -26,7 +26,11 @@ public enum AuditAction {
     /** A VA POC read a Register change preview back. */
     REGISTER_PREVIEW_VIEWED("register-preview-viewed", "file"),
     /** A Register file was refused (not a workbook, too large, wrong headers); the entry holds a fixed code only. */
-    REGISTER_UPLOAD_REJECTED("register-upload-rejected", "file");
+    REGISTER_UPLOAD_REJECTED("register-upload-rejected", "file"),
+    /** A VA POC applied a Register change preview; the entry holds counts and the preview id only. */
+    REGISTER_APPLIED("register-applied", "configuration"),
+    /** A System was retired by a Register apply; its history stays. One entry per System, about that System. */
+    REGISTER_SYSTEM_RETIRED("register-system-retired", "configuration");
 
     private final String ecs;
     private final String category;

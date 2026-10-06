@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -53,16 +54,33 @@ final class PreviewBuilder {
     }
 
     /**
+     * The System IDs of these rows that can be matched at all, as typed: the values to ask the database to fold, because
+     * the Register's System ID is a citext column and it, not Java, decides which IDs are the same System (ADR 0017).
+     */
+    static Set<String> matchable(List<RegisterRow> rows) {
+        Set<String> ids = new HashSet<>();
+        for (RegisterRow row : rows) {
+            if (matchable(row.systemId())) {
+                ids.add(row.systemId());
+            }
+        }
+        return ids;
+    }
+
+    /**
      * @param rows the file's data rows, in sheet order
      * @param existing every System the Register holds, retired or not
      * @param signedIn the lower-case SMO/Tech Lead emails of the file that match a person who has signed in
+     * @param fold the key by which two System IDs are the same System, as the database decides it; asked for every ID in
+     *     {@link #matchable(List)} and for every code the Register holds
      */
-    static List<PreviewRow> build(List<RegisterRow> rows, List<ExistingSystem> existing, Set<String> signedIn) {
+    static List<PreviewRow> build(List<RegisterRow> rows, List<ExistingSystem> existing, Set<String> signedIn,
+            UnaryOperator<String> fold) {
         Map<String, ExistingSystem> byCode = new HashMap<>();
-        existing.forEach(system -> byCode.put(lower(system.code()), system));
+        existing.forEach(system -> byCode.put(fold.apply(system.code()), system));
         Map<String, Integer> timesInFile = new HashMap<>();
         for (RegisterRow row : rows) {
-            String key = idKey(row.systemId());
+            String key = idKey(row.systemId(), fold);
             if (key != null) {
                 timesInFile.merge(key, 1, Integer::sum);
             }
@@ -70,19 +88,19 @@ final class PreviewBuilder {
 
         List<PreviewRow> preview = new ArrayList<>();
         for (RegisterRow row : rows) {
-            preview.add(classify(row, byCode, timesInFile, signedIn));
+            preview.add(classify(row, byCode, timesInFile, signedIn, fold));
         }
         existing.stream()
-                .filter(system -> !system.retired() && !timesInFile.containsKey(lower(system.code())))
-                .sorted(Comparator.comparing(system -> lower(system.code())))
+                .filter(system -> !system.retired() && !timesInFile.containsKey(fold.apply(system.code())))
+                .sorted(Comparator.comparing(system -> fold.apply(system.code())))
                 .forEach(system -> preview.add(new PreviewRow(null, system.code(), system.id(), Outcome.RETIRE,
                         List.of(), false, system.snapshot(), null)));
         return preview;
     }
 
     private static PreviewRow classify(RegisterRow row, Map<String, ExistingSystem> byCode,
-            Map<String, Integer> timesInFile, Set<String> signedIn) {
-        String key = idKey(row.systemId());
+            Map<String, Integer> timesInFile, Set<String> signedIn, UnaryOperator<String> fold) {
+        String key = idKey(row.systemId(), fold);
         ExistingSystem match = key == null ? null : byCode.get(key);
         SystemSnapshot after = new SystemSnapshot(display(row.name()), display(lower(row.smoEmail())),
                 display(lower(row.cyberManagerEmail())), display(row.quarter()), false);
@@ -114,7 +132,7 @@ final class PreviewBuilder {
             if (timesInFile.getOrDefault(key, 0) > 1) {
                 reasons.add(BlockReason.SYSTEM_ID_DUPLICATE);
             }
-            if (key.startsWith(EXAMPLE_PREFIX)) {
+            if (lower(row.systemId()).startsWith(EXAMPLE_PREFIX)) {
                 reasons.add(BlockReason.SYSTEM_ID_EXAMPLE);
             }
         }
@@ -145,12 +163,13 @@ final class PreviewBuilder {
         return List.copyOf(reasons);
     }
 
-    /** The key a System ID is matched by (trimmed, without regard to case), or null when it cannot be one. */
-    private static @Nullable String idKey(String systemId) {
-        if (systemId.isEmpty() || systemId.codePointCount(0, systemId.length()) > SYSTEM_ID_MAX || !plain(systemId)) {
-            return null;
-        }
-        return lower(systemId);
+    /** The key a System ID is matched by (the database's folding of the trimmed ID), or null when it cannot be one. */
+    private static @Nullable String idKey(String systemId, UnaryOperator<String> fold) {
+        return matchable(systemId) ? fold.apply(systemId) : null;
+    }
+
+    private static boolean matchable(String systemId) {
+        return !systemId.isEmpty() && systemId.codePointCount(0, systemId.length()) <= SYSTEM_ID_MAX && plain(systemId);
     }
 
     private static String lower(String value) {

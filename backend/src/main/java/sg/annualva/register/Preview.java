@@ -6,7 +6,7 @@ import java.util.UUID;
 
 /**
  * A Register change preview: what one uploaded file would do. It expires an hour after it was made; nothing in the
- * Register changes until it is applied (ticket 10), and a preview with a BLOCKED row cannot be.
+ * Register changes until it is applied ({@link RegisterApply}), and a preview with a BLOCKED row cannot be.
  */
 public record Preview(UUID id, String status, Instant createdAt, Instant expiresAt, List<PreviewRow> rows) {
 

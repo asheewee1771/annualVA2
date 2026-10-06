@@ -3,6 +3,8 @@ package sg.annualva.register;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import sg.annualva.harness.ApiClient;
@@ -38,26 +40,78 @@ abstract class RegisterSeam1 extends Seam1Test {
         arrange.clearRegister();
     }
 
+    /** A sign-in whose auth_time is the application clock's now, so the person is within the step-up window. */
+    protected TestIdentity fresh(TestIdentity identity) {
+        return identity.withAuthTime(clock.instant());
+    }
+
     /** The first VA POC, signed in, with a CSRF token. */
     protected ApiClient vaPoc() {
         ApiClient browser = anotherBrowser();
-        SignIn.signedIn(browser, issuer, TestIdentity.of("af-5001", POC_ONE, "POC One"));
+        SignIn.signedIn(browser, issuer, fresh(TestIdentity.of("af-5001", POC_ONE, "POC One")));
         return browser.withCsrf();
     }
 
     /** The second VA POC, signed in, with a CSRF token. */
     protected ApiClient otherVaPoc() {
         ApiClient browser = anotherBrowser();
-        SignIn.signedIn(browser, issuer, TestIdentity.of("af-5002", POC_TWO, "POC Two"));
+        SignIn.signedIn(browser, issuer, fresh(TestIdentity.of("af-5002", POC_TWO, "POC Two")));
         return browser.withCsrf();
     }
 
     /** A person who has signed in as this email, with whatever roles they hold, and a CSRF token. */
     protected ApiClient signedInAs(String email) {
         ApiClient browser = anotherBrowser();
-        SignIn.signedIn(browser, issuer, TestIdentity.of("af-r-" + Math.abs(email.hashCode()), email, "Person"));
+        SignIn.signedIn(browser, issuer, fresh(TestIdentity.of("af-r-" + Math.abs(email.hashCode()), email, "Person")));
         return browser.withCsrf();
     }
+
+    /** One System as a VA POC's file lists it. */
+    protected record Listed(String systemId, String name, String smo, String manager, String quarter) {}
+
+    protected static Listed listed(String systemId, String name, String smo, String manager, String quarter) {
+        return new Listed(systemId, name, smo, manager, quarter);
+    }
+
+    protected static RegisterXlsx file(List<Listed> systems) {
+        RegisterXlsx file = RegisterXlsx.register();
+        systems.forEach(s -> file.row(s.systemId(), s.name(), s.smo(), s.manager(), s.quarter()));
+        return file;
+    }
+
+    /** Applies a preview as this VA POC, who has just signed in, and expects it to be applied. */
+    protected static JsonNode apply(ApiClient poc, JsonNode preview) {
+        var response = applyResponse(poc, preview);
+        assertThat(response.status()).as(response.body()).isEqualTo(200);
+        return ApiClient.json(response);
+    }
+
+    protected static ApiClient.Response applyResponse(ApiClient poc, JsonNode preview) {
+        return poc.post(PREVIEWS + preview.get("id").asString() + "/apply");
+    }
+
+    /**
+     * Puts exactly these Systems in the Register, the way a VA POC does: upload the file and apply the preview. The
+     * Register is one standing list, so whatever it held before is retired (and its grants revoked).
+     */
+    protected void registered(Listed... systems) {
+        registered(List.of(systems), List.of());
+    }
+
+    /**
+     * The same, and then these Systems retired by a second upload that leaves them out. At least one System must stay
+     * active, because a file with no rows is refused.
+     */
+    protected void registered(List<Listed> active, List<Listed> retired) {
+        ApiClient poc = vaPoc();
+        List<Listed> first = new ArrayList<>(active);
+        first.addAll(retired);
+        apply(poc, preview(poc, file(first)));
+        if (!retired.isEmpty()) {
+            apply(poc, preview(poc, file(active)));
+        }
+    }
+
 
     protected static ApiClient.Response upload(ApiClient client, byte[] file) {
         return client.postFile(UPLOAD, "file", "register.xlsx", XLSX, file);

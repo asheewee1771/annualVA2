@@ -133,7 +133,7 @@ class RegisterBlockedRowsTest extends RegisterSeam1 {
 
     @Test
     void aRowCanBeBlockedForSeveralReasonsAtOnceAndStillShowsWhatTheFileHeld() {
-        arrange.registered("SYS-MANY", "Before", "before.smo@ci.annualva.test", "before.cm@ci.annualva.test", 1, false);
+        registered(listed("SYS-MANY", "Before", "before.smo@ci.annualva.test", "before.cm@ci.annualva.test", "Q1"));
 
         JsonNode preview = preview(vaPoc(), RegisterXlsx.register().row("SYS-MANY", "", "bad", "", "Q9"));
 
@@ -149,7 +149,7 @@ class RegisterBlockedRowsTest extends RegisterSeam1 {
 
     @Test
     void aBlockedRowDoesNotRetireTheSystemItNames() {
-        arrange.registered("SYS-HELD", "Held", "held.smo@ci.annualva.test", "held.cm@ci.annualva.test", 1, false);
+        registered(listed("SYS-HELD", "Held", "held.smo@ci.annualva.test", "held.cm@ci.annualva.test", "Q1"));
 
         JsonNode preview = preview(vaPoc(), RegisterXlsx.register().row("SYS-HELD", "Held", "held.smo@ci.annualva.test", "", "Q1"));
 

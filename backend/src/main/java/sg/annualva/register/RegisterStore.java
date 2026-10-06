@@ -1,10 +1,14 @@
 package sg.annualva.register;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -15,9 +19,8 @@ import tools.jackson.databind.ObjectMapper;
 
 /**
  * The Register's tables: the Systems it holds, and the previews of changes to it. Constant SQL, named parameters
- * (as-2). It reads the Systems and writes previews; Systems themselves are written by the apply (ticket 10). A
- * preview is stored whole, as one JSON list of {@link PreviewRow}: it is made once, read whole and applied whole, and
- * nothing ever asks a question of one row alone.
+ * (as-2). A preview is stored whole, as one JSON list of {@link PreviewRow}: it is made once, read whole and applied
+ * whole, and nothing ever asks a question of one row alone. Systems are written only by the apply.
  */
 @Repository
 class RegisterStore {
@@ -25,6 +28,14 @@ class RegisterStore {
     private static final String SYSTEMS =
             "SELECT id, code::text AS code, name, smo_email::text AS smo_email, cm_email::text AS cm_email, quarter, "
             + "retired_at IS NOT NULL AS retired FROM va_system ORDER BY code";
+
+    /**
+     * Which of these System IDs are the same System, by the column's own citext rules: each value with the smallest of
+     * the values equal to it, so two IDs share a key exactly when citext says they are equal.
+     */
+    private static final String FOLD =
+            "SELECT a.v AS value, MIN(b.v) AS key FROM unnest(CAST(:values AS text[])) AS a(v) "
+            + "JOIN unnest(CAST(:values AS text[])) AS b(v) ON CAST(a.v AS citext) = CAST(b.v AS citext) GROUP BY a.v";
 
     /** The people among these emails (lower-case) who have signed in: a pre-registered person has not. */
     private static final String SIGNED_IN =
@@ -36,6 +47,29 @@ class RegisterStore {
 
     private static final String UPLOAD =
             "SELECT id, status, created_at, expires_at, rows::text AS rows FROM register_upload WHERE id = :id";
+
+    /** One apply at a time: the second waits, then finds the baseline its preview was made from has changed. */
+    private static final String LOCK_APPLY = "SELECT pg_advisory_xact_lock(hashtext('annualva.register-apply'))";
+
+    private static final String CODES_TAKEN =
+            "SELECT code::text FROM va_system WHERE code = ANY(CAST(:codes AS citext[]))";
+
+    private static final String INSERT_SYSTEM =
+            "INSERT INTO va_system (code, name, smo_email, cm_email, quarter, added_on) "
+            + "VALUES (CAST(:code AS citext), :name, CAST(:smo AS citext), CAST(:cm AS citext), :quarter, :addedOn) "
+            + "RETURNING id";
+
+    /** A System the file lists again is current again: an update also reinstates a retired one. */
+    private static final String UPDATE_SYSTEM =
+            "UPDATE va_system SET name = :name, smo_email = CAST(:smo AS citext), cm_email = CAST(:cm AS citext), "
+            + "quarter = :quarter, retired_at = NULL WHERE id = :id";
+
+    private static final String RETIRE_SYSTEM =
+            "UPDATE va_system SET retired_at = :now WHERE id = :id AND retired_at IS NULL";
+
+    private static final String MARK_APPLIED =
+            "UPDATE register_upload SET status = 'APPLIED', applied_at = :now, applied_by = :by "
+            + "WHERE id = :id AND status = 'PREVIEW'";
 
     private static final TypeReference<List<PreviewRow>> ROWS = new TypeReference<>() {};
 
@@ -51,6 +85,22 @@ class RegisterStore {
         return jdbc.sql(SYSTEMS).query((rs, row) -> new ExistingSystem(
                 rs.getObject("id", UUID.class), rs.getString("code"), rs.getString("name"), rs.getString("smo_email"),
                 rs.getString("cm_email"), rs.getInt("quarter"), rs.getBoolean("retired"))).list();
+    }
+
+    /**
+     * The key each of these System IDs is matched by: two IDs have the same key exactly when the Register's citext
+     * column holds them as equal. An ID not asked about has no key here; the caller folds only what it asked.
+     */
+    Map<String, String> foldedIds(Collection<String> ids) {
+        Map<String, String> keys = new HashMap<>();
+        if (ids.isEmpty()) {
+            return keys;
+        }
+        jdbc.sql(FOLD).param("values", ids.toArray(String[]::new))
+                .query(rs -> {
+                    keys.put(rs.getString("value"), rs.getString("key"));
+                });
+        return keys;
     }
 
     /** Which of these lower-case emails belong to a person who has signed in. */
@@ -79,6 +129,50 @@ class RegisterStore {
                 rs.getObject("created_at", OffsetDateTime.class).toInstant(),
                 rs.getObject("expires_at", OffsetDateTime.class).toInstant(),
                 json.readValue(rs.getString("rows"), ROWS))).optional();
+    }
+
+    /** Takes the lock that makes applies one at a time; held until the transaction ends. */
+    void lockApply() {
+        jdbc.sql(LOCK_APPLY).query().singleRow();
+    }
+
+    /** Which of these System IDs the Register already holds, by its citext rules (retired or not). */
+    Set<String> codesTaken(Collection<String> codes) {
+        if (codes.isEmpty()) {
+            return Set.of();
+        }
+        return new HashSet<>(jdbc.sql(CODES_TAKEN).param("codes", codes.toArray(String[]::new)).query(String.class).list());
+    }
+
+    UUID insertSystem(String code, String name, String smoEmail, String cyberManagerEmail, int quarter, LocalDate addedOn) {
+        return jdbc.sql(INSERT_SYSTEM)
+                .param("code", code)
+                .param("name", name)
+                .param("smo", smoEmail)
+                .param("cm", cyberManagerEmail)
+                .param("quarter", quarter)
+                .param("addedOn", addedOn)
+                .query(UUID.class)
+                .single();
+    }
+
+    void updateSystem(UUID id, String name, String smoEmail, String cyberManagerEmail, int quarter) {
+        jdbc.sql(UPDATE_SYSTEM)
+                .param("id", id)
+                .param("name", name)
+                .param("smo", smoEmail)
+                .param("cm", cyberManagerEmail)
+                .param("quarter", quarter)
+                .update();
+    }
+
+    void retireSystem(UUID id, Instant now) {
+        jdbc.sql(RETIRE_SYSTEM).param("id", id).param("now", utc(now)).update();
+    }
+
+    /** Marks the preview applied; false when it was not waiting any more. */
+    boolean markApplied(UUID id, Instant now, UUID by) {
+        return jdbc.sql(MARK_APPLIED).param("id", id).param("now", utc(now)).param("by", by).update() == 1;
     }
 
     private static OffsetDateTime utc(Instant instant) {

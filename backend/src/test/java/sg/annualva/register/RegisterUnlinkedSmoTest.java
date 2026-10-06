@@ -47,7 +47,7 @@ class RegisterUnlinkedSmoTest extends RegisterSeam1 {
 
     @Test
     void anUnchangedSystemWithAnUnlinkedSmoIsStillListedAndFlagged() {
-        arrange.registered("SYS-SAME", "Same", "same.unlinked@ci.annualva.test", MANAGER, 2, false);
+        registered(listed("SYS-SAME", "Same", "same.unlinked@ci.annualva.test", MANAGER, "Q2"));
 
         JsonNode preview = preview(vaPoc(), RegisterXlsx.register()
                 .row("SYS-SAME", "Same", "same.unlinked@ci.annualva.test", MANAGER, "Q2"));
