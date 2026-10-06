@@ -79,3 +79,52 @@ export function uploadRegister(file: File): Promise<RegisterPreview> {
   form.append("file", file);
   return request<RegisterPreview>("POST", "/api/system-register/uploads", form);
 }
+
+/** A preview read back (GET /api/system-register/previews/{id}), until it expires an hour after the upload. */
+export function fetchRegisterPreview(id: string): Promise<RegisterPreview> {
+  return request<RegisterPreview>("GET", `/api/system-register/previews/${encodeURIComponent(id)}`);
+}
+
+/** What an apply did (POST /api/system-register/previews/{id}/apply). */
+export interface AppliedRegister {
+  previewId: string;
+  status: string;
+  appliedAt: string;
+  added: number;
+  updated: number;
+  retired: number;
+  unchanged: number;
+  rolesGranted: number;
+  rolesRevoked: number;
+}
+
+/**
+ * Applies a confirmed preview (VA POC only). It is the step-up action for the Register, so the server refuses it with
+ * `step-up-required` unless the person signed in again within five minutes; the app then offers the sign-in. The body
+ * names the preview only so that it can be reopened when the person comes back from that sign-in (a file cannot be
+ * kept, a preview id can); the server reads the preview from the address.
+ */
+export function applyRegisterPreview(id: string): Promise<AppliedRegister> {
+  return request<AppliedRegister>("POST", `/api/system-register/previews/${encodeURIComponent(id)}/apply`, {
+    previewId: id,
+  });
+}
+
+/** A System in the Register table (GET /api/systems). */
+export interface RegisterSystem {
+  id: string;
+  /** The System ID as the VA POC typed it in the template. */
+  systemId: string;
+  name: string;
+  smoEmail: string;
+  cyberManagerEmail: string;
+  quarter: string;
+  retired: boolean;
+  /** Only a VA POC is told; null for anyone else. */
+  unlinkedSmo: boolean | null;
+}
+
+/** The Systems the signed-in person may see: all of them for a VA POC, their own for an SMO or Cyber Manager. */
+export function fetchSystems(): Promise<RegisterSystem[]> {
+  return request<RegisterSystem[]>("GET", "/api/systems");
+}

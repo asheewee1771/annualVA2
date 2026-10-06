@@ -110,7 +110,6 @@ export function clearStepUpState(): void {
 }
 
 /** The draft saved for this action, read once and forgotten by the form that owns the action. */
-// fallow-ignore-next-line unused-export
 export function takeRestoredDraft(intent: string): unknown {
   const saved = take(DRAFT_KEY);
   return typeof saved === "object" && saved !== null && "intent" in saved && saved.intent === intent && "draft" in saved

@@ -1,10 +1,21 @@
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { ApiError, type Problem } from "../../api/problem.ts";
-import { fetchRegisterTemplate, uploadRegister, type RegisterPreview } from "../../api/systemRegister.ts";
+import { takeRestoredDraft } from "../../api/stepUp.ts";
+import {
+  applyRegisterPreview,
+  fetchRegisterPreview,
+  fetchRegisterTemplate,
+  fetchSystems,
+  uploadRegister,
+  type AppliedRegister,
+  type RegisterPreview,
+} from "../../api/systemRegister.ts";
 import { ClassifiedField } from "../../components/ClassifiedField.tsx";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
+import { useResource } from "../../hooks/useResource.ts";
 import { saveFile } from "../shared/saveFile.ts";
 import { RegisterPreviewPanel } from "./RegisterPreviewPanel.tsx";
+import { RegisterTable } from "./RegisterTable.tsx";
 
 const UNREACHABLE: Problem = { type: "about:blank", title: "The server could not be reached", status: 0 };
 /** The server's own limit; checked here too so a file that is too large is not sent at all. */
@@ -119,14 +130,99 @@ function UploadForm({ classification, onPreview, onProblem }: UploadFormProps) {
   );
 }
 
+/** What an apply did, in one sentence. */
+function AppliedNotice({ applied }: { applied: AppliedRegister }) {
+  return (
+    <div className="notice" role="status">
+      <p>
+        <strong>The Register is updated.</strong> {applied.added} added, {applied.updated} updated, {applied.retired}{" "}
+        retired, {applied.unchanged} unchanged. {applied.rolesGranted} role{applied.rolesGranted === 1 ? "" : "s"}{" "}
+        granted and {applied.rolesRevoked} revoked.
+      </p>
+    </div>
+  );
+}
+
+function isStepUpRequired(problem: Problem): boolean {
+  return problem.type.endsWith("/step-up-required");
+}
+
+/** The preview a person was about to apply when they left for a fresh sign-in; reopened when they come back. */
+function previewIdFrom(draft: unknown): string | undefined {
+  return typeof draft === "object" && draft !== null && "previewId" in draft && typeof draft.previewId === "string"
+    ? draft.previewId
+    : undefined;
+}
+
 /**
- * The System Register (stories 1, 2 and 12): the VA POC downloads the fixed Excel template, fills it in with each
- * System, its SMO/Tech Lead, Cyber Manager and Quarter, uploads it and sees a preview of every change before anything
- * changes. Applying a preview arrives in a later ticket.
+ * Read once as the page loads (a step-up round trip is a full page load) and forgotten once the preview is open
+ * again, so going to another screen and back never reopens a preview.
+ */
+let leftForSignIn = previewIdFrom(takeRestoredDraft("register-apply"));
+
+/** Opens the preview a person left for the step-up sign-in, if they left one. */
+function useReopenedPreview(
+  onPreview: (preview: RegisterPreview) => void,
+  onProblem: (problem: Problem) => void,
+): void {
+  const [id] = useState(leftForSignIn);
+  useEffect(() => {
+    if (id === undefined) return;
+    let cancelled = false;
+    fetchRegisterPreview(id).then(
+      (preview) => {
+        if (cancelled) return;
+        leftForSignIn = undefined;
+        onPreview(preview);
+      },
+      (failure: unknown) => {
+        if (cancelled) return;
+        leftForSignIn = undefined;
+        onProblem(problemOf(failure));
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [id, onPreview, onProblem]);
+}
+
+/**
+ * The System Register (stories 1 to 4, 12, 73 and 79): the VA POC downloads the fixed Excel template, fills it in with
+ * each System, its SMO/Tech Lead, Cyber Manager and Quarter, uploads it and sees a preview of every change before
+ * anything changes, then applies it with a fresh sign-in. The table beneath is the Register as it stands.
  */
 export function RegisterScreen({ classification }: { classification: string }) {
   const [problem, setProblem] = useState<Problem | undefined>(undefined);
   const [preview, setPreview] = useState<RegisterPreview | undefined>(undefined);
+  const [applied, setApplied] = useState<AppliedRegister | undefined>(undefined);
+  const [applying, setApplying] = useState(false);
+  const systems = useResource(fetchSystems);
+
+  const showPreview = useCallback((next: RegisterPreview | undefined) => {
+    setPreview(next);
+    setApplied(undefined);
+  }, []);
+  useReopenedPreview(showPreview, setProblem);
+
+  async function apply() {
+    if (!preview) return;
+    setApplying(true);
+    setProblem(undefined);
+    try {
+      setApplied(await applyRegisterPreview(preview.id));
+      setPreview(undefined);
+      systems.reload();
+    } catch (failure) {
+      const refused = problemOf(failure);
+      // A step-up refusal is explained by the sign-in dialog; the preview is kept so the person can try again.
+      if (!isStepUpRequired(refused)) setProblem(refused);
+      // A preview that was applied, expired or made against an older Register is of no use any more.
+      if (refused.status === 409) setPreview(undefined);
+    } finally {
+      setApplying(false);
+    }
+  }
 
   return (
     <div className="card">
@@ -143,9 +239,14 @@ export function RegisterScreen({ classification }: { classification: string }) {
         an example to delete before you upload.
       </p>
       <h3>Upload the filled-in template</h3>
-      <UploadForm classification={classification} onPreview={setPreview} onProblem={setProblem} />
+      <UploadForm classification={classification} onPreview={showPreview} onProblem={setProblem} />
       {problem ? <ErrorPanel problem={problem} /> : null}
-      {preview ? <RegisterPreviewPanel preview={preview} /> : null}
+      {applied ? <AppliedNotice applied={applied} /> : null}
+      {preview ? <RegisterPreviewPanel preview={preview} applying={applying} onApply={() => void apply()} /> : null}
+      <h3>Systems in the Register</h3>
+      {systems.error ? <ErrorPanel problem={systems.error.problem} /> : null}
+      {systems.data ? <RegisterTable systems={systems.data} /> : null}
+      {systems.loading && !systems.data ? <p className="muted">Loading the Register…</p> : null}
     </div>
   );
 }

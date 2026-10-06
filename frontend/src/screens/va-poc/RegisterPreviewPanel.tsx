@@ -179,12 +179,44 @@ function BlockedTable({ rows }: { rows: PreviewRow[] }) {
   );
 }
 
+interface RegisterPreviewPanelProps {
+  preview: RegisterPreview;
+  /** True while the apply is being sent. */
+  applying: boolean;
+  onApply: () => void;
+}
+
+/** What the person can do with the preview: apply it, or why they cannot. */
+function ApplyControl({ preview, applying, onApply }: RegisterPreviewPanelProps) {
+  if (preview.canApply) {
+    return (
+      <div className="notice-inline">
+        <p>
+          No row is blocked. Applying adds, updates and retires the Systems above and makes the SMO/Tech Lead and Cyber
+          Manager roles follow the Register: anyone it no longer names loses access at once. It needs a sign-in from the
+          last five minutes, and a retired System is never deleted.
+        </p>
+        <button type="button" className="button" disabled={applying} onClick={onApply}>
+          {applying ? "Applying…" : "Apply these changes"}
+        </button>
+      </div>
+    );
+  }
+  return (
+    <p className="notice-inline notice-inline--refused" role="alert">
+      {preview.counts.blocked > 0
+        ? "This preview cannot be applied while any row is blocked. Correct the file and upload it again."
+        : "This preview can no longer be applied. Upload the file again."}
+    </p>
+  );
+}
+
 /**
  * What an upload would do, before anything changes (stories 2 and 12): the Systems to add, update and retire, and the
  * rows that are blocked and why. Everything from the file is rendered as text. A preview with a blocked row cannot be
- * applied; applying one arrives with a later ticket.
+ * applied; one without can, with a fresh sign-in (stories 3, 4, 73 and 79).
  */
-export function RegisterPreviewPanel({ preview }: { preview: RegisterPreview }) {
+export function RegisterPreviewPanel({ preview, applying, onApply }: RegisterPreviewPanelProps) {
   const rows = (outcome: RegisterOutcome) => preview.rows.filter((row) => row.outcome === outcome);
   const blocked = rows("BLOCKED");
   const { counts } = preview;
@@ -199,13 +231,7 @@ export function RegisterPreviewPanel({ preview }: { preview: RegisterPreview }) 
       <p className="muted">
         Nothing has changed. This preview is kept until {when(preview.expiresAt)} (Singapore time) and then discarded.
       </p>
-      {preview.canApply ? (
-        <p className="notice-inline">No row is blocked. Applying a preview is the next step and is not built yet.</p>
-      ) : (
-        <p className="notice-inline notice-inline--refused" role="alert">
-          This preview cannot be applied while any row is blocked. Correct the file and upload it again.
-        </p>
-      )}
+      <ApplyControl preview={preview} applying={applying} onApply={onApply} />
       <Group
         title="Blocked"
         count={blocked.length}
