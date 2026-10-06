@@ -20,7 +20,13 @@ public enum AuditAction {
     ROLE_GRANTED("role-granted", "iam"),
     ROLE_REVOKED("role-revoked", "iam"),
     /** A VA POC downloaded the System Register template; it names no System and holds no data. */
-    REGISTER_TEMPLATE_DOWNLOADED("register-template-downloaded", "file");
+    REGISTER_TEMPLATE_DOWNLOADED("register-template-downloaded", "file"),
+    /** A VA POC uploaded a Register file and a preview of its changes was made; nothing in the Register changed. */
+    REGISTER_PREVIEWED("register-previewed", "file"),
+    /** A VA POC read a Register change preview back. */
+    REGISTER_PREVIEW_VIEWED("register-preview-viewed", "file"),
+    /** A Register file was refused (not a workbook, too large, wrong headers); the entry holds a fixed code only. */
+    REGISTER_UPLOAD_REJECTED("register-upload-rejected", "file");
 
     private final String ecs;
     private final String category;

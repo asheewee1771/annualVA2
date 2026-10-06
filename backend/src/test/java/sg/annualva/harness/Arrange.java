@@ -26,6 +26,26 @@ public final class Arrange {
         return ApiClient.json(response).get("id").asString();
     }
 
+    /**
+     * A System as the Register holds it, standing in for what a Register apply will write (ticket 10); returns its id.
+     * The Register is shared by the whole suite, so a test that arranges Systems calls {@link #clearRegister()} first
+     * and last.
+     */
+    public String registered(String code, String name, String smoEmail, String cyberManagerEmail, int quarter,
+            boolean retired) {
+        String json = "{\"code\":\"" + code + "\",\"name\":\"" + name + "\",\"smoEmail\":\"" + smoEmail
+                + "\",\"cyberManagerEmail\":\"" + cyberManagerEmail + "\",\"quarter\":" + quarter
+                + ",\"retired\":" + retired + "}";
+        var response = client.postJson("/api/test/register-systems", json);
+        assertThat(response.status()).as(response.body()).isEqualTo(200);
+        return ApiClient.json(response).get("id").asString();
+    }
+
+    /** Empties the System Register and its previews, so a test starts from none. */
+    public void clearRegister() {
+        assertThat(client.post("/api/test/register-reset").status()).isEqualTo(200);
+    }
+
     /** A person known by email only, as the System Register creates them; returns the user id. */
     public String preRegister(String email) {
         var response = client.postJson("/api/test/users", "{\"email\":\"" + email + "\"}");

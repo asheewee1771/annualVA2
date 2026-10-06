@@ -1,0 +1,8 @@
+package sg.annualva.register;
+
+/**
+ * A System as the Register has it ({@code before}) or as the file would make it ({@code after}), for the preview.
+ * Emails are lower-case; {@code quarter} is {@code Q1} to {@code Q4}, or, in the {@code after} of a row whose Quarter
+ * is wrong, what was typed (clipped). {@code retired} is true for a System the Register already holds as retired.
+ */
+public record SystemSnapshot(String name, String smoEmail, String cyberManagerEmail, String quarter, boolean retired) {}

@@ -87,6 +87,28 @@ public final class ApiClient {
         return send(request.build());
     }
 
+    /**
+     * A multipart POST of one file part, the way the SPA uploads a file. The declared content type and file name are
+     * whatever the test says: the application must decide from the bytes.
+     */
+    public Response postFile(String path, String field, String fileName, String contentType, byte[] content) {
+        String boundary = "----annualva-" + java.util.UUID.randomUUID();
+        String crlf = "\r\n";
+        var body = new java.io.ByteArrayOutputStream();
+        body.writeBytes(("--" + boundary + crlf + "Content-Disposition: form-data; name=\"" + field + "\"; filename=\""
+                + fileName + "\"" + crlf + "Content-Type: " + contentType + crlf + crlf)
+                .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        body.writeBytes(content);
+        body.writeBytes((crlf + "--" + boundary + "--" + crlf).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        var request = HttpRequest.newBuilder(URI.create(baseUrl + path))
+                .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                .POST(HttpRequest.BodyPublishers.ofByteArray(body.toByteArray()));
+        if (csrfToken != null && csrfHeader != null) {
+            request.header(csrfHeader, csrfToken);
+        }
+        return send(request.build());
+    }
+
     /** A bodiless POST, the way the SPA signs out. */
     public Response post(String path) {
         return postJson(path, "");

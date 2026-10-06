@@ -24,7 +24,9 @@ public enum DetailKey {
     ERROR_CODE,
     ROLE,
     SOURCE,
-    GRANT_ID;
+    GRANT_ID,
+    /** The Register change preview an entry is about. */
+    PREVIEW_ID;
 
     /** The key as stored: lower-case with underscores. */
     String json() {

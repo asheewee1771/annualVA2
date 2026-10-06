@@ -1,5 +1,10 @@
 package sg.annualva.register;
 
+import java.net.URI;
+import java.time.Clock;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -7,9 +12,17 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
-/** The System Register, for the VA POCs only: the template to fill in now, the upload and its preview in later tickets. */
+/**
+ * The System Register, for the VA POCs only (the path is also restricted to them in the security chain, so a file
+ * from anyone else is refused before it is read): the template to fill in, the upload of the filled-in file and the
+ * preview of what it would change. Applying a preview arrives with ticket 10.
+ */
 @RestController
 public class SystemRegisterController {
 
@@ -17,10 +30,25 @@ public class SystemRegisterController {
             MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 
     private final RegisterTemplates templates;
+    private final RegisterUploads uploads;
+    private final Clock clock;
 
-    SystemRegisterController(RegisterTemplates templates) {
+    SystemRegisterController(RegisterTemplates templates, RegisterUploads uploads, Clock clock) {
         this.templates = templates;
+        this.uploads = uploads;
+        this.clock = clock;
     }
+
+    /**
+     * A Register change preview as the caller sees it.
+     *
+     * @param canApply false when any row is BLOCKED, or the preview has been applied or has expired
+     * @param expiresAt one hour after the upload
+     * @param rows in the order they are shown; each has exactly one outcome
+     */
+    public record PreviewView(
+            UUID id, String status, Instant createdAt, Instant expiresAt, boolean canApply, Preview.Counts counts,
+            List<PreviewRow> rows) {}
 
     /** The fixed Excel template (story 1) as an attachment; the download is audited. */
     @GetMapping("/api/system-register/template")
@@ -33,5 +61,31 @@ public class SystemRegisterController {
                         ContentDisposition.attachment().filename(template.fileName()).build().toString())
                 .cacheControl(CacheControl.noStore())
                 .body(template.content());
+    }
+
+    /**
+     * Uploads a filled-in template (story 2): up to 2 MB, its type decided from its bytes. Answers with the preview
+     * (201, with its address); nothing in the Register changes. A file that is not a Register workbook is a problem
+     * with a fixed type and sentence that never repeats the file.
+     */
+    @PostMapping(path = "/api/system-register/uploads", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('VA_POC')")
+    public ResponseEntity<PreviewView> upload(@RequestParam("file") MultipartFile file) {
+        Preview preview = uploads.upload(file.getSize(), file);
+        return ResponseEntity.created(URI.create("/api/system-register/previews/" + preview.id()))
+                .cacheControl(CacheControl.noStore())
+                .body(view(preview));
+    }
+
+    /** A preview read back, until it expires after an hour (410) or when it never existed (404); the read is audited. */
+    @GetMapping("/api/system-register/previews/{id}")
+    @PreAuthorize("hasRole('VA_POC')")
+    public ResponseEntity<PreviewView> preview(@PathVariable UUID id) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(view(uploads.preview(id)));
+    }
+
+    private PreviewView view(Preview preview) {
+        return new PreviewView(preview.id(), preview.status(), preview.createdAt(), preview.expiresAt(),
+                preview.canApply(clock.instant()), preview.counts(), preview.rows());
     }
 }

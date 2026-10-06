@@ -49,6 +49,9 @@ class SecurityConfig {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_PATHS).permitAll()
+                        // The Register is the VA POCs' alone. Also a method rule on each endpoint (ac-1); this one
+                        // refuses a stranger before a multipart body is read, so nobody else's file is ever spooled.
+                        .requestMatchers("/api/system-register/**").hasRole("VA_POC")
                         .anyRequest().authenticated())
                 // Synchronizer token pattern: the SPA bootstraps the token from GET /api/csrf and sends it
                 // back in the X-CSRF-TOKEN header. Cookie/double-submit is prohibited by the org standard.

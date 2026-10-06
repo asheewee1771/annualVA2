@@ -27,7 +27,7 @@ class AuditSentinelTest extends AuditSeam1 {
     private static final String SENTINEL = "CVE-9999-SENTINEL";
     private static final String EMAIL = "cve-9999-sentinel@ci.annualva.test";
     private static final Set<String> ALLOWED_KEYS = Set.of("state_from", "state_to", "batch_id", "count", "file_id",
-            "reject_code", "reason", "intent", "status", "error_code", "role", "source", "grant_id");
+            "reject_code", "reason", "intent", "status", "error_code", "role", "source", "grant_id", "preview_id");
 
     @Test
     void noEntryAndNoLogLineCarriesWhatARequestOrATokenHeld(CapturedOutput output) {

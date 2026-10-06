@@ -185,6 +185,45 @@ public class TestEndpoints {
             return Map.of("id", id.toString());
         }
 
+        public record RegisteredSystem(
+                @NotBlank String code,
+                @NotBlank String name,
+                @NotBlank String smoEmail,
+                @NotBlank String cyberManagerEmail,
+                int quarter,
+                boolean retired) {}
+
+        private static final String INSERT_SYSTEM =
+                "INSERT INTO va_system (code, name, smo_email, cm_email, quarter, added_on, retired_at) "
+                + "VALUES (CAST(:code AS citext), :name, CAST(:smo AS citext), CAST(:cm AS citext), :quarter, "
+                + "CAST(:addedOn AS date), :retiredAt) RETURNING id";
+
+        /** What a Register apply will do for an ADD: the System exists in the Register, as the apply would write it. */
+        @PostMapping("/api/test/register-systems")
+        public Map<String, String> registerSystem(@Valid @RequestBody RegisteredSystem body) {
+            UUID id = jdbc.sql(INSERT_SYSTEM)
+                    .param("code", body.code())
+                    .param("name", body.name())
+                    .param("smo", body.smoEmail())
+                    .param("cm", body.cyberManagerEmail())
+                    .param("quarter", body.quarter())
+                    .param("addedOn", java.time.LocalDate.ofInstant(clock.instant(), java.time.ZoneOffset.UTC).toString())
+                    .param("retiredAt", body.retired() ? clock.instant().atOffset(java.time.ZoneOffset.UTC) : null)
+                    .query(UUID.class)
+                    .single();
+            return Map.of("id", id.toString());
+        }
+
+        /** Empties the Register and its previews between tests; the suite shares one database. */
+        @PostMapping("/api/test/register-reset")
+        public Map<String, String> resetRegister() {
+            transaction.executeWithoutResult(status -> {
+                jdbc.sql("DELETE FROM register_upload").update();
+                jdbc.sql("DELETE FROM va_system").update();
+            });
+            return Map.of("reset", "yes");
+        }
+
         /** What a Register apply, configuration and the later Auditor grant will do: write a role grant. */
         @PostMapping("/api/test/grants")
         public Map<String, String> grant(@Valid @RequestBody GrantRequest body) {
