@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review — 10-register-apply-and-roles-from-register</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">Overall: WARN</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">build: PASS (C0 H0 M0 L3)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear: WARN (C0 H0 M4 L4)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review: WARN (C0 H0 M2 L11)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">semgrep: PASS (C0 H0 M0 L0)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8: WARN (C0 H0 M1 L3)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react: WARN (C0 H0 M2 L7)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot: WARN (C0 H0 M3 L13)</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">main</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Executive Summary</h2>
+          <p class="text-xs text-slate-500 mt-1">Consolidated Code Review &amp; Compliance Report for ticket 10, apply a Register preview and roles from the Register. Zero Critical and zero High findings across all seven checks, so the gate verdict is PASS; Medium and Low findings keep the report at WARN.</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2">Check</th><th class="px-4 py-2">Status</th><th class="px-4 py-2">C / H / M / L</th><th class="px-4 py-2">Summary</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-medium">Build (build-check)</td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 3</td><td class="px-4 py-2 text-slate-600">Both back-end clean verify runs (307 tests, JaCoCo 96.6 % line / 88.3 % branch) and the front-end npm run check passed.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-medium">Thermo-nuclear (maintainability)</td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 4 / 4</td><td class="px-4 py-2 text-slate-600">No file near 1000 lines; structure is sound. Four Medium debts worth fixing before more tickets build on this.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-medium">Code review (Standards + Spec)</td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 2 / 11</td><td class="px-4 py-2 text-slate-600">No hard standards breach; spec criteria met except the Unlinked SMO flag scope (M1) and an untested lapsed-grant path (M2).</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-medium">Semgrep</td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 0</td><td class="px-4 py-2 text-slate-600">0 findings in ticket 10 code (33 files, 331 rules, no scan errors). 8 pre-existing P2 findings elsewhere in the repo are documented only.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-medium">IM8 Application Technical Controls</td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 3</td><td class="px-4 py-2 text-slate-600">No Critical or High finding owned or weakened by this ticket. Catalogue FAILs as-12, ac-3 and ac-4 are tracked deferrals (tickets 13, 46, 47) per reviewer-decisions.md and do not block.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-medium">React review</td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 2 / 7</td><td class="px-4 py-2 text-slate-600">No Critical or High; render logic, effects and step-up handling are correct. Findings 1 and 2 should be fixed or recorded as accepted.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-medium">Spring Boot (7 review skills)</td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 3 / 13</td><td class="px-4 py-2 text-slate-600">No Critical or High. Core and web clean; Medium findings are a convention-only guard on RegisterRoles.follow and two test-suite gaps (order dependence, lock and rollback untested). spring-batch-review not applicable.</td></tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-700">No Critical or High findings. Items most worth acting on before more tickets build on this change (all Medium):</p>
+          <ul class="list-disc pl-6 text-sm text-slate-700 space-y-1">
+            <li>Convention-only guard on <span class="font-mono text-xs">access/RegisterRoles.follow</span> (springboot S-1): add an ArchUnit rule restricting callers to RegisterApply.</li>
+            <li>Lock and transaction untested (springboot T-2) and order-dependent sign-in tests (T-1) in <span class="font-mono text-xs">backend/src/test/java/sg/annualva/register/</span>.</li>
+            <li>Front end draft restore at import time (thermo-nuclear, react 1, code-review) and a dead preview left after a 404 (react 2) in <span class="font-mono text-xs">frontend/src/screens/va-poc/RegisterScreen.tsx</span>.</li>
+            <li>Unlinked SMO flag withheld from SMO and Cyber Manager (code-review M1): record a reviewer decision or return the flag.</li>
+            <li>Refused applies are not audited (im8 F1): audit them or record that 409 conflicts are intentionally unaudited.</li>
+          </ul>
+        </div>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Tracked deferrals (not counted, non-blocking)</h3>
+          <p class="text-sm text-slate-700">IM8 catalogue controls that stay FAIL until their owning ticket, recorded in <span class="font-mono text-xs">docs/agents/reviewer-decisions.md</span> and not weakened by ticket 10: as-12 (Register workbook malware scan, tickets 13 and 51; Critical in the catalogue), ac-3 (dormancy and expiry job, tickets 46 and 47; High in the catalogue), ac-4 (scheduled access review, tickets 46 and 47; High in the catalogue).</p>
+          <p class="text-sm text-slate-700">Semgrep also reported 8 pre-existing P2 findings outside this changeset (7 missing-integrity in earlier generated reports under <span class="font-mono text-xs">artifacts/code-reviewer/</span>, 1 path-join in <span class="font-mono text-xs">scripts/mock-mockpass-assertions.js</span>); documented only.</p>
+          <p class="text-sm text-slate-500">Counts treat Info items as Low. The back-end gate was run by the build check only; the code-review check relied on code reading for back-end findings.</p>
+        </div>
+      </div>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">Build (build-check)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS (C0 H0 M0 L3)</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">Both back-end clean verify runs (307 tests, JaCoCo 96.6 % line / 88.3 % branch) and the front-end npm run check passed.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+              <th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/oidc/MccHttp.java</td><td class="px-4 py-2 font-mono text-xs">51</td><td class="px-4 py-2">Pre-existing, not in this changeset: RestClient.Builder.messageConverters(Consumer) is deprecated for removal. Informational.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/api/problem.ts</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Advisory fallow health refactoring target and 3 churn hotspots (Shell.tsx, App.tsx, client.ts); under threshold and not caused by ticket 10.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend test output</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Expected WARN-level audit lines from negative-path tests and the byte-buddy agent notice; ids and codes only, no report content.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">Thermo-nuclear (maintainability)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN (C0 H0 M4 L4)</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">No file near 1000 lines; structure is sound. Four Medium debts worth fixing before more tickets build on this.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+              <th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/RegisterStore.java; PreviewBuilder.java; RegisterUploads.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">The citext fold machinery (FOLD SQL, foldedIds, UnaryOperator fold threaded through PreviewBuilder, getOrDefault(id, id) fallback) exists only because System IDs admit any Unicode letter; restricting the matchable ID alphabet would delete it.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/RegisterApply.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">The &#x27;can this preview be applied&#x27; invariant is checked in five places in apply (status, expiry, canApply, stillTrue, BLOCKED case) plus an unreachable markApplied false branch with a copy-pasted message.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/Preview.java; SystemRegisterController.java; RegisterStore.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Stringly-typed status, quarter and step-up intent shared across layers with no single owner (PREVIEW/APPLIED text, int to Qn and back, &#x27;register-apply&#x27; repeated in four places).</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/screens/va-poc/RegisterScreen.tsx</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Module-level mutable state read at import time (let leftForSignIn = ... takeRestoredDraft) to survive the step-up round trip; hidden global state with ordering assumptions.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/SystemRegisterController.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">ApplyView is a field-for-field pass-through copy of RegisterApply.Applied plus a constant APPLIED.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/RegisterApply.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Reads the whole Register twice (baseline and after writes) and re-derives the active set.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/RegisterSystems.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">list uses an effectively-final dance and a boxed tri-state Boolean unlinkedSmo.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/harness/TestEndpoints.java; RegisterSeam1.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Test harness drift: createSystem uses ZoneOffset.UTC for added_on, a double blank line, and register-reset deletes every System-scoped role_grant in the shared database.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">Code review (Standards + Spec)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN (C0 H0 M2 L11)</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">No hard standards breach; spec criteria met except the Unlinked SMO flag scope (M1) and an untested lapsed-grant path (M2).</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+              <th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/RegisterSystems.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">M1: Unlinked SMO flag is withheld (null) from SMO and Cyber Manager, narrowing ticket criterion 4; the choice is in ADR 0018 item 7 but not recorded as a reviewer decision. Return the flag to all callers or record the decision and amend the ticket.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/RegisterRoles.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">M2: Lapsed or suspended grant behaviour (left alone by apply, story 80a) is untested; add one Seam 1 test and carry the revive-on-apply requirement into ticket 46.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/RoleGrantStore.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L1: ROLE_GRANTED can be audited and counted for a grant that already existed (ON CONFLICT DO NOTHING returns the existing row); not reachable today.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/RegisterApply.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L2: No mid-transaction rollback test; one-transaction is proven only by refusals before any write.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/RegisterApply.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L3: A DISCARDED preview would read as preview-applied; give it its own 409 code when something writes DISCARDED.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/RegisterApply.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Duplicated preview-applied 409 sentence; apply is about 70 lines and both apply and stillTrue switch over every Outcome.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/SystemRegisterController.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Data clump: six counts travel through Applied, ApplyView and the audit chain.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/RegisterRoles.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">sorted is a hand-written three-level comparator; a Comparator.comparing chain is shorter.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/screens/va-poc/RegisterScreen.tsx</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Implicit module-order coupling: the import-time draft read is correct only because useStepUp.ts has already cleared stale drafts.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/register/RegisterSeam1.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Info: double blank line before upload(...); overlong line in access/package-info.java.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/PreviewBuilder.java; RegisterStore.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Info I1: scope additions (citext fold, register-changed baseline check, cycle readable by register) are reasonable, documented in ADR 0018 and tested.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/RegisterApply.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Info I2: the Register can name a VA POC as a System&#x27;s SMO or Cyber Manager; ticket 28 and 43 separation of duties must cover it.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/resources/db/migration/V7__register_apply.sql</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Info I3: new foreign key on role_grant.system_id fails on a database holding test-arranged grants for non-existent Systems; no production impact.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">Semgrep</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS (C0 H0 M0 L0)</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">0 findings in ticket 10 code (33 files, 331 rules, no scan errors). 8 pre-existing P2 findings elsewhere in the repo are documented only.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+              <th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">IM8 Application Technical Controls</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN (C0 H0 M1 L3)</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">No Critical or High finding owned or weakened by this ticket. Catalogue FAILs as-12, ac-3 and ac-4 are tracked deferrals (tickets 13, 46, 47) per reviewer-decisions.md and do not block.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+              <th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/RegisterApply.java</td><td class="px-4 py-2 font-mono text-xs">82-94</td><td class="px-4 py-2">F1 (lm-4): refused applies (409 preview-applied, preview-expired, preview-blocked, register-changed) leave no audit trail; audit them or record a reviewer decision that 409 conflicts are unaudited.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/web/ApiExceptionHandler.java</td><td class="px-4 py-2 font-mono text-xs">82-91</td><td class="px-4 py-2">F2 (lm-19): generic exception logger logs the cause, which could carry PostgreSQL &#x27;Key (...)=(...)&#x27; detail from Register values if a constraint fires on the new writes.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/RegisterRoles.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">F3 (ac-1): a VA POC named as SMO or Cyber Manager holds both roles; confirm later tickets enforce separation of duties (story 70).</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/api/systemRegister.ts</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">F4 (as-1): API responses are cast to types with no runtime parse; existing project pattern, server authoritative, values rendered as text.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">React review</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN (C0 H0 M2 L7)</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">No Critical or High; render logic, effects and step-up handling are correct. Findings 1 and 2 should be fixed or recorded as accepted.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+              <th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/screens/va-poc/RegisterScreen.tsx</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Draft restore is a module-load side effect that depends on import order (takeRestoredDraft consumed at import); hand the draft over through StepUpArrival instead.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/screens/va-poc/RegisterScreen.tsx</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">apply() clears the preview only for 409; a 404 (not there or not yours, ADR 0013) leaves a dead preview with a live Apply button.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/screens/va-poc/RegisterScreen.tsx</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">useReopenedPreview can overwrite a preview the person has meanwhile uploaded.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/screens/va-poc/RegisterPreviewPanel.tsx</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Focus is lost to body when Apply succeeds and the panel unmounts.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/screens/va-poc/RegisterScreen.tsx</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">A failed table reload shows the ErrorPanel together with the stale pre-apply table.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/screens/va-poc/RegisterTable.tsx</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">No busy indication on the table while it refreshes after an apply.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/screens/va-poc/RegisterPreviewPanel.tsx</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">ApplyControl takes the full RegisterPreviewPanelProps instead of a narrow type.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/api/systemRegister.ts</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Info: &#x27;five minutes&#x27; step-up window hard-coded in UI text and comment.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">frontend/src/api/systemRegister.ts</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Info: AppliedRegister.status is typed string rather than a literal union.</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">Spring Boot (7 review skills)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN (C0 H0 M3 L13)</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">No Critical or High. Core and web clean; Medium findings are a convention-only guard on RegisterRoles.follow and two test-suite gaps (order dependence, lock and rollback untested). spring-batch-review not applicable.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+              <th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/RegisterRoles.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">S-1 (security): nothing stops another bean calling the public RegisterRoles.follow; add an ArchUnit rule restricting callers to RegisterApply or make it package-private.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/register/RegisterSystemsTest.java; RegisterRolesTest.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">T-1 (test): tests that depend on a person never having signed in are order-dependent (shared app_user rows persist across the suite).</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/register/RegisterApplyTest.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">T-2 (test): the advisory lock and all-or-nothing transaction are not exercised; no concurrent-apply test and no rollback test.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/SystemRegisterController.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">W-1 (web): ApplyView re-maps Applied field by field and hard-codes APPLIED.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/RegisterStore.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">D-1 (data): pg_advisory_xact_lock has no timeout; hashtext is an undocumented internal function.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/RegisterApply.java; access/RegisterRoles.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">D-2 (data): per-row statements in the apply loop and role follow (6000+ statements for a 1000-row first import under the global lock).</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/resources/db/migration/V7__register_apply.sql</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">D-3 (data): audit_entry constraint swap takes ACCESS EXCLUSIVE and validates all rows; role_grant FK can fail on dev databases with orphan grants; applied_by has no index.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/app/SecurityConfig.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">S-2 (security): no URL-level rule for /api/systems (method rule only); defence in depth.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/web/ApiExceptionHandler.java</td><td class="px-4 py-2 font-mono text-xs">82-91</td><td class="px-4 py-2">L-1 (logging): an unexpected database error in the apply would log Register content via the catch-all handler cause.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/register/RegisterApplyAccessTest.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">T-3 (test): weak isIn(401, 403) assertion, unused private applyPath helper in RegisterApplyTest, looped assertions in one test.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/register/RegisterApplyTest.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">T-4 (test): the stale sign-in plus non-existent preview id (403 not 404) claim in ADR 0018 item 1 is untested.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/RegisterApply.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Info C-1: apply mixes orchestration, baseline verification and audit; eight-collaborator constructor.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/RoleGrantStore.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Info C-2: comment lines over 120 columns; double blank line in RegisterSeam1.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/SystemsController.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Info W-2: /api/systems sets no explicit Cache-Control unlike the preview endpoints.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/register/RegisterStore.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Info D-4: RegisterStore serves two aggregates; split if it keeps growing.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/RegisterRoles.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">Info S-3: role grant by email depends on the identity provider asserting verified emails.</td></tr>
+          </tbody>
+        </table>
+      </details>
+    </main>
+  </body>
+</html>
