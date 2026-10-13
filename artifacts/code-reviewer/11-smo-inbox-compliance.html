@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review — 11-smo-inbox</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall PASS (with warnings)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">build PASS C0 H0 M0 L0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN C0 H0 M4 L5</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN C0 H0 M0 L9</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">semgrep PASS C0 H0 M0 L0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN C0 H0 M2 L1</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react WARN C0 H0 M1 L4</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN C0 H0 M2 L7</span>
+      <span class="font-mono text-sm text-slate-500 ml-auto">main (ticket 11, uncommitted changes)</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report: SMO inbox (ticket 11)</h2>
+          <p class="text-xs text-slate-500 mt-1">Overall status is PASS: no check reported a Critical or High finding and every check ran. Five checks carry Medium or Low warnings (WARN). All seven checks ran; none was skipped or unavailable.</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr>
+              <th class="px-4 py-2">Check</th>
+              <th class="px-4 py-2">Status</th>
+              <th class="px-4 py-2">Crit</th>
+              <th class="px-4 py-2">High</th>
+              <th class="px-4 py-2">Med</th>
+              <th class="px-4 py-2">Low</th>
+              <th class="px-4 py-2">Gaps in brief</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 font-medium">build</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+              <td class="px-4 py-2">0</td><td class="px-4 py-2">0</td><td class="px-4 py-2">0</td><td class="px-4 py-2">0</td>
+              <td class="px-4 py-2">Back end 323 tests green, coverage 96.7 % line and 88.5 % branch. Front end check green.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">thermo-nuclear</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2">0</td><td class="px-4 py-2">0</td><td class="px-4 py-2">4</td><td class="px-4 py-2">5</td>
+              <td class="px-4 py-2">Speculative single-value enums, dead overdue path, permanently disabled Start button, widened test base class.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">code-review</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2">0</td><td class="px-4 py-2">0</td><td class="px-4 py-2">0</td><td class="px-4 py-2">9</td>
+              <td class="px-4 py-2">All four ACs met. Stale rows on Cycle change, weak 403/405 assertion, sort order mismatch.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">semgrep</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+              <td class="px-4 py-2">0</td><td class="px-4 py-2">0</td><td class="px-4 py-2">0</td><td class="px-4 py-2">0</td>
+              <td class="px-4 py-2">Ran (Semgrep 1.180.0). No findings in changed or new files. Nine pre-existing findings elsewhere in the repo are noted below the card.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">im8</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2">0</td><td class="px-4 py-2">0</td><td class="px-4 py-2">2</td><td class="px-4 py-2">1</td>
+              <td class="px-4 py-2">as-1 front end response typing is cast only. lm-4 inbox read is not audited (consistent with the recorded Register list decision).</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">react</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2">0</td><td class="px-4 py-2">0</td><td class="px-4 py-2">1</td><td class="px-4 py-2">4</td>
+              <td class="px-4 py-2">Stale inbox shown under the newly selected Cycle, swallowed cycles error, disabled button, select with no matching option.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">springboot</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2">0</td><td class="px-4 py-2">0</td><td class="px-4 py-2">2</td><td class="px-4 py-2">7</td>
+              <td class="px-4 py-2">Weak status assertion, whole-Register read filtered in Java, minor core, web and test-structure notes. Spring Batch not applicable.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-700">None. No Critical or High findings from any check. The items most worth fixing before merge, all Medium or Low:</p>
+          <ul class="list-disc pl-5 text-sm text-slate-700 space-y-1">
+            <li>Stale previous-Cycle rows stay on screen (and under an error panel) after the Cycle selector changes. Raised by both react (Medium) and code-review (S6). <span class="font-mono text-xs">frontend/src/screens/smo/SmoInboxScreen.tsx</span></li>
+            <li>Weak <span class="font-mono text-xs">isIn(403, 405)</span> assertion that does not pin behaviour. Raised by springboot (Medium) and code-review (S5). <span class="font-mono text-xs">backend/src/test/java/sg/annualva/dashboard/SmoInboxAccessTest.java</span></li>
+            <li>Speculative next-ticket scaffolding (single-value enums, dead <span class="font-mono text-xs">overdue</span> path, always-disabled Start button). <span class="font-mono text-xs">SmoInbox.java</span>, <span class="font-mono text-xs">dashboards.ts</span>, <span class="font-mono text-xs">SmoInboxScreen.tsx</span></li>
+            <li>Two orderings of "System ID order" (database citext versus Java string order). <span class="font-mono text-xs">SmoInbox.java</span>, <span class="font-mono text-xs">RegisterSystems.java</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td></tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-3 text-xs text-slate-500 border-t border-slate-100 space-y-1">
+          <p>Back end <span class="font-mono">./mvnw -B -ntp clean verify</span>: BUILD SUCCESS, 323 tests, 0 failures, JaCoCo line 96.7 %, branch 88.5 %; new dashboard package 100 % line and branch.</p>
+          <p>Front end <span class="font-mono">npm run check</span>: Prettier, tsc, vite build, no-raw-HTML, dependency-cruiser and fallow dead-code and health all pass.</p>
+          <p>Info only: fallow health reports advisory hotspots in files outside this change; Maven prints audit JSON lines during tests.</p>
+        </div>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/SmoInbox.java; frontend/src/api/dashboards.ts</td><td class="px-4 py-2">34-50, 56-60, 99-105; 3-12</td><td class="px-4 py-2">M1: single-value enums State and NextAction, and a Group enum of which only one member is produced. Label maps and two unreachable group sections build the next ticket's model early.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">frontend/src/api/dashboards.ts; frontend/src/screens/smo/SmoInboxScreen.tsx; frontend/src/styles.css</td><td class="px-4 py-2">26-27; 51-56</td><td class="px-4 py-2">M2: dead optional <span class="font-mono text-xs">overdue</span> field, pill and CSS rule that can never render (server never sends it). README documents behaviour that cannot be exercised.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SmoInboxScreen.tsx</td><td class="px-4 py-2">27-41, 71</td><td class="px-4 py-2">M3: StartButton exists only to render a permanently disabled control; its NOT_STARTED guard is always true.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/register/RegisterSeam1.java; .../dashboard/InboxSeam1.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">M4: RegisterSeam1 widened to public/protected so a dashboard test inherits a register fixture, coupling two modules' tests. Move the shared fixture to the harness package.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/SmoInbox.java</td><td class="px-4 py-2">77-86, 98</td><td class="px-4 py-2">L1: redundant re-sort and List.copyOf copies; Java string order can disagree with the store's database collation.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterSystems.java</td><td class="px-4 py-2">52-74</td><td class="px-4 py-2">L2: active() repeats the scope filter from list(); ActiveSystem near-duplicates SystemView.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/SmoInbox.java</td><td class="px-4 py-2">81</td><td class="px-4 py-2">L3: Quarter lookup by index arithmetic (<span class="font-mono text-xs">quarters().get(n - 1)</span>); name the invariant with an accessor.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SmoInboxScreen.tsx</td><td class="px-4 py-2">119-127, 173-177</td><td class="px-4 py-2">L4: front end re-derives which Cycles are open with a second request; controlled select can hold value "" with no matching option while loading.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SmoInboxScreen.tsx; frontend/src/api/cycles.ts</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L5: InboxGroupSection takes split props instead of the descriptor, unneeded optional chain, repeated table scaffolding, dayLabel formatting helper exported from the API layer.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SmoInboxScreen.tsx</td><td class="px-4 py-2">-</td><td class="px-4 py-2">S6: useResource keeps the previous data on Cycle change, so Cycle A's Systems and dates stay on screen under Cycle B's selection, and under an error panel if the new load fails.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/dashboard/SmoInboxAccessTest.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">S5: <span class="font-mono text-xs">isIn(403, 405)</span> in theInboxCannotBeChangedThroughItsAddress does not pin behaviour.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterSystems.java; .../dashboard/SmoInbox.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">S3: Javadoc says System ID order (citext, case-insensitive) while SmoInbox re-sorts case-sensitively; the two orders disagree for IDs differing in case.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/register/RegisterSeam1.java; .../dashboard/InboxSeam1.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">S4: RegisterSeam1 made public so dashboard tests can subclass it across packages; prefer a neutral harness base.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SmoInboxScreen.tsx</td><td class="px-4 py-2">-</td><td class="px-4 py-2">S7: disabled StartButton is not keyboard-focusable, so its title explanation is unreachable; use aria-disabled or visible helper text.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/SmoInbox.java; frontend/src/api/dashboards.ts</td><td class="px-4 py-2">-</td><td class="px-4 py-2">S1: submitDue, reviewDue and endorseDue travel as a possible data clump; a shared DueDates type could be extracted later.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/SmoInbox.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">S2: possible speculative generality in State, NextAction and Group; justified by AC 3 and ADR 0019, keep and watch at ticket 12.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">.scratch/annual-va/spec.md (story 18)</td><td class="px-4 py-2">-</td><td class="px-4 py-2">P1: story 18 says "current Quarter" but the endpoint lists every Quarter the app runs for the Cycle, per the ticket AC and ADR 0019 decision 3. Confirm the reading with the spec owner.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">.scratch/annual-va/issues/11-smo-inbox.md</td><td class="px-4 py-2">-</td><td class="px-4 py-2">P2: AC checkboxes are not ticked and no verification is recorded yet.</td></tr>
+          </tbody>
+        </table>
+        <p class="px-5 py-3 text-xs text-slate-500 border-t border-slate-100">All four ticket ACs met; no scope creep, no wrong implementation. Documented standards are not breached.</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td></tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-3 text-xs text-slate-500 border-t border-slate-100 space-y-1">
+          <p>Semgrep 1.180.0 ran with p/security-audit and p/default: a full-repo scan, plus explicit scans of the 10 untracked and 7 modified files of this ticket (0 findings each). The tool ran; this is a genuine PASS.</p>
+          <p>Pre-existing, unrelated findings from the full-repo scan (not counted above, not fixed): one Medium path-join-resolve-traversal in <span class="font-mono">scripts/mock-mockpass-assertions.js:11</span>, and eight Low missing-integrity warnings in earlier generated <span class="font-mono">artifacts/code-reviewer/03 to 10-*-compliance.html</span> reports.</p>
+        </div>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">frontend/src/api/dashboards.ts</td><td class="px-4 py-2">46-48</td><td class="px-4 py-2">as-1: back end input validation passes (allow-list Cycle lookup, 400 and 404 tested). The front end response is cast to SmoInbox by request&lt;T&gt; with no runtime validation; existing project pattern, defense in depth only.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/SmoInboxController.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">lm-4: reading the inbox writes no audit entry. Consistent with the recorded reviewer decision that Register list reads are not audited; confirm it extends to dashboards and record it in docs/agents/reviewer-decisions.md. Refusals are audited.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/SmoInbox.java</td><td class="px-4 py-2">81</td><td class="px-4 py-2">Non-IM8 observation: <span class="font-mono text-xs">currentCycle().orElse(running.getFirst())</span> would raise NoSuchElementException (generic 500) if the calendar held no Cycle; not reachable with validated configuration.</td></tr>
+          </tbody>
+        </table>
+        <p class="px-5 py-3 text-xs text-slate-500 border-t border-slate-100">All other touched controls PASS (as-2, as-3, as-7, as-8, as-9, as-10, as-13, lm-16, lm-19, ac-1, dp-8, pm-6); untouched controls are N/A. Manual review items: confirm a VA POC who is also an SMO sees only their SMO Systems, the lm-4 audit policy, and whether front end responses should be runtime-validated project-wide.</p>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SmoInboxScreen.tsx</td><td class="px-4 py-2">177-207</td><td class="px-4 py-2">M1: after picking another VA Cycle the previous Cycle's tables stay on screen labelled as the new Cycle (and under the ErrorPanel on failure). Render data only when it matches the selected Cycle and show a loading status.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SmoInboxScreen.tsx</td><td class="px-4 py-2">179</td><td class="px-4 py-2">L1: cycles.error from useResource(fetchCycles) is swallowed; the selector silently disappears. Possible duplicate /api/cycles request.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SmoInboxScreen.tsx</td><td class="px-4 py-2">26-38</td><td class="px-4 py-2">L2: disabled Start button hides its reason from keyboard and touch users.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SmoInboxScreen.tsx</td><td class="px-4 py-2">159</td><td class="px-4 py-2">L3: controlled select value can have no matching option while the first response is pending, or when the returned Cycle is not in the open list.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SmoInboxScreen.tsx</td><td class="px-4 py-2">195</td><td class="px-4 py-2">L4: loading state has no role="status" and is not announced.</td></tr>
+          </tbody>
+        </table>
+        <p class="px-5 py-3 text-xs text-slate-500 border-t border-slate-100">Info only (not counted): redundant optional chain at line 203; scrollable table regions not keyboard focusable (project-wide, matches existing screens).</p>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/dashboard/SmoInboxAccessTest.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">M1: <span class="font-mono text-xs">isIn(403, 405)</span> accepts two outcomes so the test cannot say which layer refused the POST (CSRF could pass it). Pin the status, or send the CSRF token and assert 405.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterSystems.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">M2: active(Need) loads every va_system row (retired included) on each inbox call and filters in Java. Fine at Register size; consider a store query by scope ids and retired_at IS NULL, or note the trade-off.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/SmoInboxController.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L1: the controller returns service-level nested records as the API contract (consistent with existing controllers).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/SmoInboxController.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L2: redundant <span class="font-mono text-xs">required = false</span> plus @Nullable on the cycle parameter.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/SmoInbox.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L3: orElse evaluates eagerly and the Clock is read twice in cycleFor; negligible one-request inconsistency at the Cycle boundary.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/SmoInbox.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L4: single-value enums State.NOT_STARTED and NextAction.START_SUBMISSION until the submission ticket; extend them, do not add parallel fields.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterSystems.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L5: ActiveSystem Javadoc omits name; "System ID order" holds only through the store's ORDER BY.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/register/RegisterSeam1.java; .../dashboard/InboxSeam1.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L6: test base visibility widened across packages; move the shared fixture to sg.annualva.harness.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/dashboard/InboxSeam1.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L7: lookup helpers listed and item contain loops and an AssertionError; optional stream or JSON-path lookup.</td></tr>
+          </tbody>
+        </table>
+        <p class="px-5 py-3 text-xs text-slate-500 border-t border-slate-100">Skills: core, web, data, security, logging and test applied; batch N/A. Security, logging and transaction review found no issues. The check file's headline says 6 Low but lists seven (L1 to L7); seven are counted here.</p>
+      </details>
+    </main>
+  </body>
+</html>
