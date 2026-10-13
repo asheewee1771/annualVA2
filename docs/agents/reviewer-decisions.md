@@ -92,3 +92,24 @@ Human decisions on reviewer findings. Check here before asking again. Each entry
 - **Finding:** story 84 asks for an audit entry for every view. The submission record carries only state, the `overdue` and `endorsedLate` flags, due dates and user ids, no report or Finding content. The SMO inbox (ADR 0019) and the Register list (above) are unaudited for that reason, but neither is a single-record view.
 - **Chosen action:** option (c). Audit a read of a single VA Submission when the caller is not the owning SMO/Tech Lead of that System (a Cyber Manager or a VA POC); the owner's own reads are not audited. Entries carry ids and fixed codes only (ADR 0014). Decided 2026-10-13.
 - **When to reuse:** any finding about auditing a single-record read of a VA Submission, or a later read added to the same record. Lists and the inbox stay unaudited. Reads that carry report, Finding or evidence content are audited for every role.
+
+## Scan Report upload size limits and the file cap are accepted as built
+
+- **Area:** Scan Report upload pipeline (ticket 13, ADR 0021 decision 7), implementation plan line 158 ("Formats and limits (ADR, human confirms)") and H3 ("approve size limits")
+- **Finding:** the ticket says "per-type size limits (ADR)" and the plan leaves the numbers for a human to confirm. Ticket 13 built them from the plan: Dependency-Check XML/JSON 25 MB, XCCDF 25 MB, ARF 50 MB, Nessus 50 MB, Burp 50 MB, a 50 MB request ceiling, and at most 20 live files per Scan Report and kind. A file is held in memory and scanned before an over-limit one is rejected as `TOO_LARGE`.
+- **Chosen action:** accept the limits and the 20-file cap as built; ADR 0021 stays the one place that lists them. Changing one later is a one-line constant change plus the ADR table. Decided 2026-10-13.
+- **When to reuse:** any finding about the per-type limits, the 50 MB ceiling or the 20-file cap; revisit only if H3 sign-off or real reports change a number.
+
+## File status and list reads follow the submission-read rule; downloads are always audited
+
+- **Area:** Scan Report file reads (ticket 13), spec story 84 and IM8 lm-4 (audit of every view); extends "Reading a single VA Submission is audited unless the owning SMO/Tech Lead reads it" (2026-10-13)
+- **Finding:** the ticket says every view and download is audited. A file's status and the file list carry a name and a status but no report content, and the owning SMO/Tech Lead's screen polls them every 3 seconds while a file is scanned.
+- **Chosen action:** audit a status or list read as `FILE_VIEWED` when the caller is not the owning SMO/Tech Lead (a Cyber Manager or a VA POC); the owner's reads are not audited. A download is audited for every role, the owner included. Decided 2026-10-13.
+- **When to reuse:** any finding that a file status or list read is not audited for the owner. Reads that carry report, Finding or evidence content are audited for every role; revisit if the status begins to carry content.
+
+## A Sanitized scan verdict is a rejection, not an accepted copy
+
+- **Area:** malware scan verdicts (ticket 13, ADR 0021 decision 5, `scan` module shared by the Scan Report pipeline and the Register upload; the ticket 51 production adapter), IM8 as-12
+- **Finding:** the implementation plan (line 258) and ADR 0021 accepted `CLEAN_SANITIZED` and kept the scanner's altered copy. The IM8 review skill requires a Sanitized verdict to end in a mismatch state with no download and a plain "modified during security scanning, re-upload the original" message. The gate flagged the accepted copy as High.
+- **Chosen action:** follow the standard. `CLEAN_SANITIZED` is rejected with its own reject code and a plain message asking for the original to be re-uploaded; no bytes are kept. It applies to Scan Report uploads and to the Register workbook, and ticket 51's adapter must map the scanner's Sanitized to it. This supersedes ADR 0021 decision 5 and the plan note on line 258. Decided 2026-10-13.
+- **When to reuse:** any finding about Sanitized, modified or altered scan results, for any file kind. Revisit only if the organisation's standard changes.
