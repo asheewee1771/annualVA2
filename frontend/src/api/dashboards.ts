@@ -1,10 +1,10 @@
 import { request } from "./client.ts";
 
-/** How a System in a Quarter is shown; only Not Started exists until a VA Submission can be started. */
-export type InboxState = "NOT_STARTED";
+/** How a System in a Quarter is shown; the other states arrive with the commands that enter them. */
+export type InboxState = "NOT_STARTED" | "DRAFT";
 
 /** What the signed-in person should do next with a System. */
-export type NextAction = "START_SUBMISSION";
+export type NextAction = "START_SUBMISSION" | "PREPARE_SUBMISSION";
 
 /** The heading the server puts a System under. */
 export type InboxGroup = "NEEDS_YOUR_ACTION" | "WAITING_ON_OTHERS" | "DONE";
@@ -17,6 +17,8 @@ export interface InboxSystem {
   name: string;
   quarter: number;
   state: InboxState;
+  /** The VA Submission once it is started, otherwise null. */
+  submissionId: string | null;
   submitDue: string;
   reviewDue: string;
   endorseDue: string;

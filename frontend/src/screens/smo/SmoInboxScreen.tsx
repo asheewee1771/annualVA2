@@ -8,9 +8,14 @@ import {
   type InboxSystem,
   type NextAction,
 } from "../../api/dashboards.ts";
+import { ApiError, type Problem } from "../../api/problem.ts";
+import { startSubmission } from "../../api/submissions.ts";
+import { AppLink } from "../../app/AppLink.tsx";
+import { navigate } from "../../app/router.ts";
 import { ClassifiedField } from "../../components/ClassifiedField.tsx";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { useResource } from "../../hooks/useResource.ts";
+import { submissionPath } from "./paths.ts";
 
 const GROUPS: readonly { group: InboxGroup; title: string; empty: string }[] = [
   { group: "NEEDS_YOUR_ACTION", title: "Needs your action", empty: "Nothing needs your action." },
@@ -18,26 +23,54 @@ const GROUPS: readonly { group: InboxGroup; title: string; empty: string }[] = [
   { group: "DONE", title: "Done", empty: "Nothing is done yet." },
 ];
 
-const STATE_LABELS: Readonly<Record<InboxState, string>> = { NOT_STARTED: "Not Started" };
+const STATE_LABELS: Readonly<Record<InboxState, string>> = { NOT_STARTED: "Not Started", DRAFT: "Draft" };
 
-const ACTION_LABELS: Readonly<Record<NextAction, string>> = { START_SUBMISSION: "Start the VA Submission" };
+const ACTION_LABELS: Readonly<Record<NextAction, string>> = {
+  START_SUBMISSION: "Start the VA Submission",
+  PREPARE_SUBMISSION: "Prepare and submit the VA Submission",
+};
 
-/** The Start button of a Not Started System; the next ticket wires it to start the VA Submission. */
-function StartButton({ system }: { system: InboxSystem }) {
+const UNREACHABLE: Problem = { type: "about:blank", title: "The server could not be reached", status: 0 };
+
+/** What a System's row offers: Start while it is Not Started, a way back into the Draft once it is started. */
+function RowAction({
+  system,
+  starting,
+  onStart,
+}: {
+  system: InboxSystem;
+  starting: boolean;
+  onStart: (system: InboxSystem) => void;
+}) {
+  if (system.submissionId) {
+    return (
+      <AppLink path={submissionPath(system.submissionId)}>
+        Continue<span className="visually-hidden"> the VA Submission for {system.systemId}</span>
+      </AppLink>
+    );
+  }
   return (
     <button
       type="button"
       className="button"
-      disabled
+      disabled={starting}
       aria-label={`Start the VA Submission for ${system.systemId}`}
-      title="Starting a VA Submission is not available yet"
+      onClick={() => onStart(system)}
     >
-      Start
+      {starting ? "Starting…" : "Start"}
     </button>
   );
 }
 
-function InboxRow({ system }: { system: InboxSystem }) {
+function InboxRow({
+  system,
+  starting,
+  onStart,
+}: {
+  system: InboxSystem;
+  starting: boolean;
+  onStart: (system: InboxSystem) => void;
+}) {
   return (
     <tr>
       <td>
@@ -57,7 +90,9 @@ function InboxRow({ system }: { system: InboxSystem }) {
       <td>{dayLabel(system.submitDue)}</td>
       <td>{dayLabel(system.reviewDue)}</td>
       <td>{dayLabel(system.endorseDue)}</td>
-      <td>{system.state === "NOT_STARTED" ? <StartButton system={system} /> : null}</td>
+      <td>
+        <RowAction system={system} starting={starting} onStart={onStart} />
+      </td>
     </tr>
   );
 }
@@ -67,11 +102,15 @@ function InboxGroupSection({
   title,
   empty,
   systems,
+  startingId,
+  onStart,
 }: {
   group: InboxGroup;
   title: string;
   empty: string;
   systems: InboxSystem[];
+  startingId: string | undefined;
+  onStart: (system: InboxSystem) => void;
 }) {
   return (
     <section aria-labelledby={`inbox-${group}`}>
@@ -100,7 +139,7 @@ function InboxGroupSection({
             </thead>
             <tbody>
               {systems.map((system) => (
-                <InboxRow key={system.id} system={system} />
+                <InboxRow key={system.id} system={system} starting={startingId === system.id} onStart={onStart} />
               ))}
             </tbody>
           </table>
@@ -178,6 +217,25 @@ export function SmoInboxScreen({ classification }: { classification: string }) {
   const inbox = useResource(load);
   const cycles = useResource(fetchCycles);
   const open = cycles.data?.cycles.filter((candidate) => candidate.phase !== "CLOSED").map((c) => c.year) ?? [];
+  const [startingId, setStartingId] = useState<string | undefined>(undefined);
+  const [startProblem, setStartProblem] = useState<Problem | undefined>(undefined);
+  const { reload } = inbox;
+  const inboxCycle = inbox.data?.cycle;
+
+  /** Starts the VA Submission for the System in the Cycle on screen and opens its prepare screen. */
+  async function start(system: InboxSystem) {
+    setStartingId(system.id);
+    setStartProblem(undefined);
+    try {
+      const started = await startSubmission(system.id, inboxCycle);
+      navigate(submissionPath(started.id));
+    } catch (failure) {
+      setStartProblem(failure instanceof ApiError ? failure.problem : UNREACHABLE);
+      reload();
+    } finally {
+      setStartingId(undefined);
+    }
+  }
 
   return (
     <div className="card">
@@ -191,6 +249,7 @@ export function SmoInboxScreen({ classification }: { classification: string }) {
         selected={cycle ?? inbox.data?.cycle}
         onSelect={setCycle}
       />
+      {startProblem ? <ErrorPanel problem={startProblem} /> : null}
       {inbox.error ? <ErrorPanel problem={inbox.error.problem} /> : null}
       {inbox.loading && !inbox.data ? <p className="muted">Loading your Systems…</p> : null}
       {inbox.data
@@ -201,6 +260,8 @@ export function SmoInboxScreen({ classification }: { classification: string }) {
               title={title}
               empty={empty}
               systems={inbox.data?.systems.filter((system) => system.group === group) ?? []}
+              startingId={startingId}
+              onStart={(system) => void start(system)}
             />
           ))
         : null}
