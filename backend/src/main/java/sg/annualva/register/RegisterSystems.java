@@ -32,6 +32,15 @@ public class RegisterSystems {
             UUID id, String systemId, String name, String smoEmail, String cyberManagerEmail, String quarter,
             boolean retired, @Nullable Boolean unlinkedSmo) {}
 
+    /**
+     * A System that is still in the Register, for another module's read model.
+     *
+     * @param id the System's own id
+     * @param systemId the System ID as the VA POC typed it
+     * @param quarter 1 to 4
+     */
+    public record ActiveSystem(UUID id, String systemId, String name, int quarter) {}
+
     private final RegisterStore store;
     private final AccessGuard guard;
 
@@ -52,6 +61,16 @@ public class RegisterSystems {
         }
         Set<String> linked = signedIn;
         return visible.stream().map(system -> view(system, scope.all(), linked)).toList();
+    }
+
+    /** The Systems still in the Register that the caller may reach for this need, in System ID order. */
+    @Transactional(readOnly = true)
+    public List<ActiveSystem> active(Need need) {
+        SystemScope scope = guard.scope(need);
+        return store.systems().stream()
+                .filter(system -> !system.retired() && scope.contains(system.id()))
+                .map(system -> new ActiveSystem(system.id(), system.code(), system.name(), system.quarter()))
+                .toList();
     }
 
     private static SystemView view(ExistingSystem system, boolean vaPoc, Set<String> signedIn) {

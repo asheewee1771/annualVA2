@@ -18,24 +18,24 @@ import tools.jackson.databind.JsonNode;
  * What the Register upload tests share. The suite shares one database and one application, so each test starts and
  * ends with an empty System Register and puts the clock back; people are signed in through the HTTP API like anyone.
  */
-abstract class RegisterSeam1 extends Seam1Test {
+public abstract class RegisterSeam1 extends Seam1Test {
 
     static final String UPLOAD = "/api/system-register/uploads";
     static final String PREVIEWS = "/api/system-register/previews/";
     static final String XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-    static final String POC_ONE = "poc.one@ci.annualva.test";
-    static final String POC_TWO = "poc.two@ci.annualva.test";
+    protected static final String POC_ONE = "poc.one@ci.annualva.test";
+    protected static final String POC_TWO = "poc.two@ci.annualva.test";
 
     private Instant before;
 
     @BeforeEach
-    void startWithAnEmptyRegister() {
+    protected void startWithAnEmptyRegister() {
         before = clock.instant();
         arrange.clearRegister();
     }
 
     @AfterEach
-    void leaveAnEmptyRegister() {
+    protected void leaveAnEmptyRegister() {
         clock.set(before);
         arrange.clearRegister();
     }
