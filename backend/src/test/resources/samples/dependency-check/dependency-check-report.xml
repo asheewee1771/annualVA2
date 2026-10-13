@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  PROVENANCE: a schema-faithful reconstruction of an OWASP Dependency-Check 9.x XML report (namespace
+  dependency-check.2.5.xsd) for a throwaway project, written by hand for the parser tests. It is NOT the output of a real
+  scan. Regenerate it from a real scan of a throwaway target before release (ticket 58). Every name in it is invented.
+-->
+<analysis xmlns="https://jeremylong.github.io/DependencyCheck/dependency-check.2.5.xsd">
+  <scanInfo>
+    <engineVersion>9.0.9</engineVersion>
+    <dataSource>
+      <name>NVD CVE Checked</name>
+      <timestamp>2027-07-20T09:00:00</timestamp>
+    </dataSource>
+  </scanInfo>
+  <projectInfo>
+    <name>throwaway-project</name>
+    <reportDate>2027-07-20T10:00:00.123+08:00</reportDate>
+    <credits>This report contains data retrieved from the National Vulnerability Database.</credits>
+  </projectInfo>
+  <dependencies>
+    <dependency isVirtual="false">
+      <fileName>log4j-core-2.14.1.jar</fileName>
+      <filePath>/opt/throwaway/lib/log4j-core-2.14.1.jar</filePath>
+      <md5>00000000000000000000000000000001</md5>
+      <evidenceCollected>
+        <evidence type="vendor" confidence="HIGH">
+          <source>pom</source>
+          <name>groupid</name>
+          <value>org.apache.logging.log4j</value>
+        </evidence>
+      </evidenceCollected>
+      <identifiers>
+        <package confidence="HIGH">
+          <id>pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1</id>
+          <url>https://ossindex.sonatype.org/component/pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1</url>
+        </package>
+        <vulnerabilityIds confidence="HIGHEST">
+          <id>cpe:2.3:a:apache:log4j:2.14.1:*:*:*:*:*:*:*</id>
+          <url>https://nvd.nist.gov/vuln/search</url>
+        </vulnerabilityIds>
+      </identifiers>
+      <vulnerabilities>
+        <vulnerability source="NVD">
+          <name>CVE-2021-44228</name>
+          <severity>CRITICAL</severity>
+          <cvssV2>
+            <score>9.3</score>
+            <accessVector>NETWORK</accessVector>
+            <severity>HIGH</severity>
+          </cvssV2>
+          <cvssV3>
+            <baseScore>10.0</baseScore>
+            <attackVector>NETWORK</attackVector>
+            <baseSeverity>CRITICAL</baseSeverity>
+          </cvssV3>
+          <cwes><cwe>CWE-20</cwe></cwes>
+          <description>Invented description of a remote code execution flaw.</description>
+        </vulnerability>
+        <vulnerability source="OSSINDEX">
+          <name>CVE-2021-44228</name>
+          <description>The same vulnerability, named again by a second data source and carrying no rating.</description>
+        </vulnerability>
+        <vulnerability source="NVD">
+          <name>CVE-2021-45046</name>
+          <cvssV2>
+            <score>9.3</score>
+            <severity>HIGH</severity>
+          </cvssV2>
+          <cvssV3>
+            <baseScore>9.0</baseScore>
+            <baseSeverity>CRITICAL</baseSeverity>
+          </cvssV3>
+        </vulnerability>
+        <vulnerability source="NVD">
+          <name>CVE-2020-9488</name>
+          <cvssV2>
+            <score>4.3</score>
+            <severity>MEDIUM</severity>
+          </cvssV2>
+          <cvssV3>
+            <baseScore>3.7</baseScore>
+            <baseSeverity>LOW</baseSeverity>
+          </cvssV3>
+        </vulnerability>
+      </vulnerabilities>
+    </dependency>
+    <dependency isVirtual="false">
+      <fileName>commons-text-1.9.jar</fileName>
+      <filePath>/opt/throwaway/lib/commons-text-1.9.jar</filePath>
+      <identifiers>
+        <package confidence="HIGH">
+          <id>pkg:maven/org.apache.commons/commons-text@1.9</id>
+        </package>
+      </identifiers>
+      <vulnerabilities>
+        <vulnerability source="NVD">
+          <name>CVE-2022-42889</name>
+          <cvssV3>
+            <baseScore>9.8</baseScore>
+            <baseSeverity>CRITICAL</baseSeverity>
+          </cvssV3>
+        </vulnerability>
+      </vulnerabilities>
+    </dependency>
+    <dependency isVirtual="false">
+      <fileName>commons-text-1.9.jar</fileName>
+      <filePath>/opt/throwaway/tools/commons-text-1.9.jar</filePath>
+      <identifiers>
+        <package confidence="HIGH">
+          <id>pkg:maven/org.apache.commons/commons-text@1.9</id>
+        </package>
+      </identifiers>
+      <vulnerabilities>
+        <vulnerability source="NVD">
+          <name>CVE-2022-42889</name>
+          <cvssV3>
+            <baseScore>9.8</baseScore>
+            <baseSeverity>CRITICAL</baseSeverity>
+          </cvssV3>
+        </vulnerability>
+      </vulnerabilities>
+    </dependency>
+    <dependency isVirtual="false">
+      <fileName>legacy-widget.dll</fileName>
+      <filePath>/opt/throwaway/bin/legacy-widget.dll</filePath>
+      <vulnerabilities>
+        <vulnerability source="NVD">
+          <name>CVE-2019-0001</name>
+          <cvssV2>
+            <score>5.0</score>
+            <severity>MEDIUM</severity>
+          </cvssV2>
+        </vulnerability>
+        <vulnerability source="GITHUB">
+          <name>GHSA-aaaa-bbbb-cccc</name>
+          <description>An advisory that carries no CVSS rating at all.</description>
+        </vulnerability>
+        <vulnerability source="NVD">
+          <name>CVE-2018-0002</name>
+          <cvssV2>
+            <score>7.5</score>
+            <severity>HIGH</severity>
+          </cvssV2>
+          <cvssV3>
+            <baseScore>5.3</baseScore>
+            <baseSeverity>MEDIUM</baseSeverity>
+          </cvssV3>
+        </vulnerability>
+      </vulnerabilities>
+    </dependency>
+    <dependency isVirtual="false">
+      <fileName>clean-helper-3.0.jar</fileName>
+      <filePath>/opt/throwaway/lib/clean-helper-3.0.jar</filePath>
+      <identifiers>
+        <package confidence="HIGH">
+          <id>pkg:maven/example/clean-helper@3.0</id>
+        </package>
+      </identifiers>
+      <suppressedVulnerabilities>
+        <suppressedVulnerability source="NVD">
+          <name>CVE-2000-0001</name>
+          <cvssV3>
+            <baseScore>9.8</baseScore>
+            <baseSeverity>CRITICAL</baseSeverity>
+          </cvssV3>
+        </suppressedVulnerability>
+      </suppressedVulnerabilities>
+      <relatedDependencies>
+        <relatedDependency>
+          <filePath>/opt/throwaway/lib/clean-helper-3.0-sources.jar</filePath>
+          <packageIds>
+            <packageId>pkg:maven/example/clean-helper-sources@3.0</packageId>
+          </packageIds>
+        </relatedDependency>
+      </relatedDependencies>
+    </dependency>
+  </dependencies>
+</analysis>

@@ -156,6 +156,18 @@ public class Submissions {
         return new FileTarget(id, located.systemId(), TAKES_FILES.contains(located.state()));
     }
 
+    /**
+     * The System a VA Submission belongs to, for a module that keeps something of its own on the VA Submission (its
+     * Findings). Ownership comes first: one the caller has no scope over for this need is "not found", the same as one that
+     * does not exist (ADR 0013).
+     */
+    @Transactional(readOnly = true)
+    public UUID systemOf(UUID id, Need need) {
+        UUID systemId = store.locate(id).orElseThrow(ResourceNotFoundException::new).systemId();
+        guard.requireSystem(systemId, need);
+        return systemId;
+    }
+
     private Submission view(UUID id) {
         SubmissionStore.Row row = store.find(id).orElseThrow(ResourceNotFoundException::new);
         guard.requireSystem(row.systemId(), Need.VIEW);

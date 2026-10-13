@@ -7,6 +7,7 @@ import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import org.jspecify.annotations.Nullable;
+import sg.annualva.finding.ReportType;
 import sg.annualva.parser.xml.SecureXml;
 import tools.jackson.core.JsonParser;
 import tools.jackson.core.JsonToken;

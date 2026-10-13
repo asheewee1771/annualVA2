@@ -16,14 +16,16 @@ import sg.annualva.audit.AuditLog;
 import sg.annualva.audit.AuditOutcome;
 import sg.annualva.audit.DetailKey;
 import sg.annualva.boundary.MalwareScanner.Verdict;
+import sg.annualva.finding.Findings;
+import sg.annualva.parser.ParsedReport;
 import sg.annualva.scan.CleanFiles;
 import sg.annualva.scan.MalwareScan;
 import sg.annualva.scan.ScanProperties;
 
 /**
- * Walks quarantined Scan Report files through the rest of the pipeline (stories 20, 24, 27): the malware scan, then the
- * type allowlist and the schema check on the scanner's unchanged copy. The stages run in that fixed order, and a file
- * that fails one never reaches the next. A pass:
+ * Walks quarantined Scan Report files through the rest of the pipeline (stories 20, 20a, 24, 27): the malware scan,
+ * then the type allowlist, the schema check and the parse ({@link FileChecks}) on the scanner's unchanged copy. The
+ * stages run in that fixed order, and a file that fails one never reaches the next. A pass:
  * <ol>
  *   <li>asks the scanner about every file that is out with it: blocked, sanitised (the scanner had to change it, which is
  *       not accepted) and a result that does not match the upload are rejected; unchanged is checked and kept; still
@@ -56,16 +58,18 @@ public class ScanPoller {
     private final CleanFiles cleanFiles;
     private final ScanProperties properties;
     private final AuditLog audit;
+    private final Findings findings;
     private final Clock clock;
     private final TransactionTemplate transaction;
 
     ScanPoller(ReportFileStore store, MalwareScan scan, CleanFiles cleanFiles, ScanProperties properties,
-            AuditLog audit, Clock clock, TransactionTemplate transaction) {
+            AuditLog audit, Findings findings, Clock clock, TransactionTemplate transaction) {
         this.store = store;
         this.scan = scan;
         this.cleanFiles = cleanFiles;
         this.properties = properties;
         this.audit = audit;
+        this.findings = findings;
         this.clock = clock;
         this.transaction = transaction;
     }
@@ -164,19 +168,10 @@ public class ScanPoller {
             return;
         }
         String cleanSha = MalwareScan.sha256(bytes);
-        TypeCheck.Result typed = TypeCheck.check(file.reportType(), file.kind(), bytes);
-        RejectCode refusedType = typed.rejection();
-        if (refusedType != null) {
-            settle(file, new ReportFileStore.Settlement(List.of(PipelineStatus.SCAN_CLEAN,
-                    PipelineStatus.rejected(refusedType)), refusedType, null, cleanSha, null, file.scanAttempts()), now);
-            return;
-        }
-        ReportFormat format = Objects.requireNonNull(typed.format());
-        Optional<RejectCode> refusedSchema = SchemaCheck.check(format, bytes);
-        if (refusedSchema.isPresent()) {
-            RejectCode code = refusedSchema.get();
-            settle(file, new ReportFileStore.Settlement(List.of(PipelineStatus.SCAN_CLEAN, PipelineStatus.TYPE_OK,
-                    PipelineStatus.rejected(code)), code, null, cleanSha, format, file.scanAttempts()), now);
+        FileChecks.Outcome checked = FileChecks.run(file.reportType(), file.kind(), bytes);
+        if (!checked.passed()) {
+            settle(file, new ReportFileStore.Settlement(checked.stages(), checked.rejection(), null, cleanSha,
+                    checked.format(), file.scanAttempts(), null), now);
             return;
         }
         String cleanKey;
@@ -188,9 +183,8 @@ public class ScanPoller {
         }
         boolean written;
         try {
-            written = settle(file, new ReportFileStore.Settlement(List.of(PipelineStatus.SCAN_CLEAN,
-                    PipelineStatus.TYPE_OK, PipelineStatus.SCHEMA_OK), null, cleanKey, cleanSha, format,
-                    file.scanAttempts()), now);
+            written = settle(file, new ReportFileStore.Settlement(checked.stages(), null, cleanKey, cleanSha,
+                    checked.format(), file.scanAttempts(), checked.parsed()), now);
         } catch (RuntimeException e) {
             // Nothing was recorded (a rollback), so no row points at the copy: it is not kept.
             cleanFiles.discard(cleanKey);
@@ -255,7 +249,7 @@ public class ScanPoller {
         if (attempts >= MalwareScan.MAX_ATTEMPTS) {
             // The failed attempt is the last one allowed: it counts, and the file is rejected with it.
             settle(file, new ReportFileStore.Settlement(List.of(PipelineStatus.REJECTED_SCAN_TIMEOUT),
-                    RejectCode.SCAN_TIMEOUT, null, null, null, attempts), now);
+                    RejectCode.SCAN_TIMEOUT, null, null, null, attempts, null), now);
             return;
         }
         if (transaction.execute(status -> store.attemptFailed(file, now)) == Boolean.TRUE) {
@@ -265,7 +259,7 @@ public class ScanPoller {
 
     private void reject(ReportFileStore.Row file, RejectCode code, Instant now) {
         settle(file, new ReportFileStore.Settlement(List.of(PipelineStatus.rejected(code)), code, null, null, null,
-                file.scanAttempts()), now);
+                file.scanAttempts(), null), now);
     }
 
     /**
@@ -277,6 +271,11 @@ public class ScanPoller {
         boolean written = transaction.execute(status -> {
             if (!store.settle(file, settlement, now)) {
                 return false;
+            }
+            ParsedReport parsed = settlement.parsed();
+            if (parsed != null) {
+                // With the status, in this transaction: a file is never PARSED without its Findings, or the other way round.
+                findings.record(file.submissionId(), file.systemId(), file.reportType(), file.id(), parsed, now);
             }
             RejectCode code = settlement.rejectCode();
             if (code != null) {

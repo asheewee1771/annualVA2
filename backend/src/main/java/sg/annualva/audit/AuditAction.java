@@ -56,7 +56,19 @@ public enum AuditAction {
     /** Someone but the System's own SMO/Tech Lead read a file's pipeline status, or the list of a VA Submission's files. */
     FILE_VIEWED("file-viewed", "file"),
     /** A clean file's bytes were downloaded, by anyone who may see the System. */
-    FILE_DOWNLOADED("file-downloaded", "file");
+    FILE_DOWNLOADED("file-downloaded", "file"),
+    /**
+     * Someone who may see the System read the scan date and target a parsed file names. They are report content, so the read
+     * is audited for every role, the System's own SMO/Tech Lead included. About the System and the VA Submission, with the
+     * file id; never the date or the target.
+     */
+    FILE_METADATA_VIEWED("file-metadata-viewed", "file"),
+    /**
+     * Someone who may see the System listed the Findings of a VA Submission. The Findings carry report content, so the read
+     * is audited for every role, the System's own SMO/Tech Lead included. One entry per list request, about the System and
+     * the VA Submission, with the number of Findings returned; never an identifier, a package or a host.
+     */
+    FINDINGS_VIEWED("findings-viewed", "database");
 
     private final String ecs;
     private final String category;

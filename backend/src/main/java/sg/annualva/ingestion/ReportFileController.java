@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import sg.annualva.finding.ReportType;
 import sg.annualva.web.RejectedRequestException;
 
 /**
@@ -68,6 +69,16 @@ public class ReportFileController {
     @PreAuthorize("hasAnyRole('SMO','CYBER_MANAGER','VA_POC')")
     public ResponseEntity<ReportFileView> status(@PathVariable UUID id, @PathVariable UUID fileId) {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(files.status(id, fileId));
+    }
+
+    /**
+     * What the report names as the scan date and the target, for the SMO/Tech Lead to confirm (story 25). Report content, so
+     * the read is audited for every role; 404 for a file that has not passed every stage.
+     */
+    @GetMapping("/api/submissions/{id}/files/{fileId}/metadata")
+    @PreAuthorize("hasAnyRole('SMO','CYBER_MANAGER','VA_POC')")
+    public ResponseEntity<ReportFileMetadataView> metadata(@PathVariable UUID id, @PathVariable UUID fileId) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(files.metadata(id, fileId));
     }
 
     /**

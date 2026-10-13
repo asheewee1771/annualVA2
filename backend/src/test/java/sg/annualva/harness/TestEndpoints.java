@@ -215,6 +215,9 @@ public class TestEndpoints {
                 // recorded on ticket 09 and not fixed here. Every Register test signs in after this reset.
                 jdbc.sql("DELETE FROM spring_session WHERE principal_name IS NOT NULL AND principal_name <> ''").update();
                 jdbc.sql("DROP TRIGGER IF EXISTS test_fault ON report_file").update();
+                jdbc.sql("DROP TRIGGER IF EXISTS test_finding_fault ON finding_occurrence").update();
+                jdbc.sql("DELETE FROM finding_occurrence").update();
+                jdbc.sql("DELETE FROM finding").update();
                 jdbc.sql("DELETE FROM report_file_stage").update();
                 jdbc.sql("DELETE FROM report_file").update();
                 jdbc.sql("DELETE FROM submission_participation").update();
@@ -252,6 +255,24 @@ public class TestEndpoints {
                         + "EXECUTE FUNCTION test_fault()").update();
             }
             return Map.of("fault", prefix);
+        }
+
+        /**
+         * Makes the write of a file's Finding occurrences fail inside the database (a trigger raises). That write is the
+         * last one of the transaction that records a file as parsed, after the file row, its stage rows and its Findings
+         * were written, so a test can prove that all of them are rolled back together. {@code on} sets the fault and
+         * {@code off} removes it.
+         */
+        @PostMapping("/api/test/faults/finding/{mode}")
+        public Map<String, String> findingFault(@PathVariable String mode) {
+            jdbc.sql("DROP TRIGGER IF EXISTS test_finding_fault ON finding_occurrence").update();
+            if ("on".equals(mode)) {
+                jdbc.sql("CREATE OR REPLACE FUNCTION test_finding_fault() RETURNS trigger LANGUAGE plpgsql AS "
+                        + "$$ BEGIN RAISE EXCEPTION 'injected fault'; END $$").update();
+                jdbc.sql("CREATE TRIGGER test_finding_fault BEFORE INSERT ON finding_occurrence FOR EACH ROW "
+                        + "EXECUTE FUNCTION test_finding_fault()").update();
+            }
+            return Map.of("fault", mode);
         }
 
         /**

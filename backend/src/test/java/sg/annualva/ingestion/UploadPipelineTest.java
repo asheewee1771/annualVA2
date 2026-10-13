@@ -55,8 +55,8 @@ class UploadPipelineTest extends IngestionSeam1 {
         pass();
         JsonNode file = status(draft.smo(), draft.submissionId(), id);
 
-        assertThat(file.get("status").asString()).isEqualTo("SCHEMA_OK");
-        assertThat(stages(file)).containsExactly("QUARANTINED", "SCAN_SUBMITTED", "SCAN_CLEAN", "TYPE_OK", "SCHEMA_OK");
+        assertThat(file.get("status").asString()).isEqualTo("PARSED");
+        assertThat(stages(file)).containsExactly("QUARANTINED", "SCAN_SUBMITTED", "SCAN_CLEAN", "TYPE_OK", "SCHEMA_OK", "PARSED");
         assertThat(file.get("detectedFormat").asString()).isEqualTo("DEPENDENCY_CHECK_XML");
         assertThat(file.get("rejectCode").isNull()).isTrue();
         assertThat(file.get("message").isNull()).isTrue();

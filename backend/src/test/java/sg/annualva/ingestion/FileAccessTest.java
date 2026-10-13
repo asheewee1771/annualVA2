@@ -20,7 +20,7 @@ class FileAccessTest extends IngestionSeam1 {
 
     private String cleanFile(Draft draft) {
         JsonNode file = settled(draft, DEPENDENCY_CHECK, "report.xml", Samples.dependencyCheckXml());
-        assertThat(file.get("status").asString()).isEqualTo("SCHEMA_OK");
+        assertThat(file.get("status").asString()).isEqualTo("PARSED");
         return file.get("id").asString();
     }
 
@@ -54,9 +54,9 @@ class FileAccessTest extends IngestionSeam1 {
         ApiClient otherManager = signedInAs(CM_OTHER);
         ApiClient otherSmo = signedInAs(SMO_B);
 
-        assertThat(status(manager, draft.submissionId(), id).get("status").asString()).isEqualTo("SCHEMA_OK");
+        assertThat(status(manager, draft.submissionId(), id).get("status").asString()).isEqualTo("PARSED");
         assertThat(manager.download(content).status()).isEqualTo(200);
-        assertThat(status(poc, draft.submissionId(), id).get("status").asString()).isEqualTo("SCHEMA_OK");
+        assertThat(status(poc, draft.submissionId(), id).get("status").asString()).isEqualTo("PARSED");
         assertThat(poc.download(content).status()).isEqualTo(200);
         for (ApiClient stranger : List.of(otherManager, otherSmo)) {
             assertNotFound(stranger.get(fileAt(draft.submissionId(), id)));

@@ -79,6 +79,27 @@ public final class Samples {
                 """);
     }
 
+    /** The Dependency-Check XML sample export (a reconstruction of a throwaway project's report: see its provenance note). */
+    public static byte[] dependencyCheckSampleXml() {
+        return resource("samples/dependency-check/dependency-check-report.xml");
+    }
+
+    /** The Dependency-Check JSON sample export: the same Findings as the XML one. */
+    public static byte[] dependencyCheckSampleJson() {
+        return resource("samples/dependency-check/dependency-check-report.json");
+    }
+
+    private static byte[] resource(String path) {
+        try (var in = Samples.class.getClassLoader().getResourceAsStream(path)) {
+            if (in == null) {
+                throw new IllegalStateException("No sample " + path);
+            }
+            return in.readAllBytes();
+        } catch (java.io.IOException e) {
+            throw new IllegalStateException("Cannot read sample " + path, e);
+        }
+    }
+
     /** A well-formed document of a type no Scan Report accepts. */
     public static byte[] html() {
         return utf8("<!DOCTYPE html><html><body><p>report</p></body></html>");

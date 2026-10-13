@@ -97,7 +97,7 @@ class ScanVerdictTest extends IngestionSeam1 {
         pass();
 
         JsonNode accepted = file(draft, id);
-        assertThat(accepted.get("status").asString()).isEqualTo("SCHEMA_OK");
+        assertThat(accepted.get("status").asString()).isEqualTo("PARSED");
         assertThat(accepted.get("scanAttempts").asInt()).isEqualTo(2);
     }
 
@@ -180,7 +180,7 @@ class ScanVerdictTest extends IngestionSeam1 {
         String next = uploadedId(draft, "next.xml");
         pass();
         pass();
-        assertThat(file(draft, next).get("status").asString()).as("the pipeline is not held up").isEqualTo("SCHEMA_OK");
+        assertThat(file(draft, next).get("status").asString()).as("the pipeline is not held up").isEqualTo("PARSED");
     }
 
     @Test
@@ -209,7 +209,7 @@ class ScanVerdictTest extends IngestionSeam1 {
         JsonNode accepted = settled(draft, DEPENDENCY_CHECK, "report.xml", Samples.dependencyCheckXml());
 
         assertThat(blocked.get("status").asString()).isEqualTo("REJECTED_MALWARE");
-        assertThat(accepted.get("status").asString()).isEqualTo("SCHEMA_OK");
+        assertThat(accepted.get("status").asString()).isEqualTo("PARSED");
         assertThat(fileStore.count(FileStore.Zone.QUARANTINE)).as("the delete failed, so both blobs are still held")
                 .isEqualTo(2);
 
@@ -252,7 +252,7 @@ class ScanVerdictTest extends IngestionSeam1 {
         Draft draft = draft();
         String id = uploadedId(draft, "dc.xml");
         pass();
-        arrange.reportFileFault("SCHEMA_OK");
+        arrange.reportFileFault("PARSED");
         try {
             pass();
 
@@ -265,7 +265,7 @@ class ScanVerdictTest extends IngestionSeam1 {
 
         pass();
 
-        assertThat(file(draft, id).get("status").asString()).isEqualTo("SCHEMA_OK");
+        assertThat(file(draft, id).get("status").asString()).isEqualTo("PARSED");
         assertThat(fileStore.count(FileStore.Zone.CLEAN)).isEqualTo(1);
         assertThat(fileStore.count(FileStore.Zone.QUARANTINE)).isZero();
     }
@@ -280,9 +280,9 @@ class ScanVerdictTest extends IngestionSeam1 {
         pass();
 
         JsonNode file = file(draft, id);
-        assertThat(file.get("status").asString()).isEqualTo("SCHEMA_OK");
+        assertThat(file.get("status").asString()).isEqualTo("PARSED");
         assertThat(stages(file)).as("the stages were written once, by the winner")
-                .containsExactly("QUARANTINED", "SCAN_SUBMITTED", "SCAN_CLEAN", "TYPE_OK", "SCHEMA_OK");
+                .containsExactly("QUARANTINED", "SCAN_SUBMITTED", "SCAN_CLEAN", "TYPE_OK", "SCHEMA_OK", "PARSED");
         assertThat(fileStore.count(FileStore.Zone.CLEAN)).as("the winner's copy was not deleted by the loser")
                 .isEqualTo(1);
         var download = draft.smo().download(fileAt(draft.submissionId(), id) + "/content");
@@ -322,7 +322,7 @@ class ScanVerdictTest extends IngestionSeam1 {
         scanner.unreachable(false);
         pass();
 
-        assertThat(file(draft, id).get("status").asString()).isEqualTo("SCHEMA_OK");
+        assertThat(file(draft, id).get("status").asString()).isEqualTo("PARSED");
     }
 
     @Test
@@ -334,7 +334,7 @@ class ScanVerdictTest extends IngestionSeam1 {
         pass();
         assertThat(file(draft, first).get("status").asString()).isEqualTo("SCAN_SUBMITTED");
         pass();
-        assertThat(file(draft, first).get("status").asString()).isEqualTo("SCHEMA_OK");
+        assertThat(file(draft, first).get("status").asString()).isEqualTo("PARSED");
 
         String second = uploadedId(draft, "second.xml");
         pass();
@@ -359,7 +359,7 @@ class ScanVerdictTest extends IngestionSeam1 {
         fileStore.refuseWrites(false);
         pass();
 
-        assertThat(file(draft, id).get("status").asString()).isEqualTo("SCHEMA_OK");
+        assertThat(file(draft, id).get("status").asString()).isEqualTo("PARSED");
     }
 
     @Test
@@ -395,7 +395,7 @@ class ScanVerdictTest extends IngestionSeam1 {
         scanner.finishStalled();
         pass();
 
-        assertThat(statuses(draft).subList(0, 10)).containsOnly("SCHEMA_OK");
+        assertThat(statuses(draft).subList(0, 10)).containsOnly("PARSED");
         assertThat(statuses(draft).subList(10, 12)).as("the freed slots go to the waiting files, oldest first")
                 .containsOnly("SCAN_SUBMITTED");
         assertThat(scanner.submissions()).isEqualTo(12);

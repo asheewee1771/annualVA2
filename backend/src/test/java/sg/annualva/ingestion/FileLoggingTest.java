@@ -56,7 +56,7 @@ class FileLoggingTest extends IngestionSeam1 {
 
         String log = output.getAll();
         assertThat(log).contains(accepted).contains(blocked).contains(wrongType).contains(slow)
-                .contains("file-status").contains("SCHEMA_OK").contains("REJECTED_MALWARE")
+                .contains("file-status").contains("PARSED").contains("REJECTED_MALWARE")
                 .contains("REJECTED_TYPE").contains("SCAN_SUBMITTED");
         assertThat(log).doesNotContain(SENTINEL);
         assertThat(log).as("no scanner ticket").doesNotContain("ticket-");

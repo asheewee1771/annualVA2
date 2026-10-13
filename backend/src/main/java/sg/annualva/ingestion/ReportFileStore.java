@@ -13,6 +13,8 @@ import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
+import sg.annualva.finding.ReportType;
+import sg.annualva.parser.ParsedReport;
 
 /**
  * The Scan Report file tables. Constant SQL, named parameters (as-2). Every change the scan job makes is guarded by the
@@ -34,7 +36,8 @@ class ReportFileStore {
             UUID id, UUID submissionId, UUID systemId, ReportType reportType, FileKind kind, String displayName,
             long sizeBytes, String uploadSha256, @Nullable String detectedFormat, @Nullable String quarantineKey,
             @Nullable String cleanKey, PipelineStatus status, @Nullable RejectCode rejectCode,
-            @Nullable String scanTicket, int scanAttempts, @Nullable Instant scanSubmittedAt, Instant uploadedAt) {}
+            @Nullable String scanTicket, int scanAttempts, @Nullable Instant scanSubmittedAt, Instant uploadedAt,
+            @Nullable Instant scanDateFromFile, @Nullable String targetFromFile) {}
 
     /** One entry of the order a file went through. */
     record Stage(UUID fileId, PipelineStatus status, Instant at) {}
@@ -48,10 +51,12 @@ class ReportFileStore {
      *
      * @param cleanKey the key of the unchanged copy, for a file that passed every stage
      * @param attempts the scan attempts the file has used when it rests
+     * @param parsed what the parser read, for a file that was parsed: its Findings are kept in the same transaction and its
+     *     scan date and target are written to the file
      */
     record Settlement(
             List<PipelineStatus> stages, @Nullable RejectCode rejectCode, @Nullable String cleanKey,
-            @Nullable String cleanSha256, @Nullable ReportFormat format, int attempts) {
+            @Nullable String cleanSha256, @Nullable ReportFormat format, int attempts, @Nullable ParsedReport parsed) {
 
         PipelineStatus resting() {
             return stages.get(stages.size() - 1);
@@ -61,7 +66,7 @@ class ReportFileStore {
     private static final String COLUMNS =
             "SELECT f.id, f.submission_id, s.system_id, f.report_type, f.kind, f.display_name, f.size_bytes, "
             + "f.upload_sha256, f.detected_format, f.quarantine_key, f.clean_key, f.pipeline_status, f.reject_code, "
-            + "f.scan_ticket, f.scan_attempts, f.scan_submitted_at, f.uploaded_at "
+            + "f.scan_ticket, f.scan_attempts, f.scan_submitted_at, f.uploaded_at, f.scan_date_from_file, f.target_from_file "
             + "FROM report_file f JOIN va_submission s ON s.id = f.submission_id ";
 
     private static final String FIND = COLUMNS + "WHERE f.id = :id";
@@ -113,6 +118,7 @@ class ReportFileStore {
             "UPDATE report_file SET pipeline_status = :status, reject_code = :code, "
             + "clean_key = COALESCE(:clean, clean_key), clean_sha256 = COALESCE(:sha, clean_sha256), "
             + "detected_format = COALESCE(:format, detected_format), scan_ticket = NULL, scan_attempts = :after, "
+            + "scan_date_from_file = :scanDate, target_from_file = :target, "
             + "updated_at = :now "
             + "WHERE id = :id AND pipeline_status = :from AND scan_attempts = :attempts";
 
@@ -223,7 +229,10 @@ class ReportFileStore {
                 .param("clean", settlement.cleanKey()).param("sha", settlement.cleanSha256())
                 .param("format", settlement.format() == null ? null : settlement.format().name())
                 .param("from", file.status().name()).param("attempts", file.scanAttempts())
-                .param("after", settlement.attempts()).param("now", utc(now)).update() == 1;
+                .param("after", settlement.attempts())
+                .param("scanDate", scanDate(settlement.parsed()))
+                .param("target", settlement.parsed() == null ? null : settlement.parsed().metadata().target())
+                .param("now", utc(now)).update() == 1;
         if (applied) {
             settlement.stages().forEach(status -> stage(file.id(), status, now));
         }
@@ -250,9 +259,15 @@ class ReportFileStore {
         jdbc.sql(INSERT_STAGE).param("file", fileId).param("status", status.name()).param("now", utc(now)).update();
     }
 
+    private static @Nullable OffsetDateTime scanDate(@Nullable ParsedReport parsed) {
+        Instant scanned = parsed == null ? null : parsed.metadata().scanDate();
+        return scanned == null ? null : utc(scanned);
+    }
+
     private static Row row(java.sql.ResultSet rs) throws java.sql.SQLException {
         String code = rs.getString("reject_code");
         OffsetDateTime submitted = rs.getObject("scan_submitted_at", OffsetDateTime.class);
+        OffsetDateTime scanned = rs.getObject("scan_date_from_file", OffsetDateTime.class);
         return new Row(rs.getObject("id", UUID.class), rs.getObject("submission_id", UUID.class),
                 rs.getObject("system_id", UUID.class), ReportType.valueOf(rs.getString("report_type")),
                 FileKind.valueOf(rs.getString("kind")), rs.getString("display_name"), rs.getLong("size_bytes"),
@@ -260,7 +275,8 @@ class ReportFileStore {
                 rs.getString("clean_key"), PipelineStatus.valueOf(rs.getString("pipeline_status")),
                 code == null ? null : RejectCode.valueOf(code), rs.getString("scan_ticket"),
                 rs.getInt("scan_attempts"), submitted == null ? null : submitted.toInstant(),
-                rs.getObject("uploaded_at", OffsetDateTime.class).toInstant());
+                rs.getObject("uploaded_at", OffsetDateTime.class).toInstant(),
+                scanned == null ? null : scanned.toInstant(), rs.getString("target_from_file"));
     }
 
     private static OffsetDateTime utc(Instant instant) {

@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
+import sg.annualva.finding.ReportType;
 
 /**
  * A Scan Report file as the API reports it: where it is in the pipeline and, when it was rejected, why. Nothing in it

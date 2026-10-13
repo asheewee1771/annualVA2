@@ -19,6 +19,7 @@ import sg.annualva.audit.AuditEvent;
 import sg.annualva.audit.AuditLog;
 import sg.annualva.audit.AuditOutcome;
 import sg.annualva.audit.DetailKey;
+import sg.annualva.finding.ReportType;
 import sg.annualva.scan.CleanFiles;
 import sg.annualva.scan.MalwareScan;
 import sg.annualva.submission.Submissions;
@@ -127,6 +128,23 @@ public class ReportFiles {
         ReportFileStore.Row row = file(submissionId, fileId);
         auditView(target, fileId, 1);
         return view(row, store.stages(List.of(fileId)).getOrDefault(fileId, List.of()));
+    }
+
+    /**
+     * The scan date and target a file's report names, pre-filled for the SMO/Tech Lead to confirm. They are report content,
+     * so the read is audited for every role. A file that has not passed every stage, or was rejected, is "not found", as
+     * its content is.
+     */
+    @Transactional
+    public ReportFileMetadataView metadata(UUID submissionId, UUID fileId) {
+        Submissions.FileTarget target = submissions.fileTarget(submissionId, Need.VIEW);
+        ReportFileStore.Row row = file(submissionId, fileId);
+        if (!row.status().viewable()) {
+            throw new ResourceNotFoundException();
+        }
+        audit.record(actor.attribute(AuditEvent.of(AuditAction.FILE_METADATA_VIEWED, AuditOutcome.SUCCESS))
+                .onSystem(target.systemId()).onSubmission(submissionId).with(DetailKey.FILE_ID, fileId));
+        return new ReportFileMetadataView(fileId, row.scanDateFromFile(), row.targetFromFile());
     }
 
     /** What a download was granted: the name to offer and where the bytes are. */

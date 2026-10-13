@@ -1,4 +1,4 @@
-package sg.annualva.ingestion;
+package sg.annualva.finding;
 
 /** The three Scan Reports every VA Submission holds (CONTEXT.md); Secure Configuration is always required. */
 public enum ReportType {

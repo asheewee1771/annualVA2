@@ -58,27 +58,30 @@ class ArchitectureTest {
                 .layer("parser").definedBy("sg.annualva.parser..")
                 .layer("register").definedBy("sg.annualva.register..")
                 .layer("submission").definedBy("sg.annualva.submission..")
+                .layer("finding").definedBy("sg.annualva.finding..")
                 .layer("ingestion").definedBy("sg.annualva.ingestion..")
                 .layer("dashboard").definedBy("sg.annualva.dashboard..")
                 .layer("adapters").definedBy("sg.annualva.adapters..")
                 // app is the composition root: it may import everything and nothing imports it
                 .whereLayer("app").mayNotBeAccessedByAnyLayer()
-                .whereLayer("web").mayOnlyBeAccessedByLayers("app", "adapters", "access", "audit", "cycle", "register", "submission", "ingestion", "dashboard")
+                .whereLayer("web").mayOnlyBeAccessedByLayers("app", "adapters", "access", "audit", "cycle", "register", "submission", "finding", "ingestion", "dashboard")
                 .whereLayer("config").mayOnlyBeAccessedByLayers("app", "web", "access", "adapters", "audit", "cycle")
                 .whereLayer("boundary").mayOnlyBeAccessedByLayers("app", "web", "access", "adapters", "scan", "ingestion")
                 // quarantine and malware scan: one module holds the upload steps both the Register upload and the pipeline use
                 .whereLayer("scan").mayOnlyBeAccessedByLayers("app", "register", "ingestion")
-                // the report readers are a leaf; the upload pipeline sniffs and checks files with them
-                .whereLayer("parser").mayOnlyBeAccessedByLayers("app", "ingestion")
+                // the report readers are a leaf; the upload pipeline sniffs, checks and parses files with them, and the Findings keep what they read
+                .whereLayer("parser").mayOnlyBeAccessedByLayers("app", "finding", "ingestion")
                 // the audit log is written by the modules that act (access, the register and the submissions today)
-                .whereLayer("audit").mayOnlyBeAccessedByLayers("app", "access", "register", "submission", "ingestion")
+                .whereLayer("audit").mayOnlyBeAccessedByLayers("app", "access", "register", "submission", "finding", "ingestion")
                 // the domain modules ask access who is acting and whether they may reach a System
-                .whereLayer("access").mayOnlyBeAccessedByLayers("app", "register", "submission", "ingestion", "dashboard")
+                .whereLayer("access").mayOnlyBeAccessedByLayers("app", "register", "submission", "finding", "ingestion", "dashboard")
                 // the register is a domain module: the submissions start from its Systems and the dashboards list them
                 .whereLayer("register").mayOnlyBeAccessedByLayers("app", "submission", "dashboard")
-                // the submissions sit above the register and the calendar; the dashboards read them (the inbox shows a Draft) and the file pipeline asks which System a VA Submission belongs to
-                .whereLayer("submission").mayOnlyBeAccessedByLayers("app", "dashboard", "ingestion")
-                // the Scan Report upload pipeline sits above the submissions; nothing reads it
+                // the submissions sit above the register and the calendar; the dashboards read them (the inbox shows a Draft) and the file pipeline and the Findings ask which System a VA Submission belongs to
+                .whereLayer("submission").mayOnlyBeAccessedByLayers("app", "dashboard", "finding", "ingestion")
+                // the Findings sit above the submissions and the parsers; the upload pipeline hands them what a parser read
+                .whereLayer("finding").mayOnlyBeAccessedByLayers("app", "ingestion")
+                // the Scan Report upload pipeline sits above the submissions and the Findings; nothing reads it
                 .whereLayer("ingestion").mayOnlyBeAccessedByLayers("app")
                 // the dashboards are read models over the modules below them; nothing reads them
                 .whereLayer("dashboard").mayOnlyBeAccessedByLayers("app")

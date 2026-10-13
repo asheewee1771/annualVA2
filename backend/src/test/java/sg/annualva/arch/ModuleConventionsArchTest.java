@@ -47,7 +47,7 @@ class ModuleConventionsArchTest {
                         "sg.annualva.audit..", "sg.annualva.access..", "sg.annualva.cycle..", "sg.annualva.scan..",
                         "sg.annualva.parser..")
                 .should().dependOnClassesThat().resideInAnyPackage("sg.annualva.register..", "sg.annualva.submission..",
-                        "sg.annualva.ingestion..", "sg.annualva.dashboard..")
+                        "sg.annualva.finding..", "sg.annualva.ingestion..", "sg.annualva.dashboard..")
                 .because("dependencies run from the business modules to the platform modules and never back")
                 .check(main);
     }

@@ -14,7 +14,8 @@ import tools.jackson.databind.JsonNode;
  * Stories 21 and 24: the type allowlist decides from the bytes (a root element, the shape of a JSON document), never from
  * the file name or declared type, applies each type's size limit, and rejects a disallowed or oversized file before
  * anything parses it; the schema check rejects a file that cannot be read to the end or lacks the structure its format
- * needs. Machine-readable files that pass wait at SCHEMA_OK for the parsers of the next four tickets.
+ * needs. A Dependency-Check file that passes is parsed (PARSED); the other formats wait at SCHEMA_OK for the parsers of the next
+ * three tickets.
  */
 class TypeAndSchemaCheckTest extends IngestionSeam1 {
 
@@ -23,7 +24,8 @@ class TypeAndSchemaCheckTest extends IngestionSeam1 {
     }
 
     private void assertAccepted(JsonNode file, String format) {
-        assertThat(file.get("status").asString()).as(file.toString()).isEqualTo("SCHEMA_OK");
+        assertThat(file.get("status").asString()).as(file.toString())
+                .isEqualTo(format.startsWith("DEPENDENCY_CHECK") ? "PARSED" : "SCHEMA_OK");
         assertThat(file.get("detectedFormat").asString()).isEqualTo(format);
     }
 
