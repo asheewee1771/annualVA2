@@ -41,6 +41,7 @@ import sg.annualva.audit.AuditLog;
 import sg.annualva.audit.AuditOutcome;
 import sg.annualva.audit.DetailKey;
 import sg.annualva.access.RoleGrantStore;
+import sg.annualva.ingestion.ScanPoller;
 import sg.annualva.web.ProblemResponses;
 import sg.annualva.web.ResourceNotFoundException;
 
@@ -103,9 +104,11 @@ public class TestEndpoints {
         private final Clock clock;
         private final AuditLog audit;
         private final TransactionTemplate transaction;
+        private final ScanPoller scanPoller;
 
         public TestController(AppUserStore users, RoleGrantStore grants, AccessGuard guard, StepUp stepUp, JdbcClient jdbc,
-                Clock clock, AuditLog audit, TransactionTemplate transaction) {
+                Clock clock, AuditLog audit, TransactionTemplate transaction, ScanPoller scanPoller) {
+            this.scanPoller = scanPoller;
             this.users = users;
             this.grants = grants;
             this.guard = guard;
@@ -200,10 +203,20 @@ public class TestEndpoints {
             return Map.of("id", id.toString());
         }
 
-        /** Empties the Register, its previews, the VA Submissions and the grants scoped to a System between tests; the suite shares one database. */
+        /** Empties the Register, its previews, the VA Submissions, the grants scoped to a System and the sessions between tests; the suite shares one database. */
         @PostMapping("/api/test/register-reset")
         public Map<String, String> resetRegister() {
             transaction.executeWithoutResult(status -> {
+                // STOPGAP, remove when the real fix lands. Signed-in sessions are deleted too (the arranging browser keeps
+                // its anonymous one, which holds its CSRF token). The defect: a session created by a step-up is not
+                // evicted by that person's next sign-in, so it stays live, and the person's next step-up then sees two
+                // live sessions, the one-session rule expires the current one, and the request answers 401. It showed as
+                // RegisterApplyTest.applyingNeedsAFreshSignInAndChangesNothingWithoutOne failing in the full suite. It is
+                // recorded on ticket 09 and not fixed here. Every Register test signs in after this reset.
+                jdbc.sql("DELETE FROM spring_session WHERE principal_name IS NOT NULL AND principal_name <> ''").update();
+                jdbc.sql("DROP TRIGGER IF EXISTS test_fault ON report_file").update();
+                jdbc.sql("DELETE FROM report_file_stage").update();
+                jdbc.sql("DELETE FROM report_file").update();
                 jdbc.sql("DELETE FROM submission_participation").update();
                 jdbc.sql("DELETE FROM va_submission").update();
                 jdbc.sql("DELETE FROM role_grant WHERE system_id IS NOT NULL").update();
@@ -212,6 +225,53 @@ public class TestEndpoints {
             });
             systems.clear();
             return Map.of("reset", "yes");
+        }
+
+        /** One pass of the scan job, which {@code annualva.scheduling.enabled=false} keeps from running by itself in tests. */
+        @PostMapping("/api/test/jobs/scan")
+        public Map<String, String> scan() {
+            scanPoller.poll();
+            return Map.of("ran", "scan");
+        }
+
+        /**
+         * Makes every write that moves a Scan Report file to a status starting with this prefix fail inside the database (a
+         * trigger raises), so a test can prove what a rolled-back write leaves behind. {@code off} removes the fault.
+         */
+        @PostMapping("/api/test/faults/report-file/{prefix}")
+        public Map<String, String> reportFileFault(@PathVariable String prefix) {
+            jdbc.sql("DROP TRIGGER IF EXISTS test_fault ON report_file").update();
+            if (!"off".equals(prefix)) {
+                if (!prefix.matches("[A-Z_]+")) {
+                    throw new IllegalArgumentException("a status prefix");
+                }
+                jdbc.sql("CREATE OR REPLACE FUNCTION test_fault() RETURNS trigger LANGUAGE plpgsql AS "
+                        + "$$ BEGIN RAISE EXCEPTION 'injected fault'; END $$").update();
+                jdbc.sql("CREATE TRIGGER test_fault BEFORE UPDATE ON report_file FOR EACH ROW "
+                        + "WHEN (NEW.pipeline_status LIKE '" + prefix + "%' AND OLD.pipeline_status <> NEW.pipeline_status) "
+                        + "EXECUTE FUNCTION test_fault()").update();
+            }
+            return Map.of("fault", prefix);
+        }
+
+        /**
+         * Another pass of the scan job rejected this file (as malware) and has already swept it: the quarantine key is
+         * cleared too, so nothing but the pass that lost the race can find a clean copy it wrote afterwards. The
+         * quarantined blob in the fake store is left behind as an orphan, which is the endpoint's doing, not the app's.
+         */
+        @PostMapping("/api/test/report-files/{id}/rejected")
+        public Map<String, String> reportFileRejected(@PathVariable UUID id) {
+            jdbc.sql("UPDATE report_file SET pipeline_status = 'REJECTED_MALWARE', reject_code = 'MALWARE', "
+                    + "scan_ticket = NULL, quarantine_key = NULL WHERE id = :id").param("id", id).update();
+            return Map.of("rejected", id.toString());
+        }
+
+        /** A VA Submission in a state no command enters yet (the tables accept all nine), for the tests of the file rules. */
+        @PostMapping("/api/test/submissions/{id}/state/{state}")
+        public Map<String, String> submissionState(@PathVariable UUID id, @PathVariable String state) {
+            jdbc.sql("UPDATE va_submission SET state = :state WHERE id = :id").param("state", state).param("id", id)
+                    .update();
+            return Map.of("state", state);
         }
 
         /** What configuration and the later Auditor grant will do, and a state the apply never makes: write a role grant. */

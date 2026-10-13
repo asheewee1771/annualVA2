@@ -41,7 +41,22 @@ public enum AuditAction {
      * A Cyber Manager or VA POC read one VA Submission (story 84). The System's own SMO/Tech Lead reading it is not
      * recorded. It is about the System and the VA Submission and holds no detail.
      */
-    SUBMISSION_VIEWED("submission-viewed", "database");
+    SUBMISSION_VIEWED("submission-viewed", "database"),
+    /**
+     * An SMO/Tech Lead uploaded a Scan Report file and it was quarantined (SUCCESS), or the upload was refused because the
+     * VA Submission takes no files now or the Scan Report is full (REFUSED, with a fixed reason). About the System and the
+     * VA Submission, with the file id; never the file's name or content.
+     */
+    FILE_UPLOADED("file-uploaded", "file"),
+    /**
+     * The pipeline rejected a file (REFUSED, with the fixed reject code): malware, a scan that timed out, a disallowed or
+     * oversized type, an unreadable file or one that fails its schema. Written by the scan job, so it has no actor.
+     */
+    FILE_REJECTED("file-rejected", "file"),
+    /** Someone but the System's own SMO/Tech Lead read a file's pipeline status, or the list of a VA Submission's files. */
+    FILE_VIEWED("file-viewed", "file"),
+    /** A clean file's bytes were downloaded, by anyone who may see the System. */
+    FILE_DOWNLOADED("file-downloaded", "file");
 
     private final String ecs;
     private final String category;

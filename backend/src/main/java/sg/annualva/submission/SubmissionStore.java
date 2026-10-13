@@ -15,6 +15,9 @@ import org.springframework.stereotype.Repository;
 @Repository
 class SubmissionStore {
 
+    /** Where a VA Submission is: its System and its state as text, so a state no constant names yet can still be read. */
+    record Located(UUID systemId, String state) {}
+
     /** What a VA Submission is as the table holds it. */
     record Row(
             UUID id, UUID systemId, int cycleYear, int quarter, SubmissionState state, boolean overdue,
@@ -38,6 +41,8 @@ class SubmissionStore {
 
     private static final String IN_CYCLE =
             COLUMNS + "WHERE cycle_year = :cycle AND system_id = ANY(CAST(:systems AS uuid[]))";
+
+    private static final String LOCATE = "SELECT system_id, state FROM va_submission WHERE id = :id";
 
     private static final String PARTICIPATION =
             "SELECT user_id, step, first_at FROM submission_participation WHERE submission_id = :id "
@@ -74,6 +79,12 @@ class SubmissionStore {
                 .param("step", step.name())
                 .param("now", utc(now))
                 .update();
+    }
+
+    Optional<Located> locate(UUID id) {
+        return jdbc.sql(LOCATE).param("id", id)
+                .query((rs, row) -> new Located(rs.getObject("system_id", UUID.class), rs.getString("state")))
+                .optional();
     }
 
     Optional<Row> find(UUID id) {

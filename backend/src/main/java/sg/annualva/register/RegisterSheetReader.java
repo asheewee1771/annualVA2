@@ -27,6 +27,8 @@ final class RegisterSheetReader {
 
     /** The most a Register file may weigh (IM8 as-1): about 50 Systems a year, so 2 MB is generous. */
     static final int MAX_BYTES = 2 * 1024 * 1024;
+    /** The type handed to the scanner as a hint; the file's type is decided from its bytes, not from this. */
+    static final String XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     /** The most System rows in one file. */
     static final int MAX_ROWS = 1000;
 

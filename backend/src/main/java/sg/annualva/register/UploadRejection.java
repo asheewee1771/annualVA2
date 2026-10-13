@@ -15,6 +15,18 @@ enum UploadRejection {
             "Only an Excel .xlsx workbook is accepted."),
     UNREADABLE(HttpStatus.UNPROCESSABLE_CONTENT, "register-file-unreadable", "unreadable",
             "The workbook could not be read."),
+    /** The malware scan blocked the file (IM8 as-12); it is never read. */
+    MALWARE(HttpStatus.UNPROCESSABLE_CONTENT, "file-rejected-malware", "malware",
+            "The malware scan blocked this file, so the upload was rejected. Check the file and upload a clean copy."),
+    /** The scanner passed the file only after changing it; the altered copy is not accepted (reviewer-decisions.md). */
+    SANITIZED(HttpStatus.UNPROCESSABLE_CONTENT, "file-modified-by-scan", "sanitized",
+            "The malware scan had to modify this file, so the upload was rejected. Upload the original file again."),
+    /** Three scan attempts ran out of time (story 27); the file is never read. */
+    SCAN_TIMEOUT(HttpStatus.SERVICE_UNAVAILABLE, "scan-timeout", "scan-timeout",
+            "The malware scan did not finish in time, so the upload was rejected. Upload the file again."),
+    /** The scanner called the file unchanged but returned other bytes; the file is never read. */
+    SCAN_MISMATCH(HttpStatus.SERVICE_UNAVAILABLE, "scan-mismatch", "scan-mismatch",
+            "The scan result did not match the file that was uploaded, so the upload was rejected. Upload the file again."),
     NO_SHEET(HttpStatus.UNPROCESSABLE_CONTENT, "register-sheet-missing", "no-sheet",
             "The workbook has no System Register sheet."),
     HEADER_MISMATCH(HttpStatus.UNPROCESSABLE_CONTENT, "register-header-mismatch", "header-mismatch",

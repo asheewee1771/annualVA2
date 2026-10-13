@@ -19,6 +19,12 @@ server:
 annualva:
   scheduling:
     enabled: false
+  scan:
+    # Short, so the tests that time a scan out finish quickly. A Scan Report attempt is timed by the controllable clock
+    # (a test moves it past two minutes); the Register upload waits in real time, a few polls of a few milliseconds.
+    attempt-timeout: 2m
+    sync-wait: 200ms
+    sync-poll-interval: 20ms
   # Two VA POCs for the role store; the tests sign in as them.
   va-pocs: poc.one@ci.annualva.test,poc.two@ci.annualva.test
   mcc:

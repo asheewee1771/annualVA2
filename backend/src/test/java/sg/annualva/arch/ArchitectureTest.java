@@ -54,23 +54,32 @@ class ArchitectureTest {
                 .layer("audit").definedBy("sg.annualva.audit..")
                 .layer("cycle").definedBy("sg.annualva.cycle..")
                 .layer("access").definedBy("sg.annualva.access..")
+                .layer("scan").definedBy("sg.annualva.scan..")
+                .layer("parser").definedBy("sg.annualva.parser..")
                 .layer("register").definedBy("sg.annualva.register..")
                 .layer("submission").definedBy("sg.annualva.submission..")
+                .layer("ingestion").definedBy("sg.annualva.ingestion..")
                 .layer("dashboard").definedBy("sg.annualva.dashboard..")
                 .layer("adapters").definedBy("sg.annualva.adapters..")
                 // app is the composition root: it may import everything and nothing imports it
                 .whereLayer("app").mayNotBeAccessedByAnyLayer()
-                .whereLayer("web").mayOnlyBeAccessedByLayers("app", "adapters", "access", "audit", "cycle", "register", "submission", "dashboard")
+                .whereLayer("web").mayOnlyBeAccessedByLayers("app", "adapters", "access", "audit", "cycle", "register", "submission", "ingestion", "dashboard")
                 .whereLayer("config").mayOnlyBeAccessedByLayers("app", "web", "access", "adapters", "audit", "cycle")
-                .whereLayer("boundary").mayOnlyBeAccessedByLayers("app", "web", "access", "adapters")
+                .whereLayer("boundary").mayOnlyBeAccessedByLayers("app", "web", "access", "adapters", "scan", "ingestion")
+                // quarantine and malware scan: one module holds the upload steps both the Register upload and the pipeline use
+                .whereLayer("scan").mayOnlyBeAccessedByLayers("app", "register", "ingestion")
+                // the report readers are a leaf; the upload pipeline sniffs and checks files with them
+                .whereLayer("parser").mayOnlyBeAccessedByLayers("app", "ingestion")
                 // the audit log is written by the modules that act (access, the register and the submissions today)
-                .whereLayer("audit").mayOnlyBeAccessedByLayers("app", "access", "register", "submission")
+                .whereLayer("audit").mayOnlyBeAccessedByLayers("app", "access", "register", "submission", "ingestion")
                 // the domain modules ask access who is acting and whether they may reach a System
-                .whereLayer("access").mayOnlyBeAccessedByLayers("app", "register", "submission", "dashboard")
+                .whereLayer("access").mayOnlyBeAccessedByLayers("app", "register", "submission", "ingestion", "dashboard")
                 // the register is a domain module: the submissions start from its Systems and the dashboards list them
                 .whereLayer("register").mayOnlyBeAccessedByLayers("app", "submission", "dashboard")
-                // the submissions sit above the register and the calendar; only the dashboards read them (the inbox shows a Draft)
-                .whereLayer("submission").mayOnlyBeAccessedByLayers("app", "dashboard")
+                // the submissions sit above the register and the calendar; the dashboards read them (the inbox shows a Draft) and the file pipeline asks which System a VA Submission belongs to
+                .whereLayer("submission").mayOnlyBeAccessedByLayers("app", "dashboard", "ingestion")
+                // the Scan Report upload pipeline sits above the submissions; nothing reads it
+                .whereLayer("ingestion").mayOnlyBeAccessedByLayers("app")
                 // the dashboards are read models over the modules below them; nothing reads them
                 .whereLayer("dashboard").mayOnlyBeAccessedByLayers("app")
                 // the calendar is a leaf below the domain modules (the register dates a System by it, a submission and the inbox by its Quarter); nothing it reads reads back
@@ -130,6 +139,28 @@ class ArchitectureTest {
         noClasses().that().resideOutsideOfPackage("sg.annualva.adapters..")
                 .should().implement(sg.annualva.boundary.IdentityProvider.class)
                 .because("production implementations of the boundary ports live under sg.annualva.adapters")
+                .check(main);
+    }
+
+    @Test
+    void everyBoundaryPortIsImplementedOnlyByAdapters() {
+        noClasses().that().resideOutsideOfPackage("sg.annualva.adapters..")
+                .should().implement(sg.annualva.boundary.MalwareScanner.class)
+                .orShould().implement(sg.annualva.boundary.FileStore.class)
+                .because("production implementations of the boundary ports live under sg.annualva.adapters")
+                .check(main);
+    }
+
+    @Test
+    void xmlReadersAreMadeOnlyInSecureXml() {
+        noClasses().that().doNotHaveFullyQualifiedName("sg.annualva.parser.xml.SecureXml")
+                .should().callMethod(javax.xml.stream.XMLInputFactory.class, "newFactory")
+                .orShould().callMethod(javax.xml.stream.XMLInputFactory.class, "newInstance")
+                .orShould().callMethod(javax.xml.parsers.DocumentBuilderFactory.class, "newInstance")
+                .orShould().callMethod(javax.xml.parsers.SAXParserFactory.class, "newInstance")
+                .orShould().callMethod(javax.xml.transform.TransformerFactory.class, "newInstance")
+                .because("report files are untrusted XML, and every reader that touches one must have DTDs and external"
+                        + " entities off, which SecureXml sets in one place")
                 .check(main);
     }
 

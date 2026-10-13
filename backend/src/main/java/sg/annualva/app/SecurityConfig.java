@@ -1,6 +1,7 @@
 package sg.annualva.app;
 
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -52,6 +53,9 @@ class SecurityConfig {
                         // The Register is the VA POCs' alone. Also a method rule on each endpoint (ac-1); this one
                         // refuses a stranger before a multipart body is read, so nobody else's file is ever spooled.
                         .requestMatchers("/api/system-register/**").hasRole("VA_POC")
+                        // Only an SMO/Tech Lead uploads a Scan Report file (also a method rule); a file of up to 50 MB is
+                        // not spooled for anyone else.
+                        .requestMatchers(HttpMethod.POST, "/api/submissions/*/files").hasRole("SMO")
                         .anyRequest().authenticated())
                 // Synchronizer token pattern: the SPA bootstraps the token from GET /api/csrf and sends it
                 // back in the X-CSRF-TOKEN header. Cookie/double-submit is prohibited by the org standard.

@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
@@ -58,8 +59,22 @@ public class Submissions {
             UUID id, UUID systemId, int cycle, int quarter, SubmissionState state, boolean overdue, boolean endorsedLate,
             LocalDate submitDue, LocalDate reviewDue, LocalDate endorseDue, Instant startedAt, List<Acted> acted) {}
 
+    /**
+     * Where a Scan Report file goes or is read from.
+     *
+     * @param systemId the System the VA Submission belongs to
+     * @param acceptsFiles whether the VA Submission is in a state that takes new files (Draft or Returned for Rework)
+     */
+    public record FileTarget(UUID submissionId, UUID systemId, boolean acceptsFiles) {}
+
     /** What the SMO inbox needs of a started VA Submission. */
     public record Summary(UUID id, SubmissionState state, LocalDate submitDue, LocalDate reviewDue, LocalDate endorseDue) {}
+
+    /**
+     * The states in which Scan Report files can be uploaded: the SMO/Tech Lead is still preparing (story 20). Returned for
+     * Rework has no constant yet (the return command of ticket 30 adds it), so the states are named as the table holds them.
+     */
+    private static final Set<String> TAKES_FILES = Set.of(SubmissionState.DRAFT.name(), "RETURNED_FOR_REWORK");
 
     private static final String NOT_ALLOWED_NOW = "invalid-transition";
 
@@ -128,6 +143,17 @@ public class Submissions {
                     .onSystem(submission.systemId()).onSubmission(id));
         }
         return submission;
+    }
+
+    /**
+     * The VA Submission a Scan Report file belongs to, for the file pipeline. Ownership comes first: one the caller has no
+     * scope over for this need is "not found", the same as one that does not exist (ADR 0013).
+     */
+    @Transactional(readOnly = true)
+    public FileTarget fileTarget(UUID id, Need need) {
+        SubmissionStore.Located located = store.locate(id).orElseThrow(ResourceNotFoundException::new);
+        guard.requireSystem(located.systemId(), need);
+        return new FileTarget(id, located.systemId(), TAKES_FILES.contains(located.state()));
     }
 
     private Submission view(UUID id) {

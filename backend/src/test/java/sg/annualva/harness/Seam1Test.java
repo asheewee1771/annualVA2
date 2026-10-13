@@ -28,6 +28,13 @@ public abstract class Seam1Test {
     @Autowired
     protected MutableClock clock;
 
+    /** The malware-scanner fake and the in-memory file store; both are emptied before every test. */
+    @Autowired
+    protected FakeMalwareScanner scanner;
+
+    @Autowired
+    protected InMemoryFileStore fileStore;
+
     protected ApiClient api;
 
     /** Arranges Systems and role grants through the test-only endpoints, from a separate browser. */
@@ -40,6 +47,8 @@ public abstract class Seam1Test {
 
     @BeforeEach
     void freshClient() {
+        scanner.reset();
+        fileStore.reset();
         api = new ApiClient(port);
         arrange = new Arrange(new ApiClient(port).withCsrf());
         issuer.clientJwksUrl("http://localhost:" + port + "/.well-known/jwks.json");

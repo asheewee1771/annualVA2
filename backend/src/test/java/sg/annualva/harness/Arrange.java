@@ -27,11 +27,32 @@ public final class Arrange {
     }
 
     /**
-     * Empties the System Register, its previews and the grants scoped to a System, so a test starts from none. The
-     * Register is shared by the whole suite, so a test that uses it calls this first and last.
+     * Empties the System Register, its previews and the grants scoped to a System, and ends every signed-in session, so
+     * a test starts from none (the reset endpoint says why the sessions go). The Register is shared by the whole suite,
+     * so a test that uses it calls this first and last, before it signs anyone in.
      */
     public void clearRegister() {
         assertThat(client.post("/api/test/register-reset").status()).isEqualTo(200);
+    }
+
+    /** One pass of the scan job, which a test moves forward by hand because scheduling is off in tests. */
+    public void scan() {
+        assertThat(client.post("/api/test/jobs/scan").status()).isEqualTo(200);
+    }
+
+    /** Makes writes moving a file to a status with this prefix fail in the database; "off" removes the fault. */
+    public void reportFileFault(String prefix) {
+        assertThat(client.post("/api/test/faults/report-file/" + prefix).status()).isEqualTo(200);
+    }
+
+    /** Rejects a file as another pass of the scan job would have, without touching its bytes. */
+    public void rejectFile(String fileId) {
+        assertThat(client.post("/api/test/report-files/" + fileId + "/rejected").status()).isEqualTo(200);
+    }
+
+    /** Puts a VA Submission in a state no command enters yet. */
+    public void submissionState(String submissionId, String state) {
+        assertThat(client.post("/api/test/submissions/" + submissionId + "/state/" + state).status()).isEqualTo(200);
     }
 
     /** A person known by email only, as the System Register creates them; returns the user id. */

@@ -23,4 +23,18 @@ public class HarnessConfig {
     Clock harnessClock(MutableClock mutableClock) {
         return mutableClock;
     }
+
+    /** The object store, in memory; primary over the production store, which is not wired in tests. */
+    @Bean
+    @Primary
+    InMemoryFileStore inMemoryFileStore() {
+        return new InMemoryFileStore();
+    }
+
+    /** The malware scanner: clean, sanitised, blocked or never finishes, by keyword in the file name. */
+    @Bean
+    @Primary
+    FakeMalwareScanner fakeMalwareScanner(InMemoryFileStore files) {
+        return new FakeMalwareScanner(files);
+    }
 }

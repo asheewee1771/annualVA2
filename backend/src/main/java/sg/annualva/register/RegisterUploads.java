@@ -24,6 +24,7 @@ import sg.annualva.audit.AuditEvent;
 import sg.annualva.audit.AuditLog;
 import sg.annualva.audit.AuditOutcome;
 import sg.annualva.audit.DetailKey;
+import sg.annualva.scan.MalwareScan;
 import sg.annualva.web.RejectedRequestException;
 import sg.annualva.web.ResourceNotFoundException;
 
@@ -32,9 +33,10 @@ import sg.annualva.web.ResourceNotFoundException;
  * keeps that as a preview for an hour. Nothing in the Register changes here; applying a preview is a later command
  * with a step-up of its own ({@link RegisterApply}).
  *
- * <p>The file is untrusted. It is read, and refused if it is wrong, before any transaction opens, so the refusal is
- * recorded in an entry of its own (a fixed code, never content) and cannot be lost to a rollback; the preview and
- * its audit entry are then written together in one transaction. A VA POC's scope is every System, so no ownership
+ * <p>The file is untrusted. It is quarantined and malware-scanned, waiting for the verdict (IM8 as-12, story 24;
+ * ADR 0017), and only the scanner's clean copy is read, and refused if it is wrong, before any transaction opens, so the
+ * refusal is recorded in an entry of its own (a fixed code, never content) and cannot be lost to a rollback; the preview
+ * and its audit entry are then written together in one transaction. A VA POC's scope is every System, so no ownership
  * check applies (ADR 0013); the role rule on the controller is the control (ADR 0017).
  */
 @Service
@@ -44,15 +46,17 @@ public class RegisterUploads {
     static final Duration PREVIEW_LIFETIME = Duration.ofHours(1);
 
     private final RegisterStore store;
+    private final MalwareScan scan;
     private final AuditLog audit;
     private final AuditActor actor;
     private final CurrentUser user;
     private final Clock clock;
     private final TransactionTemplate transaction;
 
-    RegisterUploads(RegisterStore store, AuditLog audit, AuditActor actor, CurrentUser user, Clock clock,
-            TransactionTemplate transaction) {
+    RegisterUploads(RegisterStore store, MalwareScan scan, AuditLog audit, AuditActor actor, CurrentUser user,
+            Clock clock, TransactionTemplate transaction) {
         this.store = store;
+        this.scan = scan;
         this.audit = audit;
         this.actor = actor;
         this.user = user;
@@ -68,7 +72,7 @@ public class RegisterUploads {
     public Preview upload(long size, InputStreamSource content) {
         List<RegisterRow> rows;
         try {
-            rows = new RegisterSheetReader().read(bytes(size, content));
+            rows = new RegisterSheetReader().read(scanned(bytes(size, content)));
         } catch (RegisterFileException e) {
             audit.recordIndependently(actor.attribute(AuditEvent.of(AuditAction.REGISTER_UPLOAD_REJECTED,
                     AuditOutcome.REFUSED).with(DetailKey.REJECT_CODE, e.reason().auditCode())));
@@ -115,6 +119,18 @@ public class RegisterUploads {
                 .with(DetailKey.PREVIEW_ID, id)
                 .with(DetailKey.COUNT, changes.size())));
         return new Preview(id, Preview.WAITING, now, expiresAt, changes);
+    }
+
+    /** Scans the file and returns the scanner's clean copy, which is the only thing that is ever read. */
+    private byte[] scanned(byte[] bytes) {
+        MalwareScan.Outcome outcome = scan.scanNow(bytes, "system-register.xlsx", RegisterSheetReader.XLSX_TYPE);
+        return switch (outcome) {
+            case MalwareScan.Outcome.Clean clean -> clean.content();
+            case MalwareScan.Outcome.Blocked blocked -> throw new RegisterFileException(UploadRejection.MALWARE);
+            case MalwareScan.Outcome.Sanitized sanitized -> throw new RegisterFileException(UploadRejection.SANITIZED);
+            case MalwareScan.Outcome.TimedOut timedOut -> throw new RegisterFileException(UploadRejection.SCAN_TIMEOUT);
+            case MalwareScan.Outcome.Tampered tampered -> throw new RegisterFileException(UploadRejection.SCAN_MISMATCH);
+        };
     }
 
     private static byte[] bytes(long size, InputStreamSource content) {

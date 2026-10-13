@@ -92,9 +92,17 @@ public final class ApiClient {
      * whatever the test says: the application must decide from the bytes.
      */
     public Response postFile(String path, String field, String fileName, String contentType, byte[] content) {
+        return postMultipart(path, Map.of(), field, fileName, contentType, content);
+    }
+
+    /** A multipart POST of text fields and then one file part, as the SPA uploads a Scan Report file. */
+    public Response postMultipart(String path, Map<String, String> fields, String field, String fileName,
+            String contentType, byte[] content) {
         String boundary = "----annualva-" + java.util.UUID.randomUUID();
         String crlf = "\r\n";
         var body = new java.io.ByteArrayOutputStream();
+        fields.forEach((name, value) -> body.writeBytes(("--" + boundary + crlf + "Content-Disposition: form-data; name=\""
+                + name + "\"" + crlf + crlf + value + crlf).getBytes(java.nio.charset.StandardCharsets.UTF_8)));
         body.writeBytes(("--" + boundary + crlf + "Content-Disposition: form-data; name=\"" + field + "\"; filename=\""
                 + fileName + "\"" + crlf + "Content-Type: " + contentType + crlf + crlf)
                 .getBytes(java.nio.charset.StandardCharsets.UTF_8));
@@ -116,7 +124,11 @@ public final class ApiClient {
 
     /** Bootstraps the synchronizer token the way the SPA does. */
     public ApiClient withCsrf() {
-        JsonNode csrf = json(get("/api/csrf"));
+        Response answer = get("/api/csrf");
+        JsonNode csrf = json(answer);
+        if (!csrf.hasNonNull("headerName")) {
+            throw new IllegalStateException("No CSRF token: " + answer.status() + " " + answer.body());
+        }
         this.csrfHeader = csrf.get("headerName").asString();
         this.csrfToken = csrf.get("token").asString();
         return this;
