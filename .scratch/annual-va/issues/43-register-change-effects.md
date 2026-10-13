@@ -12,3 +12,7 @@
 - [ ] Every behaviour above is proven by Seam 1 tests through the HTTP API on a real PostgreSQL, with only the boundary adapters faked; the back-end and front-end gates pass.
 
 ## Comments
+
+### Note from ticket 12 (2026-10-13)
+
+The SMO inbox row's `quarter` comes from the Register's current Quarter, while its due dates come from the stored VA Submission (copied from the Quarter when it was started, ADR 0020). Once the Register can move a System to another Quarter, a Draft would show the new Quarter beside the old dates. This ticket's WILL_MOVE handling should decide which wins (re-date the Draft, or show the stored Quarter) and cover it with a Seam 1 test.
