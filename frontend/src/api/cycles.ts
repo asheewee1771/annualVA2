@@ -47,7 +47,7 @@ const WINDOW_LABELS: Readonly<Record<WindowName, string>> = {
 /** Business dates arrive as plain dates; they are shown as dates and never shifted by the browser's own zone. */
 const DAY = new Intl.DateTimeFormat("en-SG", { dateStyle: "medium", timeZone: "UTC" });
 
-function dayLabel(date: string): string {
+export function dayLabel(date: string): string {
   const parsed = new Date(`${date}T00:00:00Z`);
   return Number.isNaN(parsed.getTime()) ? date : DAY.format(parsed);
 }
