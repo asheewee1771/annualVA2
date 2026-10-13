@@ -30,7 +30,18 @@ public enum AuditAction {
     /** A VA POC applied a Register change preview; the entry holds counts and the preview id only. */
     REGISTER_APPLIED("register-applied", "configuration"),
     /** A System was retired by a Register apply; its history stays. One entry per System, about that System. */
-    REGISTER_SYSTEM_RETIRED("register-system-retired", "configuration");
+    REGISTER_SYSTEM_RETIRED("register-system-retired", "configuration"),
+    /**
+     * An SMO/Tech Lead started the VA Submission for a System (SUCCESS), or was refused because it was already started
+     * or its Quarter is Handled outside the app (REFUSED, with a fixed reason). It is about the System and, on success,
+     * the VA Submission; it holds no text from the request.
+     */
+    SUBMISSION_STARTED("submission-started", "database"),
+    /**
+     * A Cyber Manager or VA POC read one VA Submission (story 84). The System's own SMO/Tech Lead reading it is not
+     * recorded. It is about the System and the VA Submission and holds no detail.
+     */
+    SUBMISSION_VIEWED("submission-viewed", "database");
 
     private final String ecs;
     private final String category;

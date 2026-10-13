@@ -55,23 +55,26 @@ class ArchitectureTest {
                 .layer("cycle").definedBy("sg.annualva.cycle..")
                 .layer("access").definedBy("sg.annualva.access..")
                 .layer("register").definedBy("sg.annualva.register..")
+                .layer("submission").definedBy("sg.annualva.submission..")
                 .layer("dashboard").definedBy("sg.annualva.dashboard..")
                 .layer("adapters").definedBy("sg.annualva.adapters..")
                 // app is the composition root: it may import everything and nothing imports it
                 .whereLayer("app").mayNotBeAccessedByAnyLayer()
-                .whereLayer("web").mayOnlyBeAccessedByLayers("app", "adapters", "access", "audit", "cycle", "register", "dashboard")
+                .whereLayer("web").mayOnlyBeAccessedByLayers("app", "adapters", "access", "audit", "cycle", "register", "submission", "dashboard")
                 .whereLayer("config").mayOnlyBeAccessedByLayers("app", "web", "access", "adapters", "audit", "cycle")
                 .whereLayer("boundary").mayOnlyBeAccessedByLayers("app", "web", "access", "adapters")
-                // the audit log is written by the modules that act (access and the register today)
-                .whereLayer("audit").mayOnlyBeAccessedByLayers("app", "access", "register")
+                // the audit log is written by the modules that act (access, the register and the submissions today)
+                .whereLayer("audit").mayOnlyBeAccessedByLayers("app", "access", "register", "submission")
                 // the domain modules ask access who is acting and whether they may reach a System
-                .whereLayer("access").mayOnlyBeAccessedByLayers("app", "register", "dashboard")
-                // the register is a domain module: only the dashboards read it (the SMO inbox lists its Systems)
-                .whereLayer("register").mayOnlyBeAccessedByLayers("app", "dashboard")
+                .whereLayer("access").mayOnlyBeAccessedByLayers("app", "register", "submission", "dashboard")
+                // the register is a domain module: the submissions start from its Systems and the dashboards list them
+                .whereLayer("register").mayOnlyBeAccessedByLayers("app", "submission", "dashboard")
+                // the submissions sit above the register and the calendar; only the dashboards read them (the inbox shows a Draft)
+                .whereLayer("submission").mayOnlyBeAccessedByLayers("app", "dashboard")
                 // the dashboards are read models over the modules below them; nothing reads them
                 .whereLayer("dashboard").mayOnlyBeAccessedByLayers("app")
-                // the calendar is a leaf below the domain modules (the register dates a System by it, the inbox by its Quarter); nothing it reads reads back
-                .whereLayer("cycle").mayOnlyBeAccessedByLayers("app", "register", "dashboard")
+                // the calendar is a leaf below the domain modules (the register dates a System by it, a submission and the inbox by its Quarter); nothing it reads reads back
+                .whereLayer("cycle").mayOnlyBeAccessedByLayers("app", "register", "submission", "dashboard")
                 // production adapters are wired by Spring type only; no module imports them
                 .whereLayer("adapters").mayNotBeAccessedByAnyLayer()
                 .check(main);

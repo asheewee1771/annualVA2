@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import sg.annualva.access.AccessGuard;
 import sg.annualva.access.Need;
 import sg.annualva.access.SystemScope;
+import sg.annualva.web.ResourceNotFoundException;
 
 /**
  * The Register table (stories 2 and 12): the Systems the caller may see, each with its SMO/Tech Lead, Cyber Manager,
@@ -71,6 +72,20 @@ public class RegisterSystems {
                 .filter(system -> !system.retired() && scope.contains(system.id()))
                 .map(system -> new ActiveSystem(system.id(), system.code(), system.name(), system.quarter()))
                 .toList();
+    }
+
+    /**
+     * One System still in the Register, for a command that addresses it. The access guard answers first (ADR 0013), so a
+     * System the caller may not reach for this need, one that does not exist and one that is retired are all "not found".
+     */
+    @Transactional(readOnly = true)
+    public ActiveSystem active(UUID systemId, Need need) {
+        guard.requireSystem(systemId, need);
+        return store.systems().stream()
+                .filter(system -> !system.retired() && system.id().equals(systemId))
+                .map(system -> new ActiveSystem(system.id(), system.code(), system.name(), system.quarter()))
+                .findFirst()
+                .orElseThrow(ResourceNotFoundException::new);
     }
 
     private static SystemView view(ExistingSystem system, boolean vaPoc, Set<String> signedIn) {

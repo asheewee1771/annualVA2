@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
@@ -12,7 +13,7 @@ import sg.annualva.cycle.CycleCalendar;
 import sg.annualva.cycle.Quarter;
 import sg.annualva.cycle.VaCycle;
 import sg.annualva.register.RegisterSystems;
-import sg.annualva.web.ResourceNotFoundException;
+import sg.annualva.submission.Submissions;
 
 /**
  * The SMO/Tech Lead's inbox (stories 18 and 71): the Systems the caller submits for, in one VA Cycle, each in its
@@ -20,20 +21,23 @@ import sg.annualva.web.ResourceNotFoundException;
  * listed apart, with nothing to do. Which Systems are the caller's is the access guard's answer (ADR 0013), so nobody
  * sees another person's System.
  *
- * <p>No VA Submission exists yet (the next ticket creates them), so every System is Not Started and needs the SMO to
- * start it, even before its Quarter begins. Overdue is a flag added by the Overdue ticket; the inbox does not guess it.
+ * <p>A System with no VA Submission is Not Started and needs the SMO to start it, even before its Quarter begins; its
+ * dates are the Quarter's. One with a VA Submission shows its state, the dates the submission was started with and the
+ * submission's id, so the screen can open it. Overdue is a flag added by the Overdue ticket; the inbox does not guess it.
  */
 @Service
 public class SmoInbox {
 
-    /** How a System in a Quarter is shown; only Not Started exists until the VA Submission does. */
+    /** How a System in a Quarter is shown; the other states arrive with the commands that enter them. */
     public enum State {
-        NOT_STARTED
+        NOT_STARTED,
+        DRAFT
     }
 
     /** What the caller should do next with a System. */
     public enum NextAction {
-        START_SUBMISSION
+        START_SUBMISSION,
+        PREPARE_SUBMISSION
     }
 
     /** The heading a System is listed under on the screen. */
@@ -45,14 +49,16 @@ public class SmoInbox {
 
     /**
      * @param quarter 1 to 4
+     * @param submissionId the VA Submission's id once it is started, otherwise null
      * @param submitDue the last day of the Submission Window (a business date in Asia/Singapore)
      * @param reviewDue the last day of the Review Window
      * @param endorseDue the Quarter's last day
      * @param nextActionDueOn the day the next action is due
      */
     public record Item(
-            UUID id, String systemId, String name, int quarter, State state, LocalDate submitDue, LocalDate reviewDue,
-            LocalDate endorseDue, NextAction nextAction, LocalDate nextActionDueOn, Group group) {}
+            UUID id, String systemId, String name, int quarter, State state, @Nullable UUID submissionId,
+            LocalDate submitDue, LocalDate reviewDue, LocalDate endorseDue, NextAction nextAction,
+            LocalDate nextActionDueOn, Group group) {}
 
     /** A System whose Quarter the manual process still runs: named, with no state, dates or action. */
     public record HandledOutside(UUID id, String systemId, String name, int quarter) {}
@@ -65,10 +71,12 @@ public class SmoInbox {
 
     private final CycleCalendar calendar;
     private final RegisterSystems register;
+    private final Submissions submissions;
 
-    SmoInbox(CycleCalendar calendar, RegisterSystems register) {
+    SmoInbox(CycleCalendar calendar, RegisterSystems register, Submissions submissions) {
         this.calendar = calendar;
         this.register = register;
+        this.submissions = submissions;
     }
 
     /**
@@ -76,31 +84,36 @@ public class SmoInbox {
      *     Cycle); a Cycle the app does not run is not found
      */
     public Inbox inbox(@Nullable Integer requested) {
-        VaCycle cycle = cycleFor(requested);
+        VaCycle cycle = calendar.running(requested);
+        List<RegisterSystems.ActiveSystem> mine = register.active(Need.SUBMIT).stream().sorted(BY_QUARTER_THEN_ID).toList();
+        Map<UUID, Submissions.Summary> started =
+                submissions.inCycle(mine.stream().map(RegisterSystems.ActiveSystem::id).toList(), cycle.year());
         List<Item> systems = new ArrayList<>();
         List<HandledOutside> outside = new ArrayList<>();
-        for (RegisterSystems.ActiveSystem system : register.active(Need.SUBMIT).stream().sorted(BY_QUARTER_THEN_ID).toList()) {
+        for (RegisterSystems.ActiveSystem system : mine) {
             Quarter quarter = cycle.quarters().get(system.quarter() - 1);
             if (quarter.handledOutsideApp()) {
                 outside.add(new HandledOutside(system.id(), system.systemId(), system.name(), system.quarter()));
             } else {
-                systems.add(notStarted(system, quarter));
+                Submissions.Summary submission = started.get(system.id());
+                systems.add(submission == null ? notStarted(system, quarter) : started(system, submission));
             }
         }
         return new Inbox(cycle.year(), List.copyOf(systems), List.copyOf(outside));
     }
 
-    private VaCycle cycleFor(@Nullable Integer requested) {
-        List<VaCycle> running = calendar.cycles();
-        if (requested == null) {
-            return calendar.currentCycle().orElse(running.getFirst());
-        }
-        return running.stream().filter(cycle -> cycle.year() == requested).findFirst().orElseThrow(ResourceNotFoundException::new);
-    }
-
     private static Item notStarted(RegisterSystems.ActiveSystem system, Quarter quarter) {
-        return new Item(system.id(), system.systemId(), system.name(), system.quarter(), State.NOT_STARTED,
+        return new Item(system.id(), system.systemId(), system.name(), system.quarter(), State.NOT_STARTED, null,
                 quarter.submitDue(), quarter.reviewDue(), quarter.endorseDue(), NextAction.START_SUBMISSION,
                 quarter.submitDue(), Group.NEEDS_YOUR_ACTION);
+    }
+
+    /** A Draft needs the SMO to prepare and submit it by the Submission Window's end. */
+    private static Item started(RegisterSystems.ActiveSystem system, Submissions.Summary submission) {
+        return switch (submission.state()) {
+            case DRAFT -> new Item(system.id(), system.systemId(), system.name(), system.quarter(), State.DRAFT,
+                    submission.id(), submission.submitDue(), submission.reviewDue(), submission.endorseDue(),
+                    NextAction.PREPARE_SUBMISSION, submission.submitDue(), Group.NEEDS_YOUR_ACTION);
+        };
     }
 }

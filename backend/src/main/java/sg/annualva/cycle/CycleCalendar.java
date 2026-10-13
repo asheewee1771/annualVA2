@@ -12,6 +12,7 @@ import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import sg.annualva.config.AnnualVaProperties;
+import sg.annualva.web.ResourceNotFoundException;
 
 /**
  * The calendar: every date in it is a business date in {@code Asia/Singapore}, derived from the {@link Clock} bean and
@@ -61,6 +62,18 @@ public class CycleCalendar {
             cycles.add(build(year));
         }
         return cycles;
+    }
+
+    /**
+     * The VA Cycle asked for by year, or when none is asked for the one running today (before the first live Cycle
+     * starts, that Cycle). A year the app does not run is not found.
+     */
+    public VaCycle running(@Nullable Integer requested) {
+        List<VaCycle> running = cycles();
+        if (requested == null) {
+            return currentCycle().orElse(running.getFirst());
+        }
+        return running.stream().filter(cycle -> cycle.year() == requested).findFirst().orElseThrow(ResourceNotFoundException::new);
     }
 
     /** The Cycle whose Quarters today falls in, if the app runs it yet. */

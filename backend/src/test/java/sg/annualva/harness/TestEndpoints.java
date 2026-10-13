@@ -200,10 +200,12 @@ public class TestEndpoints {
             return Map.of("id", id.toString());
         }
 
-        /** Empties the Register, its previews and the grants scoped to a System between tests; the suite shares one database. */
+        /** Empties the Register, its previews, the VA Submissions and the grants scoped to a System between tests; the suite shares one database. */
         @PostMapping("/api/test/register-reset")
         public Map<String, String> resetRegister() {
             transaction.executeWithoutResult(status -> {
+                jdbc.sql("DELETE FROM submission_participation").update();
+                jdbc.sql("DELETE FROM va_submission").update();
                 jdbc.sql("DELETE FROM role_grant WHERE system_id IS NOT NULL").update();
                 jdbc.sql("DELETE FROM register_upload").update();
                 jdbc.sql("DELETE FROM va_system").update();
