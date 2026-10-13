@@ -1,0 +1,668 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review — 13-upload-pipeline</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS (7 checks: 1 PASS, 6 WARN, 0 FAIL)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">build PASS 0/0/0/0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN 0/0/4/5</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN 0/0/4/14</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">semgrep WARN 0/0/0/1</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN 0/0/2/6</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react WARN 0/0/1/6</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN 0/0/3/14</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">13-upload-pipeline (main, uncommitted tree)</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report: ticket 13, Scan Report upload pipeline (second run)</h2>
+          <p class="text-xs text-slate-500 mt-1">
+            Overall: PASS. No check reports a Critical or High finding, and all seven checks ran. Counts are Critical / High / Medium / Low.
+            This report reflects only the second complete run, after the correction passes.
+          </p>
+        </div>
+
+        <div class="rounded border border-slate-200 bg-slate-50 p-4 text-sm space-y-2">
+          <p class="font-semibold">Earlier run</p>
+          <p>
+            The first run of this gate failed on six blockers: I/O inside the poller's transaction; a poison file that was never rejected; a download holding a pooled connection;
+            Sanitized accepted; no client-side pre-validation; and a display name that was cleaned but not allowlisted.
+            Every check file that covers them states that all six are now closed (code-review has the full table with evidence; im8, springboot and thermo-nuclear confirm their own subset).
+            The report below does not reuse any first-run finding.
+          </p>
+        </div>
+
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2">Check</th>
+              <th class="px-4 py-2">Status</th>
+              <th class="px-4 py-2">C / H / M / L</th>
+              <th class="px-4 py-2">Gaps</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">build</td>
+              <td class="px-4 py-2 text-emerald-700 font-semibold">PASS</td>
+              <td class="px-4 py-2">0 / 0 / 0 / 0</td>
+              <td class="px-4 py-2">Back end clean verify: 456 tests, 0 failures, line 96.3 %, branch 88.0 %. Front end check: all six steps pass. Five Info notes.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">thermo-nuclear</td>
+              <td class="px-4 py-2 text-amber-600 font-semibold">WARN</td>
+              <td class="px-4 py-2">0 / 0 / 4 / 5</td>
+              <td class="px-4 py-2">Residual clean-copy deletion on an uncertain commit; reject state stored twice; string-typed submission state; verdict state machine written twice.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">code-review</td>
+              <td class="px-4 py-2 text-amber-600 font-semibold">WARN</td>
+              <td class="px-4 py-2">0 / 0 / 4 / 14</td>
+              <td class="px-4 py-2">All eight acceptance bullets met. Stale ticket 51 checkbox and plan line; duplicated scan logic; ScanPoller size; non-atomic upload checks. Low count is 11 standards-axis plus 3 spec-axis; 4 Info.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">semgrep</td>
+              <td class="px-4 py-2 text-amber-600 font-semibold">WARN</td>
+              <td class="px-4 py-2">0 / 0 / 0 / 1</td>
+              <td class="px-4 py-2">Ran via Docker image (387 rules, 345 targets). Nothing in ticket 13 application code. One Low on the generated report template (no SRI on the Tailwind CDN tag). Twelve other findings are pre-existing, in scope-excluded files.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">im8</td>
+              <td class="px-4 py-2 text-amber-600 font-semibold">WARN</td>
+              <td class="px-4 py-2">0 / 0 / 2 / 6</td>
+              <td class="px-4 py-2">as-12 judged on its merits: all five first-run Highs closed; two Medium residuals. lm-16 and pm-6 are tracked deferrals.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">react</td>
+              <td class="px-4 py-2 text-amber-600 font-semibold">WARN</td>
+              <td class="px-4 py-2">0 / 0 / 1 / 6</td>
+              <td class="px-4 py-2">The "taking longer than usual" clock is per screen, not per file. Small UX and accessibility items.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">springboot</td>
+              <td class="px-4 py-2 text-amber-600 font-semibold">WARN</td>
+              <td class="px-4 py-2">0 / 0 / 3 / 14</td>
+              <td class="px-4 py-2">Swallowed boundary failures not logged; whole files held in the heap by the port contract; no regression tests for the connection-held, job-wiring and parallel-pass behaviour. Five Info.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm">No Critical or High findings in any check. Nothing in ticket 13 blocks the gate.</p>
+          <p class="text-sm">
+            Items worth fixing or recording before ticket 51 builds on these ports (all Medium):
+          </p>
+          <ul class="list-disc pl-6 text-sm space-y-1">
+            <li>Stale statements that could make ticket 51 rebuild what was rejected: <span class="font-mono text-xs">.scratch/annual-va/issues/51-real-adapters-under-dev-mcc.md</span> line 10 still says Sanitized is recorded with the clean hash; <span class="font-mono text-xs">docs/implementation-plan.md</span> line 156 still says <code>scheduler_lock + SKIP LOCKED</code> (code-review M1).</li>
+            <li><span class="font-mono text-xs">ScanPoller.accept</span> deletes the clean copy on any exception from the outcome write, which can destroy a copy the row points at if the commit applied but the acknowledgement was lost (thermo-nuclear M1, springboot L3). Same pattern, safe direction, in <span class="font-mono text-xs">ReportFiles.upload</span> (springboot L2).</li>
+            <li>Boundary failures are swallowed with no log line, so a scanner or store outage is invisible (springboot M1, code-review L4).</li>
+            <li>The port contract passes whole files as <code>byte[]</code> (up to 50 MB each, no cap on the sum); decide the streaming shape before the S3 adapter exists, or record the heap budget (springboot M2).</li>
+            <li>No regression test proves that no pooled connection is held during a store or scanner call, the scheduled job has no test, and two-instance concurrency is simulated only in sequence (springboot M3).</li>
+            <li>Upload checks are three separate database steps; the 20-file cap and the Draft-state rule are not atomic (code-review M4, springboot L1).</li>
+          </ul>
+        </div>
+
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Tracked deferrals (IM8, owned by a later ticket)</h3>
+          <p class="text-xs text-slate-500">
+            Per <span class="font-mono">docs/agents/reviewer-decisions.md</span>, a control that fails only because a later ticket owns it does not block this ticket when the owner is named and the change does not weaken it. The controls stay FAIL as deferrals and are listed here.
+          </p>
+          <table class="w-full text-sm text-left border border-slate-100">
+            <thead>
+              <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+                <th class="px-4 py-2">Control</th>
+                <th class="px-4 py-2">Status</th>
+                <th class="px-4 py-2">Owner</th>
+                <th class="px-4 py-2">Note</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-t border-slate-100">
+                <td class="px-4 py-2 font-mono text-xs">lm-16</td>
+                <td class="px-4 py-2 text-red-700 font-semibold">FAIL (deferred)</td>
+                <td class="px-4 py-2">ticket 52</td>
+                <td class="px-4 py-2">No scan metrics yet. Not weakened by this change.</td>
+              </tr>
+              <tr class="border-t border-slate-100">
+                <td class="px-4 py-2 font-mono text-xs">pm-6</td>
+                <td class="px-4 py-2 text-red-700 font-semibold">FAIL (deferred)</td>
+                <td class="px-4 py-2">ticket 52</td>
+                <td class="px-4 py-2">Committed OpenAPI spec still owed. ADR 0021 documents the endpoints, statuses and reject codes.</td>
+              </tr>
+              <tr class="border-t border-slate-100">
+                <td class="px-4 py-2 font-mono text-xs">as-12 (part)</td>
+                <td class="px-4 py-2 text-red-700 font-semibold">FAIL (deferred)</td>
+                <td class="px-4 py-2">ticket 51</td>
+                <td class="px-4 py-2">Only the production scanner adapter, object store, typed adapter exceptions and quarantine bucket lifecycle expiry. The fail-closed <span class="font-mono text-xs">adapters.pending</span> beans stand in, with no bypass switch, and do not weaken the control. The rest of as-12 is owned by ticket 13 and is judged on its merits (WARN, Medium).</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Judgement noted by the aggregator</h3>
+          <p class="text-sm">
+            The im8 reviewer rated its two as-12 residuals (M-1 extension-only <code>accept</code>, M-2 type sniff after the scan) Medium rather than applying the skill table literally, which would make a risk-2 WARN High.
+            It gave reasons: the server is authoritative, the client check is early feedback, and the stage order is fixed by the ticket, ADR 0021 decision 1 and a human decision. This report accepts the check file's ratings. If the gate owner wants the table applied literally, the overall status becomes FAIL on those two items; the reviewer recommends a one-line fix for M-1 and recording M-2 as a reviewer decision.
+          </p>
+        </div>
+      </div>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2 text-left">Severity</th>
+              <th class="px-4 py-2 text-left">File</th>
+              <th class="px-4 py-2 text-left">Line</th>
+              <th class="px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings (Critical, High, Medium or Low)</td></tr>
+            <tr class="border-t border-slate-100 text-slate-500">
+              <td class="px-4 py-2">Info</td>
+              <td class="px-4 py-2 font-mono text-xs">-</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">Back end <code>./mvnw -B -ntp clean verify</code>: BUILD SUCCESS, 456 tests, 0 failures, 0 errors; ArchUnit 20 tests pass; Flyway at v9; JaCoCo line 96.3 %, branch 88.0 %. Front end: Prettier, <code>tsc -b</code>, vite build, no-raw-html, dependency-cruiser and fallow all pass. Five Info notes (fallow advisory targets, one pre-existing deprecation warning, JVM agent warning, canned test exception log, a partial log sample).</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2 text-left">Severity</th>
+              <th class="px-4 py-2 text-left">File</th>
+              <th class="px-4 py-2 text-left">Line</th>
+              <th class="px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/ScanPoller.java</td>
+              <td class="px-4 py-2">accept</td>
+              <td class="px-4 py-2">M1. <code>accept()</code> deletes the clean copy on any RuntimeException from <code>settle</code>; a lost commit acknowledgement leaves a SCHEMA_OK row whose bytes are gone (downloads 503, nothing repairs it). Unnecessary, since the clean key is the file id. Same family as the closed H1, much narrower.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">ingestion/PipelineStatus.java, V9__report_file.sql</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">M2. Reject state stored twice (eight <code>REJECTED_*</code> statuses plus <code>reject_code</code>) with a CHECK policing the duplication; <code>PipelineStatus.rejected</code> is a runtime <code>valueOf</code> by name concatenation. Suggest one <code>REJECTED</code> status plus the code, while the migration is unreleased.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">submission/Submissions.java, SubmissionStore.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">M3. Submission state handled as strings (<code>TAKES_FILES</code>, <code>locate</code>, <code>Located</code>) because <code>SubmissionState</code> lacks RETURNED_FOR_REWORK; a second read path in the canonical module. Add the enum constant now or isolate the string.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">scan/MalwareScan.java, ingestion/ScanPoller.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">M4. Two implementations of the verdict state machine (synchronous Register path, asynchronous poller). Only <code>fetchUnchanged</code>, <code>MAX_ATTEMPTS</code> and <code>sha256</code> are shared; <code>attempt()</code> returns null as a control signal.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">ingestion/ScanPoller.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L1. A stale ERROR ticket is retried every poll, not once per attempt timeout, so the ADR 0021 decision 4 pacing claim does not hold for that case.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">ingestion/ReportFileStore.java, TypeCheck.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L2. <code>Settlement</code> built with positional nulls at five call sites; <code>TypeCheck.Result</code> wants a sealed Accepted/Refused shape.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/scanReports.ts</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L3. SCAN_CLEAN and TYPE_OK are stage-history values only but are carried as live statuses and labels in the front-end contract.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/api/reportFiles.ts, ScanReportCard.tsx</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L4. Upload limits and extension allowlist mirrored in the browser, and already different from the server (largest per-report limit); first thing to drift when ticket 18 adds evidence types.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">parser/, adapters/pending/, register/RegisterUploads.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L5. Smaller structural notes: one-class <code>parser</code> module; <code>Unwired*</code> beans lack <code>@ConditionalOnMissingBean</code>; a quarantine store failure on the Register path is reported as a scan timeout; inline fully qualified names and import order; <code>report_file_leftover_idx</code> does not match the sweep order; the 20-file check is check-then-insert.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2 text-left">Severity</th>
+              <th class="px-4 py-2 text-left">File</th>
+              <th class="px-4 py-2 text-left">Line</th>
+              <th class="px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">.scratch/annual-va/issues/51-real-adapters-under-dev-mcc.md; docs/implementation-plan.md</td>
+              <td class="px-4 py-2">10; 156</td>
+              <td class="px-4 py-2">M1. Two stale statements: the ticket 51 acceptance checkbox still says Sanitized is recorded with the clean hash (reintroduces the first run's High); the plan still describes <code>ScanPoller</code> as <code>scheduler_lock + SKIP LOCKED</code>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">scan/MalwareScan.java, ingestion/ScanPoller.java, register/UploadRejection.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">M2. Duplicated scan state machine and reject vocabulary; a five-place change per new reject code. Judgement call, covered by tests, carried over from run 1.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">ingestion/ScanPoller.java, ReportFileStore.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">M3. <code>ScanPoller</code> is 317 lines doing four jobs and builds <code>Settlement</code> with positional nulls; <code>Row</code> is a 17-field record with six nullable components.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">ingestion/ReportFiles.java</td>
+              <td class="px-4 py-2">upload</td>
+              <td class="px-4 py-2">M4. The upload is three separate database steps (state, count, insert), so the 20-file cap and the Draft-state check are not atomic. Ticket 25 must re-check the state inside <code>keep</code>'s transaction. A crash between quarantine and insert leaves a blob left to ticket 51's bucket expiry.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">ingestion/ScanPoller.java</td>
+              <td class="px-4 py-2">settle</td>
+              <td class="px-4 py-2">L1. Logs the attempt count that was read, not the recorded one (says 2 where 3 are recorded after the last failed submission).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">ingestion/ScanPoller.java</td>
+              <td class="px-4 py-2">advance</td>
+              <td class="px-4 py-2">L2. A scanner ERROR verdict is resubmitted on the next pass with no pacing; a scanner that keeps answering ERROR rejects every file in about 30 s. Pace it or state it in ADR 0021.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">ingestion/ScanPoller.java</td>
+              <td class="px-4 py-2">handled</td>
+              <td class="px-4 py-2">L3. Catches RuntimeException only; an Error (such as OutOfMemoryError on a 50 MB read) aborts the pass and repeats each pass for that file. Residual of the first run's poison-file blocker.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">ingestion/ScanPoller.java, scan/MalwareScan.java</td>
+              <td class="px-4 py-2">verdictOf</td>
+              <td class="px-4 py-2">L4. A scanner or store outage is swallowed with no WARN line; invisible until files are rejected.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">ingestion/ReportFileController.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L5. Rejected files do not count against the 20-file cap and the list is unpaged; no total or rate cap (ticket 49 retention disposes later).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">ingestion/ReportFiles.java</td>
+              <td class="px-4 py-2">content</td>
+              <td class="px-4 py-2">L6. <code>FILE_DOWNLOADED</code> is written before the bytes are read, so a 503 leaves an entry for a download that did not happen; say in the entry that it records the grant.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">submission/Submissions.java, SubmissionStore.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L7. Hard-coded <code>"RETURNED_FOR_REWORK"</code> and string-typed <code>Located</code> until ticket 30; add a pointer on ticket 30.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">ingestion/TypeCheck.java</td>
+              <td class="px-4 py-2">check</td>
+              <td class="px-4 py-2">L8. The API accepts EVIDENCE uploads, scans them, then always rejects as REJECTED_TYPE; consider a 400 until ticket 18.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">README.md; frontend/src/hooks/usePolling.ts</td>
+              <td class="px-4 py-2">168</td>
+              <td class="px-4 py-2">L9. README still says "three empty Scan Report cards"; the usePolling comment says it asks at once on return but waits one interval.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">ingestion/ScanPoller.java, app/SecurityConfig.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L10. Unused <code>now</code> parameter on <code>dropLosersCopy</code>; import order; inline fully qualified names; one line over 120 characters.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">adapters/pending/UnwiredFileStore.java, UnwiredMalwareScanner.java, ingestion/ScanPollerJob.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L11. Coverage: the fail-closed beans have 1 of 4 lines covered and <code>ScanPollerJob</code> 0 of 5; nothing pins the fail-closed behaviour. Overall gate is far above 80 %.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">.scratch/annual-va/issues/13-upload-pipeline.md</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">S1 (spec). Ticket 13's checkboxes are still unticked and it has no "Implemented" note; record the decisions when committing.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">.scratch/annual-va/issues/49 (retention)</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">S2 (spec). "Malware is never retained" is recorded only in ADR 0021 decision 6; add a note on ticket 49.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">docs/agents/reviewer-decisions.md</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">S3 (spec). The audited-for-non-owners rule for status and list reads is recorded only in reviewer-decisions.md; ticket 13's acceptance text could cite it.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">Four Info items (I1 to I4): every non-test environment fails closed until ticket 51; ticket 51 needs adapter timeouts and must delete the <code>Unwired*</code> package; the Register scan can hold a request thread about 45 s; whole files are held in memory. All six first-run blockers are confirmed closed with evidence in the check file.</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2 text-left">Severity</th>
+              <th class="px-4 py-2 text-left">File</th>
+              <th class="px-4 py-2 text-left">Line</th>
+              <th class="px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">artifacts/code-reviewer/13-upload-pipeline-compliance.html</td>
+              <td class="px-4 py-2">6</td>
+              <td class="px-4 py-2"><code>html.security.audit.missing-integrity</code>: the report template loads <code>cdn.tailwindcss.com</code> with no SRI attribute. Not application runtime; the Play CDN is dynamic so no hash can be pinned. Accepted template trade-off (this file is overwritten by this run's report, which uses the same template).</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">
+          Ran from the official Docker image because the Semgrep CLI is not installed (per reviewer-decisions.md): 387 rules (<code>p/security-audit</code>, <code>p/default</code>), 345 targets, 12 findings. Zero findings in ticket 13 application code (no XXE, path traversal, injection, secret or deserialization rule fired on <code>SecureXml</code> or the upload and download controllers).
+          Eleven pre-existing Low findings (the same SRI line in earlier reports 03 to 12) and one in <span class="font-mono">scripts/mock-mockpass-assertions.js:11</span> (likely false positive, unmodified dev tooling) are out of scope. Raw output was kept in the run's temp directory.
+        </p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2 text-left">Severity</th>
+              <th class="px-4 py-2 text-left">File</th>
+              <th class="px-4 py-2 text-left">Line</th>
+              <th class="px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ScanReportCard.tsx</td>
+              <td class="px-4 py-2">54, 158</td>
+              <td class="px-4 py-2">M-1 (as-12, front end). <code>accept=".xml,.json"</code> is extension-only and <code>refusalFor</code> does not check <code>file.type</code>. Early feedback only; the server decides from bytes. One-line fix.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">ingestion/TypeCheck.java; register/RegisterSheetReader.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">M-2 (as-12, back end). The type and magic-byte sniff run after the scan, not before quarantine. The order is fixed by the ticket and ADR 0021 decision 1 and proven by a test; nothing reads an unscanned file. Recommend recording as a reviewer decision.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/.../adapters/pending/*; ticket 51</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L-1 (as-12, tracked deferral to ticket 51). Production scanner, object store, typed adapter exceptions and bucket lifecycle expiry not built; the unwired beans fail closed. Also a failed discard on the Register path leaves an untracked blob. Suggest listing as-12 beside lm-16 and pm-6 in reviewer-decisions.md.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/hooks/usePolling.ts</td>
+              <td class="px-4 py-2">5</td>
+              <td class="px-4 py-2">L-2. The slow notice appears after 2 minutes, not about 30 s; the timer keeps running while the tab is hidden.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">ingestion/ReportFiles.java</td>
+              <td class="px-4 py-2">224</td>
+              <td class="px-4 py-2">L-3. The display-name allowlist sanitises rather than rejects and is wider than the standard's regex (dots, parentheses, Unicode letters); no client mirror. Equally safe here; the name never forms a path.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">ingestion/ReportFiles.java:141-160</td>
+              <td class="px-4 py-2">141</td>
+              <td class="px-4 py-2">L-4 (lm-4). The download is audited before the bytes are read; a 404-masked ownership refusal writes no <code>FILE_*</code> entry (follows ADR 0013). Manual check that this is what the audit requirement intends.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">ingestion/ScanPoller.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L-5. Minor robustness: a failed attempt-record write resubmits the file; a persistent database failure keeps one file in flight; multi-instance safety is by guarded updates (ADR 0021); the encrypted-PDF check is owed by ticket 18.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">ingestion/ReportFileController.java, ReportFiles.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L-6 (availability). Whole file in memory (up to 50 MB) and no per-user volume or rate limit on rejected uploads; SMO-only, bounded by the 10-file scan cap.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">
+          Controls reviewed: as-12 WARN; as-1, as-2, as-3, as-7/ac-1, as-8, as-13, as-14, lm-15, lm-19, dp-8 PASS; lm-4 WARN (Low); lm-16 and pm-6 FAIL as tracked deferrals (above); the rest unchanged or N/A. All five first-run IM8 Highs (poison file, I/O in transaction, Sanitized accepted, no client pre-validation, display name) are closed on the current code.
+        </p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2 text-left">Severity</th>
+              <th class="px-4 py-2 text-left">File</th>
+              <th class="px-4 py-2 text-left">Line</th>
+              <th class="px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/hooks/usePolling.ts</td>
+              <td class="px-4 py-2">29-36</td>
+              <td class="px-4 py-2">M1. The "taking longer than usual" clock is per screen, not per file: it can show for a freshly uploaded file, and it keeps counting while the tab is hidden. A false positive about a fact. Restart it when the set of in-progress files changes and on return from hidden.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ScanReportCard.tsx</td>
+              <td class="px-4 py-2">135-148</td>
+              <td class="px-4 py-2">L1. Earlier files of a multi-file upload show no status until the whole batch is sent (<code>onUploaded()</code> runs once in <code>finally</code>).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ScanReportCard.tsx</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L2. The native file input and <code>chosen</code> can disagree after a partial failure or a refused selection.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/hooks/usePolling.ts</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L3. No back-off on a persistent error; retries every 3 s while a file shows in progress and the tab is visible.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/hooks/usePolling.ts</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L4. The comment overstates "asks at once when the person comes back"; it arms a new 3 s timer instead of calling <code>reload</code>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ScanReportCard.tsx</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L5. Small files show as "0.0 MB"; <code>1024 * 1024</code> duplicates <code>MEGABYTE</code> in <code>api/reportFiles.ts</code>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ScanReportsSection.tsx</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L6. <code>aria-live</code> on a list that is swapped in, so the first file's appearance is not reliably announced.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">All first-run React findings (polling stopping after one failure, re-sent files on retry, unchecked cast, stale files across submissions, non-component exports, live-region semantics) are confirmed closed.</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2 text-left">Severity</th>
+              <th class="px-4 py-2 text-left">File</th>
+              <th class="px-4 py-2 text-left">Line</th>
+              <th class="px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">ingestion/ScanPoller.java, scan/MalwareScan.java, ingestion/ReportFiles.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">M1. Boundary failures are caught and turned into a retry or a 503 with no log line; a scanner or object-store outage is invisible to operators. Log the exception class only, at WARN, once per pass.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">boundary/FileStore.java, boundary/MalwareScanner.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">M2. The port contract uses <code>byte[]</code> for up to 50 MB files; with virtual threads and no cap on the sum, a few concurrent transfers can exhaust the heap. Decide the streaming shape before ticket 51, or record the heap budget in ADR 0021.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/*; ScanPollerJob</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">M3. No regression test for "no pooled connection held during a store or scanner call" (putting <code>@Transactional</code> back on <code>content()</code> would still pass); no test builds <code>ScanPollerJob</code>; two-instance concurrency is only simulated in sequence.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">ingestion/ReportFiles.java</td>
+              <td class="px-4 py-2">upload</td>
+              <td class="px-4 py-2">L1. Check-then-act across state, cap and insert; re-read state with FOR SHARE and recount inside <code>keep</code>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">ingestion/ReportFiles.java</td>
+              <td class="px-4 py-2">upload</td>
+              <td class="px-4 py-2">L2. <code>view(id)</code> sits inside the try that discards the blob; a post-commit read failure leaves a row with no bytes. Move it out.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">ingestion/ScanPoller.java</td>
+              <td class="px-4 py-2">accept</td>
+              <td class="px-4 py-2">L3. A lost commit acknowledgement leaves SCHEMA_OK with no clean bytes; re-read and discard only if the row does not hold <code>cleanKey</code> (same as thermo-nuclear M1).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">docs/adr/0021-*.md</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L4. The ADR names the quarantine bucket's lifecycle expiry for a clean copy a lost race left behind; that copy is in the clean zone. Add an orphan reconciliation to ticket 51 or correct the ADR.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">scan/MalwareScan.java, scan/CleanFiles.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L5. Discard-failure WARN lines carry no file id or error class; up to 200 per sweep.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">ingestion/ScanPoller.java</td>
+              <td class="px-4 py-2">handled</td>
+              <td class="px-4 py-2">L6. One ERROR line per failing file per pass, every 10 s; use WARN first, or log once per pass with a count.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">ingestion/ScanPoller.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L7. <code>transaction.execute(...) == Boolean.TRUE</code> four times; use <code>Boolean.TRUE.equals(...)</code>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V9__report_file.sql</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L8. No CHECK that a SCAN_SUBMITTED row has <code>scan_ticket</code> and <code>scan_submitted_at</code>; a damaged row would throw in <code>expired()</code> every pass and hold a scan slot.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">ingestion/ReportFileStore.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L9. Multi-statement store methods (<code>insert</code>, <code>attemptStarted</code>, <code>settle</code>) do not insist on a transaction; use MANDATORY like <code>AuditLog.record</code>, or add an ArchUnit rule.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">ingestion/ReportFiles.java</td>
+              <td class="px-4 py-2">list</td>
+              <td class="px-4 py-2">L10. Unbounded reads and abuse surface: rejected files are uncapped, <code>list</code> is unpaged, and the scan queue is global FIFO so one System can delay others.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">ingestion/ReportFileController.java</td>
+              <td class="px-4 py-2">upload</td>
+              <td class="px-4 py-2">L11. An IOException from <code>file.getBytes()</code> (temp directory full) is answered as 400 <code>file-unreadable</code> and not logged; it is a server fault.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">scan/ScanProperties.java, parser/xml/SecureXml.java, ingestion/ReportFiles.java and others</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L12. Small items: unused <code>pollInterval</code> with its default in two places; no lower bound on durations; <code>SecureXml</code> uses <code>XMLInputFactory.newFactory()</code> (use <code>newDefaultFactory()</code>); JSON mappers built outside <code>parser</code>; <code>TAKES_FILES</code> string; <code>ReportFiles</code> has ten collaborators; GET mappings declare no <code>produces</code>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">register/RegisterUploads.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L13. The Register upload answers 503 <code>scan-timeout</code> in every deployed profile until ticket 51 (intentional, fail closed); a quarantine write failure should answer <code>storage-unavailable</code>; a request can park up to about 45 s.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">ingestion/ReportFiles.java</td>
+              <td class="px-4 py-2">content</td>
+              <td class="px-4 py-2">L14. A download is audited as SUCCESS before the bytes are read; if the store then fails the trail is not exact. Record a failed outcome with <code>recordIndependently</code> if it must be.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">Five Info items: Spring Batch correctly not used; no per-pass time budget or port-call timeout (ticket 51 adapters need connect and read timeouts); no Micrometer meters; the Seam 1 test convention is followed; pre-existing items (no API version segment, no <code>requiresChannel</code>, session cookie SameSite lax). The check reviewed code and tests by reading and did not itself run the build; the build check ran it (PASS).</p>
+      </details>
+    </main>
+  </body>
+</html>
