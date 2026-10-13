@@ -16,3 +16,10 @@
 ### Note from ticket 08 (2026-10-06): scanner adapter also serves the Register upload
 
 The SFS scanner adapter built here is also what ticket 13 will put in front of the System Register workbook upload (see the note on ticket 13). Nothing extra is needed in the adapter; check that the platform-tagged suite scans a small `.xlsx` as well as a report.
+
+### Note from ticket 13 (2026-10-13): replace the fail-closed stand-ins and map Sanitized
+
+- Ticket 13 added the `FileStore` and `MalwareScanner` ports (`boundary`) and fail-closed stand-ins, `adapters.pending.UnwiredFileStore` and `UnwiredMalwareScanner`, so the application starts under `dev-mcc` and in production before the real adapters exist. This ticket must **remove or replace** them: with both present, a real adapter and a stand-in are two beans of one type (`NoUniqueBeanDefinitionException`). Delete the `adapters.pending` package when the S3 and SFS adapters land.
+- The scanner's **Sanitized** verdict must map to `MalwareScanner.Verdict.CLEAN_SANITIZED`: the application rejects such a file (Scan Report and Register workbook) and never fetches the altered copy (docs/agents/reviewer-decisions.md, ADR 0021 decision 5). `fetchClean` is called only for `CLEAN_UNCHANGED`, and its bytes must be the uploaded ones.
+- Adapters should throw `BoundaryFailureException`, but any runtime exception from a port call is treated as a failed attempt, so none can leave a file stuck.
+- The quarantine bucket should also carry a lifecycle expiry as a second line behind the application's own delete-after-commit (ADR 0021 decision 6); the clean copy of a Scan Report file is keyed by the file's own id.
