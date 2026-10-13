@@ -6,44 +6,9 @@ import { ClassifiedField } from "../../components/ClassifiedField.tsx";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { useResource } from "../../hooks/useResource.ts";
 import { SMO_AREA_PATH } from "./paths.ts";
+import { ScanReportsSection } from "./ScanReportsSection.tsx";
 
 const STATE_LABELS: Readonly<Record<SubmissionState, string>> = { DRAFT: "Draft" };
-
-interface ScanReportCard {
-  type: string;
-  title: string;
-  note: string;
-}
-
-/** The three Scan Reports every VA Submission holds (CONTEXT.md); Secure Configuration is always required. */
-const SCAN_REPORTS: readonly ScanReportCard[] = [
-  {
-    type: "dependency-check",
-    title: "OWASP Dependency-Check",
-    note: "Required, unless you mark it not applicable with a justification the Cyber Manager confirms.",
-  },
-  {
-    type: "secure-configuration",
-    title: "Secure Configuration",
-    note: "Always required: a SCAP ARF or XCCDF result, or a Nessus export.",
-  },
-  {
-    type: "burp-suite",
-    title: "Burp Suite",
-    note: "Required, unless you mark it not applicable with a justification the Cyber Manager confirms.",
-  },
-];
-
-/** One Scan Report with nothing uploaded yet: uploading and reading Findings arrive with their own tickets. */
-function EmptyScanReportCard({ report }: { report: ScanReportCard }) {
-  return (
-    <section className="card" aria-labelledby={`report-${report.type}`}>
-      <h3 id={`report-${report.type}`}>{report.title}</h3>
-      <p className="muted">{report.note}</p>
-      <p>No files uploaded yet.</p>
-    </section>
-  );
-}
 
 /** The Declaration stays off until every Finding has a proposed status; there are no Findings to propose on yet. */
 function DeclarationSection({ classification }: { classification: string }) {
@@ -67,8 +32,8 @@ function DeclarationSection({ classification }: { classification: string }) {
 }
 
 /**
- * Where the SMO/Tech Lead prepares a VA Submission (story 19): the three Scan Report cards, empty until files can be
- * uploaded, and the Declaration, disabled until there is something to declare. The state and the dates are the server's.
+ * Where the SMO/Tech Lead prepares a VA Submission (stories 19, 20 and 24): the three Scan Report cards with their
+ * files and each file's pipeline status (asked for again while a file is still being checked), and the Declaration, disabled until there is something to declare. The state and the dates are the server's.
  */
 export function SubmissionPrepareScreen({
   submissionId,
@@ -110,9 +75,7 @@ export function SubmissionPrepareScreen({
       </div>
       {data ? (
         <>
-          {SCAN_REPORTS.map((report) => (
-            <EmptyScanReportCard key={report.type} report={report} />
-          ))}
+          <ScanReportsSection submissionId={submissionId} classification={classification} />
           <DeclarationSection classification={classification} />
         </>
       ) : null}
