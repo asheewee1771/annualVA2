@@ -1,0 +1,514 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review — 14-parser-dependency-check</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">build PASS 0/0/0/0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN 0/0/9/5</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN 0/0/2/4</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">semgrep PASS 0/0/0/0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN 0/0/2/3</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">react PASS 0/0/0/2</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN 0/0/3/9</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">main (ticket 14-parser-dependency-check)</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report</h2>
+          <p class="text-xs text-slate-500 mt-1">Ticket 14, Dependency-Check parser (XML and JSON), uncommitted changes. Overall: PASS. No Critical or High finding is owned by ticket 14 and open. Seven of seven checks ran.</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2">Check</th>
+              <th class="px-4 py-2">Status</th>
+              <th class="px-4 py-2">C / H / M / L</th>
+              <th class="px-4 py-2">Summary</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 font-medium">build</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+              <td class="px-4 py-2">0 / 0 / 0 / 0</td>
+              <td class="px-4 py-2">Back end verify: 488 tests, 0 failures, coverage gate met (line 96.0 %, branch 86.9 %). Front end `npm run check` exit 0. Two Info notes.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">thermo-nuclear</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2">0 / 0 / 9 / 5</td>
+              <td class="px-4 py-2">Structural debt: triple-stored Finding identity, denormalised severity, switch-heavy XML parser, repeated JSON walk, repeated schema pass, parallel records, size cap reported as schema failure, nullable parser in `ReportFormat`, `ReportType` placement.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">code-review</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2">0 / 0 / 2 / 4</td>
+              <td class="px-4 py-2">All five acceptance criteria met by reading. Unconfirmed Findings cap with a misleading reject reason; one odd name rejects a whole report and only hand-written samples were tried.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">semgrep</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+              <td class="px-4 py-2">0 / 0 / 0 / 0</td>
+              <td class="px-4 py-2">328 rules on 31 targets, 0 findings (Docker image). Test sources not scanned. A clean run is not proof the XML parser is XXE-safe; the hardening is verified by the other reviews.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">im8</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2">0 / 0 / 2 / 3</td>
+              <td class="px-4 py-2">No Critical or High owned by ticket 14. as-1 per-file caps only (Medium). as-12 and lm-16 FAIL but are tracked deferrals (tickets 51 and 52); pm-6 OpenAPI entry is a Medium tracked deferral (ticket 52).</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">react</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+              <td class="px-4 py-2">0 / 0 / 0 / 2</td>
+              <td class="px-4 py-2">Trivial change (new `PARSED` status, label, `isAccepted`). Two informational Lows.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">springboot</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2">0 / 0 / 3 / 9</td>
+              <td class="px-4 py-2">Seven skills run. Medium: poison-pill retry loop, brittle allocation test, unbounded XML leaf text.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-700">None. No check reports a Critical or High finding that ticket 14 owns.</p>
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide pt-2">Tracked deferrals (IM8, do not block ticket 14)</h3>
+          <p class="text-xs text-slate-500">Per <span class="font-mono">docs/agents/reviewer-decisions.md</span>: a control that fails only because a later ticket owns it does not block the current ticket when the finding names the owning ticket and the change does not weaken it. These stay FAIL as tracked deferrals.</p>
+          <table class="w-full text-sm text-left border border-slate-100">
+            <thead>
+              <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+                <th class="px-4 py-2">Control</th>
+                <th class="px-4 py-2">Status</th>
+                <th class="px-4 py-2">Owning ticket</th>
+                <th class="px-4 py-2">Why it is not weakened</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr>
+                <td class="px-4 py-2">as-12 Malware scanning (production scanner adapter and file store)</td>
+                <td class="px-4 py-2 text-red-700 font-semibold">FAIL (deferred)</td>
+                <td class="px-4 py-2">Ticket 51</td>
+                <td class="px-4 py-2">The parse still runs only after the scanner verdict, type check and schema check. Ticket 51's gate must show as-12 passing.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2">lm-16 Key signals (parse outcome, duration, rejection meters)</td>
+                <td class="px-4 py-2 text-red-700 font-semibold">FAIL (deferred)</td>
+                <td class="px-4 py-2">Ticket 52</td>
+                <td class="px-4 py-2">No meter existed before; none removed.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2">pm-6 System documentation (OpenAPI entries for the two new endpoints)</td>
+                <td class="px-4 py-2 text-amber-600">WARN (deferred, Medium)</td>
+                <td class="px-4 py-2">Ticket 52</td>
+                <td class="px-4 py-2">ADR 0022 and the V10 header document the module; the committed OpenAPI file is ticket 52.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS 0/0/0/0</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2 text-left">Severity</th>
+              <th class="px-4 py-2 text-left">File</th>
+              <th class="px-4 py-2 text-left">Line</th>
+              <th class="px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Info</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/parser</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">Package branch coverage is 78 % in isolation (11 of 50 branches missed). The gate is project-wide and passes. Optional per-package floor.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Info</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/adapters/oidc/MccHttp.java</td>
+              <td class="px-4 py-2">51</td>
+              <td class="px-4 py-2">Pre-existing deprecation warning outside this change set.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">Gates run: <span class="font-mono">./mvnw -B -ntp clean verify</span> (BUILD SUCCESS, 488 tests, JaCoCo met; line 96.0 %, branch 86.9 %) and <span class="font-mono">npm run check</span> (Prettier, tsc -b, vite build, no raw HTML, dependency-cruiser, fallow dead-code and health, all pass).</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN 0/0/9/5</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2 text-left">Severity</th>
+              <th class="px-4 py-2 text-left">File</th>
+              <th class="px-4 py-2 text-left">Line</th>
+              <th class="px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/Findings.java</td>
+              <td class="px-4 py-2">90</td>
+              <td class="px-4 py-2">M1: Finding identity is stored and carried three to four times (identity_key, identifier, package_or_rule, identity_hash); hand-rolled sha256, `Keyed` and `Placed` records exist only to attach the hash. Key on the two columns or use a generated hash column.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingStore.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">M2: derived severity is stored and kept in step by a CASE over a magic SQL array repeated three times; use a numeric rank. `Row` nearly duplicates `FindingView`.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/parser/dependencycheck/DependencyCheckXmlParser.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">M3: 100-line switch with unreachable null guards and a parallel mutable data model.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/parser/dependencycheck/DependencyCheckJsonParser.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">M4: the same object walk repeated six times; Rating flattened into four positional nullables with a boolean-flag method.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/TypeCheck.java, SchemaCheck.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">M5: each file is walked about four times; the same shape rule lives in three places and can drift; the XML depth guard that the parser depends on lives only in SchemaCheck.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/FileChecks.java, ReportFileStore.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">M6: `Outcome` and `Settlement` are parallel records; `Settlement` is a seven-argument nullable telescope.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/parser/ParsedReport.java, parser/dependencycheck/*</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">M7: a size cap is reported as REJECTED_SCHEMA (misleading); both parsers swallow RuntimeException, so a parser defect becomes a silent rejection.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/ReportFormat.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">M8: nullable parser constants and a concrete-parser dependency in the enum.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/ReportType.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">M9: ReportType moved into a data module to satisfy layering; `FindingStore.SOURCES` joins ingestion's `report_file` while ingestion calls Findings (circular data dependency).</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/parser/dependencycheck/</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L1: naming collisions (`DependencyCheckFindings`, `Findings`, `ParsedReport.Finding`, two `Vulnerability` types).</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/parser/dependencycheck/DependencyCheckFindings.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L2: dead or over-built branches (`orElse(HIGH)` on a non-empty list, multi-path date parsing, three JsonMapper constants, null projectInfo rejected).</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V10__finding.sql</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L3: re-uploading the same export doubles occurrence counts; deferred to ticket 21 (record in its acceptance criteria).</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ScanReportCard.tsx</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L4: `isAccepted` copies the server's `viewable()` rule; carry a flag or one shared set.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L5: parser and finding tests live in the ingestion test package.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN 0/0/2/4</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2 text-left">Severity</th>
+              <th class="px-4 py-2 text-left">File</th>
+              <th class="px-4 py-2 text-left">Line</th>
+              <th class="px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/parser/ParsedReport.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">Spec 1: the 20,000 Findings and 50,000 occurrence caps are an unconfirmed new limit (ADR 0022 item 9 "a human confirms" while the ADR status reads accepted), and a report over the cap is rejected as REJECTED_SCHEMA with a misleading message. Needs a human decision.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/parser/dependencycheck/DependencyCheckFindings.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">Spec 2: one odd identifier, unnamed dependency or over-long field rejects the whole report; the parser has met only hand-written samples. Treat real-scan regeneration (ticket 58) as a parser gate.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/DependencyCheckLimitsTest.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">3: the allocation-based test sums allocated bytes over every JVM thread against a 300 MB bound; environment-sensitive.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/parser/dependencycheck/DependencyCheckFindings.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">4: a report date with no offset is read as UTC, not Asia/Singapore.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V10__finding.sql</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">5: `finding_occurrence.report_file_id` references `report_file` with no ON DELETE action; tickets 21 and retention must remove occurrences first. Note it on those tickets.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/Findings.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">6: smell baseline (data clumps, duplicated code, primitive obsession in the identity key).</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">All five ticket acceptance criteria were judged met by reading. This check did not run the gates; the build check did.</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS 0/0/0/0</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2 text-left">Severity</th>
+              <th class="px-4 py-2 text-left">File</th>
+              <th class="px-4 py-2 text-left">Line</th>
+              <th class="px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">Ran from the official Docker image with p/security-audit and p/default (328 rules, 31 targets, 0 findings). Test sources and sample fixtures were not scanned. A clean run is not proof the XML parser is safe against XXE and entity expansion; a human should confirm the hardened factory (the im8 and springboot reviews verified `SecureXml`).</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN 0/0/2/3</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2 text-left">Severity</th>
+              <th class="px-4 py-2 text-left">File</th>
+              <th class="px-4 py-2 text-left">Line</th>
+              <th class="px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingStore.java, ingestion/ReportFiles.java</td>
+              <td class="px-4 py-2">45</td>
+              <td class="px-4 py-2">F1 (as-1): caps are per file; nothing bounds Findings per VA Submission (up to 400,000 Findings and 1,000,000 occurrences across 20 files); the list sorts the whole submission with no supporting index and `page` has no upper bound. Choose an aggregate cap or an index plus keyset paging; record in ADR 0022.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">docs/ (committed OpenAPI file)</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">pm-6: the two new endpoints have no OpenAPI entry. Tracked deferral to ticket 52.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/parser/dependencycheck/DependencyCheckJsonParser.java, DependencyCheckXmlParser.java</td>
+              <td class="px-4 py-2">24</td>
+              <td class="px-4 py-2">F2 (as-1): kept text values are read whole with no length limit before cleaning; no explicit `StreamReadConstraints`.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/ScanPoller.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">F3: a settlement that keeps failing re-reads and re-parses the file each pass; tracked to tickets 51 and 52.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/web/ApiExceptionHandler.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">F4 (lm-4): a 404 on a content-bearing read is not audited (inherited, deliberate 404 parity per ADR 0013); decision for the human reviewer.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-red-700 font-semibold">FAIL (tracked deferral)</td>
+              <td class="px-4 py-2 font-mono text-xs">as-12 production scanner adapter and file store</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">Owned by ticket 51. Not weakened: the parse runs only after the clean verdict, type check and schema check.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-red-700 font-semibold">FAIL (tracked deferral)</td>
+              <td class="px-4 py-2 font-mono text-xs">lm-16 meters</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">Owned by ticket 52. Not weakened: no meter existed before.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">Manual items: F5 (human to confirm the 20,000 and 50,000 caps and measure heap at maximum key length); render Finding fields as text only when ticket 19 builds the screen; give the Auditor browse (story 83) the same audit and scope checks.</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS 0/0/0/2</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2 text-left">Severity</th>
+              <th class="px-4 py-2 text-left">File</th>
+              <th class="px-4 py-2 text-left">Line</th>
+              <th class="px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/api/reportFiles.ts</td>
+              <td class="px-4 py-2">9</td>
+              <td class="px-4 py-2">Doc comment on `PipelineStatus` is 130 characters, over the 120 print width (Prettier does not reflow comments).</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/api/reportFiles.ts</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">Labels "Accepted" (SCHEMA_OK) and "Accepted, findings read" (PARSED) differ; a product wording call.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN 0/0/3/9</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2 text-left">Severity</th>
+              <th class="px-4 py-2 text-left">File</th>
+              <th class="px-4 py-2 text-left">Line</th>
+              <th class="px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/ScanPoller.java</td>
+              <td class="px-4 py-2">155-196</td>
+              <td class="px-4 py-2">M-1: a settlement that keeps failing is retried every pass (10 s) with up to 25 MB reprocessed and an ERROR line each time; the attempt counter is untouched. Accepted in ADR 0022 but the main resilience gap; pace or count failed settlements.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/DependencyCheckLimitsTest.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">M-2: the allocation-based heap test sums all JVM threads with about 130 MB headroom; brittle and measures total allocation rather than the parser. Measure on the working thread; add an XML twin.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/parser/dependencycheck/DependencyCheckXmlParser.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">M-3: XML leaf text is read whole by `getElementText()` and copied several times before any length check (about 100 to 200 MB transient for a 24 MB element); no equivalent of Jackson's string limit; an OutOfMemoryError is not caught by `handled`.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingStore.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L-1: the upsert rewrites unchanged rows (no WHERE on DO UPDATE).</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/Findings.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L-2: two concurrent settlements can deadlock on Finding rows (multi-instance); sort by hash or take an advisory lock.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingStore.java, FindingController.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L-3: the list sorts the whole submission per page with no index; total and page are two statements; `page` has no upper bound.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingStore.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L-4: `SOURCES` joins an ingestion-owned table (accepted in ADR 0022 item 7).</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V10__finding.sql</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L-5: `finding_occurrence.id` random-UUID primary key is unused. L-6: the unique index on `locator` sits about 700 bytes under the btree row limit; add a CHECK or index an md5.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/parser/dependencycheck/</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L-7: the parsers rely on SchemaCheck for the depth limit and trailing-content check; state it as a precondition or enforce it in the parser.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L-8: no test for a partial last chunk, per-dependency caps, XML caps, trailing JSON content or concurrent settlement.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/ScanPoller.java</td>
+              <td class="px-4 py-2">96-106</td>
+              <td class="px-4 py-2">L-9: the failure log carries only the exception class (no SQLState) and floods one line per pass for a failing file.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+    </main>
+  </body>
+</html>
