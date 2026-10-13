@@ -21,6 +21,7 @@ const STATUS_LABELS: Readonly<Record<PipelineStatus, string>> = {
   SCAN_CLEAN: "Scanned clean, checking the file",
   TYPE_OK: "Type accepted, checking the structure",
   SCHEMA_OK: "Accepted",
+  PARSED: "Accepted, findings read",
   REJECTED_MALWARE: "Rejected",
   REJECTED_SANITIZED: "Rejected: modified during scanning",
   REJECTED_SCAN_TIMEOUT: "Rejected",
@@ -30,6 +31,10 @@ const STATUS_LABELS: Readonly<Record<PipelineStatus, string>> = {
   REJECTED_SCHEMA: "Rejected",
   REJECTED_HASH_MISMATCH: "Rejected",
 };
+
+function isAccepted(file: ReportFile): boolean {
+  return file.status === "SCHEMA_OK" || file.status === "PARSED";
+}
 
 function isRejected(file: ReportFile): boolean {
   return file.status.startsWith("REJECTED_");
@@ -85,7 +90,7 @@ function FileRow({
     <li>
       <strong>{file.name}</strong> <span className="muted">({megabytes(file.sizeBytes)})</span>{" "}
       <span className={isRejected(file) ? "flag flag--danger" : "flag"}>{STATUS_LABELS[file.status]}</span>
-      {file.status === "SCHEMA_OK" ? (
+      {isAccepted(file) ? (
         <>
           {" "}
           <button type="button" className="button button--secondary" onClick={() => void save()}>
