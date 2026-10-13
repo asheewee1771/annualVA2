@@ -85,3 +85,10 @@ Human decisions on reviewer findings. Check here before asking again. Each entry
 - **Finding:** story 84 asks for an audit entry for "every view, download, upload ... Register change, role change and export", but the Register list names no report or Finding, only System names and SMO and Cyber Manager emails. The template download and the preview read are audited.
 - **Chosen action:** keep `GET /api/systems` unaudited; the Register list is not report or Finding data and an entry per page load is low value. Decided 2026-10-06.
 - **When to reuse:** any finding that a Register or System list read is not audited. Reads of reports, Findings and previews stay audited; revisit if the list begins to carry report content.
+
+## Reading a single VA Submission is audited unless the owning SMO/Tech Lead reads it
+
+- **Area:** VA Submission read (`GET /api/submissions/{id}`, ticket 12, ADR 0020), spec story 84 and IM8 lm-4 (audit of every view)
+- **Finding:** story 84 asks for an audit entry for every view. The submission record carries only state, the `overdue` and `endorsedLate` flags, due dates and user ids, no report or Finding content. The SMO inbox (ADR 0019) and the Register list (above) are unaudited for that reason, but neither is a single-record view.
+- **Chosen action:** option (c). Audit a read of a single VA Submission when the caller is not the owning SMO/Tech Lead of that System (a Cyber Manager or a VA POC); the owner's own reads are not audited. Entries carry ids and fixed codes only (ADR 0014). Decided 2026-10-13.
+- **When to reuse:** any finding about auditing a single-record read of a VA Submission, or a later read added to the same record. Lists and the inbox stay unaudited. Reads that carry report, Finding or evidence content are audited for every role.
