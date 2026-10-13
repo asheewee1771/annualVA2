@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review — 12-start-va-submission</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall PASS (with warnings)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">build PASS C0 H0 M0 L0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN C0 H0 M2 L7</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN C0 H0 M5 L15</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">semgrep PASS C0 H0 M0 L0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN C0 H0 M1 L5</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react WARN C0 H0 M2 L5</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN C0 H0 M1 L7</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">main</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report: ticket 12, Start a VA Submission</h2>
+          <p class="text-xs text-slate-500 mt-1">Overall compliance evaluation across all seven active checks. Scope: uncommitted changes against HEAD 8d6752e. Unrelated arch-test work (ModuleConventionsArchTest, arch-test-plan, .dependency-cruiser.cjs, reviewer-decisions.md) was excluded from findings.</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr>
+              <th class="px-4 py-2">Check</th>
+              <th class="px-4 py-2">Status</th>
+              <th class="px-4 py-2">Crit / High / Med / Low</th>
+              <th class="px-4 py-2">Summary</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 font-mono text-xs">build</td>
+              <td class="px-4 py-2 text-emerald-800 font-semibold">PASS</td>
+              <td class="px-4 py-2">0 / 0 / 0 / 0</td>
+              <td class="px-4 py-2">Back end: 365 tests, 0 failures, JaCoCo line 96.8 %, branch 88.5 % (submission package line 99.0 %, branch 87.5 %). Front end: Prettier, tsc, vite build, no-raw-html, dependency-cruiser, fallow all clean. 3 Info notes only.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-mono text-xs">thermo-nuclear</td>
+              <td class="px-4 py-2 text-amber-600 font-semibold">WARN</td>
+              <td class="px-4 py-2">0 / 0 / 2 / 7</td>
+              <td class="px-4 py-2">Sound structure. Duplicated row records, full-Register scan for a by-id lookup, repeated UNREACHABLE Problem, start state drilled through three components.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-mono text-xs">code-review</td>
+              <td class="px-4 py-2 text-amber-600 font-semibold">WARN</td>
+              <td class="px-4 py-2">0 / 0 / 5 / 15</td>
+              <td class="px-4 py-2">Standards: 3 Medium (11 findings). Spec: 2 Medium (9 findings), all six back-end acceptance bullets implemented. Gates were not run in this review (the build check covers them).</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-mono text-xs">semgrep</td>
+              <td class="px-4 py-2 text-emerald-800 font-semibold">PASS</td>
+              <td class="px-4 py-2">0 / 0 / 0 / 0 (ticket code)</td>
+              <td class="px-4 py-2">Ran (Docker image semgrep/semgrep, p/security-audit and p/default). No findings in ticket 12 code. 2 pre-existing unrelated findings noted below; no Critical or High anywhere.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-mono text-xs">im8</td>
+              <td class="px-4 py-2 text-amber-600 font-semibold">WARN</td>
+              <td class="px-4 py-2">0 / 0 / 1 / 5</td>
+              <td class="px-4 py-2">Only as-1 WARN (front-end API responses cast, not runtime-validated; project-wide pattern). All touched controls PASS. No control fails because of a later ticket; the as-12 upload malware scan deferral to ticket 13 is unchanged and not weakened.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-mono text-xs">react</td>
+              <td class="px-4 py-2 text-amber-600 font-semibold">WARN</td>
+              <td class="px-4 py-2">0 / 0 / 2 / 5</td>
+              <td class="px-4 py-2">Concurrent Start clicks across rows; stale start error after changing Cycle. Plus 3 Info.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-mono text-xs">springboot</td>
+              <td class="px-4 py-2 text-amber-600 font-semibold">WARN</td>
+              <td class="px-4 py-2">0 / 0 / 1 / 7</td>
+              <td class="px-4 py-2">All seven Spring skills run (batch not applicable). Refusal audit opens a second pool connection. Plus 3 Info.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-700">No Critical or High findings in any check, and no check is FAIL or not run, so nothing blocks this ticket. The Medium items most worth acting on:</p>
+          <ul class="list-disc pl-6 text-sm text-slate-700 space-y-1">
+            <li>Refusal audit via REQUIRES_NEW while the command transaction is open can exhaust the connection pool under concurrent refused starts (<span class="font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java:97-114, 156-161</span>).</li>
+            <li><span class="font-mono text-xs">submission_participation</span> has a composite primary key and no database-generated uuid id, against ADR 0010 (<span class="font-mono text-xs">backend/src/main/resources/db/migration/V8__va_submission.sql</span>).</li>
+            <li>Several Start buttons can be clicked at once, and a failed start leaves a stale alert after a Cycle change (<span class="font-mono text-xs">frontend/src/screens/smo/SmoInboxScreen.tsx</span>).</li>
+            <li>The Start to prepare-screen front-end bullet has no recorded browser evidence (code-review P1); the 409 for a Quarter handled outside the app is an unreviewed rule (P6).</li>
+          </ul>
+        </div>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Tool Run Status and Tracked Deferrals</h3>
+          <ul class="list-disc pl-6 text-sm text-slate-700 space-y-1">
+            <li>Not run: none. All seven checks produced a readable artifact. Semgrep CLI is not installed locally and ran from the official Docker image, as recorded in reviewer-decisions.md.</li>
+            <li>Tracked deferral (im8 as-12, upload malware scan): owned by ticket 13, not weakened by this change, so it does not block. No other control fails because a later ticket owns it.</li>
+            <li>Semgrep caveat: its default ignore rules skip test directories; an explicit re-run on the ticket's test paths found nothing, though only 3 files were reported as scanned.</li>
+          </ul>
+        </div>
+      </div>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td></tr>
+          </tbody>
+        </table>
+        <p class="px-5 py-3 text-xs text-slate-500 border-t border-slate-100">Info only: vitest coverage step skipped by design (no React unit tests); deprecated-for-removal call in MccHttp.java:51 (not part of this ticket); fallow refactoring target src/api/problem.ts is under threshold and unchanged by this ticket.</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionStore.java, Submissions.java, dashboard/SmoInbox.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">M1: Row, Submission, Summary and inbox Item carry near-identical fields copied one by one; collapse to one public type.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterSystems.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">M2: active(UUID, Need) loads the whole Register to find one System; add a by-id read.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SmoInboxScreen.tsx</td><td class="px-4 py-2">33</td><td class="px-4 py-2">L1: UNREACHABLE Problem literal now copied a third time (also RegisterScreen.tsx:20, useResource.ts:33).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SmoInboxScreen.tsx</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L2: start state drilled through three components; stale startProblem on Cycle change.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/SmoInbox.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L3: inbox State duplicates SubmissionState; "Draft" label duplicated across two screens.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java, SubmissionStore.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L4: inCycle re-filters by scope and passes UUIDs as strings through a cast.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L5: start() re-reads what it just wrote.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SubmissionPrepareScreen.tsx</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L6: Scan Report domain rules hard-coded in the browser (placeholder for the upload ticket).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L7: GET runs in a write transaction (a recorded decision, ADR 0020); document the audit-or-deny intent.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V8__va_submission.sql</td><td class="px-4 py-2">-</td><td class="px-4 py-2">S1: submission_participation has a composite key and no database-generated uuid id (ADR 0010); add an id or record an exception in ADR 0020.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SubmissionPrepareScreen.tsx</td><td class="px-4 py-2">17-34, 48-52, 64</td><td class="px-4 py-2">S2: Scan Report types, required rules, file formats and Declaration copy hard-coded in the browser; acceptable as placeholder, move to a server read with upload.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/SmoInbox.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">S4 (judgement): adding a state touches SubmissionState, DB CHECK, SmoInbox State and NextAction and the TS unions (shotgun surgery).</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SubmissionPrepareScreen.tsx, SmoInboxScreen.tsx</td><td class="px-4 py-2">55-163</td><td class="px-4 py-2">P1: the Start to prepare screen behaviour has no test or recorded browser evidence; needs a browser check or recorded manual verification.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td><td class="px-4 py-2">101-103</td><td class="px-4 py-2">P6: 409 invalid-transition for a Quarter handled outside the app is an unreviewed rule (the spec says only that such Quarters are left out of counts, reminders and the close); confirm with the spec owner.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">working tree (AuditAction.java, RegisterSystems.java)</td><td class="px-4 py-2">-</td><td class="px-4 py-2">S3: ticket mixed with unrelated arch-test work (commit separately); CRLF line endings to normalise.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">SmoInboxScreen.tsx:26, SubmissionPrepareScreen.tsx:10, SmoInboxStartedTest</td><td class="px-4 py-2">-</td><td class="px-4 py-2">S5: duplicated STATE_LABELS, start(...) test helper and near-identical Row and Submission records.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/</td><td class="px-4 py-2">-</td><td class="px-4 py-2">S6: submitDue, reviewDue, endorseDue and cycleYear/quarter travel as clumps and primitives; reason codes are bare strings.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionStep.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">S7: speculative generality (one-constant enum, nine-state CHECK, overdue and endorsedLate always false); documented as deliberate in ADR 0020.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">Submissions.java, RegisterSystems.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">S8: inCycle re-filters by VIEW scope; start ends with view(id); RegisterSystems.active loads all Systems for one lookup.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">SubmissionController.java, SubmissionStore.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">S9: NOT_ALLOWED_NOW naming for invalid-transition; generic method names; fully qualified java.sql.*; String[] bound to uuid[].</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/paths.ts, SmoInboxScreen.tsx</td><td class="px-4 py-2">-</td><td class="px-4 py-2">S10: loose id regex; SMO_AREA_PATH duplicates "/smo" from app/roles.ts:13; start orchestration state in the inbox screen.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">Submissions.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">S11: read-write GET (accepted by ADR 0020); refused() holds two connections (ADR 0014 pattern).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/submission/</td><td class="px-4 py-2">-</td><td class="px-4 py-2">P2: one VA Submission per System and Cycle only tested within one Cycle.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V8__va_submission.sql</td><td class="px-4 py-2">-</td><td class="px-4 py-2">P3: NOT_STARTED excluded from the state CHECK, unlike docs/implementation-plan.md 2.3 (a later migration is needed).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V8__va_submission.sql</td><td class="px-4 py-2">-</td><td class="px-4 py-2">P4: plan columns version, previous_state, overdue_since, windows_reset_on omitted; version not named in the ADR.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionController.java</td><td class="px-4 py-2">47</td><td class="px-4 py-2">P5: Auditor gets 403 on GET; ticket says "anyone allowed to see the System"; not stated as a deferral.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionController.java</td><td class="px-4 py-2">28</td><td class="px-4 py-2">P7: optional cycle on the POST body; needed for the Cycle selector, documented in ADR 0020.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td><td class="px-4 py-2">158</td><td class="px-4 py-2">P8: REFUSED SUBMISSION_STARTED audit entries go beyond "the start is audited" (consistent with ADR 0014).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">several</td><td class="px-4 py-2">-</td><td class="px-4 py-2">P9: extras beyond the ticket: nine-state CHECK, Continue link and DRAFT state, RegisterSystems.active, CycleCalendar.running, SmoInbox.cycleFor refactor.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings in ticket 12 code</td></tr>
+          </tbody>
+        </table>
+        <p class="px-5 py-3 text-xs text-slate-500 border-t border-slate-100">Pre-existing, unrelated, not counted: Medium path-join-resolve-traversal in scripts/mock-mockpass-assertions.js:11 (dev mock script); Low missing-integrity (SRI) in the generated artifacts/code-reviewer/03..11 reports. 10 findings repo-wide, none Critical or High.</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">frontend/src/api/submissions.ts</td><td class="px-4 py-2">41-48</td><td class="px-4 py-2">as-1: API responses are cast by request&lt;T&gt;, not runtime-validated; SubmissionPrepareScreen reads fields straight from the cast. Project-wide pattern, back end is authoritative.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/paths.ts</td><td class="px-4 py-2">11</td><td class="px-4 py-2">as-1: submissionIdOf regex accepts any 36-character hex-and-dash string; the server answers 400. StartRequest.cycle has no @Min/@Max (allow-list lookup is the validation).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">lm-4 observation: an ownership 404 writes no audit entry (ADR 0013/0014 convention versus spec line 313); record in reviewer-decisions.md.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/audit/AuditAction.java, register/RegisterSystems.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">CRLF line endings in the working copies; normalise before committing.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SmoInboxScreen.tsx</td><td class="px-4 py-2">-</td><td class="px-4 py-2">Two clicks in one frame can send two starts; the unique constraint holds and the server answers 409 (tested). Not an IM8 issue.</td></tr>
+          </tbody>
+        </table>
+        <p class="px-5 py-3 text-xs text-slate-500 border-t border-slate-100">Also noted: CycleCalendar.running keeps currentCycle().orElse(running.getFirst()) carried over from ticket 11. All other touched controls PASS (as-2, as-3, as-7, as-8, as-9, as-10, as-13, lm-4, lm-15, lm-16, lm-19, ac-1, dp-8, pm-6). Tracked deferral: as-12 upload malware scan, owned by ticket 13, unchanged and not weakened.</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SmoInboxScreen.tsx</td><td class="px-4 py-2">start / startingId</td><td class="px-4 py-2">M1: other rows' Start buttons stay enabled while one start is in flight; two different Systems can be started in a burst. Disable all while busy and guard re-entry.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SmoInboxScreen.tsx</td><td class="px-4 py-2">startProblem</td><td class="px-4 py-2">M2: a failed start leaves a stale alert after the Cycle changes; clear it in onSelect.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SmoInboxScreen.tsx</td><td class="px-4 py-2">start</td><td class="px-4 py-2">L1: setStartingId after navigate() runs on an unmounted component (harmless no-op).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SmoInboxScreen.tsx, api/dashboards.ts</td><td class="px-4 py-2">RowAction</td><td class="px-4 py-2">L2: row action inferred from submissionId rather than the server's nextAction; will mislead once later states arrive.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SmoInboxScreen.tsx</td><td class="px-4 py-2">RowAction</td><td class="px-4 py-2">L3: "Starting..." not announced (fixed aria-label) and focus lost when the focused button is disabled.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SmoArea.tsx, paths.ts</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L4: an unrecognised /smo/submissions/... path silently shows the inbox under the bad URL.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/paths.ts, app/roles.ts</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L5: the /smo path literal has two sources of truth.</td></tr>
+          </tbody>
+        </table>
+        <p class="px-5 py-3 text-xs text-slate-500 border-t border-slate-100">Info: duplicated STATE_LABELS and parallel state unions; InboxSystem.submissionId could be a discriminated union; static placeholder cards are fine.</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td><td class="px-4 py-2">97-114, 156-161</td><td class="px-4 py-2">M-1: refusal audit via REQUIRES_NEW takes a second pooled connection while the command's transaction is open; concurrent refused starts can exhaust the pool (default 10). Run the audit after the transaction ends or set an explicit pool size.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterSystems.java</td><td class="px-4 py-2">77-89</td><td class="px-4 py-2">L-1: active(UUID, Need) loads the whole Register to find one System.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L-2: GET is a read-write transaction that writes an audit row (recorded decision; no change required).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/SmoInbox.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L-3: inbox now spans two read-only transactions; harmless staleness.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionController.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L-4: no consumes/produces; Location built by string concatenation; response type is the service's record.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/submission/SubmissionStartTest.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L-5: the concurrency test does not force an overlap (no start barrier, shared client); false confidence about the ON CONFLICT race.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/submission/SubmissionAccessTest.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L-6: loose isIn(403, 404, 405) and isIn(401, 403) assertions; assertions in a loop without naming the reader.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">CycleCalendar.java:76; SmoInbox.java:26,70,88; Submissions.java; SubmissionController.java:18; RegisterSystems.java:78,79</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L-7: lines over 120 characters; cosmetic.</td></tr>
+          </tbody>
+        </table>
+        <p class="px-5 py-3 text-xs text-slate-500 border-t border-slate-100">Skill results: core PASS, web WARN, data WARN, batch not applicable, security PASS, logging PASS, test WARN. Info: CycleCalendar.running orElse idiom; leaf cycle module throws a web exception (allowed by ArchitectureTest); method security on the controller only (service methods guarded by AccessGuard). Optional test gap: starting a retired System.</p>
+      </details>
+    </main>
+  </body>
+</html>
