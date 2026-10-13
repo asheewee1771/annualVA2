@@ -26,6 +26,14 @@ module.exports = {
       },
     },
     {
+      name: "no-frontend-unit-test-libraries",
+      comment:
+        "Business rules are proven at Seam 1 and the browser by Playwright only; no component test seam (ADR 0009).",
+      severity: "error",
+      from: { path: "^src/" },
+      to: { dependencyTypes: ["npm", "npm-dev"], path: "^(vitest|jest|@testing-library/|enzyme|react-test-renderer)" },
+    },
+    {
       name: "api-is-the-only-network-layer",
       comment:
         "Only the typed api modules (and the app shell, which wires global handlers) may touch the fetch wrapper.",
