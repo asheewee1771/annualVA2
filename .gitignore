@@ -37,6 +37,8 @@ artifacts/dp-*
 artifacts/*.log
 artifacts/*.before-*
 artifacts/e2e/
+# Raw semgrep output written to the repo root by the semgrep check
+.semgrep-out.json
 
 # Local agent tooling
 .agents/
