@@ -23,6 +23,8 @@
         <coverage.minimum>0.80</coverage.minimum>
         <archunit.version>1.4.1</archunit.version>
         <poi.version>5.4.1</poi.version>
+        <!-- Empty so that @{argLine} below resolves even when JaCoCo does not set it; the JaCoCo agent adds itself to it. -->
+        <argLine></argLine>
     </properties>
 
     <dependencies>
@@ -118,6 +120,16 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!-- The tests that upload a report at its size limit (a 49 MB ARF or Nessus file, held in memory by the test
+                         and by the server) need about 512 MB; the default heap of a small CI runner is less. @{argLine} keeps
+                         the JaCoCo agent. -->
+                    <argLine>@{argLine} -Xmx1g</argLine>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>
