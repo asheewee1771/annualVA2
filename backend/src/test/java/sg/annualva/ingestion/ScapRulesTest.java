@@ -110,7 +110,7 @@ class ScapRulesTest extends ScapSeam1 {
         JsonNode file = settledScap(draft, "decoy.xml", report);
 
         assertThat(file.get("status").asString()).isEqualTo("PARSED");
-        assertThat(scapSummary(findings(draft.smo(), draft.submissionId())))
+        assertThat(findingSummary(findings(draft.smo(), draft.submissionId())))
                 .containsExactly(Map.entry("scap|r.real", "MEDIUM/1"));
         assertThat(metadata(draft.smo(), draft.submissionId(), file.get("id").asString()).get("target").asString())
                 .isEqualTo("real.invalid");
@@ -129,7 +129,7 @@ class ScapRulesTest extends ScapSeam1 {
 
         JsonNode metadata = metadata(draft.smo(), draft.submissionId(), id);
         assertThat(metadata.get("target").asString()).as("cleaned, then cut to 200").startsWith("hosta, hhhh").hasSize(200);
-        assertThat(scapSummary(findings(draft.smo(), draft.submissionId())).keySet())
+        assertThat(findingSummary(findings(draft.smo(), draft.submissionId())).keySet())
                 .containsExactlyInAnyOrder("scap|r.1", "scap|r.ok");
     }
 
@@ -194,7 +194,7 @@ class ScapRulesTest extends ScapSeam1 {
         JsonNode file = settledScap(draft, "doctype.xml", report);
 
         assertThat(file.get("status").asString()).isEqualTo("PARSED");
-        assertThat(scapSummary(findings(draft.smo(), draft.submissionId()))).containsExactly(Map.entry("scap|r.ok",
+        assertThat(findingSummary(findings(draft.smo(), draft.submissionId()))).containsExactly(Map.entry("scap|r.ok",
                 "MEDIUM/1"));
     }
 

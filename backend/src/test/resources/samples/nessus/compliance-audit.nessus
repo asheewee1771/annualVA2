@@ -1,0 +1,342 @@
+<?xml version="1.0" ?>
+<!--
+  PROVENANCE: a schema-faithful reconstruction of the compliance audit export (NessusClientData_v2) that Nessus writes for
+  a scan with a Unix compliance policy, written by hand for the parser tests. It is NOT the output of a real scan.
+  Regenerate it from a real scan of a throwaway target before release (ticket 58). Every name in it is invented.
+-->
+<NessusClientData_v2>
+  <Policy>
+    <policyName>Throwaway Linux Level 1 audit</policyName>
+    <Preferences>
+      <ServerPreferences>
+        <preference><name>max_hosts</name><value>5</value></preference>
+      </ServerPreferences>
+    </Preferences>
+  </Policy>
+  <Report name="Throwaway compliance audit" xmlns:cm="http://www.nessus.org/cm">
+    <ReportHost name="throwaway-host-04">
+      <HostProperties>
+        <tag name="HOST_END">Tue Jul 20 10:03:44 2027</tag>
+        <tag name="HOST_START">Tue Jul 20 09:58:12 2027</tag>
+        <tag name="operating-system">Throwaway Linux 1</tag>
+        <tag name="host-ip">192.0.2.14</tag>
+        <tag name="host-fqdn">throwaway-host-04</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings">
+        <description>Invented.</description>
+        <plugin_name>Nessus Scan Information</plugin_name>
+        <plugin_output>Information about this scan : Nessus version : invented</plugin_output>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="12345" pluginName="Throwaway Web Server Outdated" pluginFamily="Web Servers">
+        <description>Invented.</description>
+        <plugin_name>Throwaway Web Server Outdated</plugin_name>
+        <plugin_output>Installed version : 1.0 (a vulnerability, not a compliance check)</plugin_output>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="21157" pluginName="Unix Compliance Checks" pluginFamily="Policy Compliance">
+        <description>Invented.</description>
+        <plugin_name>Unix Compliance Checks</plugin_name>
+        <plugin_output>1 compliance check result below (a summary with no result of its own)</plugin_output>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="21157" pluginName="Unix Compliance Checks" pluginFamily="Policy Compliance">
+        <agent>unix</agent>
+        <compliance>true</compliance>
+        <description>"1.1.1.1 Ensure mounting of cramfs filesystems is disabled" : [PASSED]
+
+Policy value: invented for the parser tests.</description>
+        <fname>unix_compliance_check.nbin</fname>
+        <plugin_modification_date>2027-06-01</plugin_modification_date>
+        <plugin_name>Unix Compliance Checks</plugin_name>
+        <plugin_type>local</plugin_type>
+        <risk_factor>None</risk_factor>
+        <script_version>$Revision: 1.1 $</script_version>
+        <solution>See the audit file.</solution>
+        <synopsis>The remote host is not compliant with the policy.</synopsis>
+        <plugin_output>"1.1.1.1 Ensure mounting of cramfs filesystems is disabled" : [PASSED]
+
+Remote value: invented.</plugin_output>
+        <cm:compliance-actual-value>invented</cm:compliance-actual-value>
+        <cm:compliance-audit-file>Throwaway_Linux_Level_1.audit</cm:compliance-audit-file>
+        <cm:compliance-check-id>a1b2c3d4e5f60718293a4b5c6d7e0001</cm:compliance-check-id>
+        <cm:compliance-check-name>1.1.1.1 Ensure mounting of cramfs filesystems is disabled</cm:compliance-check-name>
+        <cm:compliance-info>Invented guidance for the parser tests.</cm:compliance-info>
+        <cm:compliance-policy-value>invented</cm:compliance-policy-value>
+        <cm:compliance-result>PASSED</cm:compliance-result>
+        <cm:compliance-solution>Invented remediation.</cm:compliance-solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="21157" pluginName="Unix Compliance Checks" pluginFamily="Policy Compliance">
+        <agent>unix</agent>
+        <compliance>true</compliance>
+        <description>"1.1.2 Ensure /tmp is a separate partition" : [FAILED]
+
+Policy value: invented for the parser tests.</description>
+        <fname>unix_compliance_check.nbin</fname>
+        <plugin_modification_date>2027-06-01</plugin_modification_date>
+        <plugin_name>Unix Compliance Checks</plugin_name>
+        <plugin_type>local</plugin_type>
+        <risk_factor>None</risk_factor>
+        <script_version>$Revision: 1.1 $</script_version>
+        <solution>See the audit file.</solution>
+        <synopsis>The remote host is not compliant with the policy.</synopsis>
+        <plugin_output>"1.1.2 Ensure /tmp is a separate partition" : [FAILED]
+
+Remote value: invented.</plugin_output>
+        <cm:compliance-actual-value>invented</cm:compliance-actual-value>
+        <cm:compliance-audit-file>Throwaway_Linux_Level_1.audit</cm:compliance-audit-file>
+        <cm:compliance-check-id>a1b2c3d4e5f60718293a4b5c6d7e0002</cm:compliance-check-id>
+        <cm:compliance-check-name>1.1.2 Ensure /tmp is a separate partition</cm:compliance-check-name>
+        <cm:compliance-info>Invented guidance for the parser tests.</cm:compliance-info>
+        <cm:compliance-policy-value>invented</cm:compliance-policy-value>
+        <cm:compliance-result>FAILED</cm:compliance-result>
+        <cm:compliance-solution>Invented remediation.</cm:compliance-solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="21157" pluginName="Unix Compliance Checks" pluginFamily="Policy Compliance">
+        <agent>unix</agent>
+        <compliance>true</compliance>
+        <description>"1.1.3 Ensure nodev option set on /tmp partition" : [FAILED]
+
+Policy value: invented for the parser tests.</description>
+        <fname>unix_compliance_check.nbin</fname>
+        <plugin_modification_date>2027-06-01</plugin_modification_date>
+        <plugin_name>Unix Compliance Checks</plugin_name>
+        <plugin_type>local</plugin_type>
+        <risk_factor>None</risk_factor>
+        <script_version>$Revision: 1.1 $</script_version>
+        <solution>See the audit file.</solution>
+        <synopsis>The remote host is not compliant with the policy.</synopsis>
+        <plugin_output>"1.1.3 Ensure nodev option set on /tmp partition" : [FAILED]
+
+Remote value: invented.</plugin_output>
+        <cm:compliance-actual-value>invented</cm:compliance-actual-value>
+        <cm:compliance-audit-file>Throwaway_Linux_Level_1.audit</cm:compliance-audit-file>
+        <cm:compliance-check-id>a1b2c3d4e5f60718293a4b5c6d7e0003</cm:compliance-check-id>
+        <cm:compliance-check-name>1.1.3 Ensure nodev option set on /tmp partition</cm:compliance-check-name>
+        <cm:compliance-info>Invented guidance for the parser tests.</cm:compliance-info>
+        <cm:compliance-policy-value>invented</cm:compliance-policy-value>
+        <cm:compliance-result>FAILED</cm:compliance-result>
+        <cm:compliance-solution>Invented remediation.</cm:compliance-solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="2" pluginID="21157" pluginName="Unix Compliance Checks" pluginFamily="Policy Compliance">
+        <agent>unix</agent>
+        <compliance>true</compliance>
+        <description>"5.2.4 Ensure SSH access is limited" : [WARNING]
+
+Policy value: invented for the parser tests.</description>
+        <fname>unix_compliance_check.nbin</fname>
+        <plugin_modification_date>2027-06-01</plugin_modification_date>
+        <plugin_name>Unix Compliance Checks</plugin_name>
+        <plugin_type>local</plugin_type>
+        <risk_factor>None</risk_factor>
+        <script_version>$Revision: 1.1 $</script_version>
+        <solution>See the audit file.</solution>
+        <synopsis>The remote host is not compliant with the policy.</synopsis>
+        <plugin_output>"5.2.4 Ensure SSH access is limited" : [WARNING]
+
+Remote value: invented.</plugin_output>
+        <cm:compliance-actual-value>invented</cm:compliance-actual-value>
+        <cm:compliance-audit-file>Throwaway_Linux_Level_1.audit</cm:compliance-audit-file>
+        <cm:compliance-check-id>a1b2c3d4e5f60718293a4b5c6d7e0004</cm:compliance-check-id>
+        <cm:compliance-check-name>5.2.4 Ensure SSH access is limited</cm:compliance-check-name>
+        <cm:compliance-info>Invented guidance for the parser tests.</cm:compliance-info>
+        <cm:compliance-policy-value>invented</cm:compliance-policy-value>
+        <cm:compliance-result>WARNING</cm:compliance-result>
+        <cm:compliance-solution>Invented remediation.</cm:compliance-solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="1" pluginID="21157" pluginName="Unix Compliance Checks" pluginFamily="Policy Compliance">
+        <agent>unix</agent>
+        <compliance>true</compliance>
+        <description>"6.1.2 Ensure permissions on /etc/passwd are configured" : [ERROR]
+
+Policy value: invented for the parser tests.</description>
+        <fname>unix_compliance_check.nbin</fname>
+        <plugin_modification_date>2027-06-01</plugin_modification_date>
+        <plugin_name>Unix Compliance Checks</plugin_name>
+        <plugin_type>local</plugin_type>
+        <risk_factor>None</risk_factor>
+        <script_version>$Revision: 1.1 $</script_version>
+        <solution>See the audit file.</solution>
+        <synopsis>The remote host is not compliant with the policy.</synopsis>
+        <plugin_output>"6.1.2 Ensure permissions on /etc/passwd are configured" : [ERROR]
+
+Remote value: invented.</plugin_output>
+        <cm:compliance-actual-value>invented</cm:compliance-actual-value>
+        <cm:compliance-audit-file>Throwaway_Linux_Level_1.audit</cm:compliance-audit-file>
+        <cm:compliance-check-id>a1b2c3d4e5f60718293a4b5c6d7e0005</cm:compliance-check-id>
+        <cm:compliance-check-name>6.1.2 Ensure permissions on /etc/passwd are configured</cm:compliance-check-name>
+        <cm:compliance-info>Invented guidance for the parser tests.</cm:compliance-info>
+        <cm:compliance-policy-value>invented</cm:compliance-policy-value>
+        <cm:compliance-result>ERROR</cm:compliance-result>
+        <cm:compliance-solution>Invented remediation.</cm:compliance-solution>
+      </ReportItem>
+    </ReportHost>
+    <ReportHost name="throwaway-host-05">
+      <HostProperties>
+        <tag name="HOST_END">Tue Jul 20 11:20:40 2027</tag>
+        <tag name="HOST_START">Tue Jul 20 10:55:02 2027</tag>
+        <tag name="operating-system">Throwaway Linux 1</tag>
+        <tag name="host-ip">192.0.2.15</tag>
+        <tag name="host-fqdn">throwaway-host-05</tag>
+      </HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="19506" pluginName="Nessus Scan Information" pluginFamily="Settings">
+        <description>Invented.</description>
+        <plugin_name>Nessus Scan Information</plugin_name>
+        <plugin_output>Information about this scan : Nessus version : invented</plugin_output>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="21157" pluginName="Unix Compliance Checks" pluginFamily="Policy Compliance">
+        <agent>unix</agent>
+        <compliance>true</compliance>
+        <description>"1.1.1.1 Ensure mounting of cramfs filesystems is disabled" : [PASSED]
+
+Policy value: invented for the parser tests.</description>
+        <fname>unix_compliance_check.nbin</fname>
+        <plugin_modification_date>2027-06-01</plugin_modification_date>
+        <plugin_name>Unix Compliance Checks</plugin_name>
+        <plugin_type>local</plugin_type>
+        <risk_factor>None</risk_factor>
+        <script_version>$Revision: 1.1 $</script_version>
+        <solution>See the audit file.</solution>
+        <synopsis>The remote host is not compliant with the policy.</synopsis>
+        <plugin_output>"1.1.1.1 Ensure mounting of cramfs filesystems is disabled" : [PASSED]
+
+Remote value: invented.</plugin_output>
+        <cm:compliance-actual-value>invented</cm:compliance-actual-value>
+        <cm:compliance-audit-file>Throwaway_Linux_Level_1.audit</cm:compliance-audit-file>
+        <cm:compliance-check-id>a1b2c3d4e5f60718293a4b5c6d7e0001</cm:compliance-check-id>
+        <cm:compliance-check-name>1.1.1.1 Ensure mounting of cramfs filesystems is disabled</cm:compliance-check-name>
+        <cm:compliance-info>Invented guidance for the parser tests.</cm:compliance-info>
+        <cm:compliance-policy-value>invented</cm:compliance-policy-value>
+        <cm:compliance-result>PASSED</cm:compliance-result>
+        <cm:compliance-solution>Invented remediation.</cm:compliance-solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="21157" pluginName="Unix Compliance Checks" pluginFamily="Policy Compliance">
+        <agent>unix</agent>
+        <compliance>true</compliance>
+        <description>"1.1.2 Ensure /tmp is a separate partition" : [FAILED]
+
+Policy value: invented for the parser tests.</description>
+        <fname>unix_compliance_check.nbin</fname>
+        <plugin_modification_date>2027-06-01</plugin_modification_date>
+        <plugin_name>Unix Compliance Checks</plugin_name>
+        <plugin_type>local</plugin_type>
+        <risk_factor>None</risk_factor>
+        <script_version>$Revision: 1.1 $</script_version>
+        <solution>See the audit file.</solution>
+        <synopsis>The remote host is not compliant with the policy.</synopsis>
+        <plugin_output>"1.1.2 Ensure /tmp is a separate partition" : [FAILED]
+
+Remote value: invented.</plugin_output>
+        <cm:compliance-actual-value>invented</cm:compliance-actual-value>
+        <cm:compliance-audit-file>Throwaway_Linux_Level_1.audit</cm:compliance-audit-file>
+        <cm:compliance-check-id>a1b2c3d4e5f60718293a4b5c6d7e0002</cm:compliance-check-id>
+        <cm:compliance-check-name>1.1.2 Ensure /tmp is a separate partition</cm:compliance-check-name>
+        <cm:compliance-info>Invented guidance for the parser tests.</cm:compliance-info>
+        <cm:compliance-policy-value>invented</cm:compliance-policy-value>
+        <cm:compliance-result>FAILED</cm:compliance-result>
+        <cm:compliance-solution>Invented remediation.</cm:compliance-solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="0" pluginID="21157" pluginName="Unix Compliance Checks" pluginFamily="Policy Compliance">
+        <agent>unix</agent>
+        <compliance>true</compliance>
+        <description>"1.1.3 Ensure nodev option set on /tmp partition" : [PASSED]
+
+Policy value: invented for the parser tests.</description>
+        <fname>unix_compliance_check.nbin</fname>
+        <plugin_modification_date>2027-06-01</plugin_modification_date>
+        <plugin_name>Unix Compliance Checks</plugin_name>
+        <plugin_type>local</plugin_type>
+        <risk_factor>None</risk_factor>
+        <script_version>$Revision: 1.1 $</script_version>
+        <solution>See the audit file.</solution>
+        <synopsis>The remote host is not compliant with the policy.</synopsis>
+        <plugin_output>"1.1.3 Ensure nodev option set on /tmp partition" : [PASSED]
+
+Remote value: invented.</plugin_output>
+        <cm:compliance-actual-value>invented</cm:compliance-actual-value>
+        <cm:compliance-audit-file>Throwaway_Linux_Level_1.audit</cm:compliance-audit-file>
+        <cm:compliance-check-id>a1b2c3d4e5f60718293a4b5c6d7e0003</cm:compliance-check-id>
+        <cm:compliance-check-name>1.1.3 Ensure nodev option set on /tmp partition</cm:compliance-check-name>
+        <cm:compliance-info>Invented guidance for the parser tests.</cm:compliance-info>
+        <cm:compliance-policy-value>invented</cm:compliance-policy-value>
+        <cm:compliance-result>PASSED</cm:compliance-result>
+        <cm:compliance-solution>Invented remediation.</cm:compliance-solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="3" pluginID="21157" pluginName="Unix Compliance Checks" pluginFamily="Policy Compliance">
+        <agent>unix</agent>
+        <compliance>true</compliance>
+        <description>"5.2.4 Ensure SSH access is limited" : [WARNING]
+
+Policy value: invented for the parser tests.</description>
+        <fname>unix_compliance_check.nbin</fname>
+        <plugin_modification_date>2027-06-01</plugin_modification_date>
+        <plugin_name>Unix Compliance Checks</plugin_name>
+        <plugin_type>local</plugin_type>
+        <risk_factor>None</risk_factor>
+        <script_version>$Revision: 1.1 $</script_version>
+        <solution>See the audit file.</solution>
+        <synopsis>The remote host is not compliant with the policy.</synopsis>
+        <plugin_output>"5.2.4 Ensure SSH access is limited" : [WARNING]
+
+Remote value: invented.</plugin_output>
+        <cm:compliance-actual-value>invented</cm:compliance-actual-value>
+        <cm:compliance-audit-file>Throwaway_Linux_Level_1.audit</cm:compliance-audit-file>
+        <cm:compliance-check-id>a1b2c3d4e5f60718293a4b5c6d7e0004</cm:compliance-check-id>
+        <cm:compliance-check-name>5.2.4 Ensure SSH access is limited</cm:compliance-check-name>
+        <cm:compliance-info>Invented guidance for the parser tests.</cm:compliance-info>
+        <cm:compliance-policy-value>invented</cm:compliance-policy-value>
+        <cm:compliance-result>WARNING</cm:compliance-result>
+        <cm:compliance-solution>Invented remediation.</cm:compliance-solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="1" pluginID="21157" pluginName="Unix Compliance Checks" pluginFamily="Policy Compliance">
+        <agent>unix</agent>
+        <compliance>true</compliance>
+        <description>"6.1.2 Ensure permissions on /etc/passwd are configured" : [ERROR]
+
+Policy value: invented for the parser tests.</description>
+        <fname>unix_compliance_check.nbin</fname>
+        <plugin_modification_date>2027-06-01</plugin_modification_date>
+        <plugin_name>Unix Compliance Checks</plugin_name>
+        <plugin_type>local</plugin_type>
+        <risk_factor>None</risk_factor>
+        <script_version>$Revision: 1.1 $</script_version>
+        <solution>See the audit file.</solution>
+        <synopsis>The remote host is not compliant with the policy.</synopsis>
+        <plugin_output>"6.1.2 Ensure permissions on /etc/passwd are configured" : [ERROR]
+
+Remote value: invented.</plugin_output>
+        <cm:compliance-actual-value>invented</cm:compliance-actual-value>
+        <cm:compliance-audit-file>Throwaway_Linux_Level_1.audit</cm:compliance-audit-file>
+        <cm:compliance-check-id>a1b2c3d4e5f60718293a4b5c6d7e0005</cm:compliance-check-id>
+        <cm:compliance-check-name>6.1.2 Ensure permissions on /etc/passwd are configured</cm:compliance-check-name>
+        <cm:compliance-info>Invented guidance for the parser tests.</cm:compliance-info>
+        <cm:compliance-policy-value>invented</cm:compliance-policy-value>
+        <cm:compliance-result>ERROR</cm:compliance-result>
+        <cm:compliance-solution>Invented remediation.</cm:compliance-solution>
+      </ReportItem>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="2" pluginID="21157" pluginName="Unix Compliance Checks" pluginFamily="Policy Compliance">
+        <agent>unix</agent>
+        <compliance>true</compliance>
+        <description>"3.1.1 Ensure IP forwarding is disabled" : [ERROR]
+
+Policy value: invented for the parser tests.</description>
+        <fname>unix_compliance_check.nbin</fname>
+        <plugin_modification_date>2027-06-01</plugin_modification_date>
+        <plugin_name>Unix Compliance Checks</plugin_name>
+        <plugin_type>local</plugin_type>
+        <risk_factor>None</risk_factor>
+        <script_version>$Revision: 1.1 $</script_version>
+        <solution>See the audit file.</solution>
+        <synopsis>The remote host is not compliant with the policy.</synopsis>
+        <plugin_output>"3.1.1 Ensure IP forwarding is disabled" : [ERROR]
+
+Remote value: invented.</plugin_output>
+        <cm:compliance-actual-value>invented</cm:compliance-actual-value>
+        <cm:compliance-audit-file>Throwaway_Linux_Level_1.audit</cm:compliance-audit-file>
+        <cm:compliance-check-id>a1b2c3d4e5f60718293a4b5c6d7e0006</cm:compliance-check-id>
+        <cm:compliance-check-name>3.1.1 Ensure IP forwarding is disabled</cm:compliance-check-name>
+        <cm:compliance-info>Invented guidance for the parser tests.</cm:compliance-info>
+        <cm:compliance-policy-value>invented</cm:compliance-policy-value>
+        <cm:compliance-result>ERROR</cm:compliance-result>
+        <cm:compliance-solution>Invented remediation.</cm:compliance-solution>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>

@@ -27,6 +27,21 @@ abstract class ParserSeam1 extends IngestionSeam1 {
         return ApiClient.json(response);
     }
 
+    /** How many Findings the VA Submission holds, as this person reads them. */
+    protected static int total(Draft draft, ApiClient client) {
+        return ApiClient.json(client.get(findingsOf(draft.submissionId()) + "?size=1")).get("total").asInt();
+    }
+
+    /** The file was refused for holding more Findings or places than one file may, with the words that say so. */
+    protected void assertTooManyFindings(JsonNode file) {
+        assertThat(file.get("status").asString()).isEqualTo("REJECTED_TOO_MANY_FINDINGS");
+        assertThat(file.get("rejectCode").asString()).isEqualTo("TOO_MANY_FINDINGS");
+        assertThat(file.get("message").asString()).contains("more than one file can")
+                .contains("more than 20,000 findings").contains("more than 50,000 places");
+        assertThat(stages(file)).containsExactly("QUARANTINED", "SCAN_SUBMITTED", "SCAN_CLEAN", "TYPE_OK",
+                "REJECTED_TOO_MANY_FINDINGS");
+    }
+
     protected static JsonNode metadata(ApiClient client, String submissionId, String fileId) {
         var response = client.get(fileAt(submissionId, fileId) + "/metadata");
         assertThat(response.status()).as(response.body()).isEqualTo(200);
@@ -39,6 +54,16 @@ abstract class ParserSeam1 extends IngestionSeam1 {
         for (JsonNode item : page.get("items")) {
             summary.put(item.get("identityKey").asString(),
                     item.get("severity").asString() + "/" + item.get("occurrenceCount").asInt());
+        }
+        return summary;
+    }
+
+    /** identity key to "SEVERITY/places", and "/INCOMPLETE" when the Finding is a check that did not complete. */
+    protected static Map<String, String> findingSummary(JsonNode page) {
+        Map<String, String> summary = new LinkedHashMap<>();
+        for (JsonNode item : page.get("items")) {
+            summary.put(item.get("identityKey").asString(), item.get("severity").asString() + "/"
+                    + item.get("occurrenceCount").asInt() + (item.get("didNotComplete").asBoolean() ? "/INCOMPLETE" : ""));
         }
         return summary;
     }

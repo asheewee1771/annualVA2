@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
-import sg.annualva.harness.ApiClient;
 import sg.annualva.harness.Samples;
 import sg.annualva.parser.ParsedReport;
 import tools.jackson.databind.JsonNode;
@@ -45,19 +44,6 @@ class ScapLimitsTest extends ScapSeam1 {
                             + "</TestResult>");
         }
         return xccdf(reports.toString());
-    }
-
-    private static int total(Draft draft, ApiClient client) {
-        return ApiClient.json(client.get(findingsOf(draft.submissionId()) + "?size=1")).get("total").asInt();
-    }
-
-    private void assertTooManyFindings(JsonNode file) {
-        assertThat(file.get("status").asString()).isEqualTo("REJECTED_TOO_MANY_FINDINGS");
-        assertThat(file.get("rejectCode").asString()).isEqualTo("TOO_MANY_FINDINGS");
-        assertThat(file.get("message").asString()).contains("more than one file can")
-                .contains("more than 20,000 findings").contains("more than 50,000 places");
-        assertThat(stages(file)).containsExactly("QUARANTINED", "SCAN_SUBMITTED", "SCAN_CLEAN", "TYPE_OK",
-                "REJECTED_TOO_MANY_FINDINGS");
     }
 
     @Test
@@ -123,7 +109,7 @@ class ScapLimitsTest extends ScapSeam1 {
 
         assertThat(atCap.get("status").asString()).isEqualTo("PARSED");
         assertTooManyFindings(over);
-        assertThat(scapSummary(findings(draft.smo(), draft.submissionId()))).containsExactly(
+        assertThat(findingSummary(findings(draft.smo(), draft.submissionId()))).containsExactly(
                 Map.entry("scap|r.everywhere", "MEDIUM/" + ParsedReport.MAX_OCCURRENCES));
     }
 
@@ -139,7 +125,7 @@ class ScapLimitsTest extends ScapSeam1 {
                 xccdf("<TestResult id=\"t\"><target>host-a.invalid</target>" + results + "</TestResult>"));
 
         assertThat(file.get("status").asString()).isEqualTo("PARSED");
-        assertThat(scapSummary(findings(draft.smo(), draft.submissionId()))).containsExactlyInAnyOrderEntriesOf(Map.of(
+        assertThat(findingSummary(findings(draft.smo(), draft.submissionId()))).containsExactlyInAnyOrderEntriesOf(Map.of(
                 "scap|r.0", "MEDIUM/1", "scap|r.1", "MEDIUM/1", "scap|r.2", "MEDIUM/1"));
     }
 
@@ -153,7 +139,7 @@ class ScapLimitsTest extends ScapSeam1 {
         assertThat(arf.length).as("over the 25 MB an XCCDF results file may be").isGreaterThan(26 * 1024 * 1024);
         assertThat(file.get("status").asString()).isEqualTo("PARSED");
         assertThat(file.get("detectedFormat").asString()).isEqualTo("ARF");
-        assertThat(scapSummary(findings(draft.smo(), draft.submissionId())))
+        assertThat(findingSummary(findings(draft.smo(), draft.submissionId())))
                 .as("the decoy results in the benchmark bulk are no results").containsExactly(
                         Map.entry("scap|r.real", "MEDIUM/1"));
     }

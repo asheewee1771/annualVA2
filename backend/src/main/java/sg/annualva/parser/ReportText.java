@@ -29,6 +29,11 @@ public final class ReportText {
         return text.isEmpty() ? Optional.empty() : Optional.of(text);
     }
 
+    /** The first of two values that says something, cleaned: the one already kept, else the next. */
+    public static @Nullable String firstClean(@Nullable String kept, @Nullable String next) {
+        return kept != null ? kept : clean(next).orElse(null);
+    }
+
     /** As {@link #clean}, cut to at most this many code points; for text that is shown and never keyed on. */
     public static Optional<String> cleanAndCut(@Nullable String raw, int maxCodePoints) {
         return clean(raw).map(text -> fits(text, maxCodePoints) ? text

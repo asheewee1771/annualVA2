@@ -104,6 +104,11 @@ public final class Samples {
         return resource("samples/scap/openscap-arf.xml");
     }
 
+    /** The Nessus compliance audit sample, two hosts (a reconstruction: see its provenance note). */
+    public static byte[] nessusComplianceSample() {
+        return resource("samples/nessus/compliance-audit.nessus");
+    }
+
     private static byte[] resource(String path) {
         try (var in = Samples.class.getClassLoader().getResourceAsStream(path)) {
             if (in == null) {

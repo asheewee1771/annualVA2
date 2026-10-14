@@ -121,7 +121,7 @@ class DependencyCheckParseTest extends DependencyCheckSeam1 {
     void aFormatWithNoParserYetWaitsAtSchemaOkWithNoFindingsAndNothingToPreFill() {
         Draft draft = draft();
 
-        JsonNode file = settled(draft, SECURE_CONFIGURATION, "scan.nessus", Samples.nessus());
+        JsonNode file = settled(draft, BURP_SUITE, "issues.xml", Samples.burp());
 
         assertThat(file.get("status").asString()).isEqualTo("SCHEMA_OK");
         JsonNode metadata = metadata(draft.smo(), draft.submissionId(), file.get("id").asString());

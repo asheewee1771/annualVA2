@@ -5,6 +5,7 @@ import sg.annualva.finding.ReportType;
 import sg.annualva.parser.ReportParser;
 import sg.annualva.parser.dependencycheck.DependencyCheckJsonParser;
 import sg.annualva.parser.dependencycheck.DependencyCheckXmlParser;
+import sg.annualva.parser.nessus.NessusXmlParser;
 import sg.annualva.parser.scap.ScapXmlParser;
 
 /**
@@ -19,7 +20,7 @@ enum ReportFormat {
     XCCDF_RESULTS(ReportType.SECURE_CONFIGURATION, 25, new ScapXmlParser()),
     /** SCAP Asset Reporting Format; larger because it carries the assets and the results together. */
     ARF(ReportType.SECURE_CONFIGURATION, 50, new ScapXmlParser()),
-    NESSUS(ReportType.SECURE_CONFIGURATION, 50, null),
+    NESSUS(ReportType.SECURE_CONFIGURATION, 50, new NessusXmlParser()),
     BURP_XML(ReportType.BURP_SUITE, 50, null);
 
     private static final long MEGABYTE = 1024L * 1024L;
@@ -34,7 +35,7 @@ enum ReportFormat {
         this.parser = parser;
     }
 
-    /** The parser that reads Findings out of this format; null until the ticket for it (16 or 17) adds one. */
+    /** The parser that reads Findings out of this format; null until the ticket for it (17) adds one. */
     @Nullable ReportParser parser() {
         return parser;
     }

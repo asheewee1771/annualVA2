@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
-import sg.annualva.harness.ApiClient;
 import sg.annualva.parser.ParsedReport;
 import tools.jackson.databind.JsonNode;
 
@@ -47,10 +46,6 @@ class DependencyCheckLimitsTest extends DependencyCheckSeam1 {
                     .append("\"}],\"vulnerabilities\":[{\"name\":\"CVE-2027-1\",\"cvssv3\":{\"baseScore\":5.0}}]}");
         }
         return text.append("]}").toString().getBytes(StandardCharsets.UTF_8);
-    }
-
-    private static int total(Draft draft, ApiClient client) {
-        return ApiClient.json(client.get(findingsOf(draft.submissionId()) + "?size=1")).get("total").asInt();
     }
 
     @Test

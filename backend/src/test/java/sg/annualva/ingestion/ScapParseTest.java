@@ -29,7 +29,7 @@ class ScapParseTest extends ScapSeam1 {
                 "PARSED");
         JsonNode page = findings(draft.smo(), draft.submissionId());
         assertThat(page.get("total").asInt()).isEqualTo(4);
-        assertThat(scapSummary(page)).containsExactlyEntriesOf(cisCatFindings());
+        assertThat(findingSummary(page)).containsExactlyEntriesOf(cisCatFindings());
     }
 
     @Test
@@ -42,7 +42,7 @@ class ScapParseTest extends ScapSeam1 {
         assertThat(file.get("detectedFormat").asString()).isEqualTo("ARF");
         JsonNode page = findings(draft.smo(), draft.submissionId());
         assertThat(page.get("total").asInt()).isEqualTo(6);
-        assertThat(scapSummary(page)).containsExactlyEntriesOf(openScapFindings());
+        assertThat(findingSummary(page)).containsExactlyEntriesOf(openScapFindings());
     }
 
     @Test
@@ -79,7 +79,7 @@ class ScapParseTest extends ScapSeam1 {
         JsonNode file = settledScap(draft, "results.xml", xccdf(testResult("host-a.invalid", null, results)));
 
         assertThat(file.get("status").asString()).isEqualTo("PARSED");
-        assertThat(scapSummary(findings(draft.smo(), draft.submissionId()))).containsExactlyInAnyOrderEntriesOf(Map.of(
+        assertThat(findingSummary(findings(draft.smo(), draft.submissionId()))).containsExactlyInAnyOrderEntriesOf(Map.of(
                 "scap|r.fail", "HIGH/1", "scap|r.error", "HIGH/1/INCOMPLETE", "scap|r.unknown", "HIGH/1/INCOMPLETE"));
     }
 
@@ -107,7 +107,7 @@ class ScapParseTest extends ScapSeam1 {
 
         settledScap(draft, "severity.xml", xccdf(testResult("host-a.invalid", null, results.toArray(String[]::new))));
 
-        assertThat(scapSummary(findings(draft.smo(), draft.submissionId()))).containsExactlyInAnyOrderEntriesOf(expected);
+        assertThat(findingSummary(findings(draft.smo(), draft.submissionId()))).containsExactlyInAnyOrderEntriesOf(expected);
     }
 
     @Test
@@ -121,7 +121,7 @@ class ScapParseTest extends ScapSeam1 {
 
         settledScap(draft, "two-hosts.xml", report);
 
-        assertThat(scapSummary(findings(draft.smo(), draft.submissionId()))).containsExactlyInAnyOrderEntriesOf(Map.of(
+        assertThat(findingSummary(findings(draft.smo(), draft.submissionId()))).containsExactlyInAnyOrderEntriesOf(Map.of(
                 "scap|r.mixed", "LOW/2", "scap|r.everywhere", "LOW/2/INCOMPLETE"));
     }
 
@@ -135,7 +135,7 @@ class ScapParseTest extends ScapSeam1 {
 
         settledScap(draft, "twice.xml", report);
 
-        assertThat(scapSummary(findings(draft.smo(), draft.submissionId()))).containsExactlyInAnyOrderEntriesOf(Map.of(
+        assertThat(findingSummary(findings(draft.smo(), draft.submissionId()))).containsExactlyInAnyOrderEntriesOf(Map.of(
                 "scap|r.fail-then-error", "HIGH/1", "scap|r.error-then-fail", "MEDIUM/1",
                 "scap|r.errors", "MEDIUM/1/INCOMPLETE"));
     }
@@ -151,7 +151,7 @@ class ScapParseTest extends ScapSeam1 {
 
         settledScap(draft, "twice.xml", report);
 
-        assertThat(scapSummary(findings(draft.smo(), draft.submissionId()))).containsExactlyInAnyOrderEntriesOf(Map.of(
+        assertThat(findingSummary(findings(draft.smo(), draft.submissionId()))).containsExactlyInAnyOrderEntriesOf(Map.of(
                 "scap|r.fail-then-error", "HIGH/1", "scap|r.error-twice", "MEDIUM/1/INCOMPLETE",
                 "scap|r.only-first", "LOW/1", "scap|r.only-second", "LOW/1/INCOMPLETE"));
     }
@@ -185,7 +185,7 @@ class ScapParseTest extends ScapSeam1 {
         assertThat(metadata(draft.smo(), draft.submissionId(), first).get("target").asString()).isEqualTo("192.0.2.77");
         assertThat(metadata(draft.smo(), draft.submissionId(), second).get("target").isNull())
                 .as("the id of the result is a place, not a target to offer").isTrue();
-        assertThat(scapSummary(findings(draft.smo(), draft.submissionId()))).containsExactly(Map.entry("scap|r.a",
+        assertThat(findingSummary(findings(draft.smo(), draft.submissionId()))).containsExactly(Map.entry("scap|r.a",
                 "MEDIUM/2"));
     }
 
@@ -199,7 +199,7 @@ class ScapParseTest extends ScapSeam1 {
 
         JsonNode page = findings(draft.smo(), draft.submissionId());
 
-        assertThat(scapSummary(page)).containsExactlyInAnyOrderEntriesOf(Map.of("scap|r.x", "HIGH/2",
+        assertThat(findingSummary(page)).containsExactlyInAnyOrderEntriesOf(Map.of("scap|r.x", "HIGH/2",
                 "scap|r.y", "MEDIUM/1", "scap|r.z", "LOW/1/INCOMPLETE"));
         assertThat(sourceNames(byIdentifier(page, "r.x"))).containsExactly("first.xml", "second.xml");
         assertThat(sourceNames(byIdentifier(page, "r.y"))).containsExactly("first.xml");
@@ -219,7 +219,7 @@ class ScapParseTest extends ScapSeam1 {
         assertThat(first.get("status").asString()).isEqualTo("PARSED");
         assertThat(second.get("status").asString()).isEqualTo("PARSED");
         assertThat(second.get("detectedFormat").asString()).isEqualTo("XCCDF_RESULTS");
-        assertThat(scapSummary(findings(draft.smo(), draft.submissionId()))).containsExactlyInAnyOrderEntriesOf(Map.of(
+        assertThat(findingSummary(findings(draft.smo(), draft.submissionId()))).containsExactlyInAnyOrderEntriesOf(Map.of(
                 "scap|r.old", "HIGH/1", "scap|r.bare", "LOW/1"));
     }
 
@@ -290,7 +290,7 @@ class ScapParseTest extends ScapSeam1 {
 
         JsonNode file = status(draft.smo(), draft.submissionId(), id);
         assertThat(file.get("status").asString()).isEqualTo("PARSED");
-        assertThat(scapSummary(findings(draft.smo(), draft.submissionId())))
+        assertThat(findingSummary(findings(draft.smo(), draft.submissionId())))
                 .as("one set of Findings and places, with the checks that did not complete marked, not two")
                 .containsExactlyEntriesOf(openScapFindings());
     }

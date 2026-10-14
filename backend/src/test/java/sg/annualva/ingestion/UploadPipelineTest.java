@@ -138,9 +138,9 @@ class UploadPipelineTest extends IngestionSeam1 {
         assertThat(list).hasSize(2);
         assertThat(list.get(0).get("id").asString()).as("oldest first").isEqualTo(first);
         assertThat(list.get(1).get("id").asString()).isEqualTo(second);
-        assertThat(list.get(0).get("status").asString()).as("a format with no parser yet").isEqualTo("SCHEMA_OK");
+        assertThat(list.get(0).get("status").asString()).as("a Nessus audit is parsed").isEqualTo("PARSED");
         assertThat(list.get(1).get("status").asString()).as("an XCCDF results file is parsed").isEqualTo("PARSED");
         assertThat(stages(list.get(0))).containsExactly("QUARANTINED", "SCAN_SUBMITTED", "SCAN_CLEAN", "TYPE_OK",
-                "SCHEMA_OK");
+                "SCHEMA_OK", "PARSED");
     }
 }

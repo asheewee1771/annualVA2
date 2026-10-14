@@ -2,7 +2,6 @@ package sg.annualva.parser.scap;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -13,6 +12,7 @@ import sg.annualva.parser.ParsedReport;
 import sg.annualva.parser.ReportDates;
 import sg.annualva.parser.ReportParser;
 import sg.annualva.parser.ReportText;
+import sg.annualva.parser.ScanFacts;
 import sg.annualva.parser.Severity;
 import sg.annualva.parser.UnparseableReportException;
 import sg.annualva.parser.xml.XmlCursor;
@@ -58,15 +58,11 @@ public final class ScapXmlParser implements ReportParser {
     private static final Set<String> WAY_IN = Set.of(ARF_ROOT, ARF_REPORTS, ARF_REPORT, ARF_CONTENT, BENCHMARK_ROOT);
 
     private static final int MAX_RULE_ID = 500;
-    private static final int MAX_HOST = 500;
-    private static final int MAX_TARGET = 200;
     /**
      * The most distinct rules one TestResult may gather before it ends: a per-item bound on what is held while a host's
      * results are read. The caps on Findings and places for the whole file belong to {@link FindingsBuilder}.
      */
     private static final int MAX_RULES_PER_HOST = 20_000;
-    /** The hosts named in the target offered for confirmation; the text is cut at {@link #MAX_TARGET} anyway. */
-    private static final int MAX_HOSTS_NAMED = 50;
     private static final int MAX_SHORT_VALUE = 100;
 
     /** The place of a reading whose host is not yet known; {@link ParsedReport.Occurrence#at} puts it on its host. */
@@ -75,26 +71,8 @@ public final class ScapXmlParser implements ReportParser {
     /** What the whole file has said so far. */
     private static final class Reading {
         private final FindingsBuilder findings = new FindingsBuilder();
-        private final Set<String> hosts = new LinkedHashSet<>();
-        private @Nullable Instant scanDate;
+        private final ScanFacts facts = new ScanFacts();
         private int testResults;
-
-        void scanned(@Nullable Instant endTime) {
-            if (endTime != null && (scanDate == null || endTime.isAfter(scanDate))) {
-                scanDate = endTime;
-            }
-        }
-
-        void named(String host) {
-            if (hosts.size() < MAX_HOSTS_NAMED) {
-                hosts.add(host);
-            }
-        }
-
-        ParsedReport build() {
-            String target = ReportText.cleanAndCut(String.join(", ", hosts), MAX_TARGET).orElse(null);
-            return findings.build(new ParsedReport.Metadata(scanDate, target));
-        }
     }
 
     @Override
@@ -128,7 +106,7 @@ public final class ScapXmlParser implements ReportParser {
             // A Benchmark with no results, or an ARF with none, is not a results file.
             throw new UnparseableReportException();
         }
-        return reading.build();
+        return reading.findings.build(reading.facts.metadata());
     }
 
     /** The root must be an ARF, or an XCCDF Benchmark or TestResult; the type check looked at the name only. */
@@ -161,8 +139,8 @@ public final class ScapXmlParser implements ReportParser {
         Boundary boundary;
         while ((boundary = xml.next()) == Boundary.START) {
             switch (xml.path().substring(root.length())) {
-                case "/target" -> target = firstOf(target, xml.text(ReportText.MAX_FIELD_CHARS));
-                case "/target-address" -> address = firstOf(address, xml.text(ReportText.MAX_FIELD_CHARS));
+                case "/target" -> target = ReportText.firstClean(target, xml.text(ReportText.MAX_FIELD_CHARS));
+                case "/target-address" -> address = ReportText.firstClean(address, xml.text(ReportText.MAX_FIELD_CHARS));
                 case "/rule-result" -> readRuleResult(xml, verdicts);
                 default -> xml.skipElement();
             }
@@ -171,27 +149,19 @@ public final class ScapXmlParser implements ReportParser {
             throw new XMLStreamException("The document ended inside a TestResult");
         }
         reading.testResults++;
-        reading.scanned(endTime);
-        String host = firstOf(target, address);
+        reading.facts.scanned(endTime);
+        String host = ReportText.firstClean(target, address);
         if (host != null) {
-            if (!ReportText.fits(host, MAX_HOST)) {
-                throw new UnparseableReportException();
-            }
-            reading.named(host);
+            reading.facts.named(host);
         }
         String place = host != null ? host : ReportText.clean(id).orElse(null);
-        if (!verdicts.isEmpty() && (place == null || !ReportText.fits(place, MAX_HOST))) {
+        if (!verdicts.isEmpty() && (place == null || !ReportText.fits(place, ScanFacts.MAX_HOST_CHARS))) {
             throw new UnparseableReportException();
         }
         for (Map.Entry<String, ParsedReport.Occurrence> verdict : verdicts.entrySet()) {
             String rule = verdict.getKey();
             reading.findings.found("scap|" + rule, rule, rule, verdict.getValue().at(place));
         }
-    }
-
-    /** The first of two values that says something, cleaned. */
-    private static @Nullable String firstOf(@Nullable String kept, @Nullable String next) {
-        return kept != null ? kept : ReportText.clean(next).orElse(null);
     }
 
     /** One rule result, the cursor on its start; it is left after its end. Only a failed or an incomplete check is kept. */

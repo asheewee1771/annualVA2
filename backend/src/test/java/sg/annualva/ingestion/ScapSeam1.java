@@ -24,16 +24,6 @@ abstract class ScapSeam1 extends ParserSeam1 {
         return settled(draft, SECURE_CONFIGURATION, name, content);
     }
 
-    /** identity key to "SEVERITY/places", and "/INCOMPLETE" when the Finding is a check that did not complete. */
-    protected static Map<String, String> scapSummary(JsonNode page) {
-        Map<String, String> summary = new LinkedHashMap<>();
-        for (JsonNode item : page.get("items")) {
-            summary.put(item.get("identityKey").asString(), item.get("severity").asString() + "/"
-                    + item.get("occurrenceCount").asInt() + (item.get("didNotComplete").asBoolean() ? "/INCOMPLETE" : ""));
-        }
-        return summary;
-    }
-
     /** What the CIS-CAT sample holds, in the order the list gives it (every severity is unrated, so MEDIUM). */
     protected static Map<String, String> cisCatFindings() {
         Map<String, String> expected = new LinkedHashMap<>();
