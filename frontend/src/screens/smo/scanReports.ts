@@ -20,7 +20,7 @@ export const SCAN_REPORTS: readonly ScanReport[] = [
     title: "Secure Configuration",
     note: "Always required: a SCAP ARF or XCCDF result, or a Nessus export.",
     tooLargeHint:
-      "An ARF file can be at most 50 MB and an XCCDF results file 25 MB. If your ARF is too large, export the XCCDF results only.",
+      "An ARF or Nessus file can be at most 50 MB and an XCCDF results file 25 MB. If your ARF is too large, export the XCCDF results only; if your Nessus file is too large, export it in parts, with fewer hosts each.",
   },
   {
     type: "BURP_SUITE",
