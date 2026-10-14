@@ -5,6 +5,7 @@ import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import sg.annualva.parser.xml.SecureXml;
+import sg.annualva.parser.xml.XmlCursor;
 import tools.jackson.core.JsonParser;
 import tools.jackson.core.JsonToken;
 import tools.jackson.databind.json.JsonMapper;
@@ -20,7 +21,7 @@ import tools.jackson.databind.json.JsonMapper;
 final class SchemaCheck {
 
     /** Deeper than any real report; a document nested further is an attack on a reader's stack, not a report. */
-    static final int MAX_DEPTH = 100;
+    static final int MAX_DEPTH = XmlCursor.MAX_DEPTH;
 
     private static final JsonMapper JSON = JsonMapper.builder().build();
 

@@ -1,52 +1,21 @@
 package sg.annualva.ingestion;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import sg.annualva.harness.ApiClient;
 import tools.jackson.databind.JsonNode;
 
 /**
  * What the Dependency-Check parser tests share: a report is uploaded and moved through the pipeline, then its Findings
  * and its pre-filled metadata are read back through the HTTP API, exactly as a person's browser would.
  */
-abstract class DependencyCheckSeam1 extends IngestionSeam1 {
+abstract class DependencyCheckSeam1 extends ParserSeam1 {
 
     static final String PURL_LOG4J = "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1";
     static final String PURL_TEXT = "pkg:maven/org.apache.commons/commons-text@1.9";
 
-    protected static String findingsOf(String submissionId) {
-        return SUBMISSIONS + "/" + submissionId + "/findings";
-    }
-
-    /** The Findings the VA Submission holds, as this person reads them (one page of up to 500); expects 200. */
-    protected static JsonNode findings(ApiClient client, String submissionId) {
-        var response = client.get(findingsOf(submissionId) + "?size=500");
-        assertThat(response.status()).as(response.body()).isEqualTo(200);
-        return ApiClient.json(response);
-    }
-
     /** Uploads a Dependency-Check file and runs the job until it has its verdict. */
     protected JsonNode settledDc(Draft draft, String name, byte[] content) {
         return settled(draft, DEPENDENCY_CHECK, name, content);
-    }
-
-    protected static JsonNode metadata(ApiClient client, String submissionId, String fileId) {
-        var response = client.get(fileAt(submissionId, fileId) + "/metadata");
-        assertThat(response.status()).as(response.body()).isEqualTo(200);
-        return ApiClient.json(response);
-    }
-
-    /** identity key to "SEVERITY/occurrences" for every Finding on the page, in the order the list gave them. */
-    protected static Map<String, String> summary(JsonNode page) {
-        Map<String, String> summary = new LinkedHashMap<>();
-        for (JsonNode item : page.get("items")) {
-            summary.put(item.get("identityKey").asString(),
-                    item.get("severity").asString() + "/" + item.get("occurrenceCount").asInt());
-        }
-        return summary;
     }
 
     /** What the sample export holds, in the order the list gives it: the most severe first, then by identifier. */
@@ -60,10 +29,6 @@ abstract class DependencyCheckSeam1 extends IngestionSeam1 {
         expected.put("dc|CVE-2019-0001|legacy-widget.dll", "MEDIUM/1");
         expected.put("dc|CVE-2020-9488|" + PURL_LOG4J, "LOW/1");
         return expected;
-    }
-
-    protected static byte[] utf8(String text) {
-        return text.getBytes(StandardCharsets.UTF_8);
     }
 
     // ---- small Dependency-Check reports, written inline so a test shows exactly what it feeds the parser ----

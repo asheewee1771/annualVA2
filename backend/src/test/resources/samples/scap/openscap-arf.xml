@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  PROVENANCE: a schema-faithful reconstruction of the ARF (asset-report-collection) OpenSCAP writes for two throwaway hosts
+  (the data stream collection in the report request, then one asset and one XCCDF 1.2 TestResult per host), written by hand
+  for the parser tests. It is NOT the output of a real scan. Regenerate it from a real scan of a throwaway target before
+  release (ticket 58). Every name in it is invented.
+-->
+<arf:asset-report-collection xmlns:arf="http://scap.nist.gov/schema/asset-reporting-format/1.1"
+    xmlns:core="http://scap.nist.gov/schema/reporting-core/1.1" xmlns:ai="http://scap.nist.gov/schema/asset-identification/1.1"
+    xmlns:ds="http://scap.nist.gov/schema/scap/source/1.2" xmlns:xccdf="http://checklists.nist.gov/xccdf/1.2"
+    xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <core:relationships xmlns:arfvocab="http://scap.nist.gov/specifications/arf/vocabulary/relationships/1.0#">
+    <core:relationship type="arfvocab:createdFor" subject="collection">
+      <core:ref>collection1</core:ref>
+    </core:relationship>
+    <core:relationship type="arfvocab:isAbout" subject="xccdf1">
+      <core:ref>asset0</core:ref>
+    </core:relationship>
+    <core:relationship type="arfvocab:isAbout" subject="xccdf2">
+      <core:ref>asset1</core:ref>
+    </core:relationship>
+  </core:relationships>
+  <arf:report-requests>
+    <arf:report-request id="collection1">
+      <arf:content>
+        <ds:data-stream-collection id="scap_org.open-scap_collection_from_xccdf_ssg-throwaway-xccdf.xml">
+          <ds:data-stream id="scap_org.open-scap_datastream_from_xccdf_ssg-throwaway-xccdf.xml" scap-version="1.2"
+              use-case="OTHER">
+            <ds:checklists>
+              <ds:component-ref id="scap_org.open-scap_cref_ssg-throwaway-xccdf.xml"
+                  xlink:href="#scap_org.open-scap_comp_ssg-throwaway-xccdf.xml"/>
+            </ds:checklists>
+          </ds:data-stream>
+          <ds:component id="scap_org.open-scap_comp_ssg-throwaway-xccdf.xml" timestamp="2027-07-01T00:00:00">
+            <xccdf:Benchmark id="xccdf_org.ssgproject.content_benchmark_THROWAWAY">
+              <xccdf:status date="2027-07-01">draft</xccdf:status>
+              <xccdf:title>Throwaway Linux Security Guide</xccdf:title>
+              <xccdf:Group id="xccdf_org.ssgproject.content_group_system">
+                <xccdf:title>System Settings</xccdf:title>
+                <xccdf:Rule id="xccdf_org.ssgproject.content_rule_package_aide_installed" severity="high" selected="false">
+                  <xccdf:title>Install AIDE</xccdf:title>
+                </xccdf:Rule>
+                <xccdf:Rule id="xccdf_org.ssgproject.content_rule_sshd_disable_root_login" severity="high"
+                    selected="false">
+                  <xccdf:title>Disable SSH root login</xccdf:title>
+                </xccdf:Rule>
+                <xccdf:Rule id="xccdf_org.ssgproject.content_rule_accounts_tmout" severity="medium" selected="false">
+                  <xccdf:title>Set interactive session timeout</xccdf:title>
+                </xccdf:Rule>
+              </xccdf:Group>
+            </xccdf:Benchmark>
+          </ds:component>
+        </ds:data-stream-collection>
+      </arf:content>
+    </arf:report-request>
+  </arf:report-requests>
+  <arf:assets>
+    <arf:asset id="asset0">
+      <ai:computing-device>
+        <ai:connections>
+          <ai:connection><ai:ip-address><ai:ip-v4>192.0.2.21</ai:ip-v4></ai:ip-address></ai:connection>
+        </ai:connections>
+        <ai:fqdn>throwaway-host-02.invalid</ai:fqdn>
+        <ai:hostname>throwaway-host-02</ai:hostname>
+      </ai:computing-device>
+    </arf:asset>
+    <arf:asset id="asset1">
+      <ai:computing-device>
+        <ai:connections>
+          <ai:connection><ai:ip-address><ai:ip-v4>192.0.2.22</ai:ip-v4></ai:ip-address></ai:connection>
+        </ai:connections>
+        <ai:fqdn>throwaway-host-03.invalid</ai:fqdn>
+        <ai:hostname>throwaway-host-03</ai:hostname>
+      </ai:computing-device>
+    </arf:asset>
+  </arf:assets>
+  <arf:reports>
+    <arf:report id="xccdf1">
+      <arf:content>
+        <TestResult xmlns="http://checklists.nist.gov/xccdf/1.2"
+            id="xccdf_org.open-scap_testresult_xccdf_org.ssgproject.content_profile_standard"
+            start-time="2027-07-20T11:00:01+08:00" end-time="2027-07-20T11:02:13+08:00" version="0.1.72">
+          <benchmark href="#scap_org.open-scap_comp_ssg-throwaway-xccdf.xml"
+              id="xccdf_org.ssgproject.content_benchmark_THROWAWAY"/>
+          <title>OSCAP Scan Result</title>
+          <profile idref="xccdf_org.ssgproject.content_profile_standard"/>
+          <target>throwaway-host-02</target>
+          <target-address>192.0.2.21</target-address>
+          <target-address>::1</target-address>
+          <target-facts>
+            <fact name="urn:xccdf:fact:asset:identifier:host_name" type="string">throwaway-host-02</fact>
+          </target-facts>
+          <rule-result idref="xccdf_org.ssgproject.content_rule_package_aide_installed" role="full"
+              time="2027-07-20T11:00:05+08:00" severity="medium" weight="1.000000">
+            <result>fail</result>
+            <ident system="https://nvd.nist.gov/cce/index.cfm">CCE-80675-3</ident>
+            <check system="http://oval.mitre.org/XMLSchema/oval-definitions-5">
+              <check-content-ref name="oval:ssg-package_aide_installed:def:1" href="#oval0"/>
+            </check>
+          </rule-result>
+          <rule-result idref="xccdf_org.ssgproject.content_rule_sshd_disable_root_login" role="full"
+              time="2027-07-20T11:00:06+08:00" severity="high" weight="1.000000">
+            <result>fail</result>
+          </rule-result>
+          <rule-result idref="xccdf_org.ssgproject.content_rule_accounts_tmout" role="full"
+              time="2027-07-20T11:00:07+08:00" weight="1.000000">
+            <result>fail</result>
+          </rule-result>
+          <rule-result idref="xccdf_org.ssgproject.content_rule_audit_rules_time_adjtimex" role="full"
+              time="2027-07-20T11:00:08+08:00" severity="medium" weight="1.000000">
+            <result>error</result>
+          </rule-result>
+          <rule-result idref="xccdf_org.ssgproject.content_rule_accounts_password_minlen" role="full"
+              time="2027-07-20T11:00:09+08:00" severity="low" weight="1.000000">
+            <result>unknown</result>
+          </rule-result>
+          <rule-result idref="xccdf_org.ssgproject.content_rule_service_cron_enabled" role="full"
+              time="2027-07-20T11:00:10+08:00" severity="medium" weight="1.000000">
+            <result>pass</result>
+          </rule-result>
+          <rule-result idref="xccdf_org.ssgproject.content_rule_kernel_module_usb_storage_disabled" role="full"
+              time="2027-07-20T11:00:11+08:00" severity="medium" weight="1.000000">
+            <result>notapplicable</result>
+          </rule-result>
+          <rule-result idref="xccdf_org.ssgproject.content_rule_service_firewalld_enabled" role="full"
+              time="2027-07-20T11:00:12+08:00" severity="medium" weight="1.000000">
+            <result>notchecked</result>
+          </rule-result>
+          <rule-result idref="xccdf_org.ssgproject.content_rule_banner_etc_issue" role="full"
+              time="2027-07-20T11:00:13+08:00" severity="info" weight="1.000000">
+            <result>informational</result>
+          </rule-result>
+          <score system="urn:xccdf:scoring:default" maximum="100.000000">61.5</score>
+        </TestResult>
+      </arf:content>
+    </arf:report>
+    <arf:report id="xccdf2">
+      <arf:content>
+        <TestResult xmlns="http://checklists.nist.gov/xccdf/1.2"
+            id="xccdf_org.open-scap_testresult_xccdf_org.ssgproject.content_profile_standard"
+            start-time="2027-07-20T11:15:01+08:00" end-time="2027-07-20T11:20:40+08:00" version="0.1.72">
+          <benchmark href="#scap_org.open-scap_comp_ssg-throwaway-xccdf.xml"
+              id="xccdf_org.ssgproject.content_benchmark_THROWAWAY"/>
+          <title>OSCAP Scan Result</title>
+          <profile idref="xccdf_org.ssgproject.content_profile_standard"/>
+          <target>throwaway-host-03</target>
+          <target-address>192.0.2.22</target-address>
+          <rule-result idref="xccdf_org.ssgproject.content_rule_package_aide_installed" role="full"
+              time="2027-07-20T11:15:05+08:00" severity="medium" weight="1.000000">
+            <result>fail</result>
+          </rule-result>
+          <rule-result idref="xccdf_org.ssgproject.content_rule_sshd_disable_root_login" role="full"
+              time="2027-07-20T11:15:06+08:00" severity="high" weight="1.000000">
+            <result>error</result>
+          </rule-result>
+          <rule-result idref="xccdf_org.ssgproject.content_rule_audit_rules_time_adjtimex" role="full"
+              time="2027-07-20T11:15:07+08:00" severity="medium" weight="1.000000">
+            <result>error</result>
+          </rule-result>
+          <rule-result idref="xccdf_org.ssgproject.content_rule_file_permissions_etc_shadow" role="full"
+              time="2027-07-20T11:15:08+08:00" severity="low" weight="1.000000">
+            <result>fail</result>
+          </rule-result>
+          <rule-result idref="xccdf_org.ssgproject.content_rule_service_cron_enabled" role="full"
+              time="2027-07-20T11:15:09+08:00" severity="medium" weight="1.000000">
+            <result>pass</result>
+          </rule-result>
+          <score system="urn:xccdf:scoring:default" maximum="100.000000">88.0</score>
+        </TestResult>
+      </arf:content>
+    </arf:report>
+  </arf:reports>
+</arf:asset-report-collection>

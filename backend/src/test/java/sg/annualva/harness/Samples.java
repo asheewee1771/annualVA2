@@ -47,7 +47,12 @@ public final class Samples {
         return utf8("""
                 <?xml version="1.0" encoding="UTF-8"?>
                 <arf:asset-report-collection xmlns:arf="http://scap.nist.gov/schema/asset-reporting-format/1.1">
-                  <arf:reports/>
+                  <arf:reports>
+                    <arf:report id="xccdf1"><arf:content>
+                      <TestResult xmlns="http://checklists.nist.gov/xccdf/1.2" id="xccdf_throwaway_result"
+                          end-time="2027-07-20T10:00:00"><target>throwaway-host.invalid</target></TestResult>
+                    </arf:content></arf:report>
+                  </arf:reports>
                 </arf:asset-report-collection>
                 """);
     }
@@ -89,6 +94,16 @@ public final class Samples {
         return resource("samples/dependency-check/dependency-check-report.json");
     }
 
+    /** The CIS-CAT Pro XCCDF results sample (a reconstruction: see its provenance note). */
+    public static byte[] cisCatXccdfSample() {
+        return resource("samples/scap/cis-cat-xccdf-results.xml");
+    }
+
+    /** The OpenSCAP ARF sample, two hosts (a reconstruction: see its provenance note). */
+    public static byte[] openScapArfSample() {
+        return resource("samples/scap/openscap-arf.xml");
+    }
+
     private static byte[] resource(String path) {
         try (var in = Samples.class.getClassLoader().getResourceAsStream(path)) {
             if (in == null) {
@@ -112,7 +127,11 @@ public final class Samples {
 
     /** A Dependency-Check XML report whose bytes are padded to this length by a comment, which keeps it well-formed. */
     public static byte[] dependencyCheckXmlOfSize(int bytes) {
-        byte[] base = dependencyCheckXml();
+        return paddedTo(dependencyCheckXml(), bytes);
+    }
+
+    /** An XML document padded to this length by a comment after its root element, which keeps it well-formed. */
+    public static byte[] paddedTo(byte[] base, int bytes) {
         String open = "<!--";
         String close = "-->";
         int padding = bytes - base.length - open.length() - close.length();

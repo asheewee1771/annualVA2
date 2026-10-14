@@ -15,9 +15,9 @@ import tools.jackson.databind.JsonNode;
 /**
  * IM8 as-1 for the Dependency-Check parser: a report is untrusted, so what one file may make the server hold is bounded. A
  * report that yields more Findings, or more places they were reported, than {@link ParsedReport#MAX_FINDINGS} and
- * {@link ParsedReport#MAX_OCCURRENCES} is refused as REJECTED_SCHEMA with the usual plain message and nothing kept; one at
- * the cap is accepted whole; and a dependency carrying a very large field the parser has no use for is read without that
- * field being built.
+ * {@link ParsedReport#MAX_OCCURRENCES} is refused as REJECTED_TOO_MANY_FINDINGS (not as a file of the wrong shape) with a plain
+ * message and nothing kept; one at the cap is accepted whole; and a dependency carrying a very large field the parser has no
+ * use for is read without that field being built.
  */
 @ExtendWith(OutputCaptureExtension.class)
 class DependencyCheckLimitsTest extends DependencyCheckSeam1 {
@@ -64,16 +64,18 @@ class DependencyCheckLimitsTest extends DependencyCheckSeam1 {
     }
 
     @Test
-    void aReportOverTheCapOnFindingsIsRejectedAsSchemaAndNothingFromItIsKeptOrSaid(CapturedOutput output) {
+    void aReportOverTheCapOnFindingsIsRejectedAsTooManyFindingsAndNothingFromItIsKeptOrSaid(CapturedOutput output) {
         Draft draft = draft();
 
         JsonNode file = settledDc(draft, "over.json",
                 reportOfFindings(ParsedReport.MAX_FINDINGS + 1, "CVE-" + SENTINEL + "-"));
 
-        assertThat(file.get("status").asString()).isEqualTo("REJECTED_SCHEMA");
-        assertThat(file.get("rejectCode").asString()).isEqualTo("SCHEMA");
+        assertThat(file.get("status").asString()).isEqualTo("REJECTED_TOO_MANY_FINDINGS");
+        assertThat(file.get("rejectCode").asString()).isEqualTo("TOO_MANY_FINDINGS");
+        assertThat(file.get("message").asString()).contains("more than 20,000 findings")
+                .contains("more than 50,000 places");
         assertThat(stages(file)).containsExactly("QUARANTINED", "SCAN_SUBMITTED", "SCAN_CLEAN", "TYPE_OK",
-                "REJECTED_SCHEMA");
+                "REJECTED_TOO_MANY_FINDINGS");
         assertThat(total(draft, draft.smo())).isZero();
         assertThat(draft.smo().get(fileAt(draft.submissionId(), file.get("id").asString()) + "/metadata").status())
                 .isEqualTo(404);
@@ -81,7 +83,7 @@ class DependencyCheckLimitsTest extends DependencyCheckSeam1 {
         String errors = draft.smo().get(findingsOf(draft.submissionId()) + "?size=0").body();
         assertThat(file.toString() + audit + errors + draft.smo().get(filesOf(draft.submissionId())).body())
                 .as("the status, the audit entries and an error body").doesNotContain(SENTINEL);
-        assertThat(output.getAll()).as("the log").doesNotContain(SENTINEL).contains("REJECTED_SCHEMA");
+        assertThat(output.getAll()).as("the log").doesNotContain(SENTINEL).contains("REJECTED_TOO_MANY_FINDINGS");
     }
 
     @Test
@@ -92,10 +94,60 @@ class DependencyCheckLimitsTest extends DependencyCheckSeam1 {
         JsonNode over = settledDc(draft, "more.json", reportOfPlaces(ParsedReport.MAX_OCCURRENCES + 1));
 
         assertThat(atCap.get("status").asString()).isEqualTo("PARSED");
-        assertThat(over.get("status").asString()).isEqualTo("REJECTED_SCHEMA");
+        assertThat(over.get("status").asString()).isEqualTo("REJECTED_TOO_MANY_FINDINGS");
         JsonNode page = findings(draft.smo(), draft.submissionId());
         assertThat(summary(page)).containsExactly(
                 java.util.Map.entry("dc|CVE-2027-1|" + PURL_TEXT, "MEDIUM/" + ParsedReport.MAX_OCCURRENCES));
+    }
+
+    /** One dependency listing this many packages, with one vulnerability, in JSON and in XML. */
+    private static byte[] jsonWithPackages(int count) {
+        String packages = String.join(",", java.util.Collections.nCopies(count, "{\"id\":\"" + PURL_TEXT + "\"}"));
+        return jsonReport("{\"fileName\":\"a.jar\",\"filePath\":\"/a.jar\",\"packages\":[" + packages
+                + "],\"vulnerabilities\":[" + jsonVulnerability("CVE-2027-1", v3("5.0")) + "]}");
+    }
+
+    private static byte[] xmlWithPackages(int count) {
+        String packages = String.join("", java.util.Collections.nCopies(count,
+                "<package><id>" + PURL_TEXT + "</id></package>"));
+        return xmlReport("<dependencies><dependency><fileName>a.jar</fileName><filePath>/a.jar</filePath><identifiers>"
+                + packages + "</identifiers><vulnerabilities><vulnerability><name>CVE-2027-1</name><cvssV3>"
+                + "<baseScore>5.0</baseScore></cvssV3></vulnerability></vulnerabilities></dependency></dependencies>");
+    }
+
+    private static byte[] jsonWithVulnerabilities(int count) {
+        String vulnerabilities = String.join(",", java.util.Collections.nCopies(count,
+                jsonVulnerability("CVE-2027-1", v3("5.0"))));
+        return jsonReport("{\"fileName\":\"a.jar\",\"filePath\":\"/a.jar\",\"packages\":[{\"id\":\"" + PURL_TEXT
+                + "\"}],\"vulnerabilities\":[" + vulnerabilities + "]}");
+    }
+
+    private static byte[] xmlWithVulnerabilities(int count) {
+        String vulnerabilities = String.join("", java.util.Collections.nCopies(count,
+                "<vulnerability><name>CVE-2027-1</name><cvssV3><baseScore>5.0</baseScore></cvssV3></vulnerability>"));
+        return xmlReport("<dependencies><dependency><fileName>a.jar</fileName><filePath>/a.jar</filePath><identifiers>"
+                + "<package><id>" + PURL_TEXT + "</id></package></identifiers><vulnerabilities>" + vulnerabilities
+                + "</vulnerabilities></dependency></dependencies>");
+    }
+
+    @Test
+    void aDependencyWithMoreThanAThousandPackagesOrTwentyThousandVulnerabilitiesIsRefusedAsOverALimitInXmlAndJson() {
+        Draft draft = draft();
+
+        JsonNode packagesAtCap = settledDc(draft, "packages-cap.json", jsonWithPackages(1_000));
+        JsonNode jsonPackages = settledDc(draft, "packages.json", jsonWithPackages(1_001));
+        JsonNode xmlPackages = settledDc(draft, "packages.xml", xmlWithPackages(1_001));
+        JsonNode jsonVulnerabilities = settledDc(draft, "vulnerabilities.json", jsonWithVulnerabilities(20_001));
+        JsonNode xmlVulnerabilities = settledDc(draft, "vulnerabilities.xml", xmlWithVulnerabilities(20_001));
+
+        assertThat(packagesAtCap.get("status").asString()).isEqualTo("PARSED");
+        for (JsonNode file : new JsonNode[] {jsonPackages, xmlPackages, jsonVulnerabilities, xmlVulnerabilities}) {
+            assertThat(file.get("status").asString()).as(file.toString()).isEqualTo("REJECTED_TOO_MANY_FINDINGS");
+            assertThat(file.get("message").asString()).contains("a single item with far more entries");
+        }
+        assertThat(summary(findings(draft.smo(), draft.submissionId())))
+                .as("only the file at the cap kept anything").containsExactly(
+                        java.util.Map.entry("dc|CVE-2027-1|" + PURL_TEXT, "MEDIUM/1"));
     }
 
     @Test

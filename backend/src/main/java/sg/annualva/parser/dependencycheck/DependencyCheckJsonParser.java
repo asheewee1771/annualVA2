@@ -5,9 +5,12 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 import sg.annualva.parser.ParsedReport;
 import sg.annualva.parser.ReportParser;
+import sg.annualva.parser.ReportText;
 import sg.annualva.parser.UnparseableReportException;
 import tools.jackson.core.JsonParser;
 import tools.jackson.core.JsonToken;
+import tools.jackson.core.StreamReadConstraints;
+import tools.jackson.core.json.JsonFactory;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
@@ -21,7 +24,10 @@ import tools.jackson.databind.json.JsonMapper;
  */
 public final class DependencyCheckJsonParser implements ReportParser {
 
-    private static final JsonMapper JSON = JsonMapper.builder().build();
+    /** A string longer than {@link ReportText#MAX_FIELD_CHARS} that the parser reads is refused, so no value is built whole. */
+    private static final JsonMapper JSON = JsonMapper.builder(JsonFactory.builder()
+            .streamReadConstraints(StreamReadConstraints.builder().maxStringLength(ReportText.MAX_FIELD_CHARS).build())
+            .build()).build();
 
     @Override
     public ParsedReport parse(byte[] content) throws UnparseableReportException {
@@ -134,10 +140,7 @@ public final class DependencyCheckJsonParser implements ReportParser {
                 }
             }
             if (id != null) {
-                ids.add(id);
-            }
-            if (ids.size() > DependencyCheckFindings.MAX_PACKAGES) {
-                throw new UnparseableReportException();
+                DependencyCheckFindings.addPackage(ids, id);
             }
         }
         if (next != JsonToken.END_ARRAY) {
@@ -168,10 +171,8 @@ public final class DependencyCheckJsonParser implements ReportParser {
                     default -> parser.skipChildren();
                 }
             }
-            into.add(new DependencyCheckFindings.Vulnerability(name, v3.score, v3.label, v2.score, v2.label));
-            if (into.size() > ParsedReport.MAX_FINDINGS) {
-                throw new UnparseableReportException();
-            }
+            DependencyCheckFindings.addVulnerability(into,
+                    new DependencyCheckFindings.Vulnerability(name, v3.score, v3.label, v2.score, v2.label));
         }
         if (next != JsonToken.END_ARRAY) {
             throw new UnparseableReportException();

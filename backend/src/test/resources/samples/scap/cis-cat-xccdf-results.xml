@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  PROVENANCE: a schema-faithful reconstruction of the XCCDF 1.2 results file CIS-CAT Pro writes (a Benchmark that carries
+  its TestResult, in the XCCDF 1.2 namespace under the cdf: prefix) for a throwaway host, written by hand for the parser
+  tests. It is NOT the output of a real scan. Regenerate it from a real scan of a throwaway target before release (ticket
+  58). Every name in it is invented.
+-->
+<cdf:Benchmark xmlns:cdf="http://checklists.nist.gov/xccdf/1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    id="xccdf_org.cisecurity.benchmarks_benchmark_1.0.0_CIS_Throwaway_Linux_Benchmark">
+  <cdf:status date="2027-01-15">accepted</cdf:status>
+  <cdf:title>CIS Throwaway Linux Benchmark</cdf:title>
+  <cdf:description>A benchmark invented for the parser tests.</cdf:description>
+  <cdf:version>1.0.0</cdf:version>
+  <cdf:Profile id="xccdf_org.cisecurity.benchmarks_profile_Level_1">
+    <cdf:title>Level 1 - Server</cdf:title>
+    <cdf:select idref="xccdf_org.cisecurity.benchmarks_rule_1.1.1_Ensure_mounting_of_cramfs_is_disabled" selected="true"/>
+  </cdf:Profile>
+  <cdf:Group id="xccdf_org.cisecurity.benchmarks_group_1_Initial_Setup">
+    <cdf:title>Initial Setup</cdf:title>
+    <cdf:Rule id="xccdf_org.cisecurity.benchmarks_rule_1.1.1_Ensure_mounting_of_cramfs_is_disabled" selected="false"
+        severity="unknown">
+      <cdf:title>Ensure mounting of cramfs is disabled</cdf:title>
+      <cdf:description>Remove the cramfs module.</cdf:description>
+    </cdf:Rule>
+    <cdf:Rule id="xccdf_org.cisecurity.benchmarks_rule_1.1.2_Ensure_tmp_is_a_separate_partition" selected="false"
+        severity="unknown">
+      <cdf:title>Ensure /tmp is a separate partition</cdf:title>
+    </cdf:Rule>
+  </cdf:Group>
+  <cdf:TestResult id="xccdf_org.cisecurity.ciscat_testresult_xccdf_org.cisecurity.benchmarks_profile_Level_1"
+      start-time="2027-07-20T09:58:12+08:00" end-time="2027-07-20T10:03:44+08:00" version="1.0">
+    <cdf:benchmark href="throwaway-linux-benchmark.xml"
+        id="xccdf_org.cisecurity.benchmarks_benchmark_1.0.0_CIS_Throwaway_Linux_Benchmark"/>
+    <cdf:title>CIS-CAT Assessment Results</cdf:title>
+    <cdf:identity authenticated="false" privileged="false"/>
+    <cdf:profile idref="xccdf_org.cisecurity.benchmarks_profile_Level_1"/>
+    <cdf:target>throwaway-host-01</cdf:target>
+    <cdf:target-address>192.0.2.10</cdf:target-address>
+    <cdf:target-facts>
+      <cdf:fact name="urn:xccdf:fact:asset:identifier:host_name" type="string">throwaway-host-01</cdf:fact>
+      <cdf:fact name="urn:xccdf:fact:asset:identifier:os_name" type="string">Throwaway Linux 1</cdf:fact>
+    </cdf:target-facts>
+    <cdf:rule-result idref="xccdf_org.cisecurity.benchmarks_rule_1.1.1_Ensure_mounting_of_cramfs_is_disabled"
+        time="2027-07-20T09:58:20+08:00" severity="unknown" weight="1.0">
+      <cdf:result>pass</cdf:result>
+    </cdf:rule-result>
+    <cdf:rule-result idref="xccdf_org.cisecurity.benchmarks_rule_1.1.2_Ensure_tmp_is_a_separate_partition"
+        time="2027-07-20T09:58:21+08:00" severity="unknown" weight="1.0">
+      <cdf:result>fail</cdf:result>
+      <cdf:message severity="info">/tmp is not a separate mount.</cdf:message>
+    </cdf:rule-result>
+    <cdf:rule-result idref="xccdf_org.cisecurity.benchmarks_rule_1.1.3_Ensure_nodev_option_set_on_tmp_partition"
+        time="2027-07-20T09:58:22+08:00" severity="unknown" weight="1.0">
+      <cdf:result>fail</cdf:result>
+    </cdf:rule-result>
+    <cdf:rule-result idref="xccdf_org.cisecurity.benchmarks_rule_1.2.1_Ensure_package_manager_repositories_are_configured"
+        time="2027-07-20T09:58:30+08:00" severity="unknown" weight="1.0">
+      <cdf:result>notapplicable</cdf:result>
+    </cdf:rule-result>
+    <cdf:rule-result idref="xccdf_org.cisecurity.benchmarks_rule_1.2.2_Ensure_GPG_keys_are_configured"
+        time="2027-07-20T09:58:31+08:00" severity="unknown" weight="1.0">
+      <cdf:result>notchecked</cdf:result>
+    </cdf:rule-result>
+    <cdf:rule-result idref="xccdf_org.cisecurity.benchmarks_rule_2.1.1_Ensure_time_synchronization_is_in_use"
+        time="2027-07-20T09:58:40+08:00" severity="unknown" weight="1.0">
+      <cdf:result>error</cdf:result>
+      <cdf:message severity="error">The check could not read /etc/chrony.conf.</cdf:message>
+    </cdf:rule-result>
+    <cdf:rule-result idref="xccdf_org.cisecurity.benchmarks_rule_2.1.2_Ensure_chrony_is_configured"
+        time="2027-07-20T09:58:41+08:00" severity="unknown" weight="1.0">
+      <cdf:result>unknown</cdf:result>
+    </cdf:rule-result>
+    <cdf:rule-result idref="xccdf_org.cisecurity.benchmarks_rule_3.1.1_Ensure_IP_forwarding_is_disabled"
+        time="2027-07-20T09:58:50+08:00" severity="unknown" weight="1.0">
+      <cdf:result>pass</cdf:result>
+    </cdf:rule-result>
+    <cdf:score system="urn:xccdf:scoring:default" maximum="100.0">50.0</cdf:score>
+  </cdf:TestResult>
+</cdf:Benchmark>

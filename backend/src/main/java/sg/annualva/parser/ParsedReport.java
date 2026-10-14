@@ -17,9 +17,10 @@ public record ParsedReport(Metadata metadata, List<Finding> findings) {
 
     /**
      * The most Findings one file may yield, and the most places (occurrences) they may be reported at. A report over either is
-     * refused as not in the shape of its format, because a parser holds every Finding of a file in memory and the file is
+     * refused, because a parser holds every Finding of a file in memory and the file is
      * untrusted: a few tiny vulnerabilities per kilobyte would otherwise make a 25 MB file hundreds of thousands of rows.
-     * A real report names a few thousand; the cap is a proposal a human confirms (ADR 0022).
+     * A real report names a few thousand; the caps were accepted by a human on 2026-10-14 (docs/agents/reviewer-decisions.md). A report over a cap is refused
+     * as over a limit ({@link UnparseableReportException#overALimit()}), never as malformed.
      */
     public static final int MAX_FINDINGS = 20_000;
 
@@ -48,8 +49,24 @@ public record ParsedReport(Metadata metadata, List<Finding> findings) {
     /**
      * One place a Finding was reported.
      *
-     * @param locator the component or source file as the report names it
+     * @param locator the component, source file or host as the report names it
      * @param severity the severity at this place
+     * @param didNotComplete true when the check was run here but neither passed nor failed (a SCAP result of error or
+     *     unknown); false for every other place, a failed check included
      */
-    public record Occurrence(String locator, Severity severity) {}
+    public record Occurrence(String locator, Severity severity, boolean didNotComplete) {
+
+        /**
+         * The same place read twice: the worse severity, and it did not complete only if neither reading did (a check that
+         * failed and also gave an error at a place is a failed check). The one place this rule is written.
+         */
+        public Occurrence merge(Occurrence other) {
+            return new Occurrence(locator, severity.orWorse(other.severity), didNotComplete && other.didNotComplete);
+        }
+
+        /** The same reading at another place. */
+        public Occurrence at(String place) {
+            return new Occurrence(place, severity, didNotComplete);
+        }
+    }
 }

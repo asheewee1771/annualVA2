@@ -2,14 +2,14 @@ package sg.annualva.parser.dependencycheck;
 
 import java.util.ArrayList;
 import java.util.List;
-import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
 import org.jspecify.annotations.Nullable;
 import sg.annualva.parser.ParsedReport;
 import sg.annualva.parser.ReportParser;
+import sg.annualva.parser.ReportText;
 import sg.annualva.parser.UnparseableReportException;
-import sg.annualva.parser.xml.SecureXml;
+import sg.annualva.parser.xml.XmlCursor;
+import sg.annualva.parser.xml.XmlCursor.Boundary;
 
 /**
  * Reads an OWASP Dependency-Check XML report: an {@code analysis} root in the DependencyCheck namespace holding
@@ -17,7 +17,8 @@ import sg.annualva.parser.xml.SecureXml;
  * built, and only the elements that matter are read, by their full path from the root, so a {@code relatedDependencies}
  * or {@code suppressedVulnerabilities} block, whose entries look like the real thing, is never mistaken for one. Anything
  * that is not that shape is refused (a different root or namespace, no {@code dependencies}, an element holding markup
- * where text belongs). The reader comes from {@link SecureXml}: no DTD, no external entity.
+ * where text belongs, a value longer than {@link ReportText#MAX_FIELD_CHARS}). The reader comes from {@code SecureXml}:
+ * no DTD, no external entity.
  */
 public final class DependencyCheckXmlParser implements ReportParser {
 
@@ -63,105 +64,88 @@ public final class DependencyCheckXmlParser implements ReportParser {
 
     @Override
     public ParsedReport parse(byte[] content) throws UnparseableReportException {
-        try {
-            XMLStreamReader reader = SecureXml.reader(content);
-            try {
-                return read(reader);
-            } finally {
-                reader.close();
-            }
+        try (XmlCursor xml = XmlCursor.over(content)) {
+            return read(xml);
         } catch (XMLStreamException | RuntimeException e) {
             // The reader's message may quote the file; it is dropped here.
             throw new UnparseableReportException();
         }
     }
 
-    private static ParsedReport read(XMLStreamReader reader) throws XMLStreamException, UnparseableReportException {
+    private static ParsedReport read(XmlCursor xml) throws XMLStreamException, UnparseableReportException {
         DependencyCheckFindings findings = new DependencyCheckFindings();
-        List<String> path = new ArrayList<>();
         @Nullable String projectName = null;
         @Nullable String reportDate = null;
         boolean sawDependencies = false;
         @Nullable Dependency dependency = null;
         @Nullable Vulnerability vulnerability = null;
-        while (reader.hasNext()) {
-            int event = reader.next();
-            if (event == XMLStreamConstants.END_ELEMENT) {
-                String ended = path.remove(path.size() - 1);
-                if (ended.equals(VULNERABILITY) && dependency != null && vulnerability != null) {
-                    dependency.vulnerabilities.add(vulnerability.finish());
-                    if (dependency.vulnerabilities.size() > ParsedReport.MAX_FINDINGS) {
-                        throw new UnparseableReportException();
-                    }
+        Boundary boundary;
+        while ((boundary = xml.next()) != null) {
+            String here = xml.path();
+            if (boundary == Boundary.END) {
+                if (here.equals(VULNERABILITY) && dependency != null && vulnerability != null) {
+                    DependencyCheckFindings.addVulnerability(dependency.vulnerabilities, vulnerability.finish());
                     vulnerability = null;
-                } else if (ended.equals(DEPENDENCY) && dependency != null) {
+                } else if (here.equals(DEPENDENCY) && dependency != null) {
                     findings.dependency(dependency.fileName, dependency.filePath, dependency.packageIds,
                             dependency.vulnerabilities);
                     dependency = null;
                 }
                 continue;
             }
-            if (event != XMLStreamConstants.START_ELEMENT) {
-                continue;
+            if (xml.depth() == 1) {
+                requireDependencyCheckRoot(xml, here);
             }
-            String here = (path.isEmpty() ? "" : path.get(path.size() - 1) + "/") + reader.getLocalName();
-            if (path.isEmpty()) {
-                requireDependencyCheckRoot(reader);
-            }
-            path.add(here);
             switch (here) {
                 case DEPENDENCIES -> sawDependencies = true;
                 case DEPENDENCY -> dependency = new Dependency();
                 case VULNERABILITY -> vulnerability = dependency == null ? null : new Vulnerability();
-                case PROJECT_NAME -> projectName = text(reader, path);
-                case REPORT_DATE -> reportDate = text(reader, path);
+                case PROJECT_NAME -> projectName = xml.text(ReportText.MAX_FIELD_CHARS);
+                case REPORT_DATE -> reportDate = xml.text(ReportText.MAX_FIELD_CHARS);
                 case FILE_NAME -> {
-                    String name = text(reader, path);
+                    String name = xml.text(ReportText.MAX_FIELD_CHARS);
                     if (dependency != null) {
                         dependency.fileName = name;
                     }
                 }
                 case FILE_PATH -> {
-                    String filePath = text(reader, path);
+                    String filePath = xml.text(ReportText.MAX_FIELD_CHARS);
                     if (dependency != null) {
                         dependency.filePath = filePath;
                     }
                 }
                 case PACKAGE_ID -> {
-                    String id = text(reader, path);
+                    String id = xml.text(ReportText.MAX_FIELD_CHARS);
                     if (dependency != null) {
-                        dependency.packageIds.add(id);
-                        if (dependency.packageIds.size() > DependencyCheckFindings.MAX_PACKAGES) {
-                            throw new UnparseableReportException();
-                        }
+                        DependencyCheckFindings.addPackage(dependency.packageIds, id);
                     }
                 }
                 case VULNERABILITY_NAME -> {
-                    String name = text(reader, path);
+                    String name = xml.text(ReportText.MAX_FIELD_CHARS);
                     if (vulnerability != null) {
                         vulnerability.name = name;
                     }
                 }
                 case CVSS_V3_SCORE -> {
-                    String score = text(reader, path);
+                    String score = xml.text(ReportText.MAX_FIELD_CHARS);
                     if (vulnerability != null) {
                         vulnerability.v3Score = score;
                     }
                 }
                 case CVSS_V3_LABEL -> {
-                    String label = text(reader, path);
+                    String label = xml.text(ReportText.MAX_FIELD_CHARS);
                     if (vulnerability != null) {
                         vulnerability.v3Label = label;
                     }
                 }
                 case CVSS_V2_SCORE -> {
-                    String score = text(reader, path);
+                    String score = xml.text(ReportText.MAX_FIELD_CHARS);
                     if (vulnerability != null) {
                         vulnerability.v2Score = score;
                     }
                 }
                 case CVSS_V2_LABEL -> {
-                    String label = text(reader, path);
+                    String label = xml.text(ReportText.MAX_FIELD_CHARS);
                     if (vulnerability != null) {
                         vulnerability.v2Label = label;
                     }
@@ -179,18 +163,11 @@ public final class DependencyCheckXmlParser implements ReportParser {
     }
 
     /** The root must be {@code analysis} in a DependencyCheck namespace; the type check looked at the name only. */
-    private static void requireDependencyCheckRoot(XMLStreamReader reader) throws UnparseableReportException {
-        String namespace = reader.getNamespaceURI();
-        if (!ROOT.equals(reader.getLocalName()) || namespace == null || !namespace.startsWith(NAMESPACE_START)
+    private static void requireDependencyCheckRoot(XmlCursor xml, String root) throws UnparseableReportException {
+        String namespace = xml.namespace();
+        if (!ROOT.equals(root) || namespace == null || !namespace.startsWith(NAMESPACE_START)
                 || !namespace.endsWith(NAMESPACE_END)) {
             throw new UnparseableReportException();
         }
-    }
-
-    /** The text of a leaf element, which ends the element: it is taken off the path as well. */
-    private static String text(XMLStreamReader reader, List<String> path) throws XMLStreamException {
-        String text = reader.getElementText();
-        path.remove(path.size() - 1);
-        return text;
     }
 }

@@ -1,0 +1,226 @@
+package sg.annualva.parser.scap;
+
+import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import javax.xml.stream.XMLStreamException;
+import org.jspecify.annotations.Nullable;
+import sg.annualva.parser.FindingsBuilder;
+import sg.annualva.parser.ParsedReport;
+import sg.annualva.parser.ReportDates;
+import sg.annualva.parser.ReportParser;
+import sg.annualva.parser.ReportText;
+import sg.annualva.parser.Severity;
+import sg.annualva.parser.UnparseableReportException;
+import sg.annualva.parser.xml.XmlCursor;
+import sg.annualva.parser.xml.XmlCursor.Boundary;
+
+/**
+ * Reads the results of a SCAP scan, from CIS-CAT Pro or OpenSCAP, in either of the two shapes they export: an XCCDF 1.1 or 1.2
+ * {@code Benchmark} that carries its {@code TestResult}s (or a bare {@code TestResult}), and an ARF
+ * ({@code asset-report-collection}) whose reports each hold one. Each {@code TestResult} is one host's run. The document is
+ * streamed and only the results are read, where the formats put them ({@code TestResult}, {@code Benchmark/TestResult},
+ * {@code asset-report-collection/reports/report/content/TestResult}); everything else, an ARF's report requests (which
+ * repeat the whole benchmark and are why an ARF is so large) included, is skipped without being looked at, so a result-like
+ * element anywhere else is never mistaken for one.
+ *
+ * <p>A rule result of {@code fail} is a Finding keyed {@code scap|<rule idref>}; {@code error} and {@code unknown} are a
+ * Finding too, marked as a check that did not complete, because they are neither a pass nor a fail. Every other result
+ * ({@code pass}, {@code notapplicable}, {@code notchecked}, {@code notselected}, {@code informational}, {@code fixed}) is
+ * ignored. A Finding has one occurrence per host (the {@code target}, else the first {@code target-address}, else the id of
+ * its {@code TestResult}). The severity is the one the rule result carries ({@code high}, {@code medium}, {@code low},
+ * {@code info}); {@code unknown}, none or any other word is Medium. The Benchmark's own {@code Rule} severity is not read:
+ * CIS-CAT writes none, OpenSCAP copies it onto the result, and reading it would mean holding every rule of the benchmark.
+ *
+ * <p>The scan date offered is the latest {@code end-time} of the file's results and the target the hosts they name. A file
+ * that is neither shape, has no {@code TestResult} where one belongs, has a result with no rule id, or has a value longer than
+ * {@link ReportText#MAX_FIELD_CHARS} is refused; one that yields more than a file may hold is refused as too large.
+ */
+public final class ScapXmlParser implements ReportParser {
+
+    private static final String ARF_NAMESPACE = "http://scap.nist.gov/schema/asset-reporting-format/";
+    private static final String XCCDF_NAMESPACE = "http://checklists.nist.gov/xccdf/1.";
+
+    private static final String ARF_ROOT = "asset-report-collection";
+    private static final String BENCHMARK_ROOT = "Benchmark";
+    private static final String TEST_RESULT = "TestResult";
+    private static final String ARF_REPORTS = ARF_ROOT + "/reports";
+    private static final String ARF_REPORT = ARF_REPORTS + "/report";
+    private static final String ARF_CONTENT = ARF_REPORT + "/content";
+
+    /** Where a TestResult is: bare, in a Benchmark, or in the content of an ARF report. */
+    private static final Set<String> TEST_RESULTS = Set.of(TEST_RESULT, BENCHMARK_ROOT + "/" + TEST_RESULT,
+            ARF_CONTENT + "/" + TEST_RESULT);
+    /** The elements on the way to a TestResult, the only ones the walk goes into. */
+    private static final Set<String> WAY_IN = Set.of(ARF_ROOT, ARF_REPORTS, ARF_REPORT, ARF_CONTENT, BENCHMARK_ROOT);
+
+    private static final int MAX_RULE_ID = 500;
+    private static final int MAX_HOST = 500;
+    private static final int MAX_TARGET = 200;
+    /**
+     * The most distinct rules one TestResult may gather before it ends: a per-item bound on what is held while a host's
+     * results are read. The caps on Findings and places for the whole file belong to {@link FindingsBuilder}.
+     */
+    private static final int MAX_RULES_PER_HOST = 20_000;
+    /** The hosts named in the target offered for confirmation; the text is cut at {@link #MAX_TARGET} anyway. */
+    private static final int MAX_HOSTS_NAMED = 50;
+    private static final int MAX_SHORT_VALUE = 100;
+
+    /** The place of a reading whose host is not yet known; {@link ParsedReport.Occurrence#at} puts it on its host. */
+    private static final String HOST_TO_COME = "";
+
+    /** What the whole file has said so far. */
+    private static final class Reading {
+        private final FindingsBuilder findings = new FindingsBuilder();
+        private final Set<String> hosts = new LinkedHashSet<>();
+        private @Nullable Instant scanDate;
+        private int testResults;
+
+        void scanned(@Nullable Instant endTime) {
+            if (endTime != null && (scanDate == null || endTime.isAfter(scanDate))) {
+                scanDate = endTime;
+            }
+        }
+
+        void named(String host) {
+            if (hosts.size() < MAX_HOSTS_NAMED) {
+                hosts.add(host);
+            }
+        }
+
+        ParsedReport build() {
+            String target = ReportText.cleanAndCut(String.join(", ", hosts), MAX_TARGET).orElse(null);
+            return findings.build(new ParsedReport.Metadata(scanDate, target));
+        }
+    }
+
+    @Override
+    public ParsedReport parse(byte[] content) throws UnparseableReportException {
+        try (XmlCursor xml = XmlCursor.over(content)) {
+            return read(xml);
+        } catch (XMLStreamException | RuntimeException e) {
+            // The reader's message may quote the file; it is dropped here.
+            throw new UnparseableReportException();
+        }
+    }
+
+    private static ParsedReport read(XmlCursor xml) throws XMLStreamException, UnparseableReportException {
+        Reading reading = new Reading();
+        Boundary boundary;
+        while ((boundary = xml.next()) != null) {
+            if (boundary == Boundary.END) {
+                continue;
+            }
+            String path = xml.path();
+            if (xml.depth() == 1) {
+                requireScapRoot(xml, path);
+            }
+            if (TEST_RESULTS.contains(path) && isXccdf(xml.namespace())) {
+                readTestResult(xml, reading);
+            } else if (!WAY_IN.contains(path)) {
+                xml.skipElement();
+            }
+        }
+        if (reading.testResults == 0) {
+            // A Benchmark with no results, or an ARF with none, is not a results file.
+            throw new UnparseableReportException();
+        }
+        return reading.build();
+    }
+
+    /** The root must be an ARF, or an XCCDF Benchmark or TestResult; the type check looked at the name only. */
+    private static void requireScapRoot(XmlCursor xml, String root) throws UnparseableReportException {
+        String namespace = xml.namespace();
+        boolean arf = ARF_ROOT.equals(root) && namespace != null && namespace.startsWith(ARF_NAMESPACE);
+        boolean xccdf = (BENCHMARK_ROOT.equals(root) || TEST_RESULT.equals(root)) && isXccdf(namespace);
+        if (!arf && !xccdf) {
+            throw new UnparseableReportException();
+        }
+    }
+
+    private static boolean isXccdf(@Nullable String namespace) {
+        return namespace != null && namespace.startsWith(XCCDF_NAMESPACE);
+    }
+
+    /**
+     * One host's TestResult, the cursor on its start; it is left after its end. The rule results are gathered first, one
+     * verdict per rule (a rule read a hundred thousand times is still one), because the host they belong to may be named after
+     * them, and handed to the Findings when the TestResult ends.
+     */
+    private static void readTestResult(XmlCursor xml, Reading reading) throws XMLStreamException,
+            UnparseableReportException {
+        String root = xml.path();
+        String id = xml.attribute("id", ReportText.MAX_FIELD_CHARS);
+        Instant endTime = ReportDates.parse(xml.attribute("end-time", MAX_SHORT_VALUE));
+        @Nullable String target = null;
+        @Nullable String address = null;
+        Map<String, ParsedReport.Occurrence> verdicts = new LinkedHashMap<>();
+        Boundary boundary;
+        while ((boundary = xml.next()) == Boundary.START) {
+            switch (xml.path().substring(root.length())) {
+                case "/target" -> target = firstOf(target, xml.text(ReportText.MAX_FIELD_CHARS));
+                case "/target-address" -> address = firstOf(address, xml.text(ReportText.MAX_FIELD_CHARS));
+                case "/rule-result" -> readRuleResult(xml, verdicts);
+                default -> xml.skipElement();
+            }
+        }
+        if (boundary == null) {
+            throw new XMLStreamException("The document ended inside a TestResult");
+        }
+        reading.testResults++;
+        reading.scanned(endTime);
+        String host = firstOf(target, address);
+        if (host != null) {
+            if (!ReportText.fits(host, MAX_HOST)) {
+                throw new UnparseableReportException();
+            }
+            reading.named(host);
+        }
+        String place = host != null ? host : ReportText.clean(id).orElse(null);
+        if (!verdicts.isEmpty() && (place == null || !ReportText.fits(place, MAX_HOST))) {
+            throw new UnparseableReportException();
+        }
+        for (Map.Entry<String, ParsedReport.Occurrence> verdict : verdicts.entrySet()) {
+            String rule = verdict.getKey();
+            reading.findings.found("scap|" + rule, rule, rule, verdict.getValue().at(place));
+        }
+    }
+
+    /** The first of two values that says something, cleaned. */
+    private static @Nullable String firstOf(@Nullable String kept, @Nullable String next) {
+        return kept != null ? kept : ReportText.clean(next).orElse(null);
+    }
+
+    /** One rule result, the cursor on its start; it is left after its end. Only a failed or an incomplete check is kept. */
+    private static void readRuleResult(XmlCursor xml, Map<String, ParsedReport.Occurrence> verdicts) throws XMLStreamException,
+            UnparseableReportException {
+        String ruleResult = xml.path();
+        String idref = xml.attribute("idref", ReportText.MAX_FIELD_CHARS);
+        String severity = xml.attribute("severity", MAX_SHORT_VALUE);
+        @Nullable String result = null;
+        while (xml.next() == Boundary.START) {
+            if (xml.path().equals(ruleResult + "/result")) {
+                result = xml.text(MAX_SHORT_VALUE).strip().toLowerCase(Locale.ROOT);
+            } else {
+                xml.skipElement();
+            }
+        }
+        boolean didNotComplete = "error".equals(result) || "unknown".equals(result);
+        if (!didNotComplete && !"fail".equals(result)) {
+            return;
+        }
+        String rule = ReportText.clean(idref).orElseThrow(UnparseableReportException::new);
+        if (!ReportText.fits(rule, MAX_RULE_ID)) {
+            throw new UnparseableReportException();
+        }
+        Severity rated = severity == null ? Severity.MEDIUM : Severity.ofLabel(severity).orElse(Severity.MEDIUM);
+        verdicts.merge(rule, new ParsedReport.Occurrence(HOST_TO_COME, rated, didNotComplete),
+                ParsedReport.Occurrence::merge);
+        if (verdicts.size() > MAX_RULES_PER_HOST) {
+            throw UnparseableReportException.overALimit();
+        }
+    }
+}

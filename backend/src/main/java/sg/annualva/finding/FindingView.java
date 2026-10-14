@@ -16,13 +16,15 @@ import sg.annualva.parser.Severity;
  * @param identifier the CVE, GHSA or rule id as the report names it
  * @param packageOrRule the package (a purl, else the dependency's file name) or the rule it applies to
  * @param severity the highest severity of its occurrences
+ * @param didNotComplete true for a Finding that is a check that did not complete (a SCAP result of error or unknown at every
+ *     place it was reported); a failed check, and every Finding of the other Scan Reports, is false
  * @param occurrenceCount how many places it was reported
  * @param sourceFiles the uploaded files it was read from, in the order they were uploaded; the name is the one the person
  *     gave the file
  */
 public record FindingView(
         UUID id, UUID systemId, ReportType reportType, String identityKey, String identifier, String packageOrRule,
-        Severity severity, int occurrenceCount, List<SourceFile> sourceFiles) {
+        Severity severity, boolean didNotComplete, int occurrenceCount, List<SourceFile> sourceFiles) {
 
     /** An uploaded Scan Report file a Finding was read from. */
     public record SourceFile(UUID id, String name) {}

@@ -3,11 +3,13 @@ package sg.annualva.finding;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 import sg.annualva.parser.Severity;
@@ -22,10 +24,11 @@ class FindingStore {
 
     /** A Finding as the table holds it, before its places are added. */
     record Row(UUID id, UUID systemId, ReportType reportType, String identityKey, String identifier,
-            String packageOrRule, Severity severity, int occurrenceCount) {}
+            String packageOrRule, Severity severity, boolean didNotComplete, int occurrenceCount) {}
 
-    /** The worst severity first, so that a smaller position is a worse one. */
-    private static final String SEVERITY_ORDER = "ARRAY['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFORMATIONAL']";
+    /** The worst severity first, so that a smaller position is a worse one: the order of the enum, written once. */
+    private static final String SEVERITY_ORDER = Arrays.stream(Severity.values())
+            .map(severity -> "'" + severity.name() + "'").collect(Collectors.joining(", ", "ARRAY[", "]"));
 
     /**
      * Adds the Findings, or, when the VA Submission already has one with that identity (another file of the same Scan
@@ -43,15 +46,18 @@ class FindingStore {
             + "ELSE finding.severity END";
 
     private static final String ADD_OCCURRENCES =
-            "INSERT INTO finding_occurrence (finding_id, report_file_id, locator, severity) "
-            + "SELECT f.id, :file, u.locator, u.severity "
-            + "FROM unnest(CAST(:hashes AS text[]), CAST(:locators AS text[]), CAST(:severities AS text[])) "
-            + "AS u(hash, locator, severity) "
+            "INSERT INTO finding_occurrence (finding_id, report_file_id, locator, severity, did_not_complete) "
+            + "SELECT f.id, :file, u.locator, u.severity, CAST(u.incomplete AS boolean) "
+            + "FROM unnest(CAST(:hashes AS text[]), CAST(:locators AS text[]), CAST(:severities AS text[]), "
+            + "CAST(:incomplete AS text[])) AS u(hash, locator, severity, incomplete) "
             + "JOIN finding f ON f.submission_id = :submission AND f.identity_hash = u.hash "
             + "ON CONFLICT (finding_id, report_file_id, locator) DO NOTHING";
 
+    /** A Finding did not complete only if it did at every place it was reported (never for a Finding with no place). */
     private static final String PAGE =
             "SELECT f.id, f.system_id, f.report_type, f.identity_key, f.identifier, f.package_or_rule, f.severity, "
+            + "(SELECT COALESCE(bool_and(o.did_not_complete), false) FROM finding_occurrence o WHERE o.finding_id = f.id) "
+            + "AS did_not_complete, "
             + "(SELECT count(*) FROM finding_occurrence o WHERE o.finding_id = f.id) AS occurrences "
             + "FROM finding f WHERE f.submission_id = :submission "
             + "ORDER BY array_position(" + SEVERITY_ORDER + ", f.severity), f.identifier, f.package_or_rule, f.seq "
@@ -76,7 +82,7 @@ class FindingStore {
     record Keyed(String key, String hash, String identifier, String subject, Severity severity) {}
 
     /** One entry per occurrence, keyed by the hash of its Finding's identity key. */
-    record Placed(String hash, String locator, Severity severity) {}
+    record Placed(String hash, String locator, Severity severity, boolean didNotComplete) {}
 
     /** At most this many rows go in one statement, so the arrays of a statement stay small however large the report. */
     static final int ROWS_PER_STATEMENT = 5_000;
@@ -107,6 +113,8 @@ class FindingStore {
                     .param("hashes", chunk.stream().map(Placed::hash).toArray(String[]::new))
                     .param("locators", chunk.stream().map(Placed::locator).toArray(String[]::new))
                     .param("severities", chunk.stream().map(place -> place.severity().name()).toArray(String[]::new))
+                    .param("incomplete", chunk.stream().map(place -> Boolean.toString(place.didNotComplete()))
+                            .toArray(String[]::new))
                     .update();
         }
     }
@@ -119,7 +127,8 @@ class FindingStore {
                 .query((rs, row) -> new Row(rs.getObject("id", UUID.class), rs.getObject("system_id", UUID.class),
                         ReportType.valueOf(rs.getString("report_type")),
                         rs.getString("identity_key"), rs.getString("identifier"), rs.getString("package_or_rule"),
-                        Severity.valueOf(rs.getString("severity")), rs.getInt("occurrences")))
+                        Severity.valueOf(rs.getString("severity")), rs.getBoolean("did_not_complete"),
+                        rs.getInt("occurrences")))
                 .list();
     }
 

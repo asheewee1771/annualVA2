@@ -11,7 +11,7 @@ import sg.annualva.parser.UnparseableReportException;
 
 /**
  * The stages a file goes through once the scanner has passed it, in their fixed order: the type allowlist, the schema
- * check, and, for a format that has a parser, the parse (stories 20a, 21 and 24). A file that fails a stage never reaches
+ * check, and, for a format that has a parser, the parse (stories 20a, 20b, 21 and 24). A file that fails a stage never reaches
  * the next, and the stages it did pass are the ones it is recorded as having entered. Nothing is stored here: the caller
  * keeps the file's clean copy and writes the outcome only for a file that passed.
  */
@@ -61,9 +61,12 @@ final class FileChecks {
             return new Outcome(List.of(PipelineStatus.SCAN_CLEAN, PipelineStatus.TYPE_OK, PipelineStatus.SCHEMA_OK,
                     PipelineStatus.PARSED), null, format, parsed);
         } catch (UnparseableReportException e) {
-            // The structure the format needs was not there, so the file never counts as having passed the schema check.
-            return new Outcome(List.of(PipelineStatus.SCAN_CLEAN, PipelineStatus.TYPE_OK,
-                    PipelineStatus.REJECTED_SCHEMA), RejectCode.SCHEMA, format, null);
+            // The structure the format needs was not there (or the file holds more than one file may), so the file never
+            // counts as having passed the schema check.
+            RejectCode code = e.reason() == UnparseableReportException.Reason.OVER_A_LIMIT ? RejectCode.TOO_MANY_FINDINGS
+                    : RejectCode.SCHEMA;
+            return new Outcome(List.of(PipelineStatus.SCAN_CLEAN, PipelineStatus.TYPE_OK, PipelineStatus.rejected(code)),
+                    code, format, null);
         }
     }
 }

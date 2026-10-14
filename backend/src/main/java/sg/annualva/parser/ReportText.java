@@ -10,6 +10,12 @@ import org.jspecify.annotations.Nullable;
  */
 public final class ReportText {
 
+    /**
+     * The most characters a parser reads for one text value of a report (a name, an identifier, a date) before it refuses the
+     * file. Every value a parser keeps is far shorter; the bound is what keeps one hostile value from being built whole.
+     */
+    public static final int MAX_FIELD_CHARS = 4_000;
+
     private ReportText() {}
 
     /** The text with control and formatting characters removed and the ends trimmed; empty when nothing is left. */

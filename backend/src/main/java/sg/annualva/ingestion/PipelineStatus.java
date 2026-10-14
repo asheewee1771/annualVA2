@@ -26,6 +26,8 @@ public enum PipelineStatus {
     REJECTED_SCAN_TIMEOUT,
     REJECTED_TYPE,
     REJECTED_TOO_LARGE,
+    /** It parsed, but would make more Findings or places than one file may hold (ADR 0023). */
+    REJECTED_TOO_MANY_FINDINGS,
     REJECTED_UNREADABLE,
     REJECTED_SCHEMA,
     REJECTED_HASH_MISMATCH;

@@ -2,7 +2,6 @@ package sg.annualva.ingestion;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -197,20 +196,5 @@ class DependencyCheckParseTest extends DependencyCheckSeam1 {
         assertThat(page.get("total").asInt()).isEqualTo(3000);
         assertThat(page.get("page").asInt()).isEqualTo(2);
         assertThat(page.get("items")).hasSize(500);
-    }
-
-    private static JsonNode byIdentifier(JsonNode page, String identifier) {
-        for (JsonNode item : page.get("items")) {
-            if (item.get("identifier").asString().equals(identifier)) {
-                return item;
-            }
-        }
-        throw new AssertionError("no Finding " + identifier);
-    }
-
-    private static List<String> sourceNames(JsonNode finding) {
-        List<String> names = new ArrayList<>();
-        finding.get("sourceFiles").forEach(source -> names.add(source.get("name").asString()));
-        return names;
     }
 }

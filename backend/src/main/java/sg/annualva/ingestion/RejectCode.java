@@ -1,5 +1,8 @@
 package sg.annualva.ingestion;
 
+import java.util.Locale;
+import sg.annualva.parser.ParsedReport;
+
 /**
  * Why the pipeline rejected a file. Each code has one fixed sentence for the SMO/Tech Lead, written here and never built
  * from the file (as-13, lm-19), and one fixed audit code. A rejected file keeps no bytes.
@@ -18,6 +21,16 @@ public enum RejectCode {
     TYPE("type", "This file is not an accepted type for this Scan Report, so the upload was rejected."),
     /** Larger than the limit for its type. */
     TOO_LARGE("too-large", "This file is larger than the limit for its type, so the upload was rejected."),
+    /**
+     * Within the size limit, but holding more than one file may: more Findings or places than ParsedReport.MAX_FINDINGS and
+     * MAX_OCCURRENCES, or one item with far more entries than a real report has.
+     */
+    TOO_MANY_FINDINGS("too-many-findings",
+            "This file holds more than one file can: more than "
+                    + String.format(Locale.ROOT, "%,d", ParsedReport.MAX_FINDINGS) + " findings, more than "
+                    + String.format(Locale.ROOT, "%,d", ParsedReport.MAX_OCCURRENCES)
+                    + " places they were found, or a single item with far more entries than a real report has, so the "
+                    + "upload was rejected. Export the scan in smaller parts and upload each part."),
     /** Cannot be read to the end. */
     UNREADABLE("unreadable", "This file could not be read, so the upload was rejected."),
     /** Readable but not built the way this Scan Report needs. */

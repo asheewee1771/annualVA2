@@ -235,6 +235,42 @@ class DependencyCheckRulesTest extends DependencyCheckSeam1 {
     }
 
     @Test
+    void aVeryLongTextTheParserDoesNotReadIsNoProblem() {
+        Draft draft = draft();
+        String longText = "d".repeat(50_000);
+        byte[] json = jsonReport("{\"fileName\":\"a.jar\",\"filePath\":\"/a.jar\",\"description\":\"" + longText
+                + "\",\"packages\":[{\"id\":\"" + PURL_TEXT + "\"}],\"vulnerabilities\":[{\"name\":\"CVE-2027-1\","
+                + "\"description\":\"" + longText + "\"," + v3("5.0") + "}]}");
+        byte[] xml = xmlReport("<dependencies><dependency><fileName>a.jar</fileName><filePath>/a.jar</filePath>"
+                + "<description>" + longText + "</description><identifiers><package><id>" + PURL_TEXT
+                + "</id></package></identifiers><vulnerabilities><vulnerability><name>CVE-2027-1</name>"
+                + "<description>" + longText + "</description><cvssV3><baseScore>5.0</baseScore></cvssV3>"
+                + "</vulnerability></vulnerabilities></dependency></dependencies>");
+
+        JsonNode first = settledDc(draft, "long.json", json);
+        JsonNode second = settledDc(draft, "long.xml", xml);
+
+        assertThat(first.get("status").asString()).isEqualTo("PARSED");
+        assertThat(second.get("status").asString()).isEqualTo("PARSED");
+        assertThat(summary(findings(draft.smo(), draft.submissionId()))).as("one place in each of the two files")
+                .containsExactly(Map.entry("dc|CVE-2027-1|" + PURL_TEXT, "MEDIUM/2"));
+    }
+
+    @Test
+    void aValueThatIsReadAndFarLongerThanAnyRealOneIsRefusedInXmlAndJsonAlike() {
+        Draft draft = draft();
+        String longName = "p".repeat(5_000);
+        byte[] json = jsonReportOf("{\"name\":\"" + longName + "\"}");
+        byte[] xml = xmlReport("<projectInfo><name>" + longName + "</name></projectInfo><dependencies/>");
+
+        JsonNode first = settledDc(draft, "name.json", json);
+        JsonNode second = settledDc(draft, "name.xml", xml);
+
+        assertThat(first.get("status").asString()).isEqualTo("REJECTED_SCHEMA");
+        assertThat(second.get("status").asString()).isEqualTo("REJECTED_SCHEMA");
+    }
+
+    @Test
     void aReportWithoutProjectInfoIsStillReadAndOffersNothingToConfirm() {
         Draft draft = draft();
         byte[] report = utf8("{\"reportSchema\":\"1.1\",\"scanInfo\":{},\"dependencies\":[]}");

@@ -62,7 +62,8 @@ public class Findings {
             findings.add(new FindingStore.Keyed(finding.identityKey(), hash, finding.identifier(), finding.subject(),
                     finding.severity()));
             finding.occurrences().forEach(
-                    place -> places.add(new FindingStore.Placed(hash, place.locator(), place.severity())));
+                    place -> places.add(new FindingStore.Placed(hash, place.locator(), place.severity(),
+                            place.didNotComplete())));
         }
         store.upsert(submissionId, systemId, reportType, findings, now);
         store.addOccurrences(submissionId, reportFileId, places);
@@ -79,7 +80,7 @@ public class Findings {
         Map<UUID, List<FindingView.SourceFile>> sources = store.sources(rows.stream().map(FindingStore.Row::id).toList());
         List<FindingView> items = rows.stream()
                 .map(row -> new FindingView(row.id(), row.systemId(), row.reportType(), row.identityKey(),
-                        row.identifier(), row.packageOrRule(), row.severity(), row.occurrenceCount(),
+                        row.identifier(), row.packageOrRule(), row.severity(), row.didNotComplete(), row.occurrenceCount(),
                         sources.getOrDefault(row.id(), List.of())))
                 .toList();
         audit.record(actor.attribute(AuditEvent.of(AuditAction.FINDINGS_VIEWED, AuditOutcome.SUCCESS))
