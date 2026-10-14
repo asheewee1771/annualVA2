@@ -27,6 +27,7 @@ const STATUS_LABELS: Readonly<Record<PipelineStatus, string>> = {
   REJECTED_SCAN_TIMEOUT: "Rejected",
   REJECTED_TYPE: "Rejected",
   REJECTED_TOO_LARGE: "Rejected",
+  REJECTED_TOO_MANY_FINDINGS: "Rejected: too many findings",
   REJECTED_UNREADABLE: "Rejected",
   REJECTED_SCHEMA: "Rejected",
   REJECTED_HASH_MISMATCH: "Rejected",
@@ -60,7 +61,11 @@ function refusalFor(report: ScanReport, file: File): Problem | undefined {
   const limits = REPORT_UPLOAD_LIMITS[report.type];
   if (file.size === 0) return refusal("A file is empty", "Choose the report your tool exported.");
   if (file.size > limits.maxBytes) {
-    return refusal("A file is too large", `A ${report.title} file can be at most ${megabytes(limits.maxBytes)}.`);
+    return refusal(
+      "A file is too large",
+      `A ${report.title} file can be at most ${megabytes(limits.maxBytes)}.` +
+        (report.tooLargeHint ? ` ${report.tooLargeHint}` : ""),
+    );
   }
   if (!limits.extensions.some((extension) => file.name.toLowerCase().endsWith(extension))) {
     return refusal("A file is not an accepted type", `Choose a ${limits.extensions.join(" or ")} file.`);
@@ -71,10 +76,12 @@ function refusalFor(report: ScanReport, file: File): Problem | undefined {
 /** One file with its pipeline status and, when it was rejected, the server's plain message. */
 function FileRow({
   submissionId,
+  report,
   file,
   onProblem,
 }: {
   submissionId: string;
+  report: ScanReport;
   file: ReportFile;
   onProblem: (problem: Problem) => void;
 }) {
@@ -99,6 +106,7 @@ function FileRow({
         </>
       ) : null}
       {file.message ? <p>{file.message}</p> : null}
+      {file.status === "REJECTED_TOO_LARGE" && report.tooLargeHint ? <p>{report.tooLargeHint}</p> : null}
     </li>
   );
 }
@@ -203,7 +211,7 @@ export function ScanReportCard({
       ) : (
         <ul className="plain-list" aria-live="polite">
           {files.map((file) => (
-            <FileRow key={file.id} submissionId={submissionId} file={file} onProblem={setProblem} />
+            <FileRow key={file.id} submissionId={submissionId} report={report} file={file} onProblem={setProblem} />
           ))}
         </ul>
       )}

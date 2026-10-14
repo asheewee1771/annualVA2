@@ -4,6 +4,8 @@ export interface ScanReport {
   type: ReportType;
   title: string;
   note: string;
+  /** What to try when a file of this report is too large for the server; absent when there is nothing better to offer. */
+  tooLargeHint?: string;
 }
 
 /** The three Scan Reports every VA Submission holds (CONTEXT.md); Secure Configuration is always required. */
@@ -17,6 +19,8 @@ export const SCAN_REPORTS: readonly ScanReport[] = [
     type: "SECURE_CONFIGURATION",
     title: "Secure Configuration",
     note: "Always required: a SCAP ARF or XCCDF result, or a Nessus export.",
+    tooLargeHint:
+      "An ARF file can be at most 50 MB and an XCCDF results file 25 MB. If your ARF is too large, export the XCCDF results only.",
   },
   {
     type: "BURP_SUITE",
