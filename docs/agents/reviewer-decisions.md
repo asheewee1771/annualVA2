@@ -113,3 +113,17 @@ Human decisions on reviewer findings. Check here before asking again. Each entry
 - **Finding:** the implementation plan (line 258) and ADR 0021 accepted `CLEAN_SANITIZED` and kept the scanner's altered copy. The IM8 review skill requires a Sanitized verdict to end in a mismatch state with no download and a plain "modified during security scanning, re-upload the original" message. The gate flagged the accepted copy as High.
 - **Chosen action:** follow the standard. `CLEAN_SANITIZED` is rejected with its own reject code and a plain message asking for the original to be re-uploaded; no bytes are kept. It applies to Scan Report uploads and to the Register workbook, and ticket 51's adapter must map the scanner's Sanitized to it. This supersedes ADR 0021 decision 5 and the plan note on line 258. Decided 2026-10-13.
 - **When to reuse:** any finding about Sanitized, modified or altered scan results, for any file kind. Revisit only if the organisation's standard changes.
+
+## Report parser caps: 20,000 Findings and 50,000 occurrences per file
+
+- **Area:** report parsers (ticket 14, ADR 0022 decision 9; ticket 15, ADR 0023), the per-file caps on Findings and occurrences
+- **Finding:** a file parsed into Findings is capped at 20,000 Findings and 50,000 occurrences (and, for Dependency-Check, 20,000 vulnerabilities and 1,000 packages per dependency, plus a 4,000-character cap on any string value read) to bound memory on a crafted file from an authenticated SMO. A file over a cap is rejected as `REJECTED_TOO_MANY_FINDINGS` with its own plain message. A Secure Configuration scan reaches the occurrence cap at about 250 hosts each failing 200 rules, but the accepted 50 MB ARF / 25 MB XCCDF byte limits usually bind first. These counts were first recorded as a proposal.
+- **Chosen action:** accept the caps as built, for every report format. A person who hits one exports in parts (up to 20 files per kind). Decided 2026-10-14.
+- **When to reuse:** any finding about the per-file Finding or occurrence caps or their message. Revisit only if real exports (ticket 58) or the H3 sign-off come near a cap; a per-format cap is the first option then.
+
+## A 404 on a content-bearing read is not audited
+
+- **Area:** audit of reads (spec story 84, IM8 lm-4), the Findings list and the file metadata read (tickets 14, 15), ADRs 0013 and 0014
+- **Finding:** a 404 is deliberately identical for a missing file and one the caller may not see, and no 404 in the app is audited. The question was whether a 404 on a read that carries report content should be audited.
+- **Chosen action:** keep every 404 unaudited, including on content-bearing reads. A refused read is still recorded where a 401 or 403 is written (ADR 0014), and a successful content-bearing read is audited for every role. Decided 2026-10-14.
+- **When to reuse:** any finding that a 404 on a report, Finding, file or evidence read is not audited.

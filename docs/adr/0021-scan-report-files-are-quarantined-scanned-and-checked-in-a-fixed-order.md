@@ -29,3 +29,5 @@ Status: accepted
 Consequences: a rejected file's row stays until the retention ticket disposes of it; the download name is the person's cleaned name, served with the generic content type and as an attachment; the in-flight cap is counted from the table at the start of a pass, so two instances could briefly exceed it by a file or two; the status endpoint is polled by the prepare screen every three seconds while a file is on its way.
 
 Amended by ADR 0022: the parse stage follows the schema check for a format that has a parser (status `PARSED`), and a file is viewable and downloadable at `SCHEMA_OK` or `PARSED`.
+
+Amended by ADR 0023: XCCDF results and ARF files have a parser too (status `PARSED`), and a report over the Findings caps is `REJECTED_TOO_MANY_FINDINGS`, not `REJECTED_SCHEMA`.
