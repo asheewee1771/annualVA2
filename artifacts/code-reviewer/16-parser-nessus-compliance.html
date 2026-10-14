@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review — 16-parser-nessus</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall PASS (warnings)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">build PASS 0/0/0/2</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN 0/0/4/6</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN 0/0/0/3</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">semgrep PASS 0/0/0/0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN 0/0/0/3</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">react PASS 0/0/0/0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN 0/0/2/8</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">main (uncommitted, ticket 16)</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report: 16-parser-nessus</h2>
+          <p class="text-xs text-slate-500 mt-1">Ticket 16, Nessus compliance-audit parser. Counts are Critical / High / Medium / Low. A check is WARN when it has Medium or Low findings only. No Critical or High finding is owned by ticket 16, so the overall verdict is PASS.</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr>
+              <th class="px-4 py-2">Check</th>
+              <th class="px-4 py-2">Status</th>
+              <th class="px-4 py-2">C / H / M / L</th>
+              <th class="px-4 py-2">Summary</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 font-medium">build</td>
+              <td class="px-4 py-2 text-emerald-700 font-semibold">PASS</td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 2</td>
+              <td class="px-4 py-2">npm run check and mvnw clean verify green on a clean copy (555 tests, JaCoCo 96.2 % lines, 88.5 % branches). First in-place run was disrupted by an external Docker kill and is not what the PASS rests on.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">thermo-nuclear</td>
+              <td class="px-4 py-2 text-amber-700 font-semibold">WARN</td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 4 / 6</td>
+              <td class="px-4 py-2">No merge, cap or place logic copied. XML scaffolding now in a third parser (M1), severity vocabulary spread (M2), Finding identity passed redundantly (M3), ScanFacts leaves small copies (M4).</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">code-review</td>
+              <td class="px-4 py-2 text-amber-700 font-semibold">WARN</td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 3</td>
+              <td class="px-4 py-2">Artifact is complete (final status WARN, findings and summary present). Every spec acceptance line met; tickets 14 and 15 behaviour preserved; surefire -Xmx1g keeps JaCoCo.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">semgrep</td>
+              <td class="px-4 py-2 text-emerald-700 font-semibold">PASS</td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 0</td>
+              <td class="px-4 py-2">No finding in any file of this change (main and the 17 test files). 14 pre-existing warnings in earlier generated reports and a dev script are out of scope.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">im8</td>
+              <td class="px-4 py-2 text-amber-700 font-semibold">WARN</td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 3</td>
+              <td class="px-4 py-2">No control owned by ticket 16 fails. as-12 (production scanner and file store) and lm-16 (meters, OpenAPI) remain FAIL as tracked deferrals owned by tickets 51 and 52; the change does not weaken them.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">react</td>
+              <td class="px-4 py-2 text-emerald-700 font-semibold">PASS</td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 0</td>
+              <td class="px-4 py-2">One string literal changed in a plain TypeScript module; rendered as text, no React code in the diff.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">springboot</td>
+              <td class="px-4 py-2 text-amber-700 font-semibold">WARN</td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 2 / 8</td>
+              <td class="px-4 py-2">Slow limit tests (F1), -Xmx1g hard-coded and undocumented (F2), zone-less Nessus time read as UTC (F3), plus Low test and code points.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-700">None. No Critical or High finding from any check is owned by ticket 16.</p>
+        </div>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Tracked deferrals (FAIL owned by a later ticket, not blocking)</h3>
+          <table class="w-full text-sm text-left border border-slate-100">
+            <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <tr>
+                <th class="px-4 py-2">Control</th>
+                <th class="px-4 py-2">Status</th>
+                <th class="px-4 py-2">Owning ticket</th>
+                <th class="px-4 py-2">Note</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr>
+                <td class="px-4 py-2">as-12 production malware-scanner adapter and real file store</td>
+                <td class="px-4 py-2 text-red-700 font-semibold">FAIL (deferred)</td>
+                <td class="px-4 py-2 font-mono text-xs">51</td>
+                <td class="px-4 py-2">Parse still runs only after scan, type check and schema check. Not weakened.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2">lm-16 key-signal meters, committed OpenAPI spec (pm-6)</td>
+                <td class="px-4 py-2 text-red-700 font-semibold">FAIL (deferred)</td>
+                <td class="px-4 py-2 font-mono text-xs">52</td>
+                <td class="px-4 py-2">Parser adds no meters. Content-free counter or exception-class log for swallowed parser errors belongs here (im8 N6, springboot F4). Not weakened.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Recorded decisions applied (not findings)</h3>
+          <ul class="list-disc pl-5 text-sm text-slate-700 space-y-1">
+            <li>Report parser caps: 20,000 Findings and 50,000 occurrences per file.</li>
+            <li>A 404 on a content-bearing read is not audited.</li>
+          </ul>
+        </div>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Notes on how the evidence was obtained</h3>
+          <ul class="list-disc pl-5 text-sm text-slate-700 space-y-1">
+            <li>The build PASS rests on a clean copy of backend/ (src identical to the working tree). The in-place run was killed by an external Docker disruption (all Testcontainers containers received kill signal 9 at once); its failures are environmental.</li>
+            <li>The code-review artifact was checked for completeness: it carries a final status (WARN), a findings list and a closing summary, so it is treated as final, not interim.</li>
+            <li>An in-place Maven process left running by the build reviewer should exit or be stopped before the next in-place build.</li>
+          </ul>
+        </div>
+      </div>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">process</td><td class="px-4 py-2">-</td><td class="px-4 py-2">In-place Maven run (pid 904) left running after the Docker kill; its result is invalid and it writes to backend/target.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">shared Docker daemon</td><td class="px-4 py-2">-</td><td class="px-4 py-2">Several reviewers run Testcontainers on one daemon; any cleanup that kills all containers should be scoped by the Testcontainers session label.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/parser/nessus/NessusXmlParser.java (also ScapXmlParser, DependencyCheckXmlParser)</td><td class="px-4 py-2">58-66</td><td class="px-4 py-2">M1: XML scaffolding (leak-safe parse wrapper, Reading holder, child-walk loop) is now copied a third time; suggest XmlCursor.forEachChild and a shared parse helper before Burp (ticket 17).</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/parser/nessus/NessusXmlParser.java; ScapXmlParser.java</td><td class="px-4 py-2">172-184; 189</td><td class="px-4 py-2">M2: severity scale and the unrated-is-Medium policy live in two parsers instead of in Severity.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">NessusXmlParser.java; ScapXmlParser.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">M3: Finding identity (identifier and subject) passed redundantly; the "nessus|" and "scap|" prefixes are built by string concatenation in each parser.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/parser/ScanFacts.java; dependencycheck/DependencyCheckFindings.java</td><td class="px-4 py-2">31, 53</td><td class="px-4 py-2">M4: 200-character target cut exists twice; ScanFacts.named validates but cleans nothing and its constant leaks into the SCAP parser.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/parser/ReportDates.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L1: instantOf is a growing ladder of try/catch blocks; regex recompiled per call.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">NessusXmlParser.java; ScapXmlParser.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L2: MAX_SHORT_VALUE duplicated; MAX_CHECK_KEY and MAX_CHECK_SHOWN are two names for one number.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">NessusXmlParser.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L3: readItem mixes reading and deciding in one 40-line method.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/NessusLimitsTest.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L4: re-tests FindingsBuilder caps per format; one-line settled* pass-throughs; fully-qualified names inline.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/DependencyCheckLimitsTest.java</td><td class="px-4 py-2">68-73, 92, 140</td><td class="px-4 py-2">L5: the shared-assertion refactor into ParserSeam1 is incomplete.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/pom.xml</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L6: surefire argLine change should be its own build: commit.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/parser/nessus/NessusXmlParser.java</td><td class="px-4 py-2">170</td><td class="px-4 py-2">L-1: readHostProperties length-checks the name of every HostProperties tag, so an unrelated tag with a name over 100 characters rejects the whole file; no test, and ADR 0024 item 2 does not list it.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">NessusXmlParser.java; ScapXmlParser.java; DependencyCheckXmlParser.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L-2: identical parse(byte[]) wrapper and child-walk loop in three parsers.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/NessusLimitsTest.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L-3: limit tests are slow (about 195 s) and grow clean verify time.</td></tr>
+          </tbody>
+        </table>
+        <p class="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">Info only: surefire -Xmx1g correct and keeps JaCoCo (I-1); real-export assumptions pending ticket 58 (I-2); very long id on an ignored check refuses the file (I-3); minor style (I-4).</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td></tr>
+          </tbody>
+        </table>
+        <p class="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">Pre-existing, outside this diff and not counted: 13 missing-integrity warnings in earlier generated reports under artifacts/code-reviewer/ and one path-join warning in scripts/mock-mockpass-assertions.js.</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/parser/XmlParserDepthTest.java</td><td class="px-4 py-2">38, 52</td><td class="px-4 py-2">N1 (as-1): no Nessus case in the parser-level depth test.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/pom.xml; production deployment</td><td class="px-4 py-2">-</td><td class="px-4 py-2">N3 (as-1): production heap for a 50 MB file plus parse overhead is not set anywhere; ticket 52 owns sizing.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/parser/ReportDates.java</td><td class="px-4 py-2">60-63</td><td class="px-4 py-2">N4 (as-1): zone-less Nessus date read as UTC, may pre-fill the next day in Asia/Singapore; confirm with ticket 23.</td></tr>
+          </tbody>
+        </table>
+        <p class="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">Info only: N2 record toString would expose content if ever logged; N5 a kept result with no host or key refuses the file; N6 swallowed parser RuntimeException leaves no operational signal (ticket 52). Tracked deferrals are listed in the summary above.</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/NessusLimitsTest.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">F1: 20,000-Finding and 50,000-occurrence tests dominate suite time (up to several minutes per parser); cap logic is shared in FindingsBuilder, so trim to Nessus-specific cases.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/pom.xml</td><td class="px-4 py-2">-</td><td class="px-4 py-2">F2: surefire -Xmx1g is hard-coded, appended last (overrides a larger -DargLine) and the measurement behind it (passes at 512 MB) is not recorded; suggest a named property.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/parser/ReportDates.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">F3: zone-less Nessus time taken as UTC while business dates are Asia/Singapore (documented in ADR 0024 item 7).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/parser/nessus/NessusXmlParser.java</td><td class="px-4 py-2">58-66</td><td class="px-4 py-2">F4: every RuntimeException becomes a plain REJECTED_SCHEMA with no log signal; log the exception class name only.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/parser/XmlParserDepthTest.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">F5: depth test not extended to the Nessus parser.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/NessusRulesTest.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">F6: only one test captures log output; rejection and DTD cases do not assert the sentinel is absent from logs.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/NessusRulesTest.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">F7: branching table tests; date test uploads 13 files against the 20-file cap per report.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/NessusLimitsTest.java</td><td class="px-4 py-2">134-157</td><td class="px-4 py-2">F8: the 50 MB + 1 KB 413 test proves the container ceiling, not a Nessus limit; add an upper bound to the 49 MB test.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/NessusLimitsTest.java; NessusRulesTest.java; NessusParseTest.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">F9: inline fully-qualified names; atomicity test duplicated across formats.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/parser/ReportDates.java; nessus/NessusXmlParser.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">F10: regex recompiled per call; duplicate 1,000 constants; long HostProperties tag name refuses the file; Javadoc wrapping.</td></tr>
+          </tbody>
+        </table>
+      </details>
+    </main>
+  </body>
+</html>
