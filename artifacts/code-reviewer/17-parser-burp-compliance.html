@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review — 17-parser-burp</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">build PASS 0/0/0/0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN 0/0/7/5</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN 0/0/1/3</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">semgrep WARN 0/0/2/14</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN 0/0/0/3</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">react PASS 0/0/0/0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN 0/0/1/9</span>
+      <span class="font-mono text-sm text-slate-500 ml-auto">main (17-parser-burp)</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report: ticket 17, Burp Suite XML parser</h2>
+          <p class="text-xs text-slate-500 mt-1">Seven checks ran against the uncommitted changes (back end, V12 migration, front-end hint, ADR 0025). Counts are Critical / High / Medium / Low. All seven artifacts were present and complete, each with a final status and findings list. No check reported that its tool could not run. Overall: PASS, because no Critical or High finding is owned by ticket 17.</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2">Check</th>
+              <th class="px-4 py-2">Status</th>
+              <th class="px-4 py-2">C / H / M / L</th>
+              <th class="px-4 py-2">Summary</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 font-medium">build</td>
+              <td class="px-4 py-2 text-emerald-700 font-semibold">PASS</td>
+              <td class="px-4 py-2">0 / 0 / 0 / 0</td>
+              <td class="px-4 py-2">Back end clean verify: 589 tests, 0 failures, ArchUnit green, JaCoCo 96.5 % line and 88.9 % branch. Front end npm run check exit 0. Docker reachable, Seam 1 on real PostgreSQL.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">thermo-nuclear</td>
+              <td class="px-4 py-2 text-amber-700 font-semibold">WARN</td>
+              <td class="px-4 py-2">0 / 0 / 7 / 5</td>
+              <td class="px-4 py-2">The shared-parser refactor stops short of what ADR 0025 item 10 claims (Dependency-Check parser untouched, Finding identity still redundant); Severity and Occurrence plumbing debt.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">code-review</td>
+              <td class="px-4 py-2 text-amber-700 font-semibold">WARN</td>
+              <td class="px-4 py-2">0 / 0 / 1 / 3</td>
+              <td class="px-4 py-2">Spec and standards met; tickets 14 to 16 behaviour preserved. UTF-16/32 test and ADR sentence disagree with the real status (F1).</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">semgrep</td>
+              <td class="px-4 py-2 text-amber-700 font-semibold">WARN</td>
+              <td class="px-4 py-2">0 / 0 / 2 / 14</td>
+              <td class="px-4 py-2">One new Medium (intended RLO character in a test, S-1). One Semgrep ERROR is a pre-existing false positive in test-harness code (S-2). Rest pre-existing.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">im8</td>
+              <td class="px-4 py-2 text-amber-700 font-semibold">WARN</td>
+              <td class="px-4 py-2">0 / 0 / 0 / 3</td>
+              <td class="px-4 py-2">No blocking finding. Three tracked deferrals (as-12 ticket 51; lm-16 and pm-6 ticket 52), none weakened by this change.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">react</td>
+              <td class="px-4 py-2 text-emerald-700 font-semibold">PASS</td>
+              <td class="px-4 py-2">0 / 0 / 0 / 0</td>
+              <td class="px-4 py-2">Two front-end files, string data and a comment only.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">springboot</td>
+              <td class="px-4 py-2 text-amber-700 font-semibold">WARN</td>
+              <td class="px-4 py-2">0 / 0 / 1 / 9</td>
+              <td class="px-4 py-2">XmlCursor.read swallows RuntimeException with no trace (S1); test-quality, SQL and migration notes. Spring Batch not applicable.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-700">None. No check reported a Critical or High finding that ticket 17 owns.</p>
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide pt-2">Tracked deferrals (stay FAIL or WARN in the catalogue; non-blocking under docs/agents/reviewer-decisions.md)</h3>
+          <ul class="list-disc pl-6 text-sm text-slate-700 space-y-1">
+            <li>im8 as-12, malware scanning of uploaded files (catalogue Critical): production scanner adapter and file store belong to ticket 51. Not weakened: parse still runs only after scan, type and schema checks in order.</li>
+            <li>im8 lm-16, key signals monitoring (catalogue High): meters belong to ticket 52. Unchanged by this ticket.</li>
+            <li>im8 pm-6, system documentation (catalogue High): committed OpenAPI file belongs to ticket 52. ADR 0025, CONTEXT.md and the sample README are updated.</li>
+          </ul>
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide pt-2">Recorded human decisions (not findings)</h3>
+          <p class="text-sm text-slate-700">Parser caps (20,000 Findings, 50,000 occurrences), no audit of 404, and the skip-DOCTYPE rule (Burp's own internal subset only for Burp, decision of 2026-10-15) were applied and not re-raised.</p>
+        </div>
+      </div>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2 text-left">Severity</th>
+              <th class="px-4 py-2 text-left">File</th>
+              <th class="px-4 py-2 text-left">Line</th>
+              <th class="px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings (four Info notes in the artifact; mvn clean verify 589 tests green, npm run check exit 0)</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2 text-left">Severity</th>
+              <th class="px-4 py-2 text-left">File</th>
+              <th class="px-4 py-2 text-left">Line</th>
+              <th class="px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 align-top">
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">parser/FindingsBuilder.java, parser/FindingKeys.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">M1. Finding identity is still three correlated arguments; FindingKeys only moved the string concatenation. Return one FindingId; move the no-pipe part check into FindingKeys.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">parser/Severity.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">M2. ofScap is a pass-through wrapper; ofBurp only adds INFORMATION. One Severity.rated would hold the unrated policy once.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">parser/burp/BurpXmlParser.java</td><td class="px-4 py-2">PROLOG</td><td class="px-4 py-2">M3. The Burp prolog regex is a 25-line DOCTYPE policy in a vendor parser, stricter than the other formats, rejects UTF-16, and is unproved on a real export (sample is a reconstruction; ticket 58). Move to parser.xml or drop.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">parser/dependencycheck/DependencyCheckXmlParser.java, DependencyCheckFindings.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">M4. Dependency-Check parser left on the old nine-case switch and a private copy of ScanFacts (MAX_TARGET). ADR 0025 item 10 says all three use the new scaffolding; that is not true for Dependency-Check.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">parser/burp/BurpXmlParser.java</td><td class="px-4 py-2">readIssue</td><td class="px-4 py-2">M5. Seven-local, seven-case field loop that will be copied again; MAX_SHORT_VALUE declared three times.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">finding/FindingStore.java, Findings.java, FindingView.java, parser/ParsedReport.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">M6. A new per-occurrence attribute is plumbed through six near-identical records and sentinel-encoded arrays; confidence rule written three times plus V12 CHECK.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">parser/ScanReading.java, parser/ScanFacts.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">M7. ScanReading.sections is a per-format counter and dead weight for Burp; ScanFacts.named does key-length validation as a side effect.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">parser/burp/BurpXmlParser.java</td><td class="px-4 py-2">read</td><td class="px-4 py-2">L1. Top-level walk copies the SCAP/Nessus loop instead of using nextChild.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">ingestion/ReportFormat.java, ReportFiles.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L2. Boolean flag and string-to-enum round trip for one Burp fact.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">parser/xml/XmlCursor.java</td><td class="px-4 py-2">read</td><td class="px-4 py-2">L3. Catches RuntimeException with no trace for all four parsers.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">parser/xml/XmlCursor.java</td><td class="px-4 py-2">nextChild, below</td><td class="px-4 py-2">L4. Unenforceable contracts; bare substring of the current path.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">parser/ReportDates.java, parser/ParsedReport.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">L5. Documentation weight, a three-step try/catch date chain, a spare constructor.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2 text-left">Severity</th>
+              <th class="px-4 py-2 text-left">File</th>
+              <th class="px-4 py-2 text-left">Line</th>
+              <th class="px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 align-top">
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/BurpRulesTest.java; docs/adr/0025</td><td class="px-4 py-2">112-129</td><td class="px-4 py-2">F1. The UTF-16/UTF-32 test asserts isIn(REJECTED_SCHEMA, REJECTED_TYPE) and cannot tell which branch ran; all three files it builds are REJECTED_TYPE, while ADR 0025 item 2 says REJECTED_SCHEMA. Only BOM-less UTF-16LE with an XML declaration reaches the prolog check. Fix the ADR sentence and pin each encoding's exact status, adding the BOM-less UTF-16LE case.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">.scratch/annual-va/issues/17-parser-burp.md</td><td class="px-4 py-2">-</td><td class="px-4 py-2">F2. "Confidence stored and shown" and the export-time flag are delivered by the API only; display is deferred to tickets 19 and 23 by ADR 0025. Say so in the Implemented note.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/parser/burp/BurpXmlParser.java</td><td class="px-4 py-2">PROLOG</td><td class="px-4 py-2">F3. The strict prolog pattern is unverified against a real Burp export; fails closed. ADR 0025 item 11 already makes ticket 58 the release gate.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">parser/Severity.java, parser/Confidence.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">F4. Per-tool vocabulary on Severity (middle man); enum-order dependence for confidence. No action unless a fifth tool arrives.</td></tr>
+          </tbody>
+        </table>
+        <p class="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">Info only: F5 (XmlCursorTest is not Seam 1, justified), F6 (boolean on ReportFormat), F7 (UTF-16 handling differs by format, pre-existing). Behaviour of tickets 14 to 16 confirmed preserved; ticket 17 acceptance criteria met.</p>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2 text-left">Severity</th>
+              <th class="px-4 py-2 text-left">File</th>
+              <th class="px-4 py-2 text-left">Line</th>
+              <th class="px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 align-top">
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/BurpRulesTest.java</td><td class="px-4 py-2">160</td><td class="px-4 py-2">S-1 (new, this ticket). bidirectional-characters: literal U+202E in a test string, on purpose. Optional: write it as a Java escape.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">scripts/mock-mockpass-assertions.js</td><td class="px-4 py-2">11</td><td class="px-4 py-2">S-4 (pre-existing, unchanged). path.resolve in a dev-only script with a constant argument.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">artifacts/code-reviewer/03-... to 16-parser-nessus-compliance.html</td><td class="px-4 py-2">6-7</td><td class="px-4 py-2">S-3 (pre-existing) x14. Generated reports with a CDN script tag lacking an integrity attribute.</td></tr>
+          </tbody>
+        </table>
+        <p class="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">Noted, not counted as High: S-2, a Semgrep ERROR (tainted-sql-string) at backend/src/test/java/sg/annualva/harness/TestEndpoints.java:254. The line is not in this ticket's diff, is guarded by prefix.matches("[A-Z_]+"), and is test-harness code; assessed a false positive.</p>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2 text-left">Severity</th>
+              <th class="px-4 py-2 text-left">File</th>
+              <th class="px-4 py-2 text-left">Line</th>
+              <th class="px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 align-top">
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/parser/burp/BurpXmlParser.java</td><td class="px-4 py-2">70-86</td><td class="px-4 py-2">F1 (as-1). No test aims a hostile input at the prolog regex (whitespace run, long or unterminated comment, many declarations). The regex was measured safe (worst 11 ms).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/parser/burp/BurpXmlParser.java</td><td class="px-4 py-2">157</td><td class="px-4 py-2">F2 (as-1). The 20,000 and 50,000 caps have no Burp-format test; only DependencyCheckLimitsTest exercises them.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/parser/burp/BurpXmlParser.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">F3 (as-1). Memory held per host and path is bounded; whole 50 MB byte array also held. No action; note for ticket 51 sizing.</td></tr>
+          </tbody>
+        </table>
+        <div class="px-4 py-3 text-xs text-slate-600 border-t border-slate-100 space-y-1">
+          <p>Info: F4 (lm-4) ReportFiles.metadata audits before requireNonNull(row.detectedFormat()), ReportFiles.java:145-148. F5 (operations) Burp files uploaded before this change rest at SCHEMA_OK and are never parsed; likely none exist pre-live.</p>
+          <p>Tracked deferrals (FAIL or WARN in the catalogue, non-blocking, not weakened): as-12 (ticket 51), lm-16 (ticket 52), pm-6 OpenAPI file (ticket 52). Controls as-1, as-2, as-3, as-7, as-13, lm-4, lm-15, lm-19 PASS.</p>
+        </div>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2 text-left">Severity</th>
+              <th class="px-4 py-2 text-left">File</th>
+              <th class="px-4 py-2 text-left">Line</th>
+              <th class="px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2 text-left">Severity</th>
+              <th class="px-4 py-2 text-left">File</th>
+              <th class="px-4 py-2 text-left">Line</th>
+              <th class="px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 align-top">
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/parser/xml/XmlCursor.java</td><td class="px-4 py-2">55</td><td class="px-4 py-2">S1. XmlCursor.read swallows every RuntimeException with no trace, hiding parser bugs from operations; the person is told their file is invalid. Log WARN with error.type only (no message), or rethrow programming errors. Pre-existing in three parsers, now centralised.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">NessusParseTest:266, ScapParseTest:272, FindingsListTest:174</td><td class="px-4 py-2">-</td><td class="px-4 py-2">S2. The atomicity "late" fault mode is exercised in the Burp test only; move the on and late loop to FindingsListTest and record it in reviewer-decisions.md.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingStore.java</td><td class="px-4 py-2">69</td><td class="px-4 py-2">S3. Third correlated subquery per Finding in PAGE; fine at 500 rows, optional single lateral aggregate.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V12__finding_occurrence_confidence.sql</td><td class="px-4 py-2">-</td><td class="px-4 py-2">S4. CHECK added under ACCESS EXCLUSIVE; NOT VALID plus VALIDATE for a later migration.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">ingestion/ScanPoller.java</td><td class="px-4 py-2">-</td><td class="px-4 py-2">S5. Burp files already resting at SCHEMA_OK are never parsed; one line in the ADR "no data to migrate" would close it.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/BurpLimitsTest.java; backend/pom.xml</td><td class="px-4 py-2">pom 128</td><td class="px-4 py-2">S6. 49 MB test heap margin under -Xmx1g thinner than the pom comment says; update the comment, null the buffer, run once on the smallest CI runner.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">BurpLimitsTest:80; BurpRulesTest:125/272</td><td class="px-4 py-2">-</td><td class="px-4 py-2">S7. Two tests over-claim: they assert only REJECTED_SCHEMA or any of three REJECTED_* codes, so they do not prove the bound or the regex was what refused.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">parser/burp/BurpXmlParser.java</td><td class="px-4 py-2">PROLOG</td><td class="px-4 py-2">S8. Prolog regex fails closed on an unverified real format; add a ticket 58 checklist item.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">parser/ReportDates.java; finding/FindingView.java</td><td class="px-4 py-2">FindingView 24</td><td class="px-4 py-2">S9. No zero-padded-day date test; the Tentative sentence in FindingView does not match the implementation; no accepted-path log check for kept Burp fields.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/harness/TestEndpoints.java</td><td class="px-4 py-2">271</td><td class="px-4 py-2">S10. An unknown findingFault mode silently means off; return 400 for anything but on, late, off.</td></tr>
+          </tbody>
+        </table>
+        <p class="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">Info only: S11 (direct-parser tests justified), S12 (stale PipelineStatus and ReportDates Javadoc), S13 (duplicate 413 test), S14 (loops inside tests), S15 (StAX builds an attribute value whole before the length check, bounded by file size). Spring Batch not applicable.</p>
+      </details>
+    </main>
+  </body>
+</html>
