@@ -127,3 +127,10 @@ Human decisions on reviewer findings. Check here before asking again. Each entry
 - **Finding:** a 404 is deliberately identical for a missing file and one the caller may not see, and no 404 in the app is audited. The question was whether a 404 on a read that carries report content should be audited.
 - **Chosen action:** keep every 404 unaudited, including on content-bearing reads. A refused read is still recorded where a 401 or 403 is written (ADR 0014), and a successful content-bearing read is audited for every role. Decided 2026-10-14.
 - **When to reuse:** any finding that a 404 on a report, Finding, file or evidence read is not audited.
+
+## A DOCTYPE is skipped and never obeyed; only Burp's internal subset is accepted, as Burp writes it
+
+- **Area:** report XML parsers (tickets 14 to 17, ADR 0021 item 7, ADR 0025 item 2), implementation plan line 158 and ticket 17's acceptance wording
+- **Finding:** the plan said "DOCTYPE forbidden except Burp's internal subset" and ticket 17 said every other format forbids DOCTYPE. Tickets 14 to 16 skip a DOCTYPE that declares nothing and their tests assert it. `SecureXml` turns DTD support and external entities off for every format, so nothing is loaded or expanded either way, and an entity reference is an error.
+- **Chosen action:** accept as built. A DOCTYPE is skipped and never obeyed for the Dependency-Check, SCAP and Nessus parsers; the Burp parser accepts only Burp's own internal subset (ELEMENT and ATTLIST declarations, no external id) checked on the first 32 KB of bytes. The plan line and ticket 17's wording were amended to say so. Decided 2026-10-15.
+- **When to reuse:** any finding that a non-Burp report parser does not refuse a DOCTYPE. Revisit only if real exports (ticket 58) or a security review show a reason to refuse every DOCTYPE; that is a one-line check per parser.

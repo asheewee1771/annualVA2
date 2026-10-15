@@ -19,7 +19,7 @@ Status: accepted
    | Secure Configuration | XCCDF results | root `Benchmark` or `TestResult` | 25 MB |
    | Secure Configuration | SCAP ARF | root `asset-report-collection` | 50 MB |
    | Secure Configuration | Nessus | root `NessusClientData_v2` | 50 MB |
-   | Burp Suite | XML | root `issues` (its internal DOCTYPE is skipped, never obeyed) | 50 MB |
+   | Burp Suite | XML | root `issues` (its internal DOCTYPE is accepted only as Burp writes it, never obeyed: ADR 0025) | 50 MB |
 
    A file of any other type, or of a format that belongs to another Scan Report, is `REJECTED_TYPE`; one over its limit is `REJECTED_TOO_LARGE`; both are decided before the file is read in full. The container ceiling is 50 MB per upload; at most 20 files (not counting rejected ones) per Scan Report and kind (`too-many-files`, 409). Evidence (`kind` EVIDENCE: PDF and HTML) has no allowed type until ticket 18, so it is `REJECTED_TYPE` today. The limits are proposals from the implementation plan for the human to confirm (assumption list, H3).
 8. **Schema check.** The whole document is read once and not kept: a truncated or malformed document is `REJECTED_UNREADABLE`; an XML document nested deeper than 100 levels, or Dependency-Check JSON whose `dependencies` is not an array, is `REJECTED_SCHEMA`; JSON nested deeper than the JSON reader allows (500 levels) is unreadable. An entity declared in a DOCTYPE is never expanded, so an entity bomb or an external entity makes the file unreadable and nothing is loaded. The parsers of tickets 14 to 17 tighten this per format. Only a file at `SCHEMA_OK` (and later statuses) can be viewed or downloaded.

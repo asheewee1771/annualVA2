@@ -19,3 +19,5 @@ Ticket 16 adds the third parser behind the pipeline (ADR 0022 added Dependency-C
 Consequences: uploading the same export twice doubles every occurrence count until ticket 21's replace rule applies (as for the other parsers); a Nessus export of a vulnerability scan is accepted with no Findings; the severity a real export carries on a failed compliance item, the check id's stability and the `cm` namespace are assumptions to confirm at ticket 58; the date is taken as UTC.
 
 Amends ADR 0023: item 1 and the consequences (`ReportFormat` has a null parser only for Burp now); the host and date gathering of item 7 lives in `ScanFacts`.
+
+Amended by ADR 0025: `ReportFormat` has no null parser now (Burp has one); the XML parse wrapper, reading holder and child loop, the severity scale and unrated policy, and the key prefixes are shared in `XmlCursor`, `ScanReading`, `Severity` and `FindingKeys`, with no change of behaviour.
