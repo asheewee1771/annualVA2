@@ -6,7 +6,8 @@ export type ReportType = "DEPENDENCY_CHECK" | "SECURE_CONFIGURATION" | "BURP_SUI
 
 /**
  * Where a file is in the upload pipeline. The stages run in a fixed order (quarantine, malware scan, type check, schema
- * check, parse; a format with no parser yet rests at SCHEMA_OK); a REJECTED_ status says the file stopped at one of them and why.
+ * check, parse; SCHEMA_OK is only a stage a file passes through on its way to PARSED, as every format has a parser); a
+ * REJECTED_ status says the file stopped at one of them and why.
  */
 export type PipelineStatus =
   | "QUARANTINED"

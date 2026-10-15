@@ -26,6 +26,8 @@ export const SCAN_REPORTS: readonly ScanReport[] = [
     type: "BURP_SUITE",
     title: "Burp Suite",
     note: "Required, unless you mark it not applicable with a justification the Cyber Manager confirms.",
+    tooLargeHint:
+      "A Burp Suite XML export can be at most 50 MB. If yours is too large, export the issues again without the request and response bodies, which are most of the file.",
   },
 ];
 
