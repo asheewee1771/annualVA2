@@ -10,8 +10,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
+import sg.annualva.parser.Confidence;
 import sg.annualva.parser.Severity;
 
 /**
@@ -24,7 +26,8 @@ class FindingStore {
 
     /** A Finding as the table holds it, before its places are added. */
     record Row(UUID id, UUID systemId, ReportType reportType, String identityKey, String identifier,
-            String packageOrRule, Severity severity, boolean didNotComplete, int occurrenceCount) {}
+            String packageOrRule, Severity severity, boolean didNotComplete, @Nullable Confidence confidence,
+            int occurrenceCount) {}
 
     /** The worst severity first, so that a smaller position is a worse one: the order of the enum, written once. */
     private static final String SEVERITY_ORDER = Arrays.stream(Severity.values())
@@ -45,19 +48,30 @@ class FindingStore {
             + "< array_position(" + SEVERITY_ORDER + ", finding.severity) THEN EXCLUDED.severity "
             + "ELSE finding.severity END";
 
+    /** The most sure first, so that a smaller position is a more sure one: the order of the enum, written once. */
+    private static final String CONFIDENCE_ORDER = Arrays.stream(Confidence.values())
+            .map(confidence -> "'" + confidence.name() + "'").collect(Collectors.joining(", ", "ARRAY[", "]"));
+
+    /** A place with no confidence is written as the empty text, which is NULL in the table. */
     private static final String ADD_OCCURRENCES =
-            "INSERT INTO finding_occurrence (finding_id, report_file_id, locator, severity, did_not_complete) "
-            + "SELECT f.id, :file, u.locator, u.severity, CAST(u.incomplete AS boolean) "
+            "INSERT INTO finding_occurrence (finding_id, report_file_id, locator, severity, did_not_complete, confidence) "
+            + "SELECT f.id, :file, u.locator, u.severity, CAST(u.incomplete AS boolean), NULLIF(u.confidence, '') "
             + "FROM unnest(CAST(:hashes AS text[]), CAST(:locators AS text[]), CAST(:severities AS text[]), "
-            + "CAST(:incomplete AS text[])) AS u(hash, locator, severity, incomplete) "
+            + "CAST(:incomplete AS text[]), CAST(:confidences AS text[])) "
+            + "AS u(hash, locator, severity, incomplete, confidence) "
             + "JOIN finding f ON f.submission_id = :submission AND f.identity_hash = u.hash "
             + "ON CONFLICT (finding_id, report_file_id, locator) DO NOTHING";
 
-    /** A Finding did not complete only if it did at every place it was reported (never for a Finding with no place). */
+    /**
+     * A Finding did not complete only if it did at every place it was reported (never for a Finding with no place); its
+     * confidence is the most sure of its places (none when no place has one).
+     */
     private static final String PAGE =
             "SELECT f.id, f.system_id, f.report_type, f.identity_key, f.identifier, f.package_or_rule, f.severity, "
             + "(SELECT COALESCE(bool_and(o.did_not_complete), false) FROM finding_occurrence o WHERE o.finding_id = f.id) "
             + "AS did_not_complete, "
+            + "(SELECT o.confidence FROM finding_occurrence o WHERE o.finding_id = f.id AND o.confidence IS NOT NULL "
+            + "ORDER BY array_position(" + CONFIDENCE_ORDER + ", o.confidence) LIMIT 1) AS confidence, "
             + "(SELECT count(*) FROM finding_occurrence o WHERE o.finding_id = f.id) AS occurrences "
             + "FROM finding f WHERE f.submission_id = :submission "
             + "ORDER BY array_position(" + SEVERITY_ORDER + ", f.severity), f.identifier, f.package_or_rule, f.seq "
@@ -82,7 +96,7 @@ class FindingStore {
     record Keyed(String key, String hash, String identifier, String subject, Severity severity) {}
 
     /** One entry per occurrence, keyed by the hash of its Finding's identity key. */
-    record Placed(String hash, String locator, Severity severity, boolean didNotComplete) {}
+    record Placed(String hash, String locator, Severity severity, boolean didNotComplete, @Nullable Confidence confidence) {}
 
     /** At most this many rows go in one statement, so the arrays of a statement stay small however large the report. */
     static final int ROWS_PER_STATEMENT = 5_000;
@@ -115,6 +129,9 @@ class FindingStore {
                     .param("severities", chunk.stream().map(place -> place.severity().name()).toArray(String[]::new))
                     .param("incomplete", chunk.stream().map(place -> Boolean.toString(place.didNotComplete()))
                             .toArray(String[]::new))
+                    .param("confidences", chunk.stream()
+                            .map(place -> place.confidence() == null ? "" : place.confidence().name())
+                            .toArray(String[]::new))
                     .update();
         }
     }
@@ -128,8 +145,12 @@ class FindingStore {
                         ReportType.valueOf(rs.getString("report_type")),
                         rs.getString("identity_key"), rs.getString("identifier"), rs.getString("package_or_rule"),
                         Severity.valueOf(rs.getString("severity")), rs.getBoolean("did_not_complete"),
-                        rs.getInt("occurrences")))
+                        confidenceOf(rs.getString("confidence")), rs.getInt("occurrences")))
                 .list();
+    }
+
+    private static @Nullable Confidence confidenceOf(@Nullable String name) {
+        return name == null ? null : Confidence.valueOf(name);
     }
 
     long count(UUID submissionId) {

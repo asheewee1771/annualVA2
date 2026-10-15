@@ -14,8 +14,7 @@ import tools.jackson.databind.JsonNode;
  * Stories 21 and 24: the type allowlist decides from the bytes (a root element, the shape of a JSON document), never from
  * the file name or declared type, applies each type's size limit, and rejects a disallowed or oversized file before
  * anything parses it; the schema check rejects a file that cannot be read to the end or lacks the structure its format
- * needs. A Dependency-Check, XCCDF, ARF or Nessus file that passes is parsed (PARSED); a Burp file waits at SCHEMA_OK for the
- * parser of the next ticket.
+ * needs. A Dependency-Check, XCCDF, ARF, Nessus or Burp file that passes is parsed (PARSED).
  */
 class TypeAndSchemaCheckTest extends IngestionSeam1 {
 
@@ -24,8 +23,7 @@ class TypeAndSchemaCheckTest extends IngestionSeam1 {
     }
 
     private void assertAccepted(JsonNode file, String format) {
-        assertThat(file.get("status").asString()).as(file.toString())
-                .isEqualTo(format.equals("BURP_XML") ? "SCHEMA_OK" : "PARSED");
+        assertThat(file.get("status").asString()).as(file.toString()).isEqualTo("PARSED");
         assertThat(file.get("detectedFormat").asString()).isEqualTo(format);
     }
 

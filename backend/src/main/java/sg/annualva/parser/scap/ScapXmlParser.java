@@ -7,12 +7,14 @@ import java.util.Map;
 import java.util.Set;
 import javax.xml.stream.XMLStreamException;
 import org.jspecify.annotations.Nullable;
+import sg.annualva.parser.FindingKeys;
 import sg.annualva.parser.FindingsBuilder;
 import sg.annualva.parser.ParsedReport;
 import sg.annualva.parser.ReportDates;
 import sg.annualva.parser.ReportParser;
 import sg.annualva.parser.ReportText;
 import sg.annualva.parser.ScanFacts;
+import sg.annualva.parser.ScanReading;
 import sg.annualva.parser.Severity;
 import sg.annualva.parser.UnparseableReportException;
 import sg.annualva.parser.xml.XmlCursor;
@@ -68,25 +70,13 @@ public final class ScapXmlParser implements ReportParser {
     /** The place of a reading whose host is not yet known; {@link ParsedReport.Occurrence#at} puts it on its host. */
     private static final String HOST_TO_COME = "";
 
-    /** What the whole file has said so far. */
-    private static final class Reading {
-        private final FindingsBuilder findings = new FindingsBuilder();
-        private final ScanFacts facts = new ScanFacts();
-        private int testResults;
-    }
-
     @Override
     public ParsedReport parse(byte[] content) throws UnparseableReportException {
-        try (XmlCursor xml = XmlCursor.over(content)) {
-            return read(xml);
-        } catch (XMLStreamException | RuntimeException e) {
-            // The reader's message may quote the file; it is dropped here.
-            throw new UnparseableReportException();
-        }
+        return XmlCursor.read(content, ScapXmlParser::read);
     }
 
     private static ParsedReport read(XmlCursor xml) throws XMLStreamException, UnparseableReportException {
-        Reading reading = new Reading();
+        ScanReading reading = new ScanReading();
         Boundary boundary;
         while ((boundary = xml.next()) != null) {
             if (boundary == Boundary.END) {
@@ -102,11 +92,8 @@ public final class ScapXmlParser implements ReportParser {
                 xml.skipElement();
             }
         }
-        if (reading.testResults == 0) {
-            // A Benchmark with no results, or an ARF with none, is not a results file.
-            throw new UnparseableReportException();
-        }
-        return reading.findings.build(reading.facts.metadata());
+        // A Benchmark with no results, or an ARF with none, is not a results file: building the reading refuses it.
+        return reading.build();
     }
 
     /** The root must be an ARF, or an XCCDF Benchmark or TestResult; the type check looked at the name only. */
@@ -128,7 +115,7 @@ public final class ScapXmlParser implements ReportParser {
      * verdict per rule (a rule read a hundred thousand times is still one), because the host they belong to may be named after
      * them, and handed to the Findings when the TestResult ends.
      */
-    private static void readTestResult(XmlCursor xml, Reading reading) throws XMLStreamException,
+    private static void readTestResult(XmlCursor xml, ScanReading reading) throws XMLStreamException,
             UnparseableReportException {
         String root = xml.path();
         String id = xml.attribute("id", ReportText.MAX_FIELD_CHARS);
@@ -136,23 +123,19 @@ public final class ScapXmlParser implements ReportParser {
         @Nullable String target = null;
         @Nullable String address = null;
         Map<String, ParsedReport.Occurrence> verdicts = new LinkedHashMap<>();
-        Boundary boundary;
-        while ((boundary = xml.next()) == Boundary.START) {
-            switch (xml.path().substring(root.length())) {
+        while (xml.nextChild()) {
+            switch (xml.below(root)) {
                 case "/target" -> target = ReportText.firstClean(target, xml.text(ReportText.MAX_FIELD_CHARS));
                 case "/target-address" -> address = ReportText.firstClean(address, xml.text(ReportText.MAX_FIELD_CHARS));
                 case "/rule-result" -> readRuleResult(xml, verdicts);
                 default -> xml.skipElement();
             }
         }
-        if (boundary == null) {
-            throw new XMLStreamException("The document ended inside a TestResult");
-        }
-        reading.testResults++;
-        reading.facts.scanned(endTime);
+        reading.sawSection();
+        reading.facts().scanned(endTime);
         String host = ReportText.firstClean(target, address);
         if (host != null) {
-            reading.facts.named(host);
+            reading.facts().named(host);
         }
         String place = host != null ? host : ReportText.clean(id).orElse(null);
         if (!verdicts.isEmpty() && (place == null || !ReportText.fits(place, ScanFacts.MAX_HOST_CHARS))) {
@@ -160,7 +143,7 @@ public final class ScapXmlParser implements ReportParser {
         }
         for (Map.Entry<String, ParsedReport.Occurrence> verdict : verdicts.entrySet()) {
             String rule = verdict.getKey();
-            reading.findings.found("scap|" + rule, rule, rule, verdict.getValue().at(place));
+            reading.findings().found(FindingKeys.scap(rule), rule, verdict.getValue().at(place));
         }
     }
 
@@ -171,7 +154,7 @@ public final class ScapXmlParser implements ReportParser {
         String idref = xml.attribute("idref", ReportText.MAX_FIELD_CHARS);
         String severity = xml.attribute("severity", MAX_SHORT_VALUE);
         @Nullable String result = null;
-        while (xml.next() == Boundary.START) {
+        while (xml.nextChild()) {
             if (xml.path().equals(ruleResult + "/result")) {
                 result = xml.text(MAX_SHORT_VALUE).strip().toLowerCase(Locale.ROOT);
             } else {
@@ -186,8 +169,7 @@ public final class ScapXmlParser implements ReportParser {
         if (!ReportText.fits(rule, MAX_RULE_ID)) {
             throw new UnparseableReportException();
         }
-        Severity rated = severity == null ? Severity.MEDIUM : Severity.ofLabel(severity).orElse(Severity.MEDIUM);
-        verdicts.merge(rule, new ParsedReport.Occurrence(HOST_TO_COME, rated, didNotComplete),
+        verdicts.merge(rule, new ParsedReport.Occurrence(HOST_TO_COME, Severity.ofScap(severity), didNotComplete),
                 ParsedReport.Occurrence::merge);
         if (verdicts.size() > MAX_RULES_PER_HOST) {
             throw UnparseableReportException.overALimit();

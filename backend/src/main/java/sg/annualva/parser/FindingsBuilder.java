@@ -54,6 +54,11 @@ public final class FindingsBuilder {
         }
     }
 
+    /** As {@link #found(String, String, String, ParsedReport.Occurrence)}, for a Finding whose identifier and subject are one text. */
+    public void found(String identityKey, String shown, ParsedReport.Occurrence place) throws UnparseableReportException {
+        found(identityKey, shown, shown, place);
+    }
+
     /** The merged Findings, in the order they were first found, with the metadata the parser read. */
     public ParsedReport build(ParsedReport.Metadata metadata) {
         List<ParsedReport.Finding> findings = new ArrayList<>(byKey.size());

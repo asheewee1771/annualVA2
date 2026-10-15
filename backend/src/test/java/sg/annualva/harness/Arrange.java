@@ -45,7 +45,10 @@ public final class Arrange {
         assertThat(client.post("/api/test/faults/report-file/" + prefix).status()).isEqualTo(200);
     }
 
-    /** Makes the write of a file's Finding occurrences fail in the database ("on"), after everything else of its settlement was written; "off" removes it. */
+    /**
+     * Makes the write of a file's Finding occurrences fail in the database ("on"), after everything else of its settlement was
+     * written, or the commit of the settlement fail ("late"), after every write of it; "off" removes the fault.
+     */
     public void findingFault(String mode) {
         assertThat(client.post("/api/test/faults/finding/" + mode).status()).isEqualTo(200);
     }

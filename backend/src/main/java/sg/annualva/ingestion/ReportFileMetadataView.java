@@ -10,8 +10,10 @@ import org.jspecify.annotations.Nullable;
  * their own call, which is audited for every role, so the status the screen polls stays free of report content.
  *
  * @param fileId the file they were read from
- * @param scanDate the instant the report says the scan was made (UTC); null when the file names none or its format has no
- *     parser yet
- * @param target the project the report says it scanned, offered as the target; null as above
+ * @param scanDate the instant the report says the scan was made (UTC); null when the file names none
+ * @param scanDateIsExportTime true when the date is only when the file was exported, because the format records no other
+ *     (a Burp Suite export): the screen says so, and the person is asked to give the date the scan was made
+ * @param target the project, host or application the report says it scanned, offered as the target; null when it names none
  */
-public record ReportFileMetadataView(UUID fileId, @Nullable Instant scanDate, @Nullable String target) {}
+public record ReportFileMetadataView(UUID fileId, @Nullable Instant scanDate, boolean scanDateIsExportTime,
+        @Nullable String target) {}

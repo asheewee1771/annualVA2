@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
+import sg.annualva.parser.burp.BurpXmlParser;
 import sg.annualva.parser.dependencycheck.DependencyCheckXmlParser;
 import sg.annualva.parser.scap.ScapXmlParser;
 import sg.annualva.parser.xml.XmlCursor;
@@ -45,6 +46,24 @@ class XmlParserDepthTest {
         assertThatThrownBy(() -> parser.parse(scapWithGroups(150_000))).isInstanceOfSatisfying(
                 UnparseableReportException.class,
                 e -> assertThat(e.reason()).isEqualTo(UnparseableReportException.Reason.SHAPE));
+    }
+
+    /** A Burp export (the first level) with one issue (the second) whose request and response (the third) nest this deep. */
+    private static byte[] burpWithNesting(int levels) {
+        return bytes("<issues><issue><type>1</type><host>https://h.invalid</host><requestresponse>" + "<a>".repeat(levels)
+                + "</a>".repeat(levels) + "</requestresponse></issue></issues>");
+    }
+
+    @Test
+    void aBurpSubtreeTheParserSkipsIsRefusedWhenDeeperThanTheLimitAndReadAtTheLimit() throws Exception {
+        BurpXmlParser parser = new BurpXmlParser();
+        int room = XmlCursor.MAX_DEPTH - 3;
+
+        ParsedReport atTheLimit = parser.parse(burpWithNesting(room));
+
+        assertThat(atTheLimit.findings()).hasSize(1);
+        assertThatThrownBy(() -> parser.parse(burpWithNesting(room + 1))).isInstanceOf(UnparseableReportException.class);
+        assertThatThrownBy(() -> parser.parse(burpWithNesting(150_000))).isInstanceOf(UnparseableReportException.class);
     }
 
     @Test

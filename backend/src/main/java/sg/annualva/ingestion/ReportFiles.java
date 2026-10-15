@@ -144,7 +144,9 @@ public class ReportFiles {
         }
         audit.record(actor.attribute(AuditEvent.of(AuditAction.FILE_METADATA_VIEWED, AuditOutcome.SUCCESS))
                 .onSystem(target.systemId()).onSubmission(submissionId).with(DetailKey.FILE_ID, fileId));
-        return new ReportFileMetadataView(fileId, row.scanDateFromFile(), row.targetFromFile());
+        // A file that passed every stage was given its format by the type check.
+        boolean exportTime = ReportFormat.valueOf(Objects.requireNonNull(row.detectedFormat())).scanDateIsExportTime();
+        return new ReportFileMetadataView(fileId, row.scanDateFromFile(), exportTime, row.targetFromFile());
     }
 
     /** What a download was granted: the name to offer and where the bytes are. */

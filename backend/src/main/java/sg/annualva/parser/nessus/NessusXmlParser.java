@@ -3,12 +3,14 @@ package sg.annualva.parser.nessus;
 import java.util.Locale;
 import javax.xml.stream.XMLStreamException;
 import org.jspecify.annotations.Nullable;
+import sg.annualva.parser.FindingKeys;
 import sg.annualva.parser.FindingsBuilder;
 import sg.annualva.parser.ParsedReport;
 import sg.annualva.parser.ReportDates;
 import sg.annualva.parser.ReportParser;
 import sg.annualva.parser.ReportText;
 import sg.annualva.parser.ScanFacts;
+import sg.annualva.parser.ScanReading;
 import sg.annualva.parser.Severity;
 import sg.annualva.parser.UnparseableReportException;
 import sg.annualva.parser.xml.XmlCursor;
@@ -48,25 +50,13 @@ public final class NessusXmlParser implements ReportParser {
     private static final int MAX_CHECK_SHOWN = 1_000;
     private static final int MAX_SHORT_VALUE = 100;
 
-    /** What the whole file has said so far. */
-    private static final class Reading {
-        private final FindingsBuilder findings = new FindingsBuilder();
-        private final ScanFacts facts = new ScanFacts();
-        private int reports;
-    }
-
     @Override
     public ParsedReport parse(byte[] content) throws UnparseableReportException {
-        try (XmlCursor xml = XmlCursor.over(content)) {
-            return read(xml);
-        } catch (XMLStreamException | RuntimeException e) {
-            // The reader's message may quote the file; it is dropped here.
-            throw new UnparseableReportException();
-        }
+        return XmlCursor.read(content, NessusXmlParser::read);
     }
 
     private static ParsedReport read(XmlCursor xml) throws XMLStreamException, UnparseableReportException {
-        Reading reading = new Reading();
+        ScanReading reading = new ScanReading();
         Boundary boundary;
         while ((boundary = xml.next()) != null) {
             if (boundary == Boundary.END) {
@@ -76,36 +66,30 @@ public final class NessusXmlParser implements ReportParser {
             if (HOST.equals(path)) {
                 readHost(xml, reading);
             } else if (REPORT.equals(path)) {
-                reading.reports++;
+                // The results are in a Report, under the root: the type check looked at the root's name only, so a document
+                // with another root or no Report is refused when the reading is built.
+                reading.sawSection();
             } else if (!ROOT.equals(path)) {
                 xml.skipElement();
             }
         }
-        if (reading.reports == 0) {
-            // Not an export of a scan (the type check looked at the root's name only): the results are in a Report, under the
-            // root, so a document with another root or no Report is refused here.
-            throw new UnparseableReportException();
-        }
-        return reading.findings.build(reading.facts.metadata());
+        return reading.build();
     }
 
     /** One host, the cursor on its start; it is left after its end. Its name is the place of every result in it. */
-    private static void readHost(XmlCursor xml, Reading reading) throws XMLStreamException, UnparseableReportException {
+    private static void readHost(XmlCursor xml, ScanReading reading) throws XMLStreamException,
+            UnparseableReportException {
         String host = xml.path();
         String name = ReportText.clean(xml.attribute("name", ReportText.MAX_FIELD_CHARS)).orElse(null);
         if (name != null) {
-            reading.facts.named(name);
+            reading.facts().named(name);
         }
-        Boundary boundary;
-        while ((boundary = xml.next()) == Boundary.START) {
-            switch (xml.path().substring(host.length())) {
-                case "/HostProperties" -> readHostProperties(xml, reading.facts);
-                case "/ReportItem" -> readItem(xml, name, reading.findings);
+        while (xml.nextChild()) {
+            switch (xml.below(host)) {
+                case "/HostProperties" -> readHostProperties(xml, reading.facts());
+                case "/ReportItem" -> readItem(xml, name, reading.findings());
                 default -> xml.skipElement();
             }
-        }
-        if (boundary == null) {
-            throw new XMLStreamException("The document ended inside a ReportHost");
         }
     }
 
@@ -113,16 +97,12 @@ public final class NessusXmlParser implements ReportParser {
     private static void readHostProperties(XmlCursor xml, ScanFacts facts) throws XMLStreamException,
             UnparseableReportException {
         String properties = xml.path();
-        Boundary boundary;
-        while ((boundary = xml.next()) == Boundary.START) {
+        while (xml.nextChild()) {
             if (xml.path().equals(properties + "/tag") && "HOST_END".equals(xml.attribute("name", MAX_SHORT_VALUE))) {
                 facts.scanned(ReportDates.parse(xml.text(MAX_SHORT_VALUE)));
             } else {
                 xml.skipElement();
             }
-        }
-        if (boundary == null) {
-            throw new XMLStreamException("The document ended inside HostProperties");
         }
     }
 
@@ -137,9 +117,8 @@ public final class NessusXmlParser implements ReportParser {
         @Nullable String checkId = null;
         @Nullable String checkName = null;
         @Nullable String result = null;
-        Boundary boundary;
-        while ((boundary = xml.next()) == Boundary.START) {
-            switch (xml.path().substring(item.length())) {
+        while (xml.nextChild()) {
+            switch (xml.below(item)) {
                 case "/compliance-check-id" ->
                     checkId = ReportText.firstClean(checkId, xml.text(ReportText.MAX_FIELD_CHARS));
                 case "/compliance-check-name" ->
@@ -147,9 +126,6 @@ public final class NessusXmlParser implements ReportParser {
                 case "/compliance-result" -> result = ReportText.firstClean(result, xml.text(MAX_SHORT_VALUE));
                 default -> xml.skipElement();
             }
-        }
-        if (boundary == null) {
-            throw new XMLStreamException("The document ended inside a ReportItem");
         }
         if (result == null) {
             return;
@@ -164,22 +140,7 @@ public final class NessusXmlParser implements ReportParser {
             throw new UnparseableReportException();
         }
         String shown = ReportText.cleanAndCut(checkName != null ? checkName : checkId, MAX_CHECK_SHOWN).orElse(key);
-        findings.found("nessus|" + key, shown, shown,
-                new ParsedReport.Occurrence(host, severityOf(severity), didNotComplete));
-    }
-
-    /** Nessus's own scale is 0 to 4; a word for a level is read too; none, or anything else, is unrated, and Medium. */
-    private static Severity severityOf(@Nullable String attribute) {
-        if (attribute == null) {
-            return Severity.MEDIUM;
-        }
-        return switch (attribute.strip()) {
-            case "0" -> Severity.INFORMATIONAL;
-            case "1" -> Severity.LOW;
-            case "2" -> Severity.MEDIUM;
-            case "3" -> Severity.HIGH;
-            case "4" -> Severity.CRITICAL;
-            default -> Severity.ofLabel(attribute).orElse(Severity.MEDIUM);
-        };
+        findings.found(FindingKeys.nessus(key), shown, new ParsedReport.Occurrence(host, Severity.ofNessus(severity),
+                didNotComplete));
     }
 }

@@ -29,6 +29,12 @@ public final class XmlCursor implements AutoCloseable {
         END
     }
 
+    /** What a parser does with a cursor: it walks the document and returns what it read. */
+    @FunctionalInterface
+    public interface Walk<T> {
+        T read(XmlCursor xml) throws XMLStreamException, UnparseableReportException;
+    }
+
     private final XMLStreamReader reader;
     private final List<String> open = new ArrayList<>();
     private String current = "";
@@ -37,9 +43,19 @@ public final class XmlCursor implements AutoCloseable {
         this.reader = reader;
     }
 
-    /** A cursor before the first element of the document. */
-    public static XmlCursor over(byte[] content) throws XMLStreamException {
-        return new XmlCursor(SecureXml.reader(content));
+    /**
+     * The one way a parser reads an XML report: the walk runs on a cursor that is closed afterwards, and a document that is
+     * not well formed, or any other failure of the reader, is an {@link UnparseableReportException} with none of the
+     * reader's message, which may quote the file. A refusal the walk itself makes (a value too long, a limit) is passed on
+     * as it is.
+     */
+    public static <T> T read(byte[] content, Walk<T> walk) throws UnparseableReportException {
+        try (XmlCursor xml = new XmlCursor(SecureXml.reader(content))) {
+            return walk.read(xml);
+        } catch (XMLStreamException | RuntimeException e) {
+            // The reader's message may quote the file; it is dropped here.
+            throw new UnparseableReportException();
+        }
     }
 
     /**
@@ -65,6 +81,25 @@ public final class XmlCursor implements AutoCloseable {
             }
         }
         return null;
+    }
+
+    /**
+     * The next child element of the element the cursor is in, for the loop that reads an element's children: true with the
+     * child just started, false at the end of the element itself. The loop must read or skip each child it is given.
+     *
+     * @throws XMLStreamException when the document ends inside the element
+     */
+    public boolean nextChild() throws XMLStreamException, UnparseableReportException {
+        Boundary boundary = next();
+        if (boundary == null) {
+            throw new XMLStreamException("The document ended inside an element");
+        }
+        return boundary == Boundary.START;
+    }
+
+    /** The path of the element just started below an ancestor's path: {@code /tag} for {@code a/b/tag} below {@code a/b}. */
+    public String below(String ancestor) {
+        return current.substring(ancestor.length());
     }
 
     /** The path from the root, by local names, of the element just started or ended: {@code analysis/dependencies}. */

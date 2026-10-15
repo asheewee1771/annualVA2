@@ -3,6 +3,7 @@ package sg.annualva.parser.dependencycheck;
 import java.time.Instant;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import sg.annualva.parser.FindingKeys;
 import sg.annualva.parser.FindingsBuilder;
 import sg.annualva.parser.ParsedReport;
 import sg.annualva.parser.ReportDates;
@@ -99,7 +100,7 @@ final class DependencyCheckFindings {
             if (identifier.indexOf('|') >= 0 || !ReportText.fits(identifier, MAX_IDENTIFIER)) {
                 throw new UnparseableReportException();
             }
-            builder.found("dc|" + identifier + "|" + subject, identifier, subject,
+            builder.found(FindingKeys.dependencyCheck(identifier, subject), identifier, subject,
                     new ParsedReport.Occurrence(locator, rate(vulnerability), false));
         }
     }

@@ -53,20 +53,37 @@ public record ParsedReport(Metadata metadata, List<Finding> findings) {
      * @param severity the severity at this place
      * @param didNotComplete true when the check was run here but neither passed nor failed (a SCAP result of error or
      *     unknown); false for every other place, a failed check included
+     * @param confidence how sure the scanner says it is of the issue here (Burp only); null when the format has none or the
+     *     report gave none
      */
-    public record Occurrence(String locator, Severity severity, boolean didNotComplete) {
+    public record Occurrence(
+            String locator, Severity severity, boolean didNotComplete, @Nullable Confidence confidence) {
+
+        /** A place of a format that has no confidence. */
+        public Occurrence(String locator, Severity severity, boolean didNotComplete) {
+            this(locator, severity, didNotComplete, null);
+        }
 
         /**
-         * The same place read twice: the worse severity, and it did not complete only if neither reading did (a check that
-         * failed and also gave an error at a place is a failed check). The one place this rule is written.
+         * The same place read twice: the worse severity, it did not complete only if neither reading did (a check that
+         * failed and also gave an error at a place is a failed check), and the more sure confidence (one reading that says
+         * nothing about it does not weaken one that does). The one place this rule is written.
          */
         public Occurrence merge(Occurrence other) {
-            return new Occurrence(locator, severity.orWorse(other.severity), didNotComplete && other.didNotComplete);
+            return new Occurrence(locator, severity.orWorse(other.severity), didNotComplete && other.didNotComplete,
+                    moreSure(confidence, other.confidence));
         }
 
         /** The same reading at another place. */
         public Occurrence at(String place) {
-            return new Occurrence(place, severity, didNotComplete);
+            return new Occurrence(place, severity, didNotComplete, confidence);
+        }
+
+        private static @Nullable Confidence moreSure(@Nullable Confidence first, @Nullable Confidence second) {
+            if (first == null || second == null) {
+                return first != null ? first : second;
+            }
+            return first.orMoreSure(second);
         }
     }
 }

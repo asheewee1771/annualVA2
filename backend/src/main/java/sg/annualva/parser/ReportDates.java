@@ -4,9 +4,11 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
+import java.time.format.TextStyle;
 import java.util.List;
 import java.util.Locale;
 import org.jspecify.annotations.Nullable;
@@ -14,8 +16,8 @@ import org.jspecify.annotations.Nullable;
 /**
  * Reads the date a report says its scan was made. A report is untrusted, so the date is only ever a suggestion for the
  * SMO/Tech Lead to confirm: it is read in every form the tools write (ISO 8601 with or without an offset, and the
- * {@code Mon Jul 20 10:03:44 2027} form Nessus writes), and anything else, or a date no scan was made on and the database
- * cannot hold, is no date.
+ * {@code Mon Jul 20 10:03:44 2027} form Nessus writes, and the same with a zone name, {@code Mon Jul 20 10:03:44 SGT 2027},
+ * as Burp writes it), and anything else, or a date no scan was made on and the database cannot hold, is no date.
  */
 public final class ReportDates {
 
@@ -26,6 +28,15 @@ public final class ReportDates {
                     .toFormatter());
     /** The form Nessus writes a host's start and end in ({@code Mon Jul 20 10:03:44 2027}): no zone, no ISO separators. */
     private static final DateTimeFormatter CTIME = DateTimeFormatter.ofPattern("EEE MMM d HH:mm:ss uuuu", Locale.ENGLISH);
+
+    /**
+     * The form Burp Suite writes its export time in ({@code Mon Jul 20 10:00:00 SGT 2027}, Java's own date text): the same, with
+     * the abbreviated name of the zone of the machine that exported it. A name is read by Java's own table, in which some
+     * abbreviations belong to more than one zone, so the instant can be hours out; it is only a suggestion to confirm.
+     */
+    private static final DateTimeFormatter CTIME_WITH_ZONE = new DateTimeFormatterBuilder()
+            .appendPattern("EEE MMM d HH:mm:ss ").appendZoneText(TextStyle.SHORT).appendPattern(" uuuu")
+            .toFormatter(Locale.ENGLISH);
 
     private ReportDates() {}
 
@@ -57,9 +68,15 @@ public final class ReportDates {
         } catch (DateTimeParseException notIso) {
             // try the Nessus form
         }
+        // A day under ten is padded with a space ("Mon Jul  6 ..."), which the patterns do not take.
+        String single = text.replaceAll(" {2,}", " ");
         try {
-            // A day under ten is padded with a space ("Mon Jul  6 ..."), which the pattern does not take.
-            return LocalDateTime.parse(text.replaceAll(" {2,}", " "), CTIME).toInstant(ZoneOffset.UTC);
+            return LocalDateTime.parse(single, CTIME).toInstant(ZoneOffset.UTC);
+        } catch (DateTimeParseException notNessus) {
+            // try the Burp form
+        }
+        try {
+            return ZonedDateTime.parse(single, CTIME_WITH_ZONE).toInstant();
         } catch (DateTimeParseException notDateTime) {
             return null;
         }

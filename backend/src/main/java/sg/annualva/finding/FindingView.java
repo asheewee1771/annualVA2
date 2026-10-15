@@ -2,6 +2,8 @@ package sg.annualva.finding;
 
 import java.util.List;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
+import sg.annualva.parser.Confidence;
 import sg.annualva.parser.Severity;
 
 /**
@@ -18,13 +20,17 @@ import sg.annualva.parser.Severity;
  * @param severity the highest severity of its occurrences
  * @param didNotComplete true for a Finding that is a check that did not complete (a SCAP result of error or unknown at every
  *     place it was reported); a failed check, and every Finding of the other Scan Reports, is false
+ * @param confidence how sure the scanner says it is that the Finding is real: the most sure of the places it was reported
+ *     (Burp Suite's Certain, Firm or Tentative), so a Tentative Finding is one every place of which was Tentative; null for a
+ *     Finding of a Scan Report whose tool has no confidence, and for a Burp one that gave none
  * @param occurrenceCount how many places it was reported
  * @param sourceFiles the uploaded files it was read from, in the order they were uploaded; the name is the one the person
  *     gave the file
  */
 public record FindingView(
         UUID id, UUID systemId, ReportType reportType, String identityKey, String identifier, String packageOrRule,
-        Severity severity, boolean didNotComplete, int occurrenceCount, List<SourceFile> sourceFiles) {
+        Severity severity, boolean didNotComplete, @Nullable Confidence confidence, int occurrenceCount,
+        List<SourceFile> sourceFiles) {
 
     /** An uploaded Scan Report file a Finding was read from. */
     public record SourceFile(UUID id, String name) {}

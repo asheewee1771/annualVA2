@@ -118,19 +118,6 @@ class DependencyCheckParseTest extends DependencyCheckSeam1 {
     }
 
     @Test
-    void aFormatWithNoParserYetWaitsAtSchemaOkWithNoFindingsAndNothingToPreFill() {
-        Draft draft = draft();
-
-        JsonNode file = settled(draft, BURP_SUITE, "issues.xml", Samples.burp());
-
-        assertThat(file.get("status").asString()).isEqualTo("SCHEMA_OK");
-        JsonNode metadata = metadata(draft.smo(), draft.submissionId(), file.get("id").asString());
-        assertThat(metadata.get("scanDate").isNull()).isTrue();
-        assertThat(metadata.get("target").isNull()).isTrue();
-        assertThat(findings(draft.smo(), draft.submissionId()).get("total").asInt()).isZero();
-    }
-
-    @Test
     void severalFilesOfOneScanReportMakeOneFindingPerKeyWithAnOccurrenceForEachPlaceAndTheWorstSeverity() {
         Draft draft = draft();
         settledDc(draft, "first.xml", Samples.dependencyCheckSampleXml());

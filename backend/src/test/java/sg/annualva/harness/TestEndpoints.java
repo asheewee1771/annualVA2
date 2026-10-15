@@ -216,6 +216,7 @@ public class TestEndpoints {
                 jdbc.sql("DELETE FROM spring_session WHERE principal_name IS NOT NULL AND principal_name <> ''").update();
                 jdbc.sql("DROP TRIGGER IF EXISTS test_fault ON report_file").update();
                 jdbc.sql("DROP TRIGGER IF EXISTS test_finding_fault ON finding_occurrence").update();
+                jdbc.sql("DROP TRIGGER IF EXISTS test_finding_late ON report_file").update();
                 jdbc.sql("DELETE FROM finding_occurrence").update();
                 jdbc.sql("DELETE FROM finding").update();
                 jdbc.sql("DELETE FROM report_file_stage").update();
@@ -261,11 +262,22 @@ public class TestEndpoints {
          * Makes the write of a file's Finding occurrences fail inside the database (a trigger raises). That write is the
          * last one of the transaction that records a file as parsed, after the file row, its stage rows and its Findings
          * were written, so a test can prove that all of them are rolled back together. {@code on} sets the fault and
-         * {@code off} removes it.
+         * {@code off} removes it. {@code late} sets a fault that fires later still, when the transaction that records the
+         * file as parsed commits (a deferred constraint trigger on the file's row), after every write of the settlement,
+         * the Findings included: it proves the Findings are in that transaction and not in one of their own, which a
+         * failure inside their own write cannot tell apart.
          */
         @PostMapping("/api/test/faults/finding/{mode}")
         public Map<String, String> findingFault(@PathVariable String mode) {
             jdbc.sql("DROP TRIGGER IF EXISTS test_finding_fault ON finding_occurrence").update();
+            jdbc.sql("DROP TRIGGER IF EXISTS test_finding_late ON report_file").update();
+            if ("late".equals(mode)) {
+                jdbc.sql("CREATE OR REPLACE FUNCTION test_finding_late() RETURNS trigger LANGUAGE plpgsql AS "
+                        + "$$ BEGIN RAISE EXCEPTION 'injected fault at commit'; END $$").update();
+                jdbc.sql("CREATE CONSTRAINT TRIGGER test_finding_late AFTER UPDATE ON report_file DEFERRABLE INITIALLY "
+                        + "DEFERRED FOR EACH ROW WHEN (NEW.pipeline_status = 'PARSED') "
+                        + "EXECUTE FUNCTION test_finding_late()").update();
+            }
             if ("on".equals(mode)) {
                 jdbc.sql("CREATE OR REPLACE FUNCTION test_finding_fault() RETURNS trigger LANGUAGE plpgsql AS "
                         + "$$ BEGIN RAISE EXCEPTION 'injected fault'; END $$").update();

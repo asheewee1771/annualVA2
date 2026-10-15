@@ -17,7 +17,7 @@ public enum PipelineStatus {
     SCAN_CLEAN,
     /** Its bytes are of a type this Scan Report accepts, within the size limit. */
     TYPE_OK,
-    /** It is readable and has the structure the type needs. A file whose format has no parser yet waits here for it. */
+    /** It is readable and has the structure the type needs; a file passes through this on its way to PARSED, as every format has a parser. */
     SCHEMA_OK,
     /** A parser read its Findings and the scan date and target it names; they are stored with it. */
     PARSED,

@@ -67,7 +67,10 @@ public final class Samples {
                 """);
     }
 
-    /** Burp's export starts with a DOCTYPE that declares its own elements: it must be accepted, and never obeyed. */
+    /**
+     * A small Burp export, which starts with a DOCTYPE that declares its own elements (accepted, and never obeyed), with one
+     * issue: type 1, https://throwaway.invalid/, High, Certain.
+     */
     public static byte[] burp() {
         return utf8("""
                 <?xml version="1.0"?>
@@ -75,13 +78,25 @@ public final class Samples {
                 <!ELEMENT issues (issue*)>
                 <!ATTLIST issues burpVersion CDATA "">
                 <!ATTLIST issues exportTime CDATA "">
-                <!ELEMENT issue (name)>
+                <!ELEMENT issue (type, name, host, path, location, severity, confidence)>
+                <!ELEMENT type (#PCDATA)>
                 <!ELEMENT name (#PCDATA)>
+                <!ELEMENT host (#PCDATA)>
+                <!ELEMENT path (#PCDATA)>
+                <!ELEMENT location (#PCDATA)>
+                <!ELEMENT severity (#PCDATA)>
+                <!ELEMENT confidence (#PCDATA)>
                 ]>
-                <issues burpVersion="2023.1" exportTime="Mon Jul 20 10:00:00 SGT 2027">
-                  <issue><name>Throwaway issue</name></issue>
+                <issues burpVersion="2023.1" exportTime="Tue Jul 20 10:00:00 SGT 2027">
+                  <issue><type>1</type><name>Throwaway issue</name><host>https://throwaway.invalid</host>
+                    <path>/</path><location>/</location><severity>High</severity><confidence>Certain</confidence></issue>
                 </issues>
                 """);
+    }
+
+    /** The Burp Suite sample export, five issues of four Findings (a reconstruction: see its provenance note). */
+    public static byte[] burpSample() {
+        return resource("samples/burp/issues-export.xml");
     }
 
     /** The Dependency-Check XML sample export (a reconstruction of a throwaway project's report: see its provenance note). */

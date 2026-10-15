@@ -6,12 +6,11 @@ import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import sg.annualva.finding.ReportType;
 import sg.annualva.parser.ParsedReport;
-import sg.annualva.parser.ReportParser;
 import sg.annualva.parser.UnparseableReportException;
 
 /**
  * The stages a file goes through once the scanner has passed it, in their fixed order: the type allowlist, the schema
- * check, and, for a format that has a parser, the parse (stories 20a, 20b, 21 and 24). A file that fails a stage never reaches
+ * check and the parse (stories 20a, 20b, 21 and 24). A file that fails a stage never reaches
  * the next, and the stages it did pass are the ones it is recorded as having entered. Nothing is stored here: the caller
  * keeps the file's clean copy and writes the outcome only for a file that passed.
  */
@@ -50,14 +49,8 @@ final class FileChecks {
             return new Outcome(List.of(PipelineStatus.SCAN_CLEAN, PipelineStatus.TYPE_OK,
                     PipelineStatus.rejected(refusedSchema.get())), refusedSchema.get(), format, null);
         }
-        ReportParser parser = format.parser();
-        if (parser == null) {
-            // Its parser arrives with its own ticket: the file waits at SCHEMA_OK until then.
-            return new Outcome(List.of(PipelineStatus.SCAN_CLEAN, PipelineStatus.TYPE_OK, PipelineStatus.SCHEMA_OK), null,
-                    format, null);
-        }
         try {
-            ParsedReport parsed = parser.parse(content);
+            ParsedReport parsed = format.parser().parse(content);
             return new Outcome(List.of(PipelineStatus.SCAN_CLEAN, PipelineStatus.TYPE_OK, PipelineStatus.SCHEMA_OK,
                     PipelineStatus.PARSED), null, format, parsed);
         } catch (UnparseableReportException e) {

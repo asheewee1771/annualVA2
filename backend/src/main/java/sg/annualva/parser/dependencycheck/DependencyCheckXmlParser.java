@@ -64,12 +64,7 @@ public final class DependencyCheckXmlParser implements ReportParser {
 
     @Override
     public ParsedReport parse(byte[] content) throws UnparseableReportException {
-        try (XmlCursor xml = XmlCursor.over(content)) {
-            return read(xml);
-        } catch (XMLStreamException | RuntimeException e) {
-            // The reader's message may quote the file; it is dropped here.
-            throw new UnparseableReportException();
-        }
+        return XmlCursor.read(content, DependencyCheckXmlParser::read);
     }
 
     private static ParsedReport read(XmlCursor xml) throws XMLStreamException, UnparseableReportException {

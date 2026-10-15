@@ -1,0 +1,112 @@
+<?xml version="1.0"?>
+<!DOCTYPE issues [
+<!ELEMENT issues (issue*)>
+<!ATTLIST issues burpVersion CDATA "">
+<!ATTLIST issues exportTime CDATA "">
+<!ELEMENT issue (serialNumber, type, name, host, path, location, severity, confidence, issueBackground?, remediationBackground?, references?, vulnerabilityClassifications?, issueDetail?, issueDetailItems?, remediationDetail?, requestresponse*)>
+<!ELEMENT serialNumber (#PCDATA)>
+<!ELEMENT type (#PCDATA)>
+<!ELEMENT name (#PCDATA)>
+<!ELEMENT host (#PCDATA)>
+<!ATTLIST host ip CDATA "">
+<!ELEMENT path (#PCDATA)>
+<!ELEMENT location (#PCDATA)>
+<!ELEMENT severity (#PCDATA)>
+<!ELEMENT confidence (#PCDATA)>
+<!ELEMENT issueBackground (#PCDATA)>
+<!ELEMENT remediationBackground (#PCDATA)>
+<!ELEMENT references (#PCDATA)>
+<!ELEMENT vulnerabilityClassifications (#PCDATA)>
+<!ELEMENT issueDetail (#PCDATA)>
+<!ELEMENT issueDetailItems (issueDetailItem*)>
+<!ELEMENT issueDetailItem (#PCDATA)>
+<!ELEMENT remediationDetail (#PCDATA)>
+<!ELEMENT requestresponse (request?, response?, responseRedirected?)>
+<!ELEMENT request (#PCDATA)>
+<!ATTLIST request method CDATA "">
+<!ATTLIST request base64 (true|false) "false">
+<!ELEMENT response (#PCDATA)>
+<!ATTLIST response base64 (true|false) "false">
+<!ELEMENT responseRedirected (#PCDATA)>
+]>
+<!--
+  PROVENANCE: a schema-faithful reconstruction of the XML issue export that Burp Suite writes, written by hand for the parser
+  tests. It is NOT the output of a real scan. Regenerate it from a real scan of a throwaway target before release (ticket 58).
+  The type ids, serial numbers, hosts, addresses and every text in it are invented (the hosts end in .invalid and the
+  addresses are in the documentation range 192.0.2.0/24); the exportTime is Burp's own form, with the zone of the exporting
+  machine.
+-->
+<issues burpVersion="2023.1.2" exportTime="Tue Jul 20 10:00:00 SGT 2027">
+  <issue>
+    <serialNumber>1000000000000000001</serialNumber>
+    <type>2097920</type>
+    <name>Cross-site scripting (reflected)</name>
+    <host ip="192.0.2.10">https://throwaway-app.invalid</host>
+    <path><![CDATA[/search]]></path>
+    <location><![CDATA[/search [q parameter]]]></location>
+    <severity>High</severity>
+    <confidence>Certain</confidence>
+    <issueBackground><![CDATA[<p>Invented background text.</p>]]></issueBackground>
+    <remediationBackground><![CDATA[<p>Invented remediation text.</p>]]></remediationBackground>
+    <references><![CDATA[<ul><li>Invented reference</li></ul>]]></references>
+    <vulnerabilityClassifications><![CDATA[<ul><li>CWE-79: invented</li></ul>]]></vulnerabilityClassifications>
+    <issueDetail><![CDATA[<p>The value of the q request parameter is copied into the response. Invented.</p>]]></issueDetail>
+    <requestresponse>
+      <request method="GET" base64="true"><![CDATA[R0VUIC9zZWFyY2g/cT1pbnZlbnRlZCBIVFRQLzEuMQ0KSG9zdDogdGhyb3dhd2F5LWFwcC5pbnZhbGlkDQpVc2VyLUFnZW50OiBpbnZlbnRlZA0KDQo=]]></request>
+      <response base64="true"><![CDATA[SFRUUC8xLjEgMjAwIE9LDQpDb250ZW50LVR5cGU6IHRleHQvaHRtbA0KDQo8aHRtbD48Ym9keT5pbnZlbnRlZCByZXNwb25zZTwvYm9keT48L2h0bWw+]]></response>
+      <responseRedirected>false</responseRedirected>
+    </requestresponse>
+  </issue>
+  <issue>
+    <serialNumber>1000000000000000002</serialNumber>
+    <type>2097920</type>
+    <name>Cross-site scripting (reflected)</name>
+    <host ip="192.0.2.10">https://throwaway-app.invalid</host>
+    <path><![CDATA[/search]]></path>
+    <location><![CDATA[/search [filter parameter]]]></location>
+    <severity>High</severity>
+    <confidence>Firm</confidence>
+    <issueDetail><![CDATA[<p>The value of the filter request parameter is copied into the response. Invented.</p>]]></issueDetail>
+    <requestresponse>
+      <request method="GET" base64="true"><![CDATA[R0VUIC9zZWFyY2g/cT1pbnZlbnRlZCBIVFRQLzEuMQ0KSG9zdDogdGhyb3dhd2F5LWFwcC5pbnZhbGlkDQpVc2VyLUFnZW50OiBpbnZlbnRlZA0KDQo=]]></request>
+      <response base64="true"><![CDATA[SFRUUC8xLjEgMjAwIE9LDQpDb250ZW50LVR5cGU6IHRleHQvaHRtbA0KDQo8aHRtbD48Ym9keT5pbnZlbnRlZCByZXNwb25zZTwvYm9keT48L2h0bWw+]]></response>
+    </requestresponse>
+  </issue>
+  <issue>
+    <serialNumber>1000000000000000003</serialNumber>
+    <type>1049088</type>
+    <name>SQL injection</name>
+    <host ip="192.0.2.11">https://api.throwaway-app.invalid</host>
+    <path><![CDATA[/v1/items;jsessionid=INVENTED?id=5]]></path>
+    <location><![CDATA[/v1/items [id parameter]]]></location>
+    <severity>High</severity>
+    <confidence>Tentative</confidence>
+    <issueDetail><![CDATA[<p>The id parameter may be vulnerable to SQL injection. Invented.</p>]]></issueDetail>
+    <requestresponse>
+      <request method="GET" base64="true"><![CDATA[R0VUIC9zZWFyY2g/cT1pbnZlbnRlZCBIVFRQLzEuMQ0KSG9zdDogdGhyb3dhd2F5LWFwcC5pbnZhbGlkDQpVc2VyLUFnZW50OiBpbnZlbnRlZA0KDQo=]]></request>
+      <response base64="true"><![CDATA[SFRUUC8xLjEgMjAwIE9LDQpDb250ZW50LVR5cGU6IHRleHQvaHRtbA0KDQo8aHRtbD48Ym9keT5pbnZlbnRlZCByZXNwb25zZTwvYm9keT48L2h0bWw+]]></response>
+    </requestresponse>
+  </issue>
+  <issue>
+    <serialNumber>1000000000000000004</serialNumber>
+    <type>5244416</type>
+    <name>TLS cookie without secure flag set</name>
+    <host ip="192.0.2.10">https://throwaway-app.invalid</host>
+    <path><![CDATA[/]]></path>
+    <location><![CDATA[/ [sessionid cookie]]]></location>
+    <severity>Low</severity>
+    <confidence>Firm</confidence>
+    <issueDetail><![CDATA[<p>The following cookie was issued without the secure flag: sessionid. Invented.</p>]]></issueDetail>
+  </issue>
+  <issue>
+    <serialNumber>1000000000000000005</serialNumber>
+    <type>16777472</type>
+    <name>Email addresses disclosed</name>
+    <host ip="192.0.2.10">https://throwaway-app.invalid</host>
+    <path><![CDATA[/contact]]></path>
+    <location><![CDATA[/contact]]></location>
+    <severity>Information</severity>
+    <confidence>Certain</confidence>
+    <issueDetail><![CDATA[<p>The following email address was disclosed: someone@throwaway-app.invalid. Invented.</p>]]></issueDetail>
+  </issue>
+</issues>
