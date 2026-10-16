@@ -134,3 +134,10 @@ Human decisions on reviewer findings. Check here before asking again. Each entry
 - **Finding:** the plan said "DOCTYPE forbidden except Burp's internal subset" and ticket 17 said every other format forbids DOCTYPE. Tickets 14 to 16 skip a DOCTYPE that declares nothing and their tests assert it. `SecureXml` turns DTD support and external entities off for every format, so nothing is loaded or expanded either way, and an entity reference is an error.
 - **Chosen action:** accept as built. A DOCTYPE is skipped and never obeyed for the Dependency-Check, SCAP and Nessus parsers; the Burp parser accepts only Burp's own internal subset (ELEMENT and ATTLIST declarations, no external id) checked on the first 32 KB of bytes. The plan line and ticket 17's wording were amended to say so. Decided 2026-10-15.
 - **When to reuse:** any finding that a non-Burp report parser does not refuse a DOCTYPE. Revisit only if real exports (ticket 58) or a security review show a reason to refuse every DOCTYPE; that is a one-line check per parser.
+
+## An encrypted PDF is refused as supporting evidence by a byte-level check
+
+- **Area:** supporting evidence (ticket 18, ADR 0026), im8 as-12
+- **Finding:** evidence is accepted as `READY` on a `%PDF-` prefix after the malware scan. The scanner cannot inspect a password-protected PDF, so an encrypted file would be served to Cyber Managers and VA POCs uninspected. The back end has no PDF library, and ADR 0026 says evidence is compared by bytes and never read.
+- **Chosen action:** refuse a PDF that carries `/Encrypt` in its trailer, with a bounded byte-level check on the tail of the file. No PDF library is added and nothing parses the file. The file is rejected with a plain "re-upload without a password" message. Decided 2026-10-15.
+- **When to reuse:** any finding that evidence the scanner cannot read (encrypted or password-protected) is accepted. A file that hides `/Encrypt` in an object stream, or whose cross-reference stream data is longer than the 64 KB window (a large PDF 1.5 file), is not caught until ticket 51's production scanner; do not add a parser to close that gap.
