@@ -1,9 +1,11 @@
 import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { ApiError, type Problem } from "../../api/problem.ts";
 import {
+  EVIDENCE_UPLOAD_LIMITS,
   fetchReportFileContent,
   REPORT_UPLOAD_LIMITS,
   uploadReportFile,
+  type FileKind,
   type PipelineStatus,
   type ReportFile,
 } from "../../api/reportFiles.ts";
@@ -22,6 +24,7 @@ const STATUS_LABELS: Readonly<Record<PipelineStatus, string>> = {
   TYPE_OK: "Type accepted, checking the structure",
   SCHEMA_OK: "Accepted",
   PARSED: "Accepted, findings read",
+  READY: "Accepted as supporting evidence",
   REJECTED_MALWARE: "Rejected",
   REJECTED_SANITIZED: "Rejected: modified during scanning",
   REJECTED_SCAN_TIMEOUT: "Rejected",
@@ -31,10 +34,11 @@ const STATUS_LABELS: Readonly<Record<PipelineStatus, string>> = {
   REJECTED_UNREADABLE: "Rejected",
   REJECTED_SCHEMA: "Rejected",
   REJECTED_HASH_MISMATCH: "Rejected",
+  REJECTED_ENCRYPTED: "Rejected: password protected",
 };
 
 function isAccepted(file: ReportFile): boolean {
-  return file.status === "SCHEMA_OK" || file.status === "PARSED";
+  return file.status === "SCHEMA_OK" || file.status === "PARSED" || file.status === "READY";
 }
 
 function isRejected(file: ReportFile): boolean {
@@ -53,13 +57,31 @@ function refusal(title: string, detail: string): Problem {
   return { type: "about:blank", title, status: 400, detail };
 }
 
+function hasExtension(file: File, extensions: readonly string[]): boolean {
+  return extensions.some((extension) => file.name.toLowerCase().endsWith(extension));
+}
+
+/** Early feedback for a supporting evidence file: a PDF or an HTML report, each with its own limit. */
+function evidenceRefusalFor(file: File): Problem | undefined {
+  const limit = EVIDENCE_UPLOAD_LIMITS.find((each) => hasExtension(file, each.extensions));
+  // The browser reports no type for a file it cannot name, so an empty one is let through; one that is named must agree with
+  // the extension (a page called .pdf, or a script called .html, is not sent). The server decides from the bytes either way.
+  if (!limit || (file.type !== "" && file.type !== limit.mimeType))
+    return refusal("A file is not an accepted type", "Attach a PDF or an HTML report (.pdf, .html or .htm).");
+  if (file.size > limit.maxBytes) {
+    return refusal("A file is too large", `A ${limit.label} file can be at most ${megabytes(limit.maxBytes)}.`);
+  }
+  return undefined;
+}
+
 /**
  * Early feedback only, so a file the server cannot accept is not sent: the server decides every file from its bytes and
  * stays the authority. Returns what to tell the person, or undefined when the file may be sent.
  */
-function refusalFor(report: ScanReport, file: File): Problem | undefined {
-  const limits = REPORT_UPLOAD_LIMITS[report.type];
+function refusalFor(report: ScanReport, kind: FileKind, file: File): Problem | undefined {
   if (file.size === 0) return refusal("A file is empty", "Choose the report your tool exported.");
+  if (kind === "EVIDENCE") return evidenceRefusalFor(file);
+  const limits = REPORT_UPLOAD_LIMITS[report.type];
   if (file.size > limits.maxBytes) {
     return refusal(
       "A file is too large",
@@ -67,7 +89,7 @@ function refusalFor(report: ScanReport, file: File): Problem | undefined {
         (report.tooLargeHint ? ` ${report.tooLargeHint}` : ""),
     );
   }
-  if (!limits.extensions.some((extension) => file.name.toLowerCase().endsWith(extension))) {
+  if (!hasExtension(file, limits.extensions)) {
     return refusal("A file is not an accepted type", `Choose a ${limits.extensions.join(" or ")} file.`);
   }
   return undefined;
@@ -106,7 +128,9 @@ function FileRow({
         </>
       ) : null}
       {file.message ? <p>{file.message}</p> : null}
-      {file.status === "REJECTED_TOO_LARGE" && report.tooLargeHint ? <p>{report.tooLargeHint}</p> : null}
+      {file.status === "REJECTED_TOO_LARGE" && file.kind === "MACHINE_READABLE" && report.tooLargeHint ? (
+        <p>{report.tooLargeHint}</p>
+      ) : null}
     </li>
   );
 }
@@ -118,12 +142,14 @@ function FileRow({
 function UploadForm({
   submissionId,
   report,
+  kind,
   classification,
   onUploaded,
   onProblem,
 }: {
   submissionId: string;
   report: ScanReport;
+  kind: FileKind;
   classification: string;
   onUploaded: () => void;
   onProblem: (problem: Problem | undefined) => void;
@@ -131,12 +157,19 @@ function UploadForm({
   const [chosen, setChosen] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
   const form = useRef<HTMLFormElement>(null);
-  const inputId = `files-${report.type}`;
+  const inputId = `files-${report.type}-${kind}`;
   const limits = REPORT_UPLOAD_LIMITS[report.type];
+  const evidence = kind === "EVIDENCE";
+  const label = evidence
+    ? `Attach evidence (${EVIDENCE_UPLOAD_LIMITS.map((each) => `${each.label} up to ${megabytes(each.maxBytes)}`).join(", ")})`
+    : `Add files (${limits.extensions.join(", ")}, up to ${megabytes(limits.maxBytes)} each)`;
+  const accept = (
+    evidence ? EVIDENCE_UPLOAD_LIMITS.flatMap((each) => [...each.extensions, each.mimeType]) : limits.extensions
+  ).join(",");
 
   function choose(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []);
-    const refused = files.map((file) => refusalFor(report, file)).find((problem) => problem !== undefined);
+    const refused = files.map((file) => refusalFor(report, kind, file)).find((problem) => problem !== undefined);
     onProblem(refused);
     setChosen(refused ? [] : files);
   }
@@ -148,7 +181,7 @@ function UploadForm({
     const remaining = [...chosen];
     try {
       for (let next = remaining[0]; next !== undefined; next = remaining[0]) {
-        await uploadReportFile(submissionId, report.type, next);
+        await uploadReportFile(submissionId, report.type, kind, next);
         remaining.shift();
       }
       form.current?.reset();
@@ -163,12 +196,8 @@ function UploadForm({
 
   return (
     <form ref={form} onSubmit={(event) => void submit(event)}>
-      <ClassifiedField
-        label={`Add files (${limits.extensions.join(", ")}, up to ${megabytes(limits.maxBytes)} each)`}
-        classification={classification}
-        id={inputId}
-      >
-        <input id={inputId} type="file" multiple accept={limits.extensions.join(",")} onChange={choose} />
+      <ClassifiedField label={label} classification={classification} id={inputId}>
+        <input id={inputId} type="file" multiple accept={accept} onChange={choose} />
       </ClassifiedField>
       {chosen.length > 0 ? (
         <p className="muted">
@@ -177,16 +206,66 @@ function UploadForm({
       ) : null}
       <p>
         <button type="submit" className="button" disabled={chosen.length === 0 || busy}>
-          {busy ? "Uploading…" : "Upload"}
+          {busy ? "Uploading…" : evidence ? "Attach" : "Upload"}
         </button>
       </p>
     </form>
   );
 }
 
+/** The files of one kind, each with its status, and the control to add more; a problem shows beside the control. */
+function FileSection({
+  submissionId,
+  report,
+  kind,
+  files,
+  classification,
+  onChanged,
+}: {
+  submissionId: string;
+  report: ScanReport;
+  kind: FileKind;
+  files: readonly ReportFile[];
+  classification: string;
+  onChanged: () => void;
+}) {
+  const [problem, setProblem] = useState<Problem | undefined>(undefined);
+  const evidence = kind === "EVIDENCE";
+  return (
+    <>
+      <h4>{evidence ? "Supporting evidence" : "Report files"}</h4>
+      {evidence ? (
+        <p className="muted">
+          PDF or HTML reports for people to read. They are scanned for malware but never read for findings, and an HTML
+          file is never shown here: it downloads as a file, so open it only if you trust it.
+        </p>
+      ) : null}
+      {files.length === 0 ? (
+        <p>{evidence ? "No supporting evidence attached yet." : "No files uploaded yet."}</p>
+      ) : (
+        <ul className="plain-list" aria-live="polite">
+          {files.map((file) => (
+            <FileRow key={file.id} submissionId={submissionId} report={report} file={file} onProblem={setProblem} />
+          ))}
+        </ul>
+      )}
+      {problem ? <ErrorPanel problem={problem} /> : null}
+      <UploadForm
+        submissionId={submissionId}
+        report={report}
+        kind={kind}
+        classification={classification}
+        onUploaded={onChanged}
+        onProblem={setProblem}
+      />
+    </>
+  );
+}
+
 /**
- * One Scan Report (stories 20, 24 and 27): its files with their pipeline status and, for a rejected one, the plain
- * message the server gave, and the control to add more files. Several files make one Scan Report.
+ * One Scan Report (stories 20, 22, 24 and 27): its machine-readable files and, apart from them, its supporting evidence,
+ * each with its pipeline status and, for a rejected one, the plain message the server gave, and the control to add more.
+ * Several files make one Scan Report. Evidence is never shown in the page: it is only offered as a download.
  */
 export function ScanReportCard({
   submissionId,
@@ -201,28 +280,21 @@ export function ScanReportCard({
   classification: string;
   onChanged: () => void;
 }) {
-  const [problem, setProblem] = useState<Problem | undefined>(undefined);
   return (
     <section className="card" aria-labelledby={`report-${report.type}`}>
       <h3 id={`report-${report.type}`}>{report.title}</h3>
       <p className="muted">{report.note}</p>
-      {files.length === 0 ? (
-        <p>No files uploaded yet.</p>
-      ) : (
-        <ul className="plain-list" aria-live="polite">
-          {files.map((file) => (
-            <FileRow key={file.id} submissionId={submissionId} report={report} file={file} onProblem={setProblem} />
-          ))}
-        </ul>
-      )}
-      {problem ? <ErrorPanel problem={problem} /> : null}
-      <UploadForm
-        submissionId={submissionId}
-        report={report}
-        classification={classification}
-        onUploaded={onChanged}
-        onProblem={setProblem}
-      />
+      {(["MACHINE_READABLE", "EVIDENCE"] as const).map((kind) => (
+        <FileSection
+          key={kind}
+          submissionId={submissionId}
+          report={report}
+          kind={kind}
+          files={files.filter((file) => file.kind === kind)}
+          classification={classification}
+          onChanged={onChanged}
+        />
+      ))}
     </section>
   );
 }
