@@ -2,11 +2,12 @@ package sg.annualva.ingestion;
 
 /**
  * Where a Scan Report file is in the upload pipeline. The stages run in a fixed order: quarantine, malware scan, type
- * allowlist, schema check, parse (which also pre-fills the scan date and target). The age ticket appends after them.
+ * allowlist, schema check, parse (which also pre-fills the scan date and target). The age ticket appends after them. A
+ * supporting evidence file skips the last two: quarantine, scan, type allowlist, READY.
  * Nothing reads a file before it is clean, and nobody can view one until it has passed every stage there is. A file is
- * stored in the statuses it rests in (QUARANTINED, SCAN_SUBMITTED, SCHEMA_OK, PARSED and the rejected ones); SCAN_CLEAN
- * and TYPE_OK are stages it passes through, recorded in its stage history when the outcome of the checks is written in
- * one step.
+ * stored in the statuses it rests in (QUARANTINED, SCAN_SUBMITTED, PARSED, READY and the rejected ones); SCAN_CLEAN,
+ * TYPE_OK and SCHEMA_OK are stages it passes through, recorded in its stage history when the outcome of the checks is
+ * written in one step.
  */
 public enum PipelineStatus {
     /** Held in quarantine, not yet with the scanner. */
@@ -21,6 +22,11 @@ public enum PipelineStatus {
     SCHEMA_OK,
     /** A parser read its Findings and the scan date and target it names; they are stored with it. */
     PARSED,
+    /**
+     * A supporting evidence file (a PDF or HTML report) that passed the scan and the type check. It is never schema-checked
+     * or parsed, so it has no SCHEMA_OK or PARSED stage: this is where it rests, ready to be downloaded (ADR 0026).
+     */
+    READY,
     REJECTED_MALWARE,
     REJECTED_SANITIZED,
     REJECTED_SCAN_TIMEOUT,
@@ -30,7 +36,9 @@ public enum PipelineStatus {
     REJECTED_TOO_MANY_FINDINGS,
     REJECTED_UNREADABLE,
     REJECTED_SCHEMA,
-    REJECTED_HASH_MISMATCH;
+    REJECTED_HASH_MISMATCH,
+    /** A PDF that is password protected, which the scanner cannot inspect (supporting evidence only, ADR 0026). */
+    REJECTED_ENCRYPTED;
 
     /** The status of a file the pipeline rejected for this reason. */
     static PipelineStatus rejected(RejectCode code) {
@@ -43,6 +51,6 @@ public enum PipelineStatus {
 
     /** Only a file that passed every stage there is for its format can be viewed or downloaded. */
     boolean viewable() {
-        return this == SCHEMA_OK || this == PARSED;
+        return this == SCHEMA_OK || this == PARSED || this == READY;
     }
 }

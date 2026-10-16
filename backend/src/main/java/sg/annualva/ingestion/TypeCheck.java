@@ -39,11 +39,8 @@ final class TypeCheck {
 
     private TypeCheck() {}
 
-    static Result check(ReportType reportType, FileKind kind, byte[] content) {
-        if (kind != FileKind.MACHINE_READABLE) {
-            // Evidence (PDF, HTML) has no allowed type until ticket 18.
-            return Result.refused(RejectCode.TYPE);
-        }
+    /** The machine-readable kind: the bytes must be a report format of this Scan Report (evidence is {@link FileChecks}'). */
+    static Result check(ReportType reportType, byte[] content) {
         Optional<ReportFormat> sniffed = sniff(content);
         if (sniffed.isEmpty() || sniffed.get().reportType() != reportType) {
             return Result.refused(RejectCode.TYPE);

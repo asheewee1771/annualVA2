@@ -11,8 +11,8 @@ import sg.annualva.parser.scap.ScapXmlParser;
 /**
  * The machine-readable formats the type allowlist accepts, each for one Scan Report and with its own size limit (IM8
  * as-1; ADR 0021) and its own parser. The format is decided from the bytes (the root element of an XML document, the top-level
- * keys of a JSON one), never from the file name or the declared type. Evidence files (PDF, HTML) have no row yet: ticket 18
- * adds them.
+ * keys of a JSON one), never from the file name or the declared type. Supporting evidence (PDF, HTML) is not a machine-readable
+ * format and has none of this: see {@link EvidenceFormat}.
  */
 enum ReportFormat {
     DEPENDENCY_CHECK_XML(ReportType.DEPENDENCY_CHECK, 25, new DependencyCheckXmlParser(), false),

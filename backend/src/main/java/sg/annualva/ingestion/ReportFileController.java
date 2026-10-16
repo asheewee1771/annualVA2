@@ -83,7 +83,9 @@ public class ReportFileController {
 
     /**
      * The file's bytes as an attachment, only once it has passed every stage and only to someone who may see the System;
-     * otherwise 404. The type served is always the generic one, so a browser never renders it.
+     * otherwise 404. Every file is served the same way, supporting evidence (an HTML report is active content) included: as
+     * an attachment, with the generic content type, no sniffing and a policy that allows nothing, so a browser saves it and
+     * never renders it, and the application has no inline view of a file anywhere.
      */
     @GetMapping("/api/submissions/{id}/files/{fileId}/content")
     @PreAuthorize("hasAnyRole('SMO','CYBER_MANAGER','VA_POC')")
@@ -94,6 +96,8 @@ public class ReportFileController {
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         ContentDisposition.attachment().filename(content.name(), java.nio.charset.StandardCharsets.UTF_8)
                                 .build().toString())
+                .header("X-Content-Type-Options", "nosniff")
+                .header("Content-Security-Policy", "default-src 'none'; sandbox")
                 .cacheControl(CacheControl.noStore())
                 .body(content.bytes());
     }

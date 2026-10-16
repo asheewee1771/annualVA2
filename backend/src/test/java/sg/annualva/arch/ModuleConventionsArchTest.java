@@ -106,6 +106,15 @@ class ModuleConventionsArchTest {
     }
 
     @Test
+    void supportingEvidenceIsNeverReadByAParserOrAReader() {
+        noClasses().that().haveSimpleName("EvidenceFormat")
+                .should().dependOnClassesThat().resideInAnyPackage("sg.annualva.parser..", "javax.xml..", "org.w3c.dom..",
+                        "org.xml.sax..", "tools.jackson..", "java.util.zip..", "java.io..", "java.nio.file..")
+                .because("evidence is HTML or PDF from an untrusted person: its leading bytes are compared and nothing reads it (ADR 0026)")
+                .check(main);
+    }
+
+    @Test
     void jdbcClientIsUsedOnlyInsideStores() {
         noClasses().that().haveSimpleNameNotEndingWith("Store")
                 .should().dependOnClassesThat().haveFullyQualifiedName(JDBC_CLIENT)

@@ -56,7 +56,7 @@ class ReportFileStore {
      */
     record Settlement(
             List<PipelineStatus> stages, @Nullable RejectCode rejectCode, @Nullable String cleanKey,
-            @Nullable String cleanSha256, @Nullable ReportFormat format, int attempts, @Nullable ParsedReport parsed) {
+            @Nullable String cleanSha256, @Nullable String format, int attempts, @Nullable ParsedReport parsed) {
 
         PipelineStatus resting() {
             return stages.get(stages.size() - 1);
@@ -227,7 +227,7 @@ class ReportFileStore {
         boolean applied = jdbc.sql(SETTLE).param("id", file.id()).param("status", settlement.resting().name())
                 .param("code", settlement.rejectCode() == null ? null : settlement.rejectCode().name())
                 .param("clean", settlement.cleanKey()).param("sha", settlement.cleanSha256())
-                .param("format", settlement.format() == null ? null : settlement.format().name())
+                .param("format", settlement.format())
                 .param("from", file.status().name()).param("attempts", file.scanAttempts())
                 .param("after", settlement.attempts())
                 .param("scanDate", scanDate(settlement.parsed()))

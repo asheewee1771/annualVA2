@@ -139,12 +139,13 @@ public class ReportFiles {
     public ReportFileMetadataView metadata(UUID submissionId, UUID fileId) {
         Submissions.FileTarget target = submissions.fileTarget(submissionId, Need.VIEW);
         ReportFileStore.Row row = file(submissionId, fileId);
-        if (!row.status().viewable()) {
+        if (row.status() != PipelineStatus.PARSED) {
+            // Only a parsed file has anything to say about the scan; supporting evidence is never read.
             throw new ResourceNotFoundException();
         }
         audit.record(actor.attribute(AuditEvent.of(AuditAction.FILE_METADATA_VIEWED, AuditOutcome.SUCCESS))
                 .onSystem(target.systemId()).onSubmission(submissionId).with(DetailKey.FILE_ID, fileId));
-        // A file that passed every stage was given its format by the type check.
+        // A parsed file was given its report format by the type check.
         boolean exportTime = ReportFormat.valueOf(Objects.requireNonNull(row.detectedFormat())).scanDateIsExportTime();
         return new ReportFileMetadataView(fileId, row.scanDateFromFile(), exportTime, row.targetFromFile());
     }
@@ -177,7 +178,23 @@ public class ReportFiles {
         }
         audit.record(actor.attribute(AuditEvent.of(AuditAction.FILE_DOWNLOADED, AuditOutcome.SUCCESS))
                 .onSystem(target.systemId()).onSubmission(submissionId).with(DetailKey.FILE_ID, fileId));
-        return new Grant(row.displayName(), cleanKey);
+        return new Grant(downloadName(row), cleanKey);
+    }
+
+    /**
+     * The name a download is offered under. For supporting evidence the extension comes from what the bytes were found to
+     * be, never from the name the person gave: HTML saved as a .hta, .svg or .wsf file would be run by the operating system
+     * rather than opened in a browser, outside everything the download headers do. A machine-readable file keeps its name.
+     */
+    static String downloadName(ReportFileStore.Row row) {
+        String name = row.displayName();
+        String format = row.detectedFormat();
+        if (row.kind() != FileKind.EVIDENCE || format == null) {
+            return name;
+        }
+        int dot = name.lastIndexOf('.');
+        String base = dot < 0 ? name : name.substring(0, dot).strip();
+        return (base.isEmpty() ? FALLBACK_NAME : base) + EvidenceFormat.valueOf(format).extension();
     }
 
     private ReportFileStore.Row file(UUID submissionId, UUID fileId) {

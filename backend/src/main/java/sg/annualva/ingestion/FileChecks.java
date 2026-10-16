@@ -22,11 +22,12 @@ final class FileChecks {
      * @param stages the statuses the file passed through, in order, after the malware scan; the last is where it rests (a
      *     REJECTED_ one for a file that failed a stage)
      * @param rejection why it was refused; null for a file that passed every stage
-     * @param format what the bytes were found to be; null when the type check refused it
+     * @param format what the bytes were found to be (a {@link ReportFormat} or an {@link EvidenceFormat} name); null when the
+     *     type check refused it
      * @param parsed what the parser read; null unless the file was parsed
      */
     record Outcome(
-            List<PipelineStatus> stages, @Nullable RejectCode rejection, @Nullable ReportFormat format,
+            List<PipelineStatus> stages, @Nullable RejectCode rejection, @Nullable String format,
             @Nullable ParsedReport parsed) {
 
         boolean passed() {
@@ -37,7 +38,10 @@ final class FileChecks {
     private FileChecks() {}
 
     static Outcome run(ReportType reportType, FileKind kind, byte[] content) {
-        TypeCheck.Result typed = TypeCheck.check(reportType, kind, content);
+        if (kind == FileKind.EVIDENCE) {
+            return evidence(content);
+        }
+        TypeCheck.Result typed = TypeCheck.check(reportType, content);
         RejectCode refusedType = typed.rejection();
         if (refusedType != null) {
             return new Outcome(List.of(PipelineStatus.SCAN_CLEAN, PipelineStatus.rejected(refusedType)), refusedType,
@@ -47,19 +51,45 @@ final class FileChecks {
         Optional<RejectCode> refusedSchema = SchemaCheck.check(format, content);
         if (refusedSchema.isPresent()) {
             return new Outcome(List.of(PipelineStatus.SCAN_CLEAN, PipelineStatus.TYPE_OK,
-                    PipelineStatus.rejected(refusedSchema.get())), refusedSchema.get(), format, null);
+                    PipelineStatus.rejected(refusedSchema.get())), refusedSchema.get(), format.name(), null);
         }
         try {
             ParsedReport parsed = format.parser().parse(content);
             return new Outcome(List.of(PipelineStatus.SCAN_CLEAN, PipelineStatus.TYPE_OK, PipelineStatus.SCHEMA_OK,
-                    PipelineStatus.PARSED), null, format, parsed);
+                    PipelineStatus.PARSED), null, format.name(), parsed);
         } catch (UnparseableReportException e) {
             // The structure the format needs was not there (or the file holds more than one file may), so the file never
             // counts as having passed the schema check.
             RejectCode code = e.reason() == UnparseableReportException.Reason.OVER_A_LIMIT ? RejectCode.TOO_MANY_FINDINGS
                     : RejectCode.SCHEMA;
             return new Outcome(List.of(PipelineStatus.SCAN_CLEAN, PipelineStatus.TYPE_OK, PipelineStatus.rejected(code)),
-                    code, format, null);
+                    code, format.name(), null);
         }
+    }
+
+    /**
+     * Supporting evidence (ADR 0026): its leading bytes say it is a PDF or an HTML document and it is within the limit for
+     * that, or it is refused (a machine-readable report, which starts with an XML declaration and a root that is not
+     * {@code html}, or a JSON object, is neither). Nothing else is done with it: no schema check, no parse and no reader
+     * of any kind, so nothing in it can reach a log, an audit entry or an error.
+     */
+    private static Outcome evidence(byte[] content) {
+        Optional<EvidenceFormat> sniffed = EvidenceFormat.sniff(content);
+        if (sniffed.isEmpty()) {
+            return refusedEvidence(RejectCode.TYPE, null);
+        }
+        EvidenceFormat format = sniffed.get();
+        if (content.length > format.maxBytes()) {
+            return refusedEvidence(RejectCode.TOO_LARGE, format.name());
+        }
+        if (format == EvidenceFormat.PDF && EvidenceFormat.carriesEncryptName(content)) {
+            return refusedEvidence(RejectCode.ENCRYPTED, format.name());
+        }
+        return new Outcome(List.of(PipelineStatus.SCAN_CLEAN, PipelineStatus.TYPE_OK, PipelineStatus.READY), null,
+                format.name(), null);
+    }
+
+    private static Outcome refusedEvidence(RejectCode code, @Nullable String format) {
+        return new Outcome(List.of(PipelineStatus.SCAN_CLEAN, PipelineStatus.rejected(code)), code, format, null);
     }
 }

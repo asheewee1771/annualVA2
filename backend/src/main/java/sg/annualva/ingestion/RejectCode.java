@@ -37,7 +37,10 @@ public enum RejectCode {
     SCHEMA("schema", "This file does not have the structure this Scan Report needs, so the upload was rejected."),
     /** The scanner called the file unchanged but returned different bytes. */
     HASH_MISMATCH("hash-mismatch",
-            "The scan result did not match the file that was uploaded, so the upload was rejected. Upload the file again.");
+            "The scan result did not match the file that was uploaded, so the upload was rejected. Upload the file again."),
+    /** A PDF that asks for a password to open: the scanner cannot inspect it, so it is not kept (ADR 0026, reviewer-decisions.md). */
+    ENCRYPTED("encrypted",
+            "This PDF is password protected, so the upload was rejected. Upload a copy without a password.");
 
     private final String auditCode;
     private final String message;

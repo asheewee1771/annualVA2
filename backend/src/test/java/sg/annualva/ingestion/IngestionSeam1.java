@@ -21,6 +21,7 @@ abstract class IngestionSeam1 extends SubmissionSeam1 {
     static final String SECURE_CONFIGURATION = "SECURE_CONFIGURATION";
     static final String BURP_SUITE = "BURP_SUITE";
     static final String MACHINE_READABLE = "MACHINE_READABLE";
+    static final String EVIDENCE = "EVIDENCE";
 
     /** A started VA Submission and the SMO/Tech Lead who started it. */
     protected record Draft(ApiClient smo, String systemId, String submissionId) {}
@@ -61,6 +62,14 @@ abstract class IngestionSeam1 extends SubmissionSeam1 {
         return ApiClient.json(response);
     }
 
+    /** Uploads a supporting evidence file of the Scan Report and expects it to be accepted for scanning (202). */
+    protected static JsonNode uploadedEvidence(ApiClient client, String submissionId, String reportType, String fileName,
+            byte[] content) {
+        var response = upload(client, submissionId, reportType, EVIDENCE, fileName, content);
+        assertThat(response.status()).as(response.body()).isEqualTo(202);
+        return ApiClient.json(response);
+    }
+
     /** The status of one file, as this person reads it; expects 200. */
     protected static JsonNode status(ApiClient client, String submissionId, String fileId) {
         var response = client.get(fileAt(submissionId, fileId));
@@ -76,6 +85,14 @@ abstract class IngestionSeam1 extends SubmissionSeam1 {
     /** Uploads a file and runs the job until its verdict is in: the first pass submits it, the second reads the answer. */
     protected JsonNode settled(Draft draft, String reportType, String fileName, byte[] content) {
         String id = uploaded(draft.smo(), draft.submissionId(), reportType, fileName, content).get("id").asString();
+        pass();
+        pass();
+        return status(draft.smo(), draft.submissionId(), id);
+    }
+
+    /** Uploads a supporting evidence file and runs the job until its verdict is in. */
+    protected JsonNode settledEvidence(Draft draft, String reportType, String fileName, byte[] content) {
+        String id = uploadedEvidence(draft.smo(), draft.submissionId(), reportType, fileName, content).get("id").asString();
         pass();
         pass();
         return status(draft.smo(), draft.submissionId(), id);

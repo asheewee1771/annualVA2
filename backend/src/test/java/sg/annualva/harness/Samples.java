@@ -140,6 +140,21 @@ public final class Samples {
         return utf8("<!DOCTYPE html><html><body><p>report</p></body></html>");
     }
 
+    /** The start of a PDF, which is all the type check looks at; it is not a complete document and is never read. */
+    public static byte[] pdf() {
+        return utf8("%PDF-1.7\n%\u00e2\u00e3\u00cf\u00d3\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF\n");
+    }
+
+    /**
+     * A PDF whose trailer names an encryption dictionary ({@code /Encrypt 5 0 R}), as a password-protected one does. Like
+     * {@link #pdf()} it is only the shape the byte check looks at, not a complete document.
+     */
+    public static byte[] encryptedPdf() {
+        return utf8("%PDF-1.7\n%âãÏÓ\n1 0 obj\n<< /Type /Catalog >>\nendobj\n5 0 obj\n"
+                + "<< /Filter /Standard /V 4 /R 4 /Length 128 >>\nendobj\ntrailer\n<< /Root 1 0 R /Encrypt 5 0 R "
+                + "/ID [<00><00>] >>\n%%EOF\n");
+    }
+
     /** What a PNG starts with: not XML, not JSON. */
     public static byte[] png() {
         return new byte[] {(byte) 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0};

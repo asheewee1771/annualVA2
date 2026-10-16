@@ -108,21 +108,6 @@ class TypeAndSchemaCheckTest extends IngestionSeam1 {
     }
 
     @Test
-    void evidenceHasNoAllowedTypeUntilItsOwnTicket() {
-        Draft draft = draft();
-        var response = upload(draft.smo(), draft.submissionId(), DEPENDENCY_CHECK, "EVIDENCE", "report.pdf",
-                text("%PDF-1.7 evidence"));
-        assertThat(response.status()).isEqualTo(202);
-        pass();
-        pass();
-
-        JsonNode file = status(draft.smo(), draft.submissionId(),
-                sg.annualva.harness.ApiClient.json(response).get("id").asString());
-
-        assertRejected(file, "TYPE");
-    }
-
-    @Test
     void aFileOverTheLimitForItsTypeIsRejectedBeforeAnythingReadsIt() {
         Draft draft = draft();
         byte[] big = Samples.dependencyCheckXmlOfSize(25 * 1024 * 1024 + 1024);
