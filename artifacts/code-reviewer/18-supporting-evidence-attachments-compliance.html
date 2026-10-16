@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review — 18-supporting-evidence-attachments</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">build WARN 0/0/0/1</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN 0/0/7/4</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN 0/0/0/8</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">semgrep WARN 0/0/1/16</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN 0/0/1/3</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react WARN 0/0/0/5</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN 0/0/2/6</span>
+      <span class="font-mono text-sm text-slate-500 ml-auto">main (uncommitted ticket 18 changes)</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report: ticket 18, supporting-evidence attachments</h2>
+          <p class="text-xs text-slate-500 mt-1">Second gate run, after the correction pass. This report replaces the earlier FAIL report and reflects only this run. Counts are Critical / High / Medium / Low. Overall PASS: no check has a Critical or High finding.</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2">Check</th>
+              <th class="px-4 py-2">Status</th>
+              <th class="px-4 py-2">C / H / M / L</th>
+              <th class="px-4 py-2">Summary</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">build</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2">0 / 0 / 0 / 1</td>
+              <td class="px-4 py-2">Back-end clean verify and front-end npm run check both exit 0 (the check itself reports PASS). 621 tests green on real PostgreSQL, ArchUnit green, JaCoCo line 96.6 % and branch 89.3 %. One Low size heads-up.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">thermo-nuclear</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2">0 / 0 / 7 / 4</td>
+              <td class="px-4 py-2">No size blocker. Seven Medium maintainability findings with one root cause: the detected format is an untyped String shared by two enums and file kind is branched on in many places.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">code-review</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2">0 / 0 / 0 / 8</td>
+              <td class="px-4 py-2">Spec met (all four ticket checkboxes and story 22), round-1 corrections verified. Only Low smell and wording notes; three Info. (The artifact's own headline says 6 Low; the 8 listed Low items, 2 Spec and 6 Standards, are counted here.)</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">semgrep</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2">0 / 0 / 1 / 16</td>
+              <td class="px-4 py-2">Real scan ran (Docker runner, 389 files, plus an explicit pass over the 6 changed test files). Nothing in application code, tests, migration or front end. The Medium is pre-existing and unrelated; all Low are the Tailwind CDN tag in generated reports.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">im8</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2">0 / 0 / 1 / 3</td>
+              <td class="px-4 py-2">Round-1 blockers E1, E2, E3 closed. as-12 encrypted-PDF byte-check gaps would derive to High but are a recorded decision owned by ticket 51, so they map to Medium (tracked deferral). lm-16 meters and committed OpenAPI (pm-6) are deferred to ticket 52.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">react</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2">0 / 0 / 0 / 5</td>
+              <td class="px-4 py-2">The check itself reports PASS. Five Low findings (download blob type, empty-file wording, accessible names, warning association, kind flags). No inline preview, no raw HTML, hooks clean.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">springboot</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2">0 / 0 / 2 / 6</td>
+              <td class="px-4 py-2">Seven Spring skills run (batch not applicable). 404 parity, download headers, transaction boundaries and log hygiene hold. Two Medium: whole-file byte[] download, and nothing guards enum and SQL CHECK lists staying in step.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-700">No Critical or High findings in any check.</p>
+          <p class="text-sm text-slate-700">Items worth attention before the next kind-dependent ticket (all Medium):</p>
+          <ul class="list-disc pl-6 text-sm text-slate-700 space-y-1">
+            <li><span class="font-mono text-xs">FileChecks.java</span>, <span class="font-mono text-xs">ReportFileStore.java</span>, <span class="font-mono text-xs">ReportFiles.java</span>: the detected format is a free String shared by two enums (thermo-nuclear 1, code-review T1, springboot 3).</li>
+            <li><span class="font-mono text-xs">ReportFiles.java</span> downloadName: the extension is forced from the bytes only for evidence; machine-readable downloads keep the uploaded extension (thermo-nuclear 2).</li>
+            <li><span class="font-mono text-xs">ReportFiles.java</span> content: whole-file byte[] per download, up to 20 MB for evidence (springboot 1; fits ticket 51).</li>
+            <li><span class="font-mono text-xs">V13__report_file_evidence.sql</span>: no test ties PipelineStatus and RejectCode to the SQL CHECK lists (springboot 2).</li>
+            <li><span class="font-mono text-xs">EvidenceFormat.java</span>: encrypted-PDF byte check has recorded gaps, owned by ticket 51 (im8 as-12 F1, reviewer-decisions.md).</li>
+          </ul>
+        </div>
+        <div class="space-y-2 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Recorded deferrals applied when mapping severities</h3>
+          <ul class="list-disc pl-6 text-sm text-slate-700 space-y-1">
+            <li>as-12 production scanner, file store and distributed lock go to ticket 51, including the encrypted-PDF byte-check gaps (object stream, # escape, cross-reference stream longer than 64 KB, linearised first-page trailer). These are not counted toward the gate.</li>
+            <li>lm-16 meters and pm-6 committed OpenAPI go to ticket 52 (tracked deferrals, nothing weakened).</li>
+            <li>Ticket 58 owns real PDF and HTML exports (sniff strictness).</li>
+          </ul>
+        </div>
+        <div class="space-y-2 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Artifact integrity</h3>
+          <p class="text-sm text-slate-700">All seven artifacts (build, thermo-nuclear, code-review, semgrep, im8, react, springboot) were present in the run directory, readable, and complete (each ends with its summary or closing section).</p>
+        </div>
+      </div>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN 0/0/0/1</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2 text-left">Severity</th>
+              <th class="px-4 py-2 text-left">File</th>
+              <th class="px-4 py-2 text-left">Line</th>
+              <th class="px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ScanReportCard.tsx</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">301 lines (fallow health "risk", maintainability 86.2), grew about 120 lines with the evidence section. Gate passes; heads-up only.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">Back end: <span class="font-mono">./mvnw -B -ntp clean verify</span> exit 0, 621 tests, 0 failures, Flyway V13 applied on real PostgreSQL, JaCoCo line 96.6 % and branch 89.3 % (gate 80 %). Front end: <span class="font-mono">npm run check</span> exit 0 (Prettier, tsc -b, vite build, no raw HTML, dependency-cruiser, fallow dead-code and health). Info: the deprecated <span class="font-mono">MccHttp.java</span> compile warning is pre-existing and unchanged; fallow cache warnings come from the clean-copy method. Vitest not run (no React unit tests by project convention).</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN 0/0/7/4</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2 text-left">Severity</th>
+              <th class="px-4 py-2 text-left">File</th>
+              <th class="px-4 py-2 text-left">Line</th>
+              <th class="px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">FileChecks.java, ReportFileStore.java, ReportFiles.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">1. The detected format lost its type: Outcome.format and Settlement.format are a String holding either a ReportFormat or an EvidenceFormat name. Suggested: a shared DetectedFormat interface and one resolver on the file kind.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">ReportFiles.java (downloadName)</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">2. Download-name hardening protects only evidence; a machine-readable upload named x.hta downloads under that name. Suggested: extension from the bytes for every viewable file, or record the decision. Exploitability not tested.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">FileChecks.java, ReportFiles.java, V13 migration</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">3. Branching on file kind is scattered across five places; evidence sniff/size/refuse duplicates TypeCheck.check's shape; stage lists hand-assembled.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ScanReportCard.tsx</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">4. The evidence flag is threaded through four components as ternaries; a per-kind config table would hold it once.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">PipelineStatus.java, V13 migration, ScanReportCard.tsx</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">5. Status knowledge copied in four places; the front end re-derives "viewable" (isAccepted); SCHEMA_OK documented as never resting yet still treated as a resting status.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">ReportFileController.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">6. nosniff and CSP header names and policy are string literals in one controller method beside a global CSP in SecurityConfig: two sources of truth.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">FileChecks.java (evidence)</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">7. The encrypt check is bounded and knowingly incomplete (human decision, ticket 51); no marker at the call site naming ticket 51.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">ScanReportCard.tsx</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">8. Client-side MIME pre-check can refuse valid files (aliases such as application/x-pdf) and adds little.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/api/reportFiles.ts</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">9. REPORT_UPLOAD_LIMITS and EVIDENCE_UPLOAD_LIMITS mirror server limits in two shapes.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">ReportFiles.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">10. displayName and downloadName are pure string functions accreting in the 278-line service; extract a ReportFileName.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">EvidenceFormat.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">11. Hand-rolled bounded tokenizer; ascii(tag) allocates per call; case-insensitive prefix helper takes a boolean flag.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN 0/0/0/8</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2 text-left">Severity</th>
+              <th class="px-4 py-2 text-left">File</th>
+              <th class="px-4 py-2 text-left">Line</th>
+              <th class="px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">EvidenceFormat.java (carriesEncryptName)</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">S1. A legitimate or owner-password-only PDF can be refused as "password protected"; accepted heuristic, wording note only.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/api/client.ts (download)</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">S2. A non-ASCII evidence name is saved with underscores; extension still correct; pre-existing and cosmetic.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">FileChecks.java, ReportFileStore.java, ReportFiles.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">T1. Primitive obsession: format is a free String shared by two enums, with no DB constraint.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">FileChecks.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">T2. Six hand-written stage lists restate the ADR 0021 order; evidence path ignores reportType.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">ScanReportCard.tsx</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">T3. Repeated switches on kind === "EVIDENCE" across four components.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">EvidenceFormat.java, TypeCheck.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">T4. Duplicated leading-byte helpers (byte order mark, whitespace skip differing on form feed) and MEGABYTE arithmetic.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">PipelineStatus.java, V13 migration, ScanReportCard.tsx</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">T5. READY and the download rule are kept in step by hand in Java, SQL and TypeScript.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">ScanReportCard.tsx</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">T6. Upload controls repeat the same accessible name across the three cards; the HTML warning is not tied to the control.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">Info: S3 sniff strictness (UTF-16 and head-first HTML refused; recorded in ADR 0026 decision 7, widening owned by ticket 58). T7 SANITIZED for evidence goes through the shared ScanPoller path already tested. Process: the ticket file still reads ready-for-agent with unticked boxes until the verification docs commit; the working tree mixes refactor, feature, front end and docs and should be split into logical commits. Round-1 corrections E1, E2, E3 and the stale Javadoc were verified fixed. Spec: all four ticket checkboxes and story 22 met.</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN 0/0/1/16</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2 text-left">Severity</th>
+              <th class="px-4 py-2 text-left">File</th>
+              <th class="px-4 py-2 text-left">Line</th>
+              <th class="px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">scripts/mock-mockpass-assertions.js</td>
+              <td class="px-4 py-2">11</td>
+              <td class="px-4 py-2">Pre-existing, unrelated to ticket 18. path-join-resolve-traversal on a dev-only mock script whose paths come from operator environment variables; likely a false positive.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">artifacts/code-reviewer/18-supporting-evidence-attachments-compliance.html</td>
+              <td class="px-4 py-2">6</td>
+              <td class="px-4 py-2">missing-integrity on the Tailwind CDN script tag of the generated review report template; no runtime exposure, not application code.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">artifacts/code-reviewer/03 to 17-*-compliance.html (15 files)</td>
+              <td class="px-4 py-2">6 or 7</td>
+              <td class="px-4 py-2">Pre-existing. Same missing-integrity finding on the same report template in earlier tickets.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">Official semgrep Docker image, p/security-audit and p/default (1087 rules), whole repo (389 files) plus an explicit re-run of the 6 changed test files (default ignore skips test directories): 0 findings in all ticket 18 Java, SQL, TypeScript and test files. The wrapper timed out after the JSON was fully written; coverage is complete.</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN 0/0/1/3</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2 text-left">Severity</th>
+              <th class="px-4 py-2 text-left">File</th>
+              <th class="px-4 py-2 text-left">Line</th>
+              <th class="px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/EvidenceFormat.java</td>
+              <td class="px-4 py-2">61-70</td>
+              <td class="px-4 py-2">as-12 F1 (derived High, mapped to Medium as a tracked deferral): encrypted-PDF detection is a 64 KB byte comparison with recorded gaps (object stream, # escape, long xref-stream dictionary, linearised trailer). Recorded decision, owned by ticket 51; not counted toward the gate.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">docs/adr/0026-supporting-evidence-is-scanned-and-type-checked-like-every-file-and-then-never-read.md</td>
+              <td class="px-4 py-2">decision 8</td>
+              <td class="px-4 py-2">as-12 F1a: more than 64 KB of trailing data after the final trailer is a further window-gap variant not in the recorded list; add it so ticket 51 covers it.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/api/reportFiles.ts</td>
+              <td class="px-4 py-2">116-118</td>
+              <td class="px-4 py-2">as-12 F2: if a proxy strips Content-Disposition, the client falls back to the stored name with the person's own extension (for example payroll.hta). Server always sends the forced name.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ScanReportCard.tsx</td>
+              <td class="px-4 py-2">65-75</td>
+              <td class="px-4 py-2">as-12 F3: an empty file.type is let through and unusual MIME values can refuse a good file; the server decides from bytes, so no control gap.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">PASS: as-1, as-2, as-3, as-7, as-9, as-13, lm-4, lm-19, dp-8, ac-1, pm-6 (for this ticket). Deferred and not weakened: lm-16 meters and committed OpenAPI to ticket 52; production scanner, store and lock to ticket 51. Round-1 blockers E1 (encrypted PDF), E2 (download extension) and E3 (accept filter) verified closed. Manual review: ticket 51 must scan or reject password-protected PDFs and cover the F1 gaps; verify blob-URL download in the browsers in use.</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN 0/0/0/5</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2 text-left">Severity</th>
+              <th class="px-4 py-2 text-left">File</th>
+              <th class="px-4 py-2 text-left">Line</th>
+              <th class="px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/api/client.ts (download), frontend/src/screens/shared/saveFile.ts</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L1. The saved blob keeps the server's content type; if a browser ignored the download attribute, HTML evidence would open same-origin. Re-wrap in application/octet-stream (defence in depth).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ScanReportCard.tsx</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L2. An empty evidence file gets the report wording "Choose the report your tool exported."</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ScanReportCard.tsx</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L3. Identical accessible names (headings, input label, button) repeat across the three Scan Report cards; pre-existing pattern.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ScanReportCard.tsx</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L4. The "open HTML only if you trust it" warning is not tied to the Download button with aria-describedby.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ScanReportCard.tsx</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">L5. File-section structure spread by kind flags; file is about 300 lines; a per-kind config and a sibling checks module would shrink it.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">Checked and fine: object URL lifecycle, no inline preview or raw HTML, hooks and effects, per-section state, stable keys, polling stops at READY, exhaustive status labels, error handling.</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN 0/0/2/6</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2 text-left">Severity</th>
+              <th class="px-4 py-2 text-left">File</th>
+              <th class="px-4 py-2 text-left">Line</th>
+              <th class="px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">ReportFiles.java (content), ReportFileController.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">1. Download buffers the whole file as byte[] (up to 20 MB for evidence, 50 MB overall); stream through FileStore.open with ticket 51 and document the bound until then.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">PipelineStatus.java, RejectCode.java, V13__report_file_evidence.sql</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">2. Nothing guards that the enums and the SQL CHECK lists stay in step; a miss fails only at runtime inside ScanPoller. Add a RejectCode-to-status test and a pg_get_constraintdef Seam 1 test.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">ReportFiles.java (downloadName), V13 migration</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">3. downloadName fails open for EVIDENCE with a null detected_format; the database does not tie READY or PARSED to a format.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">EvidenceTest.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">4. Size-limit and sniff-table tests are costly for what they prove; one test sits two files below the 20-file cap.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">EvidenceTest.java, EvidenceDownloadTest.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">5. Table tests use String[] tuples, ternaries and forEach, so the first failure hides the rest; use records and parameterised tests.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">EvidenceDownloadTest.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">6. No test of a non-ASCII file name in Content-Disposition (filename*=UTF-8''), nor Accept: application/json on the content endpoint.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">ReportFiles.java (content)</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">7. Pre-existing code in a touched file: a storage read failure becomes a 503 with no log line and no cause.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">ModuleConventionsArchTest.java, FileChecks.java</td>
+              <td class="px-4 py-2">-</td>
+              <td class="px-4 py-2">8. The ArchUnit no-reader rule covers EvidenceFormat only, not FileChecks.evidence or ReportFiles.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">Seven Spring skills run; spring-batch not applicable (no Spring Batch). Verified: per-response CSP replaces rather than doubles the global one, 404 parity for strangers, audit before bytes are served, transactions end before the file read, nothing from a file reaches a log line, V13 lists agree with the enums today. Info: viewable() still includes SCHEMA_OK.</p>
+      </details>
+    </main>
+  </body>
+</html>
