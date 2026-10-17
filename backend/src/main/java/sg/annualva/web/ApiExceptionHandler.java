@@ -59,7 +59,11 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     /** A domain module refused the request with a fixed problem (its type and sentence are constants). */
     @ExceptionHandler(RejectedRequestException.class)
     ProblemDetail handleRejected(RejectedRequestException ex) {
-        return ProblemResponses.problem(ex.status(), ex.type(), ex.getMessage());
+        ProblemDetail problem = ProblemResponses.problem(ex.status(), ex.type(), ex.getMessage());
+        if (ex.field() != null) {
+            problem.setProperty("field", ex.field());
+        }
+        return problem;
     }
 
     /** A sensitive command needs a fresh sign-in first (ADR 0004); the problem says where to start one. */

@@ -85,8 +85,8 @@ class ArchitectureTest {
                 .whereLayer("ingestion").mayOnlyBeAccessedByLayers("app")
                 // the dashboards are read models over the modules below them; nothing reads them
                 .whereLayer("dashboard").mayOnlyBeAccessedByLayers("app")
-                // the calendar is a leaf below the domain modules (the register dates a System by it, a submission and the inbox by its Quarter); nothing it reads reads back
-                .whereLayer("cycle").mayOnlyBeAccessedByLayers("app", "register", "submission", "dashboard")
+                // the calendar is a leaf below the domain modules (the register dates a System by it, a submission and the inbox by its Quarter, the Findings read today's business date from it); nothing it reads reads back
+                .whereLayer("cycle").mayOnlyBeAccessedByLayers("app", "register", "submission", "finding", "dashboard")
                 // production adapters are wired by Spring type only; no module imports them
                 .whereLayer("adapters").mayNotBeAccessedByAnyLayer()
                 .check(main);

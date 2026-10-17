@@ -68,7 +68,20 @@ public enum AuditAction {
      * is audited for every role, the System's own SMO/Tech Lead included. One entry per list request, about the System and
      * the VA Submission, with the number of Findings returned; never an identifier, a package or a host.
      */
-    FINDINGS_VIEWED("findings-viewed", "database");
+    FINDINGS_VIEWED("findings-viewed", "database"),
+    /**
+     * An SMO/Tech Lead proposed a Finding Status (SUCCESS, with the status as a fixed code, and the memo file's id when a
+     * Risk Accepted proposal has one), or was refused because the VA Submission takes no proposals in its present state
+     * (REFUSED, with a fixed reason). About the System, the VA Submission and the Finding; never the evidence,
+     * justification, reason, approver, plan or date.
+     */
+    STATUS_PROPOSED("status-proposed", "database"),
+    /**
+     * Someone who may see the System read the history of the proposals of one Finding. The proposals carry what the SMO/Tech
+     * Lead wrote, so the read is audited for every role. About the System, the VA Submission and the Finding, with the
+     * number of proposals returned; never their text.
+     */
+    FINDING_PROPOSALS_VIEWED("finding-proposals-viewed", "database");
 
     private final String ecs;
     private final String category;

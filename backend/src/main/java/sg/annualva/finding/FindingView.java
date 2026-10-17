@@ -26,11 +26,14 @@ import sg.annualva.parser.Severity;
  * @param occurrenceCount how many places it was reported
  * @param sourceFiles the uploaded files it was read from, in the order they were uploaded; the name is the one the person
  *     gave the file
+ * @param reviewState where the Cyber Manager's review of the current proposal is; null for a Finding with no proposal
+ * @param currentProposal the Finding Status the SMO/Tech Lead last proposed with its fields (story 35); null until one is
+ *     (earlier proposals are kept and read through the Finding's history)
  */
 public record FindingView(
         UUID id, UUID systemId, ReportType reportType, String identityKey, String identifier, String packageOrRule,
         Severity severity, boolean didNotComplete, @Nullable Confidence confidence, int occurrenceCount,
-        List<SourceFile> sourceFiles) {
+        List<SourceFile> sourceFiles, @Nullable ReviewState reviewState, @Nullable ProposalView currentProposal) {
 
     /** An uploaded Scan Report file a Finding was read from. */
     public record SourceFile(UUID id, String name) {}

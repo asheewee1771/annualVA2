@@ -34,7 +34,9 @@ public enum DetailKey {
     UNCHANGED,
     /** The role grants a Register apply gave and revoked. */
     ROLES_GRANTED,
-    ROLES_REVOKED;
+    ROLES_REVOKED,
+    /** The Finding Status a proposal was for: one of four fixed codes such as {@code RISK_ACCEPTED}. */
+    FINDING_STATUS;
 
     /** The key as stored: lower-case with underscores. */
     String json() {

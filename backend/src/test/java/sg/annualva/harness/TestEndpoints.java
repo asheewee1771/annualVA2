@@ -218,6 +218,11 @@ public class TestEndpoints {
                 jdbc.sql("DROP TRIGGER IF EXISTS test_finding_fault ON finding_occurrence").update();
                 jdbc.sql("DROP TRIGGER IF EXISTS test_finding_late ON report_file").update();
                 jdbc.sql("DELETE FROM finding_occurrence").update();
+                jdbc.sql("UPDATE finding SET current_proposal_id = NULL, review_state = NULL").update();
+                // The proposals are append-only for the application; only this reset, which owns the test schema, removes them.
+                jdbc.sql("ALTER TABLE finding_status_proposal DISABLE TRIGGER finding_status_proposal_append_only").update();
+                jdbc.sql("DELETE FROM finding_status_proposal").update();
+                jdbc.sql("ALTER TABLE finding_status_proposal ENABLE TRIGGER finding_status_proposal_append_only").update();
                 jdbc.sql("DELETE FROM finding").update();
                 jdbc.sql("DELETE FROM report_file_stage").update();
                 jdbc.sql("DELETE FROM report_file").update();
@@ -297,6 +302,14 @@ public class TestEndpoints {
             jdbc.sql("UPDATE report_file SET pipeline_status = 'REJECTED_MALWARE', reject_code = 'MALWARE', "
                     + "scan_ticket = NULL, quarantine_key = NULL WHERE id = :id").param("id", id).update();
             return Map.of("rejected", id.toString());
+        }
+
+        /** The Cyber Manager's review of a Finding's current proposal, which the review engine (ticket 28) will set: for the proposal and list-filter tests. */
+        @PostMapping("/api/test/findings/{id}/review/{state}")
+        public Map<String, String> findingReview(@PathVariable UUID id, @PathVariable String state) {
+            jdbc.sql("UPDATE finding SET review_state = :state WHERE id = :id AND current_proposal_id IS NOT NULL")
+                    .param("state", state).param("id", id).update();
+            return Map.of("state", state);
         }
 
         /** A VA Submission in a state no command enters yet (the tables accept all nine), for the tests of the file rules. */
