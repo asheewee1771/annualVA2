@@ -33,6 +33,8 @@ export interface Proposal {
   targetDate: string | null;
   /** An instant (UTC). */
   proposedAt: string;
+  /** The Bulk-set batch it was proposed in; null for a proposal made for one Finding alone. */
+  batchId: string | null;
 }
 
 /** An uploaded Scan Report file a Finding was read from. */
@@ -83,16 +85,49 @@ export interface ProposalInput {
   targetDate?: string;
 }
 
-/**
- * GET /api/submissions/{id}/findings: a page of the VA Submission's Findings, the most severe first, with each one's current
- * proposal and review state. The server also narrows by report type, severity, review state and "needs attention".
- */
-export function fetchFindings(submissionId: string, page: number, size: number): Promise<FindingPage> {
+/** What the list is narrowed to on the server; every part is optional and the parts given all apply. */
+export interface FindingFilter {
+  severity?: readonly Severity[];
+  reviewState?: ReviewState;
+  /** No proposal yet, or a Disputed one: what the SMO/Tech Lead still has to act on. */
+  needsAttention?: boolean;
+}
+
+/** The most a page of the list may hold: the server's limit. */
+const MAX_PAGE_SIZE = 500;
+
+function findingsPath(submissionId: string, filter: FindingFilter, page: number, size: number): string {
   const query = new URLSearchParams({ page: String(page), size: String(size) });
-  return request<FindingPage>(
-    "GET",
-    `/api/submissions/${encodeURIComponent(submissionId)}/findings?${query.toString()}`,
-  );
+  if (filter.severity && filter.severity.length > 0) query.set("severity", filter.severity.join(","));
+  if (filter.reviewState) query.set("reviewState", filter.reviewState);
+  if (filter.needsAttention) query.set("needsAttention", "true");
+  return `/api/submissions/${encodeURIComponent(submissionId)}/findings?${query.toString()}`;
+}
+
+/**
+ * GET /api/submissions/{id}/findings: a page of the VA Submission's Findings that match the filter, the most severe first,
+ * with each one's current proposal and review state. The total is the number that match.
+ */
+export function fetchFindings(
+  submissionId: string,
+  filter: FindingFilter,
+  page: number,
+  size: number,
+): Promise<FindingPage> {
+  return request<FindingPage>("GET", findingsPath(submissionId, filter, page, size));
+}
+
+/**
+ * The ids of every Finding that matches the filter, read page by page, for "select all that match". It stops once it has
+ * more than `limit`, since a batch can hold no more than that anyway.
+ */
+export async function fetchMatchingIds(submissionId: string, filter: FindingFilter, limit: number): Promise<string[]> {
+  const ids: string[] = [];
+  for (let page = 0; ; page++) {
+    const result = await fetchFindings(submissionId, filter, page, MAX_PAGE_SIZE);
+    ids.push(...result.items.map((finding) => finding.id));
+    if (result.items.length < MAX_PAGE_SIZE || ids.length >= result.total || ids.length > limit) return ids;
+  }
 }
 
 /**
@@ -102,4 +137,48 @@ export function fetchFindings(submissionId: string, page: number, size: number):
  */
 export function proposeStatus(findingId: string, input: ProposalInput): Promise<Proposal> {
   return request<Proposal>("POST", `/api/findings/${encodeURIComponent(findingId)}/proposals`, input);
+}
+
+/** The most Findings one Bulk-set batch may hold: the server's limit. */
+export const MAX_BATCH_SIZE = 1000;
+
+/** A Bulk-set batch as its step answers it. */
+export interface Batch {
+  batchId: string;
+  count: number;
+}
+
+/**
+ * POST /api/submissions/{id}/findings/bulk-proposals: one Finding Status with its fields for every Finding named, as one
+ * batch. The list is refused as a whole when one of them is not a Finding of this VA Submission; a field that is wrong is a
+ * 400 that names it, as for one Finding.
+ */
+export function proposeInBulk(
+  submissionId: string,
+  findingIds: readonly string[],
+  input: ProposalInput,
+): Promise<Batch> {
+  return request<Batch>("POST", `/api/submissions/${encodeURIComponent(submissionId)}/findings/bulk-proposals`, {
+    findingIds,
+    ...input,
+  });
+}
+
+/** How far the Findings are: what the progress bar shows. Carried Over and Target Date Missed are none in Release 1. */
+export interface Readiness {
+  total: number;
+  /** With a proposed status, whatever its review. */
+  proposed: number;
+  /** With no proposed status yet: what is still to do. */
+  unproposed: number;
+  /** Awaiting the Cyber Manager's review. */
+  awaitingReview: number;
+  carriedOver: number;
+  targetDateMissed: number;
+  disputed: number;
+}
+
+/** GET /api/submissions/{id}/readiness: the progress counts of the VA Submission's Findings. */
+export function fetchReadiness(submissionId: string): Promise<Readiness> {
+  return request<Readiness>("GET", `/api/submissions/${encodeURIComponent(submissionId)}/readiness`);
 }

@@ -1,8 +1,7 @@
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { proposeStatus, type Finding, type FindingStatus } from "../../api/findings.ts";
 import { ApiError, type Problem } from "../../api/problem.ts";
 import type { ReportFile } from "../../api/reportFiles.ts";
-import { ClassifiedField } from "../../components/ClassifiedField.tsx";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import {
   inputFor,
@@ -12,8 +11,8 @@ import {
   statusSpec,
   STATUSES,
   type FieldName,
-  type FieldSpec,
 } from "./findingStatuses.ts";
+import { ProposalFieldInput } from "./ProposalFieldInput.tsx";
 import { SCAN_REPORTS } from "./scanReports.ts";
 
 const UNREACHABLE: Problem = { type: "about:blank", title: "The server could not be reached", status: 0 };
@@ -21,47 +20,6 @@ const UNREACHABLE: Problem = { type: "about:blank", title: "The server could not
 const REPORT_TITLES = new Map(SCAN_REPORTS.map((report) => [report.type, report.title]));
 
 type Values = Partial<Record<FieldName, string>>;
-
-/** One input of the status's fields, with its classification label beside it (IM8 dp-8). */
-function FieldInput({
-  finding,
-  spec,
-  value,
-  invalid,
-  memos,
-  classification,
-  onChange,
-}: {
-  finding: Finding;
-  spec: FieldSpec;
-  value: string;
-  invalid: boolean;
-  memos: readonly ReportFile[];
-  classification: string;
-  onChange: (name: FieldName, value: string) => void;
-}) {
-  const id = `${finding.id}-${spec.name}`;
-  const change = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
-    onChange(spec.name, event.target.value);
-  const common = { id, value, onChange: change, "aria-invalid": invalid, required: spec.required } as const;
-  return (
-    <ClassifiedField label={spec.label} classification={classification} id={id}>
-      {spec.kind === "text" ? <textarea {...common} rows={3} maxLength={spec.maxLength} /> : null}
-      {spec.kind === "line" ? <input {...common} type="text" maxLength={spec.maxLength} /> : null}
-      {spec.kind === "date" ? <input {...common} type="date" /> : null}
-      {spec.kind === "memo" ? (
-        <select {...common}>
-          <option value="">No approval memo</option>
-          {memos.map((memo) => (
-            <option key={memo.id} value={memo.id}>
-              {memo.name}
-            </option>
-          ))}
-        </select>
-      ) : null}
-    </ClassifiedField>
-  );
-}
 
 /** What the SMO/Tech Lead fills in to propose a status: the fields it requires, and the button that sends them. */
 function ProposalForm({
@@ -99,9 +57,9 @@ function ProposalForm({
   return (
     <form onSubmit={(event) => void submit(event)}>
       {spec.fields.map((field) => (
-        <FieldInput
+        <ProposalFieldInput
           key={field.name}
-          finding={finding}
+          idPrefix={finding.id}
           spec={field}
           value={values[field.name] ?? ""}
           invalid={problem?.field === field.name}
@@ -121,6 +79,26 @@ function ProposalForm({
   );
 }
 
+/** The status proposed so far, its review, whether it was Bulk-set, and what was proposed; or that there is none yet. */
+function StatusCell({ finding }: { finding: Finding }) {
+  const proposal = finding.currentProposal;
+  if (!proposal) {
+    return (
+      <td>
+        <span className="flag flag--warning">No status proposed</span>
+      </td>
+    );
+  }
+  return (
+    <td>
+      <strong>{statusSpec(proposal.status).label}</strong>
+      {finding.reviewState ? <span className="muted"> · {REVIEW_LABELS[finding.reviewState]}</span> : null}
+      {proposal.batchId ? <span className="muted"> · Bulk-set</span> : null}
+      <p className="muted finding-detail">{proposalDetail(proposal)}</p>
+    </td>
+  );
+}
+
 /**
  * One Finding as a row of the list, and the control to propose a status for it (stories 28 and 35): the severity, what the
  * report called it, where it was found, the status proposed so far with the review of it, and a select of the four statuses
@@ -128,11 +106,16 @@ function ProposalForm({
  */
 export function FindingRow({
   finding,
+  selected,
+  onToggle,
   memos,
   classification,
   onProposed,
 }: {
   finding: Finding;
+  /** Whether its tick box is ticked, for the bulk bar. */
+  selected: boolean;
+  onToggle: (findingId: string) => void;
   memos: readonly ReportFile[];
   classification: string;
   onProposed: () => void;
@@ -140,10 +123,17 @@ export function FindingRow({
   const [chosen, setChosen] = useState<FindingStatus | "">("");
   const proposal = finding.currentProposal;
   const selectId = `${finding.id}-status`;
+  const tickId = `${finding.id}-tick`;
 
   return (
     <>
-      <tr>
+      <tr className={selected ? "row--selected" : undefined}>
+        <td>
+          <input id={tickId} type="checkbox" checked={selected} onChange={() => onToggle(finding.id)} />
+          <label htmlFor={tickId} className="visually-hidden">
+            Select {finding.identifier}
+          </label>
+        </td>
         <td>
           <span
             className={finding.severity === "CRITICAL" || finding.severity === "HIGH" ? "flag flag--danger" : "flag"}
@@ -172,17 +162,7 @@ export function FindingRow({
           {finding.occurrenceCount}
           <span className="visually-hidden"> places</span>
         </td>
-        <td>
-          {proposal ? (
-            <>
-              <strong>{statusSpec(proposal.status).label}</strong>
-              {finding.reviewState ? <span className="muted"> · {REVIEW_LABELS[finding.reviewState]}</span> : null}
-              <p className="muted finding-detail">{proposalDetail(proposal)}</p>
-            </>
-          ) : (
-            <span className="flag flag--warning">No status proposed</span>
-          )}
-        </td>
+        <StatusCell finding={finding} />
         <td>
           <label htmlFor={selectId} className="visually-hidden">
             Propose a status for {finding.identifier}
@@ -203,7 +183,7 @@ export function FindingRow({
       </tr>
       {chosen ? (
         <tr>
-          <td colSpan={7}>
+          <td colSpan={8}>
             <ProposalForm
               key={chosen}
               finding={finding}
