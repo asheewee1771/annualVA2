@@ -8,6 +8,8 @@ export interface Problem {
   traceId?: string;
   /** Only on `step-up-required`: the server path that starts the fresh sign-in. */
   stepUpPath?: string;
+  /** Only on `invalid-field`: the name of the request field that is wrong, one of the server's own names. */
+  field?: string;
 }
 
 export class ApiError extends Error {
@@ -30,6 +32,7 @@ export function problemFrom(status: number, body: unknown): Problem {
       ...(candidate.detail !== undefined ? { detail: candidate.detail } : {}),
       ...(candidate.instance !== undefined ? { instance: candidate.instance } : {}),
       ...(candidate.traceId !== undefined ? { traceId: candidate.traceId } : {}),
+      ...(typeof candidate.field === "string" ? { field: candidate.field } : {}),
       // Only a path of the server's own step-up endpoint is ever followed.
       ...(typeof candidate.stepUpPath === "string" && candidate.stepUpPath.startsWith("/auth/step-up?")
         ? { stepUpPath: candidate.stepUpPath }

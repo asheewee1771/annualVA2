@@ -1,16 +1,18 @@
 import { useCallback } from "react";
 import { dayLabel } from "../../api/cycles.ts";
+import { fetchReportFiles } from "../../api/reportFiles.ts";
 import { fetchSubmission, type SubmissionState } from "../../api/submissions.ts";
 import { AppLink } from "../../app/AppLink.tsx";
 import { ClassifiedField } from "../../components/ClassifiedField.tsx";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { useResource } from "../../hooks/useResource.ts";
+import { FindingsSection } from "./FindingsSection.tsx";
 import { SMO_AREA_PATH } from "./paths.ts";
 import { ScanReportsSection } from "./ScanReportsSection.tsx";
 
 const STATE_LABELS: Readonly<Record<SubmissionState, string>> = { DRAFT: "Draft" };
 
-/** The Declaration stays off until every Finding has a proposed status; there are no Findings to propose on yet. */
+/** The Declaration stays off until the submit command arrives with its own ticket; it is shown so the order of the work is. */
 function DeclarationSection({ classification }: { classification: string }) {
   return (
     <section className="card" aria-labelledby="declaration">
@@ -32,8 +34,10 @@ function DeclarationSection({ classification }: { classification: string }) {
 }
 
 /**
- * Where the SMO/Tech Lead prepares a VA Submission (stories 19, 20 and 24): the three Scan Report cards with their
- * files and each file's pipeline status (asked for again while a file is still being checked), and the Declaration, disabled until there is something to declare. The state and the dates are the server's.
+ * Where the SMO/Tech Lead prepares a VA Submission (stories 19, 20, 24, 28 and 35): the three Scan Report cards with their
+ * files and each file's pipeline status (asked for again while a file is still being checked), the Findings read from them
+ * with a status to propose for each, and the Declaration, disabled until the submit command arrives. The state and the
+ * dates are the server's.
  */
 export function SubmissionPrepareScreen({
   submissionId,
@@ -45,6 +49,8 @@ export function SubmissionPrepareScreen({
   const load = useCallback(() => fetchSubmission(submissionId), [submissionId]);
   const submission = useResource(load);
   const { data, error } = submission;
+  const loadFiles = useCallback(() => fetchReportFiles(submissionId), [submissionId]);
+  const files = useResource(loadFiles);
 
   return (
     <>
@@ -75,7 +81,8 @@ export function SubmissionPrepareScreen({
       </div>
       {data ? (
         <>
-          <ScanReportsSection submissionId={submissionId} classification={classification} />
+          <ScanReportsSection submissionId={submissionId} files={files} classification={classification} />
+          <FindingsSection submissionId={submissionId} files={files.data ?? []} classification={classification} />
           <DeclarationSection classification={classification} />
         </>
       ) : null}

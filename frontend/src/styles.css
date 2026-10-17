@@ -361,3 +361,19 @@ body {
 .notice-inline--refused {
   border-left-color: var(--danger);
 }
+
+.finding-detail {
+  margin: 4px 0 0;
+  max-width: 48ch;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.field textarea {
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
