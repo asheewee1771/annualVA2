@@ -162,3 +162,24 @@ Human decisions on reviewer findings. Check here before asking again. Each entry
 - **Finding:** V14 forbids UPDATE, DELETE and TRUNCATE on the table for every connection, with no retention bypass, as V5 does for `audit_entry`. Retention (Cycle plus 3 years) must hard-delete, so the trigger needs replacing, and the foreign keys (`finding.current_proposal_id`, the proposal's `finding_id` and `approval_memo_file_id`) force an order: clear the Finding's pointer, delete the proposals, then delete the Findings and files.
 - **Chosen action:** accept as built and add an acceptance line to ticket 49 naming the trigger replacement and the deletion order. Decided 2026-10-17.
 - **When to reuse:** any finding that the proposal table has no retention bypass or that application code cannot delete from it.
+
+## A Bulk-set batch holds at most 1000 Findings
+
+- **Area:** Bulk-set (ticket 20, ADR 0028), `BulkProposals.MAX_FINDINGS` and the screen's `MAX_BATCH_SIZE`
+- **Finding:** the spec gives no limit. The cap bounds the row lock set and the request (about 40 KB of ids); over it is a 400 `invalid-field` naming `findingIds` and Apply is disabled on the screen.
+- **Chosen action:** accept 1000 as built. Decided 2026-10-17.
+- **When to reuse:** any finding that the batch size is bounded or that the bound is not in the spec. Revisit only if a real System routinely needs more than 1000 Findings in one filter.
+
+## Readiness counts name awaiting review and unproposed explicitly
+
+- **Area:** `GET /api/submissions/{id}/readiness` (ticket 20, ADR 0028); read by tickets 23, 25 and 29
+- **Finding:** `pending` meant review state PENDING (proposed, awaiting the Cyber Manager), and the screen computed "still to propose" as `total - proposed`. The word can be read either way.
+- **Chosen action:** rename `pending` to `awaitingReview` and add an explicit `unproposed` count; no field is called `pending`. Decided 2026-10-17.
+- **When to reuse:** any later count of Findings by proposal or review state: use `awaitingReview` and `unproposed`, never a bare `pending`.
+
+## A batch writes one audit entry per Finding as well as the batch entry
+
+- **Area:** Bulk-set audit (ticket 20, ADR 0028, ADR 0014), IM8 lm-4, spec story 84
+- **Finding:** a batch wrote one `BATCH_PROPOSED` entry with no Finding ids, so an audit search by Finding missed changes made in a batch, and tracing them relied on the proposal table that ticket 49's retention deletes.
+- **Chosen action:** keep the `BATCH_PROPOSED` entry and also write one `STATUS_PROPOSED` entry per Finding, carrying the `batch_id` (ids and fixed codes only, no text). Decided 2026-10-17.
+- **When to reuse:** any bulk change to many records: audit each record as well as the batch.
