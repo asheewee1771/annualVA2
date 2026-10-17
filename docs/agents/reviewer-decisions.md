@@ -141,3 +141,24 @@ Human decisions on reviewer findings. Check here before asking again. Each entry
 - **Finding:** evidence is accepted as `READY` on a `%PDF-` prefix after the malware scan. The scanner cannot inspect a password-protected PDF, so an encrypted file would be served to Cyber Managers and VA POCs uninspected. The back end has no PDF library, and ADR 0026 says evidence is compared by bytes and never read.
 - **Chosen action:** refuse a PDF that carries `/Encrypt` in its trailer, with a bounded byte-level check on the tail of the file. No PDF library is added and nothing parses the file. The file is rejected with a plain "re-upload without a password" message. Decided 2026-10-15.
 - **When to reuse:** any finding that evidence the scanner cannot read (encrypted or password-protected) is accepted. A file that hides `/Encrypt` in an object stream, or whose cross-reference stream data is longer than the 64 KB window (a large PDF 1.5 file), is not caught until ticket 51's production scanner; do not add a parser to close that gap.
+
+## An approval memo is an ordinary evidence file, counted against its Scan Report's 20-file cap
+
+- **Area:** Finding Status proposals (ticket 19, ADR 0026 and ADR 0027)
+- **Finding:** ADR 0026 left it to ticket 19 whether the Risk Accepted approval memo counts against the evidence cap or has a kind of its own. As built, the memo is an EVIDENCE file uploaded under any Scan Report of the VA Submission, must be `READY`, counts against that report's 20-file cap, and only a Risk Accepted proposal may link one.
+- **Chosen action:** accept as built. No memo kind, no separate cap. Changing it later is the cap constant in ADR 0021 or a new kind with a migration. Decided 2026-10-17.
+- **When to reuse:** any finding that a memo shares the cap with scan evidence or sits under an arbitrary Scan Report.
+
+## A Remediation Planned target date is after today in Singapore and at most 10 years ahead
+
+- **Area:** Finding Status proposals (ticket 19, ADR 0027), `ProposalFields.MAX_YEARS_AHEAD`
+- **Finding:** the plan says only "future target_date". The 10-year ceiling is a chosen format bound that keeps the date real (as-1) and refuses values like 9999-12-31; a date beyond it is a 400 `invalid-field`.
+- **Chosen action:** accept 10 years as the constant. Decided 2026-10-17.
+- **When to reuse:** any finding that the target date has an upper bound or that the bound is not in the spec. Revisit only if a real remediation plan needs longer.
+
+## The proposal history is append-only for every connection; ticket 49 replaces the trigger
+
+- **Area:** `finding_status_proposal` (V14, ticket 19, ADR 0027), retention (ticket 49)
+- **Finding:** V14 forbids UPDATE, DELETE and TRUNCATE on the table for every connection, with no retention bypass, as V5 does for `audit_entry`. Retention (Cycle plus 3 years) must hard-delete, so the trigger needs replacing, and the foreign keys (`finding.current_proposal_id`, the proposal's `finding_id` and `approval_memo_file_id`) force an order: clear the Finding's pointer, delete the proposals, then delete the Findings and files.
+- **Chosen action:** accept as built and add an acceptance line to ticket 49 naming the trigger replacement and the deletion order. Decided 2026-10-17.
+- **When to reuse:** any finding that the proposal table has no retention bypass or that application code cannot delete from it.

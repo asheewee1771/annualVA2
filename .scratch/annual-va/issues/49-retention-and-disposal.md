@@ -9,6 +9,7 @@
 
 - [ ] A daily job computes due records and writes a DRAFT disposal list with items (submissions, files, superseded files, exports, audit ranges) and reasons; `GET /api/disposal-lists` shows it.
 - [ ] `POST /api/disposal-lists/{id}/approve` (VA POC, step-up) marks it APPROVED; the executor deletes file-store objects then records, removes audit entries only within the approved range, and writes one tombstone audit entry with counts and the list id; any other removal before retention is a soft delete.
+- [ ] The executor also disposes of `finding_status_proposal`, which has an append-only trigger (V14, ADR 0027) with no bypass: a later migration replaces the trigger, and the delete runs in foreign-key order (clear `finding.current_proposal_id`, delete the proposals, then the Findings and files); a Seam 1 test proves proposals are gone after an approved disposal.
 - [ ] The Disposal screen shows the list for review with Approve (step-up); Seam 1 tests move the clock past Cycle plus 3 years and prove the list, the approval, the deletion and the tombstone.
 - [ ] Every behaviour above is proven by Seam 1 tests through the HTTP API on a real PostgreSQL, with only the boundary adapters faked; the back-end and front-end gates pass.
 
