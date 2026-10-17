@@ -223,6 +223,10 @@ public class TestEndpoints {
                 jdbc.sql("ALTER TABLE finding_status_proposal DISABLE TRIGGER finding_status_proposal_append_only").update();
                 jdbc.sql("DELETE FROM finding_status_proposal").update();
                 jdbc.sql("ALTER TABLE finding_status_proposal ENABLE TRIGGER finding_status_proposal_append_only").update();
+                // The Bulk-set batches likewise (V15), after the proposals that name them.
+                jdbc.sql("ALTER TABLE bulk_batch DISABLE TRIGGER bulk_batch_append_only").update();
+                jdbc.sql("DELETE FROM bulk_batch").update();
+                jdbc.sql("ALTER TABLE bulk_batch ENABLE TRIGGER bulk_batch_append_only").update();
                 jdbc.sql("DELETE FROM finding").update();
                 jdbc.sql("DELETE FROM report_file_stage").update();
                 jdbc.sql("DELETE FROM report_file").update();

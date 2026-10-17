@@ -71,8 +71,8 @@ public enum AuditAction {
     FINDINGS_VIEWED("findings-viewed", "database"),
     /**
      * An SMO/Tech Lead proposed a Finding Status (SUCCESS, with the status as a fixed code, and the memo file's id when a
-     * Risk Accepted proposal has one), or was refused because the VA Submission takes no proposals in its present state
-     * (REFUSED, with a fixed reason). About the System, the VA Submission and the Finding; never the evidence,
+     * Risk Accepted proposal has one, and the batch id when it was made in a Bulk-set batch), or was refused because the
+     * VA Submission takes no proposals in its present state (REFUSED, with a fixed reason). About the System, the VA Submission and the Finding; never the evidence,
      * justification, reason, approver, plan or date.
      */
     STATUS_PROPOSED("status-proposed", "database"),
@@ -81,7 +81,19 @@ public enum AuditAction {
      * Lead wrote, so the read is audited for every role. About the System, the VA Submission and the Finding, with the
      * number of proposals returned; never their text.
      */
-    FINDING_PROPOSALS_VIEWED("finding-proposals-viewed", "database");
+    FINDING_PROPOSALS_VIEWED("finding-proposals-viewed", "database"),
+    /**
+     * An SMO/Tech Lead applied one Finding Status to several Findings in one batch (SUCCESS, with the batch id, the number
+     * of Findings, the status as a fixed code and the memo file's id when there is one), or was refused because the VA
+     * Submission takes no proposals in its present state (REFUSED, with a fixed reason). About the System and the VA
+     * Submission; never a Finding's identifier or anything the SMO/Tech Lead wrote.
+     */
+    BATCH_PROPOSED("batch-proposed", "database"),
+    /**
+     * A Cyber Manager or VA POC read the progress counts of a VA Submission (story 38), as a read of the VA Submission is
+     * recorded. The System's own SMO/Tech Lead reading them is not. About the System and the VA Submission; no detail.
+     */
+    READINESS_VIEWED("readiness-viewed", "database");
 
     private final String ecs;
     private final String category;

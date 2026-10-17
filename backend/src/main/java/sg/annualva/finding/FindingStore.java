@@ -72,7 +72,7 @@ class FindingStore {
 
     private static final String PROPOSAL_COLUMNS =
             "p.id AS proposal_id, p.status, p.evidence, p.justification, p.reason, p.approver_name, p.approver_role, "
-            + "p.approval_memo_file_id, p.plan, p.target_date, p.proposed_at ";
+            + "p.approval_memo_file_id, p.plan, p.target_date, p.proposed_at, p.batch_id ";
 
     /**
      * What the list is narrowed to, the same for the page and the count. Each part that is not given matches everything:
@@ -105,20 +105,45 @@ class FindingStore {
 
     private static final String COUNT = "SELECT count(*) " + FILTERED;
 
+    /** The progress counts of one VA Submission; Carried Over and Target Date Missed have no column before Release 2. */
+    private static final String READINESS =
+            "SELECT count(*) AS total, count(f.current_proposal_id) AS proposed, "
+            + "count(*) FILTER (WHERE f.current_proposal_id IS NULL) AS unproposed, "
+            + "count(*) FILTER (WHERE f.review_state = 'PENDING') AS awaiting_review, "
+            + "count(*) FILTER (WHERE f.review_state = 'DISPUTED') AS disputed "
+            + "FROM finding f WHERE f.submission_id = :submission";
+
     private static final String LOCATE = "SELECT f.submission_id, f.system_id FROM finding f WHERE f.id = :id";
 
-    /** The same, and the Finding's row is held until the transaction ends, so two proposals for it are written in turn. */
-    private static final String LOCK = LOCATE + " FOR UPDATE";
+    /**
+     * The named Findings that belong to the VA Submission, each row held until the transaction ends. The rows are locked
+     * in id order, so two writes over the same Findings (two proposals for one Finding, two batches, or one of each)
+     * wait for each other in turn instead of deadlocking, and the last to commit is the current one.
+     */
+    private static final String LOCK_FINDINGS =
+            "SELECT f.id FROM finding f WHERE f.submission_id = :submission AND f.id = ANY(CAST(:ids AS uuid[])) "
+            + "ORDER BY f.id FOR UPDATE";
 
-    private static final String INSERT_PROPOSAL =
+    private static final String INSERT_BATCH =
+            "INSERT INTO bulk_batch (submission_id, proposed_by, proposed_at) VALUES (:submission, :by, :now) RETURNING id";
+
+    /**
+     * One proposal per Finding, all with the same fields and the same batch (none for a proposal for one Finding). The
+     * casts give each NULL its column type.
+     */
+    private static final String INSERT_PROPOSALS =
             "INSERT INTO finding_status_proposal (finding_id, status, evidence, justification, reason, approver_name, "
-            + "approver_role, approval_memo_file_id, plan, target_date, proposed_by, proposed_at) "
-            + "VALUES (:finding, :status, :evidence, :justification, :reason, :approverName, :approverRole, :memo, :plan, "
-            + ":targetDate, :by, :now) RETURNING id";
+            + "approver_role, approval_memo_file_id, plan, target_date, batch_id, proposed_by, proposed_at) "
+            + "SELECT u.id, :status, CAST(:evidence AS text), CAST(:justification AS text), CAST(:reason AS text), "
+            + "CAST(:approverName AS text), CAST(:approverRole AS text), CAST(:memo AS uuid), CAST(:plan AS text), "
+            + "CAST(:targetDate AS date), CAST(:batch AS uuid), :by, :now "
+            + "FROM unnest(CAST(:ids AS uuid[])) WITH ORDINALITY AS u(id, n) ORDER BY u.n "
+            + "RETURNING id, finding_id";
 
-    /** The Finding's latest proposal changes, and a new proposal has not been reviewed. */
+    /** Each Finding's latest proposal is now the one just kept, and a new proposal has not been reviewed. */
     private static final String SET_CURRENT =
-            "UPDATE finding SET current_proposal_id = :proposal, review_state = 'PENDING' WHERE id = :finding";
+            "UPDATE finding f SET current_proposal_id = p.id, review_state = 'PENDING' "
+            + "FROM finding_status_proposal p WHERE p.id = ANY(CAST(:proposals AS uuid[])) AND p.finding_id = f.id";
 
     /** A memo is a supporting evidence file of this VA Submission that has passed every check. */
     private static final String IS_READY_EVIDENCE =
@@ -203,6 +228,13 @@ class FindingStore {
         return filtered(COUNT, submissionId, filter).query(Long.class).single();
     }
 
+    Readiness readiness(UUID submissionId) {
+        return jdbc.sql(READINESS).param("submission", submissionId)
+                .query((rs, row) -> new Readiness(rs.getLong("total"), rs.getLong("proposed"), rs.getLong("unproposed"),
+                        rs.getLong("awaiting_review"), 0, 0, rs.getLong("disputed")))
+                .single();
+    }
+
     private JdbcClient.StatementSpec filtered(String sql, UUID submissionId, FindingFilter filter) {
         List<Severity> severities = filter.severities().isEmpty() ? List.of(Severity.values()) : filter.severities();
         return jdbc.sql(sql)
@@ -219,7 +251,7 @@ class FindingStore {
                 rs.getString("approver_name"), rs.getString("approver_role"),
                 rs.getObject("approval_memo_file_id", UUID.class), rs.getString("plan"),
                 rs.getObject("target_date", LocalDate.class),
-                rs.getObject("proposed_at", OffsetDateTime.class).toInstant());
+                rs.getObject("proposed_at", OffsetDateTime.class).toInstant(), rs.getObject("batch_id", UUID.class));
     }
 
     private static @Nullable ReviewState reviewStateOf(@Nullable String name) {
@@ -235,19 +267,42 @@ class FindingStore {
         return jdbc.sql(LOCATE).param("id", findingId).query(FindingStore::located).optional();
     }
 
-    /** As {@link #locate}, and holds the Finding's row until the transaction ends. */
-    Optional<Located> lock(UUID findingId) {
-        return jdbc.sql(LOCK).param("id", findingId).query(FindingStore::located).optional();
+    /** Locks the named Findings of the VA Submission and answers how many of them there are. */
+    int lockFindings(UUID submissionId, List<UUID> findingIds) {
+        return jdbc.sql(LOCK_FINDINGS)
+                .param("submission", submissionId)
+                .param("ids", ids(findingIds))
+                .query(UUID.class)
+                .list()
+                .size();
     }
 
     private static Located located(ResultSet rs, int row) throws SQLException {
         return new Located(rs.getObject("submission_id", UUID.class), rs.getObject("system_id", UUID.class));
     }
 
-    /** Keeps a new proposal as the Finding's current one, with its review state back to PENDING. */
-    ProposalView propose(UUID findingId, ProposalFields.Parsed fields, UUID by, Instant now) {
-        UUID id = jdbc.sql(INSERT_PROPOSAL)
-                .param("finding", findingId)
+    /** A new Bulk-set batch of the VA Submission. */
+    UUID newBatch(UUID submissionId, UUID by, Instant now) {
+        return jdbc.sql(INSERT_BATCH)
+                .param("submission", submissionId)
+                .param("by", by)
+                .param("now", now.atOffset(ZoneOffset.UTC))
+                .query(UUID.class)
+                .single();
+    }
+
+    /**
+     * Keeps a proposal for each Finding, each its Finding's current one with the review back to PENDING: the one write
+     * path for a proposal for one Finding and for a batch. The Findings must be locked first ({@link #lockFindings}).
+     *
+     * @param batchId the batch the proposals are made in; null for a proposal for one Finding
+     * @return the proposals' ids, in the order of the Findings
+     */
+    List<UUID> propose(List<UUID> findingIds, ProposalFields.Parsed fields, @Nullable UUID batchId, UUID by,
+            Instant now) {
+        Map<UUID, UUID> byFinding = new HashMap<>();
+        jdbc.sql(INSERT_PROPOSALS)
+                .param("ids", ids(findingIds))
                 .param("status", fields.status().name())
                 .param("evidence", fields.evidence())
                 .param("justification", fields.justification())
@@ -257,14 +312,19 @@ class FindingStore {
                 .param("memo", fields.approvalMemoFileId())
                 .param("plan", fields.plan())
                 .param("targetDate", fields.targetDate())
+                .param("batch", batchId)
                 .param("by", by)
                 .param("now", now.atOffset(ZoneOffset.UTC))
-                .query(UUID.class)
-                .single();
-        jdbc.sql(SET_CURRENT).param("proposal", id).param("finding", findingId).update();
-        return new ProposalView(id, fields.status(), fields.evidence(), fields.justification(), fields.reason(),
-                fields.approverName(), fields.approverRole(), fields.approvalMemoFileId(), fields.plan(),
-                fields.targetDate(), now);
+                .query((rs, row) -> Map.entry(rs.getObject("finding_id", UUID.class), rs.getObject("id", UUID.class)))
+                .list()
+                .forEach(kept -> byFinding.put(kept.getKey(), kept.getValue()));
+        List<UUID> proposalIds = findingIds.stream().map(byFinding::get).toList();
+        jdbc.sql(SET_CURRENT).param("proposals", ids(proposalIds)).update();
+        return proposalIds;
+    }
+
+    private static String[] ids(List<UUID> ids) {
+        return ids.stream().map(UUID::toString).toArray(String[]::new);
     }
 
     /** Whether the file is a supporting evidence file of this VA Submission that has finished its checks. */

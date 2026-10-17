@@ -30,7 +30,8 @@ final class ProposalFields {
     /** A bound that keeps a date a real one (as-1): the target date is at most this many years from today. */
     static final int MAX_YEARS_AHEAD = 10;
 
-    private static final Pattern ID =
+    /** The form of an id in a request body, checked before it is read as one. */
+    static final Pattern ID =
             Pattern.compile("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
 
     /** What a proposal holds once every field of it is read. Only the fields of the status are set. */

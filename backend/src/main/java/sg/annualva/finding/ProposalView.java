@@ -21,8 +21,10 @@ import org.jspecify.annotations.Nullable;
  * @param plan Remediation Planned: the plan
  * @param targetDate Remediation Planned: the business date (Asia/Singapore) the fix is planned for
  * @param proposedAt when it was proposed (UTC)
+ * @param batchId the Bulk-set batch it was proposed in (story 37); null for a proposal made for this Finding alone
  */
 public record ProposalView(
         UUID id, FindingStatus status, @Nullable String evidence, @Nullable String justification,
         @Nullable String reason, @Nullable String approverName, @Nullable String approverRole,
-        @Nullable UUID approvalMemoFileId, @Nullable String plan, @Nullable LocalDate targetDate, Instant proposedAt) {}
+        @Nullable UUID approvalMemoFileId, @Nullable String plan, @Nullable LocalDate targetDate, Instant proposedAt,
+        @Nullable UUID batchId) {}

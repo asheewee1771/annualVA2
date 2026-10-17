@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,7 +23,9 @@ import sg.annualva.web.Page;
  * The Findings read from a VA Submission's Scan Reports (story 28), for anyone who may see its System: its SMO/Tech Lead,
  * its Cyber Manager and the VA POCs. One the caller may not see is 404, the same as one that does not exist (ADR 0013).
  * The SMO/Tech Lead of the System proposes a Finding Status for a Finding (story 35); a Cyber Manager, a VA POC who is not
- * its SMO or an Auditor is refused with 403, and an SMO of another System gets 404.
+ * its SMO or an Auditor is refused with 403, and an SMO of another System gets 404. The same SMO/Tech Lead applies one
+ * status to several Findings in one batch (story 37), and anyone who may see the System reads the progress counts (story
+ * 38).
  */
 @RestController
 public class FindingController {
@@ -31,9 +34,11 @@ public class FindingController {
     static final int MAX_PAGE_SIZE = 500;
 
     private final Findings findings;
+    private final BulkProposals bulk;
 
-    FindingController(Findings findings) {
+    FindingController(Findings findings, BulkProposals bulk) {
         this.findings = findings;
+        this.bulk = bulk;
     }
 
     /**
@@ -58,6 +63,17 @@ public class FindingController {
     }
 
     /**
+     * The progress counts of the VA Submission's Findings (story 38): every Finding, those with a proposed status and
+     * those without one, those awaiting review, the Disputed ones, and the Carried Over and Target Date Missed ones (none before Release 2). A read
+     * by anyone but the System's own SMO/Tech Lead is audited, with ids only.
+     */
+    @GetMapping("/api/submissions/{id}/readiness")
+    @PreAuthorize("hasAnyRole('SMO','CYBER_MANAGER','VA_POC')")
+    public ResponseEntity<Readiness> readiness(@PathVariable UUID id) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(findings.readiness(id));
+    }
+
+    /**
      * Proposes a Finding Status with the field it requires: 201 with the proposal. A field that is missing, not used with
      * the status, too long or in the wrong form is a 400 {@code invalid-field} problem that names it; a VA Submission that
      * is not in Draft or Returned for Rework is 409 {@code invalid-transition}.
@@ -69,6 +85,19 @@ public class FindingController {
         return ResponseEntity.created(URI.create("/api/findings/" + id + "/proposals"))
                 .cacheControl(CacheControl.noStore())
                 .body(proposal);
+    }
+
+    /**
+     * Bulk-set (story 37): one Finding Status with its fields for every Finding named, as one batch: 201 with the batch id
+     * and the count. The list is refused as a whole (400 {@code invalid-field} naming {@code findingIds}) when one of them
+     * is not a Finding of this VA Submission; the fields are checked as for one Finding; a VA Submission that is not in
+     * Draft or Returned for Rework is 409 {@code invalid-transition}.
+     */
+    @PostMapping("/api/submissions/{id}/findings/bulk-proposals")
+    @PreAuthorize("hasRole('SMO')")
+    public ResponseEntity<BatchView> bulkPropose(@PathVariable UUID id, @RequestBody BulkProposalRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore())
+                .body(bulk.propose(id, request));
     }
 
     /** Every proposal of the Finding, the latest first: the history it keeps. Audited for every role. */

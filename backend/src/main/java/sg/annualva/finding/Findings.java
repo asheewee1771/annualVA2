@@ -3,26 +3,23 @@ package sg.annualva.finding;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import sg.annualva.access.AccessGuard;
 import sg.annualva.access.AuditActor;
-import sg.annualva.access.CurrentUser;
 import sg.annualva.access.Need;
 import sg.annualva.audit.AuditAction;
 import sg.annualva.audit.AuditEvent;
 import sg.annualva.audit.AuditLog;
 import sg.annualva.audit.AuditOutcome;
 import sg.annualva.audit.DetailKey;
-import sg.annualva.cycle.CycleCalendar;
 import sg.annualva.parser.ParsedReport;
 import sg.annualva.submission.Submissions;
 import sg.annualva.web.Page;
@@ -44,22 +41,20 @@ import sg.annualva.web.ResourceNotFoundException;
 public class Findings {
 
     private final FindingStore store;
+    private final Proposals proposals;
     private final Submissions submissions;
-    private final CycleCalendar calendar;
-    private final CurrentUser user;
+    private final AccessGuard guard;
     private final AuditActor actor;
     private final AuditLog audit;
-    private final Clock clock;
 
-    Findings(FindingStore store, Submissions submissions, CycleCalendar calendar, CurrentUser user, AuditActor actor,
-            AuditLog audit, Clock clock) {
+    Findings(FindingStore store, Proposals proposals, Submissions submissions, AccessGuard guard, AuditActor actor,
+            AuditLog audit) {
         this.store = store;
+        this.proposals = proposals;
         this.submissions = submissions;
-        this.calendar = calendar;
-        this.user = user;
+        this.guard = guard;
         this.actor = actor;
         this.audit = audit;
-        this.clock = clock;
     }
 
     /**
@@ -108,12 +103,31 @@ public class Findings {
     }
 
     /**
+     * The progress counts of a VA Submission (story 38), for anyone who may see its System. They are counts, not report
+     * content, so they follow the rule for a read of the VA Submission itself (reviewer decisions, "Reading a single VA
+     * Submission is audited unless the owning SMO/Tech Lead reads it"): a read by a Cyber Manager or a VA POC is a
+     * {@code READINESS_VIEWED} entry with ids only, and the owner's own reads, which the screen repeats after every
+     * proposal, write nothing. One the caller may not see is "not found", the same as one that does not exist.
+     */
+    @Transactional
+    public Readiness readiness(UUID submissionId) {
+        UUID systemId = submissions.systemOf(submissionId, Need.VIEW);
+        Readiness readiness = store.readiness(submissionId);
+        if (!guard.scope(Need.SUBMIT).contains(systemId)) {
+            audit.record(actor.attribute(AuditEvent.of(AuditAction.READINESS_VIEWED, AuditOutcome.SUCCESS))
+                    .onSystem(systemId).onSubmission(submissionId));
+        }
+        return readiness;
+    }
+
+    /**
      * Proposes a Finding Status for a Finding of a System the caller is SMO/Tech Lead of (story 35). The proposal is a new
      * row, never a change to an earlier one: it becomes the Finding's current proposal and the review state goes back to
      * PENDING. Each command checks, in this order: ownership (so a Finding of a System the caller may not reach is "not
      * found", ADR 0013), the state of the VA Submission, then the fields, and only then writes, in one transaction with the
      * audit entry. The refusal for the state is audited in an entry of its own (ADR 0014); a field that is wrong is a 400
-     * and writes nothing.
+     * and writes nothing. The steps are the ones a Bulk-set runs ({@link Proposals}): a proposal for one Finding is a
+     * batch of one with no batch row. The Finding's row is locked only once the checks have passed.
      *
      * @throws ResourceNotFoundException for a Finding that does not exist or of a System the caller is not SMO/Tech Lead of
      * @throws RejectedRequestException 409 {@code invalid-transition} when the VA Submission is not in Draft or Returned
@@ -122,28 +136,15 @@ public class Findings {
      */
     @Transactional
     public ProposalView propose(UUID findingId, ProposalRequest request) {
-        FindingStore.Located located = store.lock(findingId).orElseThrow(ResourceNotFoundException::new);
-        // The files and the Findings are edited in the same states: the SMO/Tech Lead is still preparing the VA Submission.
-        Submissions.FileTarget target = submissions.fileTarget(located.submissionId(), Need.SUBMIT);
-        if (!target.acceptsFiles()) {
-            audit.recordIndependently(actor.attribute(AuditEvent.of(AuditAction.STATUS_PROPOSED, AuditOutcome.REFUSED))
-                    .onSystem(located.systemId()).onSubmission(located.submissionId()).onFinding(findingId)
-                    .with(DetailKey.REASON, "state-not-editable"));
-            throw new RejectedRequestException(HttpStatus.CONFLICT, "invalid-transition",
-                    "This VA Submission takes no new proposals in its present state.");
+        FindingStore.Located located = store.locate(findingId).orElseThrow(ResourceNotFoundException::new);
+        Submissions.FileTarget target = proposals.target(located.submissionId(), AuditAction.STATUS_PROPOSED, findingId);
+        ProposalFields.Parsed fields = proposals.fields(target, request);
+        List<UUID> one = List.of(findingId);
+        if (!proposals.lock(target, one)) {
+            // Located a moment ago in this VA Submission; Findings are never moved or removed.
+            throw new ResourceNotFoundException();
         }
-        ProposalFields.Parsed fields = ProposalFields.parse(request, calendar.today());
-        UUID memo = fields.approvalMemoFileId();
-        if (memo != null && !store.isReadyEvidence(memo, located.submissionId())) {
-            throw RejectedRequestException.invalidField("approvalMemoFileId",
-                    "The field 'approvalMemoFileId' must be a supporting evidence file of this VA Submission that has finished its checks.");
-        }
-        ProposalView proposal = store.propose(findingId, fields, user.id(), clock.instant());
-        AuditEvent event = actor.attribute(AuditEvent.of(AuditAction.STATUS_PROPOSED, AuditOutcome.SUCCESS))
-                .onSystem(located.systemId()).onSubmission(located.submissionId()).onFinding(findingId)
-                .with(DetailKey.FINDING_STATUS, fields.status().name());
-        audit.record(memo == null ? event : event.with(DetailKey.FILE_ID, memo));
-        return proposal;
+        return proposals.write(target, one, fields, null).getFirst();
     }
 
     /**
