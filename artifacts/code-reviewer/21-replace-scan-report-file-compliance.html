@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review — 21-replace-scan-report-file</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall: PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">build WARN · C0 H0 M0 L2 · rerun (reused logs)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN · C0 H0 M5 L8 · rerun</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN · C0 H0 M2 L11 · carried over</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">semgrep WARN · C0 H0 M1 L18 · pre-existing only · carried over</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN · C0 H0 M1 L5 · carried over</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react WARN · C0 H0 M1 L4 · carried over</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN · C0 H0 M4 L12 · carried over</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">main</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report</h2>
+          <p class="text-xs text-slate-500 mt-1">Ticket 21: replace a Scan Report file with its rescan. Gate round 3, after the second correction pass, which serialises the settlements of one VA Submission with a transaction-scoped advisory lock. Uncommitted working tree against HEAD <span class="font-mono">744eb3f</span>. This report replaces the round 2 FAIL report.</p>
+        </div>
+        <div class="rounded border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 space-y-2">
+          <p><span class="font-semibold">Round 3 scope (speed rule approved by the user):</span> only the failing check (<span class="font-semibold">thermo-nuclear</span>) and <span class="font-semibold">build</span> were rerun on the corrected tree. <span class="font-semibold">code-review, semgrep, im8, react and springboot are carried over unchanged from round 1.</span> They reviewed the tree before both correction passes: the first routed rescan proposals through the shared <span class="font-mono text-xs">Proposals</span> path and re-rated severity from current places, and the second serialised the settlements of one submission with an advisory lock. Their file and line references may be stale. A few of their findings are already addressed by the corrections, and each card says which.</p>
+          <p><span class="font-semibold">build</span> reused the implementer's gate logs because the tree fingerprint matched (<span class="font-mono text-xs">b4fb0514…fcbba9fcd2a</span> now and in <span class="font-mono text-xs">dw-21/fingerprint.txt</span>). It is treated as a valid build result.</p>
+          <p>All seven artifacts (build, thermo-nuclear, code-review, semgrep, im8, react, springboot) were confirmed readable and complete before aggregation. Each one ends with its verdict, bottom line or findings index.</p>
+        </div>
+        <p class="text-sm text-slate-700">Gate verdict: <span class="font-semibold text-emerald-700">PASS</span>. No check has a Critical or High finding. Round 2's only High (thermo-nuclear H1: a key inserted by a concurrent settlement was neither locked nor re-rated) is <span class="font-semibold">CLOSED</span>. The advisory lock <span class="font-mono text-xs">pg_advisory_xact_lock(hashtextextended('finding-settlement:' || submission, 0))</span> is now the first statement of <span class="font-mono text-xs">Findings.record</span> and <span class="font-mono text-xs">Findings.replace</span>. Under READ COMMITTED, the lock set is computed after any earlier settlement of that submission has committed. Thermo-nuclear traced every lock that the settlement, proposal, Bulk-set and register paths take and found no deadlock cycle. Every check still has Medium or Low findings, so each one is shown as WARN. Build and semgrep reported PASS themselves; they are shown as WARN here only because of their Lows and pre-existing findings.</p>
+        <p class="text-sm text-slate-700">Recorded decisions applied when mapping severities (<span class="font-mono text-xs">docs/agents/reviewer-decisions.md</span>):</p>
+        <ul class="list-disc pl-5 text-sm text-slate-700 space-y-1">
+          <li>The eight ticket 21 decisions of 2026-10-18:
+            <ul class="list-disc pl-5 space-y-1">
+              <li>the evidence names the scan date and the upload date;</li>
+              <li>the uploader is <span class="font-mono text-xs">proposed_by</span> and the audit actor;</li>
+              <li>occurrences are deleted and the proposal points at the replaced file;</li>
+              <li>evidence cannot be replaced;</li>
+              <li>a re-reported RESCAN Finding loses the proposal as current and is re-rated;</li>
+              <li>one id-ordered settlement lock;</li>
+              <li>no rescan proposal over an already-Remediated proposal;</li>
+              <li>bytes-only early disposal of superseded files.</li>
+            </ul>
+          </li>
+          <li>The 2026-10-17 per-Finding audit rule.</li>
+          <li>The 20-file cap and size limits (2026-10-13).</li>
+          <li>The 20,000-Finding parser cap.</li>
+          <li>The unaudited-404 rule.</li>
+          <li>The IM8 later-ticket rule.</li>
+        </ul>
+        <p class="text-sm text-slate-700">Tracked deferrals stay FAIL as deferrals. They do not block, and this change does not weaken them:</p>
+        <ul class="list-disc pl-5 text-sm text-slate-700 space-y-1">
+          <li><span class="font-semibold">as-12</span> production scanner and file store &rarr; ticket 51.</li>
+          <li><span class="font-semibold">lm-16</span> and <span class="font-semibold">pm-6</span> &rarr; ticket 52.</li>
+          <li><span class="font-semibold">Retention</span> of superseded files, <span class="font-mono text-xs">finding_status_proposal</span> and the new foreign keys &rarr; ticket 49. The bytes-only early disposal line is in <span class="font-mono text-xs">49-retention-and-disposal.md:13</span>.</li>
+        </ul>
+        <p class="text-sm text-slate-700"><span class="font-semibold">Human decision of 2026-10-18 (being recorded after this gate):</span> a settlement stays as built whatever the VA Submission's state. The submission may not leave Draft or Returned for Rework while any of its files is scanning; tickets 25, 40 and 43 enforce this. The findings about the settlement's editable-state rule are treated as covered:</p>
+        <ul class="list-disc pl-5 text-sm text-slate-700 space-y-1">
+          <li>im8 L-1 and springboot D-5 (carried over).</li>
+          <li>thermo-nuclear L1. It asks only that the decision be written into ADR 0029 and <span class="font-mono text-xs">reviewer-decisions.md</span>, which is the pending record step.</li>
+        </ul>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2">Check</th><th class="px-4 py-2">Status</th><th class="px-4 py-2">C / H / M / L</th><th class="px-4 py-2">Summary of gaps</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 font-medium">build <span class="text-xs text-slate-500">(rerun, reused logs)</span></td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 2</td><td class="px-4 py-2">BUILD SUCCESS: 697 tests, 0 failures, 0 skipped. <span class="font-mono text-xs">ReplaceFileTest</span> 10/10 and <span class="font-mono text-xs">ReplaceFileRulesTest</span> 6/6. ArchUnit 11/11 and 10/10. JaCoCo line 96.98 %, branch 90.19 %. <span class="font-mono text-xs">FindingStore</span> 24/24 branches. The front-end check passes. The check itself reported PASS. Lows: no concurrency test of the new lock, and some uncovered branches in the changed classes.</td></tr>
+            <tr><td class="px-4 py-2 font-medium">thermo-nuclear <span class="text-xs text-slate-500">(rerun)</span></td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 5 / 8</td><td class="px-4 py-2">Round 2 H1 CLOSED by the per-submission advisory lock, with no deadlock found. Structural Mediums remain from round 2: the two-parameter replaced mode on <span class="font-mono text-xs">keep</span>, which now also carries the lock precondition; <span class="font-mono text-xs">Proposer</span> allows invalid combinations; <span class="font-mono text-xs">ScanPoller</span> still owns rescan logic; <span class="font-mono text-xs">Proposals.write</span> takes untyped UUIDs; and file size.</td></tr>
+            <tr><td class="px-4 py-2 font-medium">code-review <span class="text-xs text-slate-500">(carried over)</span></td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 2 / 11</td><td class="px-4 py-2">All four acceptance criteria and the eight 2026-10-18 decisions are met (decision 1 except for Burp Suite). Mediums: S1, a rescan bypasses the 20-file cap (up to 40 live files) and no decision covers it; P1, decision 3's Cyber Manager link has no owning ticket and no test.</td></tr>
+            <tr><td class="px-4 py-2 font-medium">semgrep <span class="text-xs text-slate-500">(carried over)</span></td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 18</td><td class="px-4 py-2">No findings in the 27 changed or new files. All counted findings were already in the repo before this ticket. The check itself reported PASS.</td></tr>
+            <tr><td class="px-4 py-2 font-medium">im8 <span class="text-xs text-slate-500">(carried over)</span></td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 5</td><td class="px-4 py-2">PASS: as-1, as-2, as-3, as-7/ac-1, as-12 (ticket path), as-13, lm-19, data minimisation, dp-8. Medium M-1: refused rescans do not record the target file id. L-1 (state recheck) is covered by the decision. L-3 (deadlock window) is closed by the advisory lock. The deferrals as-12, lm-16, pm-6 and retention are tracked.</td></tr>
+            <tr><td class="px-4 py-2 font-medium">react <span class="text-xs text-slate-500">(carried over)</span></td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 4</td><td class="px-4 py-2">Medium M1: a poll can make the Replace form vanish without moving focus, and a stale <span class="font-mono text-xs">replacingId</span> can remount it and take the focus. Lows: Replace is briefly offered twice, Cancel leaves the error on screen, the card is 450 lines, and the download names and logic are duplicated.</td></tr>
+            <tr><td class="px-4 py-2 font-medium">springboot <span class="text-xs text-slate-500">(carried over)</span></td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 4 / 12</td><td class="px-4 py-2">Mediums: <span class="font-mono text-xs">= ANY</span> over up to 20,000 hashes under generic plans (D-1); up to 40,000 single-row audit inserts while the locks are held (D-2); the fault trigger is not in <span class="font-mono text-xs">try/finally</span> (T-1); an append-only test row lands on another test's data (T-2). D-5 is covered by the decision. D-4 is closed by the advisory lock.</td></tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <div class="rounded border border-emerald-200 bg-emerald-50 p-4 text-sm text-slate-700">
+            <p>None. No check has a Critical or High finding. Round 2's High (thermo-nuclear H1, in <span class="font-mono text-xs">finding/Findings.java</span> and <span class="font-mono text-xs">finding/FindingStore.java</span>) is closed by <span class="font-mono text-xs">FindingStore.SERIALISE_SETTLEMENTS</span> (FindingStore.java:168-170), which is called first in <span class="font-mono text-xs">Findings.record</span> (Findings.java:94) and <span class="font-mono text-xs">Findings.replace</span> (Findings.java:117).</p>
+          </div>
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide pt-2">Cross-check themes (Medium, not blocking)</h3>
+          <ul class="list-disc pl-5 text-sm text-slate-700 space-y-1">
+            <li><span class="font-semibold">The per-Finding audit is written one row at a time while the settlement locks are held</span> (springboot D-2, im8 L-4, springboot L-1). That can be up to about 40,000 single-row audit inserts and after-commit log events, with every affected Finding held <span class="font-mono text-xs">FOR UPDATE</span>, and now also while the submission's settlement lock is held. The per-Finding rule stands. A batched <span class="font-mono text-xs">AuditLog.recordAll</span> would remove the round trips.</li>
+            <li><span class="font-semibold">Large hash arrays are used as per-row filters</span> (springboot D-1). <span class="font-mono text-xs">LOCK_FOR_SETTLEMENT</span> and <span class="font-mono text-xs">WITHDRAW_RESCAN_PROPOSALS</span> bind up to 20,000 hashes into <span class="font-mono text-xs">= ANY(...)</span>, unchunked, while the locks are held. Join <span class="font-mono text-xs">unnest(...)</span> as a relation instead.</li>
+            <li><span class="font-semibold">No decision covers going over the 20-file cap</span> (code-review S1, P2). <span class="font-mono text-xs">ReportFiles.replace</span> never calls <span class="font-mono text-xs">countLive</span>, so 20 parsed files with one rescan each in flight make 40 live files. Record a human decision that accepts the temporary overshoot, or bound it.</li>
+            <li><span class="font-semibold">A refused rescan cannot be traced to its target</span> (im8 M-1). Add <span class="font-mono text-xs">REPLACED_FILE_ID</span>, which is already on the allow-list, to the three replace refusals.</li>
+            <li><span class="font-semibold">No ticket owns decision 3's Cyber Manager link</span> (code-review P1). Add a Cyber Manager read-and-download assertion and an acceptance line to ticket 29.</li>
+            <li><span class="font-semibold">Settlement shape</span> (thermo-nuclear M1 to M4, code-review S7):
+              <ul class="list-disc pl-5 space-y-1">
+                <li><span class="font-mono text-xs">keep</span> takes nine positional parameters, two of which form a replaced mode.</li>
+                <li>The settlement lock is a precondition that each caller must meet, not something <span class="font-mono text-xs">keep</span> takes itself.</li>
+                <li><span class="font-mono text-xs">Proposer</span> allows invalid combinations.</li>
+                <li><span class="font-mono text-xs">ScanPoller</span> still owns rescan semantics.</li>
+              </ul>
+            </li>
+            <li><span class="font-semibold">Concurrency is proven by inspection only</span> (build L1, thermo-nuclear L2 and L8). No Seam 1 test runs two settlements of one submission at once. ADR 0029 item 10's lock order leaves out the file row locks taken first and does not state that it relies on READ COMMITTED.</li>
+            <li><span class="font-semibold">Test isolation in the shared database</span> (springboot T-1, T-2). The settlement-fault trigger is not removed in <span class="font-mono text-xs">finally</span>, and an append-only row that cannot be deleted lands on another test's Finding.</li>
+          </ul>
+        </div>
+      </div>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear <span class="text-xs text-slate-500">(rerun on the corrected tree)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M5 L8</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-600 space-y-1">
+          <p>Round 2 H1 (a key that a concurrent settlement inserts is written but neither locked nor re-rated, and the withdraw step could deadlock with a proposal): <span class="font-semibold">CLOSED</span>. The transaction-scoped advisory lock serialises the settlements of one VA Submission. Under READ COMMITTED, the lock statement that runs after the advisory lock sees every Finding that earlier settlements inserted. Only settlements insert Findings, so every Finding a settlement writes is either locked in id order or inserted by that settlement. <span class="font-mono text-xs">Proposals</span>, <span class="font-mono text-xs">BulkProposals</span> and <span class="font-mono text-xs">Findings.propose</span> never take the advisory lock.</p>
+          <p>Deadlock analysis: no wait-for cycle in any of these pairs: settlement and settlement, two passes settling one file, settlement and proposal or Bulk-set, and settlement and register apply. The advisory lock is taken after the settlement's own <span class="font-mono text-xs">report_file</span> row locks and before its Finding locks. No transaction that holds Finding locks ever waits for it.</p>
+          <p>File sizes: <span class="font-mono text-xs">FindingStore.java</span> is 466 lines, <span class="font-mono text-xs">Findings.java</span> 268 and <span class="font-mono text-xs">ScanReportCard.tsx</span> 449. None is above 1,000. The settlement editable-state rule was not raised, by instruction.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+          </tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">finding/Findings.java</td><td class="px-4 py-2">keep, record, replace</td><td class="px-4 py-2">M1. <span class="font-mono text-xs">keep</span> still takes nine positional parameters, with <span class="font-mono text-xs">alsoLock</span> and a nullable <span class="font-mono text-xs">replacedFileId</span>, and the settlement lock is now a precondition in its Javadoc that both callers meet by calling <span class="font-mono text-xs">serialiseSettlements</span> themselves. Pass one nullable <span class="font-mono text-xs">Replaced</span> instead, and have <span class="font-mono text-xs">keep</span> take the lock and compute <span class="font-mono text-xs">findingsOf</span> itself.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">finding/Proposals.java (Proposer)</td><td class="px-4 py-2">—</td><td class="px-4 py-2">M2. <span class="font-mono text-xs">Proposer</span> can be built as SMO with a rescan file, or as RESCAN without one. For the caller, the SMO actor comes from the security context while <span class="font-mono text-xs">proposed_by</span> comes from <span class="font-mono text-xs">user.id()</span>. A sealed type with <span class="font-mono text-xs">Caller</span> and <span class="font-mono text-xs">Rescan</span> variants would fix both.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">ingestion/ScanPoller.java</td><td class="px-4 py-2">keepFindings</td><td class="px-4 py-2">M3. The poller still branches on <span class="font-mono text-xs">replacesId</span>, calls <span class="font-mono text-xs">supersede</span>, re-reads the replaced row, builds <span class="font-mono text-xs">Findings.Rescan</span> from a <span class="font-mono text-xs">finding</span> view type, and writes <span class="font-mono text-xs">FILE_REPLACED</span>. Move this into one method owned by <span class="font-mono text-xs">ingestion</span>.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">finding/Proposals.java</td><td class="px-4 py-2">write</td><td class="px-4 py-2">M4. <span class="font-mono text-xs">write(UUID submissionId, UUID systemId, ...)</span> takes two adjacent UUIDs that can be swapped without any error. Restore a typed scope, such as a <span class="font-mono text-xs">ProposalScope</span> record or <span class="font-mono text-xs">FileTarget</span>.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">screens/smo/ScanReportCard.tsx, finding/FindingStore.java</td><td class="px-4 py-2">—</td><td class="px-4 py-2">M5. <span class="font-mono text-xs">ScanReportCard.tsx</span> is 449 lines, and <span class="font-mono text-xs">ReplaceForm</span> copies <span class="font-mono text-xs">UploadForm</span>. The settlement statements in <span class="font-mono text-xs">FindingStore</span> (466 lines) now include the serialise step. A package-private <span class="font-mono text-xs">SettlementStore</span> would keep the lock-order explanation in one file.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">docs/adr/0029-…, docs/agents/reviewer-decisions.md</td><td class="px-4 py-2">—</td><td class="px-4 py-2">L1. ADR 0029 still says "Open, for a human" about the settlement state rule, and reviewer-decisions.md has no entry for the 2026-10-18 decision. The pending record step of that decision covers this.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">docs/adr/0029-…</td><td class="px-4 py-2">item 10</td><td class="px-4 py-2">L2. The "order of locks" leaves out the <span class="font-mono text-xs">report_file</span> row locks taken before the advisory lock. It also does not say why the order has no cycle, or that it relies on READ COMMITTED taking a fresh snapshot for each statement.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">finding/FindingStore.java</td><td class="px-4 py-2">SERIALISE_SETTLEMENTS</td><td class="px-4 py-2">L3. The statement does not follow the advisory-lock style of <span class="font-mono text-xs">RegisterStore.LOCK_APPLY</span>: it uses a <span class="font-mono text-xs">SELECT 1</span> wrapper, <span class="font-mono text-xs">hashtextextended</span>, and a namespace without the <span class="font-mono text-xs">annualva.</span> prefix. Use one style, or share a <span class="font-mono text-xs">Locks</span> helper.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">ingestion/ReportFiles.java</td><td class="px-4 py-2">93, 123</td><td class="px-4 py-2">L4. The <span class="font-mono text-xs">invalid-transition</span> refusal is copied in <span class="font-mono text-xs">upload</span> and <span class="font-mono text-xs">replace</span>.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">ingestion/ReportFiles.java</td><td class="px-4 py-2">134</td><td class="px-4 py-2">L5. <span class="font-mono text-xs">DuplicateKeyException</span> is caught around all of <span class="font-mono text-xs">quarantinedAndKept</span> and always mapped to <span class="font-mono text-xs">replace-in-progress</span>. Narrow the catch to the insert, or check the constraint name.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">finding/Proposals.java</td><td class="px-4 py-2">write</td><td class="px-4 py-2">L6. A rescan proposal's <span class="font-mono text-xs">proposed_at</span> is <span class="font-mono text-xs">clock.instant()</span>, not the settlement's <span class="font-mono text-xs">now</span>, so one settlement records two instants.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">screens/smo/ScanReportCard.tsx, FindingRow.tsx</td><td class="px-4 py-2">—</td><td class="px-4 py-2">L7. Carried over: each row checks replaceability in O(n²); <span class="font-mono text-xs">FindingRow.tsx</span> holds a fifth copy of the download-with-problem logic; <span class="font-mono text-xs">submissionId</span> is passed down through four components.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend tests</td><td class="px-4 py-2">—</td><td class="px-4 py-2">L8. Neither lock can be tested at Seam 1, as ADR 0029 says. If a regression is ever reported, the cheapest guard is a store-level test with two threads and a latch.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build <span class="text-xs text-slate-500">(rerun; implementer's logs reused, fingerprint matched)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M0 L2</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-600 space-y-1">
+          <p>Back end, <span class="font-mono text-xs">./mvnw -B -ntp clean verify</span>: BUILD SUCCESS in 13:17 min.</p>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>Tests: 697 run, 0 failures, 0 errors, 0 skipped, in 90 test classes. This includes <span class="font-mono text-xs">aRescanWhoseSettlementFailsLeavesTheOldFileAndTheFindingsAsTheyWereAndIsTriedAgain</span>.</li>
+            <li>ArchUnit: 11/11 and 10/10.</li>
+            <li>JaCoCo: line 96.98 %, branch 90.19 %, against an 80 % gate.</li>
+            <li><span class="font-mono text-xs">FindingStore</span>: 24/24 branches and 136/136 lines.</li>
+          </ul>
+          <p>Front end, <span class="font-mono text-xs">npm run check</span>: Prettier, <span class="font-mono text-xs">tsc -b</span>, <span class="font-mono text-xs">vite build</span>, the raw-HTML lint, dependency-cruiser and fallow all pass.</p>
+          <p>The check itself reported PASS. It is shown as WARN only because of the two Lows.</p>
+          <p>Info:</p>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>A deprecated-for-removal call in <span class="font-mono text-xs">adapters/oidc/MccHttp.java:51</span>, which ticket 21 did not change.</li>
+            <li><span class="font-mono text-xs">ScanReportCard.tsx</span> is a fallow hotspot, but below every threshold (health score 79 B).</li>
+          </ul>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+          </tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">finding/FindingStore.java, ingestion/ReplaceFileTest.java</td><td class="px-4 py-2">—</td><td class="px-4 py-2">1. No test shows that the new settlement lock makes two settlements of one VA Submission wait for each other. Coverage shows only that the SQL runs. Consider a two-thread Seam 1 test, or record why one is not worth having.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">ingestion/ScanPoller.java, ReportFileStore.java, ReportFiles.java, finding/Findings.java, ReportFileController.java</td><td class="px-4 py-2">—</td><td class="px-4 py-2">2. Some branches in the changed classes are not covered. Missed branches: <span class="font-mono text-xs">ScanPoller</span> 11 of 66, <span class="font-mono text-xs">ReportFileStore</span> 4 of 28, <span class="font-mono text-xs">ReportFiles</span> 2 of 56, <span class="font-mono text-xs">Findings</span> 1 of 14, <span class="font-mono text-xs">ReportFileController</span> 1 of 2. Nobody has checked whether any of them are on the replace or settlement path.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review <span class="text-xs text-slate-500">(carried over from round 1)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M2 L11</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-600">
+          <p>This check reviewed the tree before both correction passes. S2 and S5 (hard-coded <span class="font-mono text-xs">Role.SMO</span> and three copies of the uploader attribution) are reported by the round 2 thermo-nuclear rerun as resolved by <span class="font-mono text-xs">AuditActor.onBehalfOf</span>; they are kept here unverified. Info: S8 hash ordering applied twice; S9 over-long Javadoc lines; P6 no scope creep; P7 "set to Remediated" implemented as a proposal, as the issue specifies.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+          </tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">ingestion/ReportFiles.java, ReportFileStore.java</td><td class="px-4 py-2">~119-139, ~94</td><td class="px-4 py-2">S1. A rescan bypasses the 20-file cap, so a Scan Report can hold up to 40 live files of one kind; no human decision accepts the overshoot.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">screens/smo/FindingRow.tsx, issues/29-review-engine-batch-review.md</td><td class="px-4 py-2">—</td><td class="px-4 py-2">P1. Decision 3's Cyber Manager link to the replaced file is built only on the SMO screen; no ticket owns the Cyber Manager part and no Seam 1 test has a Cyber Manager read or download it.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">finding/Findings.java, ingestion/ScanPoller.java</td><td class="px-4 py-2">133, 175, 315</td><td class="px-4 py-2">S2. Job-written entries hard-code the actor role <span class="font-mono text-xs">SMO</span> (likely resolved by the correction).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">audit/AuditAction.java, ADR 0029</td><td class="px-4 py-2">—</td><td class="px-4 py-2">S3. <span class="font-mono text-xs">PROPOSAL_WITHDRAWN</span> clashes with the glossary term Withdrawn.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">ingestion/ReportFiles.java</td><td class="px-4 py-2">upload</td><td class="px-4 py-2">S4. The too-many-files message suggests Replace for evidence uploads, which cannot be replaced.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">finding/Findings.java, ingestion/ScanPoller.java</td><td class="px-4 py-2">—</td><td class="px-4 py-2">S5. Three copies of the "audit on behalf of the uploader" builder (likely resolved by the correction).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">screens/smo/ScanReportCard.tsx, FindingRow.tsx</td><td class="px-4 py-2">—</td><td class="px-4 py-2">S6. Upload and download handlers duplicated; <span class="font-mono text-xs">FindingRow</span> inlines its own problem mapping.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">finding/Findings.java</td><td class="px-4 py-2">~153-182</td><td class="px-4 py-2">S7. <span class="font-mono text-xs">keep</span> does too much under a vague name; data clump of five ids across four methods.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">docs/adr/0029-…, README.md</td><td class="px-4 py-2">—</td><td class="px-4 py-2">P2. The transient cap overshoot is described but not covered by a human decision (spec side of S1).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">ingestion/ReplaceFileRulesTest.java</td><td class="px-4 py-2">—</td><td class="px-4 py-2">P3. No Seam 1 test for Replace in Returned for Rework, another unique-index violation, or a rescan of the wrong report format.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">ingestion/ReportFiles.java</td><td class="px-4 py-2">replace</td><td class="px-4 py-2">P4. A race can answer <span class="font-mono text-xs">replace-in-progress</span> instead of <span class="font-mono text-xs">file-not-replaceable</span>; state stays correct.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">issues/25-declaration-and-submit.md</td><td class="px-4 py-2">—</td><td class="px-4 py-2">P5. Ticket 25's 90-day and still-scanning checks must skip superseded files.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">ingestion/ScanPoller.java, finding/Findings.java</td><td class="px-4 py-2">keepFindings</td><td class="px-4 py-2">P8. A Burp Suite rescan's export date is written as "scanned" in the RESCAN evidence, contrary to decision 1.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep <span class="text-xs text-slate-500">(carried over from round 1)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M1 L18 · pre-existing</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-600">
+          <p>Official Docker image, <span class="font-mono text-xs">p/security-audit</span> + <span class="font-mono text-xs">p/default</span>, read-only mount. Scan 2 over the 27 changed or new files returned 0 findings and 0 errors. Semgrep was not rerun on the corrected tree. Every finding below predates this ticket and is recorded only; the check itself reported PASS.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+          </tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">scripts/mock-mockpass-assertions.js</td><td class="px-4 py-2">11</td><td class="px-4 py-2">Pre-existing. <span class="font-mono text-xs">path-join-resolve-traversal</span> in a dev-only mock; called only with fixed paths, likely a false positive.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">artifacts/code-reviewer/03-… to 20-…-compliance.html (18 files)</td><td class="px-4 py-2">6-7</td><td class="px-4 py-2">Pre-existing. <span class="font-mono text-xs">missing-integrity</span>: generated review reports load the Tailwind CDN without SRI. Review artefacts, not application code.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8 <span class="text-xs text-slate-500">(carried over from round 1)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M1 L5</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-600 space-y-1">
+          <p>PASS: as-1, as-2, as-3, as-7 / ac-1 (404 parity), as-12 (ticket path), as-13, lm-19, data minimisation, dp-8. Tracked deferrals (FAIL as deferrals, not blocking, not weakened): as-12 production adapter &rarr; ticket 51; lm-16 and pm-6 &rarr; ticket 52; retention of superseded files &rarr; ticket 49.</p>
+          <p>L-1 is covered by the 2026-10-18 state-rule decision. L-3 was raised against the old <span class="font-mono text-xs">DO UPDATE</span> upsert. It became round 2's thermo-nuclear H1, and the round 3 advisory lock closes it: thermo-nuclear round 3 traced the locks and found no deadlock. Info: CSRF parameter fallback can spool a multipart body before authorisation (pre-existing, app-wide); unaudited 400 <span class="font-mono text-xs">file-empty</span> matches the upload path; <span class="font-mono text-xs">accept</span> lists extensions only.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+          </tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">ingestion/ReportFiles.java</td><td class="px-4 py-2">122-137, 280</td><td class="px-4 py-2">M-1 (lm-4). Refused rescans (<span class="font-mono text-xs">state-not-editable</span>, <span class="font-mono text-xs">not-replaceable</span>, <span class="font-mono text-xs">replace-in-progress</span>) do not record the target file id, so they cannot be told apart from refused uploads.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">finding/Findings.java, ingestion/ScanPoller.java</td><td class="px-4 py-2">—</td><td class="px-4 py-2">L-1. The settlement does not recheck the VA Submission's state. Covered by the 2026-10-18 decision (settlement as built; tickets 25, 40, 43 block leaving Draft or Returned for Rework while a file is scanning).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">ingestion/ReportFiles.java</td><td class="px-4 py-2">134, 146</td><td class="px-4 py-2">L-2. An in-progress rescan is detected only after up to 50 MB is quarantined; add a read-only pre-check.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">finding/Findings.java, FindingStore.java</td><td class="px-4 py-2">—</td><td class="px-4 py-2">L-3. A narrow deadlock window for rows that another settlement commits after the lock statement. Closed on the corrected tree, because the per-submission advisory lock serialises settlements (thermo-nuclear round 3).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">finding/Findings.java, audit/AuditStore</td><td class="px-4 py-2">—</td><td class="px-4 py-2">L-4. Up to ~40,000 single-row audit inserts while the Finding locks are held.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">screens/smo/ScanReportCard.tsx</td><td class="px-4 py-2">103</td><td class="px-4 py-2">L-5. Replace is offered whatever the submission's state; the user learns of it from a 409. UX only.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react <span class="text-xs text-slate-500">(carried over from round 1)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M1 L4</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-600">
+          <p>Verified: refresh after replace, offer rule, live region, focus on open, early checks, text-only rendering, stable keys and types. Info: I1 submit button name lacks the file; I2 <span class="font-mono text-xs">setBusy</span> after unmount; I3 redundant effect dependency; I4 shadowed parameter; I5 name the <span class="font-mono text-xs">ProposedAs</span> union; I6 wording on a superseded file.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+          </tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ScanReportCard.tsx</td><td class="px-4 py-2">351-355, 385-399</td><td class="px-4 py-2">M1. The Replace form can vanish on a poll without moving focus (focus falls to body), and a stale <span class="font-mono text-xs">replacingId</span> can remount it later and steal focus. Treat "no longer replaceable" as a close.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ScanReportCard.tsx</td><td class="px-4 py-2">ReplaceForm.submit</td><td class="px-4 py-2">L1. Until the reload returns, the old file still offers Replace after a successful replace.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ScanReportCard.tsx</td><td class="px-4 py-2">onClose</td><td class="px-4 py-2">L2. Cancel leaves the replace form's error on screen beside the Upload form.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ScanReportCard.tsx</td><td class="px-4 py-2">—</td><td class="px-4 py-2">L3. 450 lines and five components; move shared upload checks and <span class="font-mono text-xs">ReplaceForm</span> into their own files.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/FindingRow.tsx</td><td class="px-4 py-2">96-112</td><td class="px-4 py-2">L4. Many identical "Download &lt;old file&gt;" button names; <span class="font-mono text-xs">ReplacedFile.save</span> duplicates <span class="font-mono text-xs">FileRow.save</span> and has already drifted.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot <span class="text-xs text-slate-500">(carried over from round 1)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M4 L12</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-600 space-y-1">
+          <p>Seven skills run: core PASS (Info C-1, hard-coded <span class="font-mono text-xs">Role.SMO</span>, likely resolved by the correction), web PASS with Lows, data WARN, batch not applicable, security PASS (pre-existing Low), logging PASS with Low/Info, test WARN. Verified: transaction boundaries, proxies, lock ordering, array binds, multipart limits, security rule, problem details, logging, migration.</p>
+          <p>D-4 was raised against the old <span class="font-mono text-xs">DO UPDATE</span> upsert. It became round 2's thermo-nuclear H1 and is closed by the round 3 advisory lock. D-5 is covered by the 2026-10-18 state-rule decision. Info L-2: consider <span class="font-mono text-xs">logServerErrorDetail=false</span> on the JDBC URL.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+          </tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">finding/FindingStore.java</td><td class="px-4 py-2">LOCK_FOR_SETTLEMENT, WITHDRAW_RESCAN_PROPOSALS</td><td class="px-4 py-2">D-1. Up to 20,000-element <span class="font-mono text-xs">= ANY</span> inside an <span class="font-mono text-xs">OR</span>, unchunked, degrades to linear search under generic plans while locks are held. Join <span class="font-mono text-xs">unnest</span> as a relation.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">finding/Findings.java, audit/AuditLog.java</td><td class="px-4 py-2">replace, keep</td><td class="px-4 py-2">D-2. Up to 40,000 single-row audit inserts inside the locking settlement transaction. Add a batched <span class="font-mono text-xs">recordAll</span>.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">ingestion/ReplaceFileTest.java</td><td class="px-4 py-2">settlement-fails test</td><td class="px-4 py-2">T-1. <span class="font-mono text-xs">findingFault("on")</span> is not in <span class="font-mono text-xs">try/finally</span>; one failure would cascade across the shared database.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">ingestion/FindingProposalAppendOnlyTest.java</td><td class="px-4 py-2">insert helper</td><td class="px-4 py-2">T-2. The new test commits an undeletable RESCAN proposal onto an arbitrary Finding from another test (<span class="font-mono text-xs">LIMIT 1</span> with no scoping).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">ingestion/ReportFiles.java</td><td class="px-4 py-2">replace</td><td class="px-4 py-2">W-1. A second rescan is quarantined before it is refused; add a pre-check.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">ingestion/ReportFiles.java</td><td class="px-4 py-2">DuplicateKeyException catch</td><td class="px-4 py-2">W-2. The catch matches on type, not on the constraint name.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">ingestion/ReportFileController.java</td><td class="px-4 py-2">bytesOf</td><td class="px-4 py-2">W-3. Whole-file heap buffering (50 MB) under virtual threads; now on two endpoints.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">ingestion/ReportFiles.java</td><td class="px-4 py-2">quarantinedAndKept</td><td class="px-4 py-2">D-3. A failure in <span class="font-mono text-xs">view(id)</span> after commit discards a kept row's quarantined bytes (pre-existing, now reached by replace).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">finding/Findings.java, FindingStore.upsert</td><td class="px-4 py-2">keep</td><td class="px-4 py-2">D-4. A deadlock window, needing more than one replica, for rows that the lock statement never saw. Closed on the corrected tree by the per-submission advisory lock (thermo-nuclear round 3).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">ingestion/ScanPoller.java, finding/Findings.java</td><td class="px-4 py-2">replace</td><td class="px-4 py-2">D-5. The settlement does not recheck the VA Submission's state. Covered by the 2026-10-18 decision.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">db/migration/V16__report_file_replace.sql</td><td class="px-4 py-2">—</td><td class="px-4 py-2">D-6. Constraint validation and index builds under <span class="font-mono text-xs">ACCESS EXCLUSIVE</span>; <span class="font-mono text-xs">replaced_file_id</span> FK unindexed (matters for ticket 49 deletes).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">app/SecurityConfig.java</td><td class="px-4 py-2">CSRF handler</td><td class="px-4 py-2">S-1. Pre-existing: the CSRF parameter fallback parses a multipart body before authorisation; use a header-only resolver.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">audit/AuditLog.java</td><td class="px-4 py-2">—</td><td class="px-4 py-2">L-1. A settlement can emit ~20,000 audit log events in one burst; check the shipper can absorb it.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">ingestion/ReplaceFileRulesTest.java</td><td class="px-4 py-2">aFileHasOneRescanOnItsWayAtATime</td><td class="px-4 py-2">T-3. Quarantine cleanup on a refused rescan is not asserted.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">ingestion/ReplaceFileTest.java, ReplaceFileRulesTest.java</td><td class="px-4 py-2">—</td><td class="px-4 py-2">T-4. Pass counts tuned to <span class="font-mono text-xs">maxInFlight</span> and to leftovers in the shared database.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">ingestion/ScanPoller.java</td><td class="px-4 py-2">keepFindings</td><td class="px-4 py-2">T-5. The defensive <span class="font-mono text-xs">IllegalStateException</span> branch (supersede returns false) is untested.</td></tr>
+          </tbody>
+        </table>
+      </details>
+    </main>
+  </body>
+</html>
