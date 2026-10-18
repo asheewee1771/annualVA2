@@ -125,7 +125,13 @@ function SelectAllMatching({
 }
 
 /** The page of Findings the chip shows, and the progress counts, asked for again when a file is read or a status changes. */
-function useFindingsData(submissionId: string, files: readonly ReportFile[], filter: FindingFilter, page: number) {
+function useFindingsData(
+  submissionId: string,
+  files: readonly ReportFile[],
+  entered: number,
+  filter: FindingFilter,
+  page: number,
+) {
   // A new file read into Findings changes the list: the key changes with the set of parsed files.
   const parsed = files
     .filter((file) => file.status === "PARSED")
@@ -133,14 +139,17 @@ function useFindingsData(submissionId: string, files: readonly ReportFile[], fil
     .sort()
     .join(",");
   const load = useCallback(() => {
-    // `parsed` is not an argument: it is why a new request is made when a file has been read into Findings.
+    // `parsed` and `entered` are not arguments: they are why a new request is made when a file has been read into
+    // Findings or a Finding was entered by hand.
     void parsed;
+    void entered;
     return fetchFindings(submissionId, filter, page, PAGE_SIZE);
-  }, [submissionId, filter, page, parsed]);
+  }, [submissionId, filter, page, parsed, entered]);
   const loadReadiness = useCallback(() => {
     void parsed;
+    void entered;
     return fetchReadiness(submissionId);
-  }, [submissionId, parsed]);
+  }, [submissionId, parsed, entered]);
   const findings = useResource(load);
   const readiness = useResource(loadReadiness);
   const reload = () => {
@@ -179,7 +188,7 @@ function FindingsList({
     return error ? <ErrorPanel problem={error.problem} /> : <p className="muted">Loading the Findings…</p>;
   }
   if (data.total === 0) {
-    return <p>No Findings match. Choose another filter, or upload the Scan Reports above.</p>;
+    return <p>No Findings match. Choose another filter, or upload or enter the Scan Reports above.</p>;
   }
   const pages = Math.max(1, Math.ceil(data.total / data.size));
   const canSelectMore = data.total > data.items.length && selection.selected.size < data.total;
@@ -233,10 +242,13 @@ function useClampedPage(data: FindingPage | undefined, page: number, setPage: (p
 export function FindingsSection({
   submissionId,
   files,
+  entered,
   classification,
 }: {
   submissionId: string;
   files: readonly ReportFile[];
+  /** How many Findings were entered by hand on this screen: a new one is why the list is asked for again. */
+  entered: number;
   classification: string;
 }) {
   const [chip, setChip] = useState<ChipKey>("attention");
@@ -245,7 +257,7 @@ export function FindingsSection({
   // Only this submission's files, as the Scan Report cards show.
   const ofThisSubmission = files.filter((file) => file.submissionId === submissionId);
   const filter = FILTERS[chip];
-  const { findings, readiness, reload } = useFindingsData(submissionId, ofThisSubmission, filter, page);
+  const { findings, readiness, reload } = useFindingsData(submissionId, ofThisSubmission, entered, filter, page);
   const memos = ofThisSubmission.filter((file) => file.kind === "EVIDENCE" && file.status === "READY");
   useClampedPage(findings.data, page, setPage);
   // After a batch is applied the bulk bar goes away; the focus goes to the heading, above the new counts.

@@ -187,6 +187,13 @@ export function FindingRow({
         </td>
         <td className="mono">
           {finding.identifier}
+          {finding.source === "MANUAL" ? (
+            <>
+              {" "}
+              <span className="flag flag--warning">Manually Entered</span>
+            </>
+          ) : null}
+          {finding.title !== null ? <p className="muted finding-detail">{finding.title}</p> : null}
           {finding.confidence === "TENTATIVE" ? (
             <>
               {" "}

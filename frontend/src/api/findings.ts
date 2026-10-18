@@ -53,10 +53,16 @@ export interface SourceFile {
   name: string;
 }
 
-/** A Finding as the list reads it. Every text in it was read from a report: it is rendered only as text. */
+/** Where a Finding came from: read from a report file, or typed in by the SMO/Tech Lead (shown as Manually Entered). */
+export type FindingSource = "PARSED" | "MANUAL";
+
+/** A Finding as the list reads it. Every text in it was read from a report or typed by a person: it is rendered only as text. */
 export interface Finding {
   id: string;
   reportType: ReportType;
+  source: FindingSource;
+  /** What a Finding entered by hand is, in words; null for a parsed one. */
+  title: string | null;
   /** The CVE, GHSA or rule id as the report names it. */
   identifier: string;
   packageOrRule: string;
@@ -191,4 +197,25 @@ export interface Readiness {
 /** GET /api/submissions/{id}/readiness: the progress counts of the VA Submission's Findings. */
 export function fetchReadiness(submissionId: string): Promise<Readiness> {
   return request<Readiness>("GET", `/api/submissions/${encodeURIComponent(submissionId)}/readiness`);
+}
+
+/** The longest each text of a Finding entered by hand may be: the server's limits. */
+export const MANUAL_LIMITS = { title: 200, identifier: 200, packageOrRule: 500 } as const;
+
+/** What a Finding entered by hand sends: its Scan Report (marked for Findings entered by hand) and what it is. */
+export interface ManualFindingInput {
+  reportType: ReportType;
+  title: string;
+  identifier: string;
+  packageOrRule: string;
+  severity: Severity;
+}
+
+/**
+ * POST /api/submissions/{id}/findings/manual: the SMO/Tech Lead types in a Finding of a Scan Report its tool cannot export.
+ * It is kept like any Finding and always shown as Manually Entered. A field that is wrong is a 400 that names it; the same
+ * identifier and package or rule twice is refused.
+ */
+export function enterManualFinding(submissionId: string, input: ManualFindingInput): Promise<Finding> {
+  return request<Finding>("POST", `/api/submissions/${encodeURIComponent(submissionId)}/findings/manual`, input);
 }

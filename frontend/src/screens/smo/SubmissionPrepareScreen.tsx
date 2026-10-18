@@ -1,6 +1,7 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { dayLabel } from "../../api/cycles.ts";
 import { fetchReportFiles } from "../../api/reportFiles.ts";
+import { fetchScanReportModes } from "../../api/scanReports.ts";
 import { fetchSubmission, type SubmissionState } from "../../api/submissions.ts";
 import { AppLink } from "../../app/AppLink.tsx";
 import { ClassifiedField } from "../../components/ClassifiedField.tsx";
@@ -34,8 +35,9 @@ function DeclarationSection({ classification }: { classification: string }) {
 }
 
 /**
- * Where the SMO/Tech Lead prepares a VA Submission (stories 19, 20, 24, 28 and 35): the three Scan Report cards with their
- * files and each file's pipeline status (asked for again while a file is still being checked), the Findings read from them
+ * Where the SMO/Tech Lead prepares a VA Submission (stories 19, 20, 23, 24, 28 and 35): the three Scan Report cards with
+ * how each is provided, their files and each file's pipeline status (asked for again while a file is still being checked)
+ * and the form to enter a Finding by hand, the Findings read from them or entered
  * with a status to propose for each, and the Declaration, disabled until the submit command arrives. The state and the
  * dates are the server's.
  */
@@ -51,6 +53,10 @@ export function SubmissionPrepareScreen({
   const { data, error } = submission;
   const loadFiles = useCallback(() => fetchReportFiles(submissionId), [submissionId]);
   const files = useResource(loadFiles);
+  const loadModes = useCallback(() => fetchScanReportModes(submissionId), [submissionId]);
+  const modes = useResource(loadModes);
+  // Counts the Findings entered by hand on this screen, so the Findings are asked for again after each.
+  const [entered, setEntered] = useState(0);
 
   return (
     <>
@@ -81,8 +87,19 @@ export function SubmissionPrepareScreen({
       </div>
       {data ? (
         <>
-          <ScanReportsSection submissionId={submissionId} files={files} classification={classification} />
-          <FindingsSection submissionId={submissionId} files={files.data ?? []} classification={classification} />
+          <ScanReportsSection
+            submissionId={submissionId}
+            files={files}
+            modes={modes}
+            classification={classification}
+            onFindingEntered={() => setEntered((count) => count + 1)}
+          />
+          <FindingsSection
+            submissionId={submissionId}
+            files={files.data ?? []}
+            entered={entered}
+            classification={classification}
+          />
           <DeclarationSection classification={classification} />
         </>
       ) : null}

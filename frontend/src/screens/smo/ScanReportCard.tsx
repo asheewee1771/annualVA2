@@ -10,9 +10,12 @@ import {
   type PipelineStatus,
   type ReportFile,
 } from "../../api/reportFiles.ts";
+import type { ScanReportMode } from "../../api/scanReports.ts";
 import { ClassifiedField } from "../../components/ClassifiedField.tsx";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { saveFile } from "../shared/saveFile.ts";
+import { ManualFindingForm } from "./ManualFindingForm.tsx";
+import { ScanReportModeForm } from "./ScanReportModeForm.tsx";
 import { inProgress, type ScanReport } from "./scanReports.ts";
 
 const UNREACHABLE: Problem = { type: "about:blank", title: "The server could not be reached", status: 0 };
@@ -411,29 +414,57 @@ function FileSection({
 }
 
 /**
- * One Scan Report (stories 20, 22, 24, 27 and 39): its machine-readable files and, apart from them, its supporting evidence,
- * each with its pipeline status and, for a rejected one, the plain message the server gave, and the control to add more;
- * a report file whose findings were read can be replaced with a rescan.
+ * One Scan Report (stories 20, 22, 23, 24, 27 and 39): how it is provided, then its machine-readable files when it is
+ * uploaded, the form to enter a Finding by hand when its tool cannot export one, and, in every mode, its supporting
+ * evidence. Each file shows its pipeline status and, for a rejected one, the plain message the server gave, with the
+ * control to add more; a report file whose findings were read can be replaced with a rescan.
  * Several files make one Scan Report. Evidence is never shown in the page: it is only offered as a download.
  */
 export function ScanReportCard({
   submissionId,
   report,
+  mode,
   files,
   classification,
   onChanged,
+  onModeChanged,
+  onFindingEntered,
 }: {
   submissionId: string;
   report: ScanReport;
+  /** How it is provided; undefined until the server has said. */
+  mode: ScanReportMode | undefined;
   files: readonly ReportFile[];
   classification: string;
   onChanged: () => void;
+  onModeChanged: () => void;
+  onFindingEntered: () => void;
 }) {
+  // Report files are offered unless the Scan Report is known to be not applicable or entered by hand.
+  const kinds: readonly FileKind[] = mode && mode.mode !== "UPLOAD" ? ["EVIDENCE"] : ["MACHINE_READABLE", "EVIDENCE"];
   return (
     <section className="card" aria-labelledby={`report-${report.type}`}>
       <h3 id={`report-${report.type}`}>{report.title}</h3>
       <p className="muted">{report.note}</p>
-      {(["MACHINE_READABLE", "EVIDENCE"] as const).map((kind) => (
+      {mode ? (
+        <ScanReportModeForm
+          key={`${mode.mode}|${mode.justification ?? ""}`}
+          submissionId={submissionId}
+          report={report}
+          current={mode}
+          classification={classification}
+          onChanged={onModeChanged}
+        />
+      ) : null}
+      {mode?.mode === "MANUAL" ? (
+        <ManualFindingForm
+          submissionId={submissionId}
+          report={report}
+          classification={classification}
+          onEntered={onFindingEntered}
+        />
+      ) : null}
+      {kinds.map((kind) => (
         <FileSection
           key={kind}
           submissionId={submissionId}
