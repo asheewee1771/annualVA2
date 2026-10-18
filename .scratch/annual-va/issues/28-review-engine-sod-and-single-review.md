@@ -8,6 +8,7 @@
 **Effort (orchestrator estimate):** about 11.0 developer days across stories 50 (6.0), 58 (5.0); `*` marks the critical path. See `reports/dev-report.md`.
 
 - [ ] `POST /api/findings/{id}/reviews` (Cyber Manager assigned to the System, submission In Review) records CONFIRMED or DISPUTED with a comment on the current proposal and records the reviewing step; `POST /api/submissions/{id}/reports/{type}/review` does the same for a not-applicable justification.
+- [ ] Decide with the human what text is kept beside a review of a not-applicable justification: the justification is overwritten in place and a changed text resets the review to PENDING (ADR 0030; decision 2026-10-18), so after a Dispute and a rewrite the disputed wording is gone unless this ticket stores it with the review.
 - [ ] The segregation-of-duties guard refuses a command at one step when the caller acted at another step on that submission, and treats the System's assigned SMO as the submitter and its assigned Cyber Manager as the reviewer even before they act; refusals are 403 `sod-conflict` and audited.
 - [ ] A Finding is CONFIRMED only while its current proposal is the reviewed one; reviews are audited without comment text.
 - [ ] The review screen shows per-Finding Confirm and Dispute with the comment field, and Manually Entered Findings and not-applicable justifications clearly marked.

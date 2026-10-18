@@ -35,3 +35,5 @@ Amended by ADR 0023: XCCDF results and ARF files have a parser too (status `PARS
 Amended by ADR 0026: a file of kind EVIDENCE (a PDF or HTML report) skips the schema check and the parse and rests in `READY`, which is viewable and downloadable like `SCHEMA_OK` and `PARSED`.
 
 Amended by ADR 0029: a parsed report file can be replaced with a rescan (`POST .../files/{fileId}/replace`); once the rescan is parsed the old file is superseded (`superseded_by`), stays viewable and downloadable, and no longer counts against the 20 files.
+
+Amended by ADR 0030: a report file (`kind=MACHINE_READABLE`) is refused with 409 `wrong-report-mode` when its Scan Report is marked not applicable or for Findings entered by hand, checked in the transaction that keeps the file with the Scan Report's row held; supporting evidence is accepted in every mode.

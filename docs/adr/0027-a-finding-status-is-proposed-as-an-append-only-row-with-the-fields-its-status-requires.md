@@ -18,3 +18,5 @@ Ticket 19 (stories 28 and 35) lets the SMO/Tech Lead of a System propose one of 
 Not done here, on purpose: the review (confirm, Dispute), bulk-set, carry-over, Target Date Missed and the Risk Accepted expiry, a manual Finding, the submit rule "every Finding has a status", and any Playwright scenario (ticket 58). The `proposed_as` and `batch_id` columns of the plan's data model arrive with the tickets that write them.
 
 Amended by ADR 0029: a proposal records who made it (`proposed_as`: `SMO`, or `RESCAN` for the Remediated proposal a rescan makes for a Finding it reports nowhere), and each proposal shows `proposedAs`.
+
+Amended by ADR 0030: a Finding has a `source` (`PARSED`, or `MANUAL` for one the SMO/Tech Lead typed in) and a Finding entered by hand has a `title`; the state rule of a proposal (`Proposals.editable`) also guards a mode change of a Scan Report and a Finding entered by hand.

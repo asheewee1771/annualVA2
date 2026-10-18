@@ -246,3 +246,24 @@ Human decisions on reviewer findings. Check here before asking again. Each entry
 - **Finding:** a rescan is accepted only in Draft or Returned for Rework but can settle after the submission has left those states, and the settlement then wrote Remediated proposals into a frozen or read-only submission. Ordinary uploads already settle regardless of state, and the plan's "none still scanning" rule covered only submit.
 - **Chosen action:** keep the settlement as built (one rule for ordinary and rescan uploads), and refuse every route that moves a VA Submission out of Draft or Returned for Rework while any of its files is still scanning: submit (ticket 25), exemption request (ticket 40) and the Register's withdraw (ticket 43, the row is Blocked). Those tickets gained acceptance lines; no code in ticket 21. Decided 2026-10-18.
 - **When to reuse:** any new route that moves a VA Submission out of an editable state, or any finding that a settlement can land in a frozen submission.
+
+## A Scan Report's mode is fixed once it holds anything; deletion is a later ticket
+
+- **Area:** Scan Report modes (ticket 22, ADR 0030)
+- **Finding:** a change to another mode is refused with 409 `report-not-empty` while the Scan Report holds a non-rejected report file or any Finding, and nothing can delete a report file or a manually entered Finding, so a mistake fixes the mode for that VA Submission.
+- **Chosen action:** keep the refusal as built and raise ticket 60 to delete a report file or a manually entered Finding while the VA Submission is in Draft or Returned for Rework, which unlocks the mode. Decided 2026-10-18.
+- **When to reuse:** any finding that a Scan Report's mode or content cannot be undone; point at ticket 60.
+
+## A not-applicable justification is overwritten; ticket 28 decides what is kept beside a review
+
+- **Area:** not-applicable justifications (ticket 22, ADR 0030 item 3), review (ticket 28)
+- **Finding:** the justification is updated in place and a changed text resets the review to PENDING, so a Confirmed review never refers to unseen text, but after a Dispute and a rewrite the disputed wording is gone; proposals, by contrast, are append-only.
+- **Chosen action:** keep as built; ticket 28 gained an acceptance line to decide with the human what text is stored beside a review. Decided 2026-10-18.
+- **When to reuse:** any finding that a reviewed justification keeps no history.
+
+## Manually entered Findings: limits 200/200/500 and an exact duplicate rule
+
+- **Area:** manual Findings (ticket 22, ADR 0030 items 7 and 8)
+- **Finding:** title at most 200, identifier 200, package or rule 500 characters (chosen bounds for IM8 as-1); a second Finding with the same report type, identifier and package or rule is refused (409 `duplicate-finding`), compared exactly and case-sensitively after cleaning, like the parsed keys.
+- **Chosen action:** accept as built. Decided 2026-10-18.
+- **When to reuse:** any finding about manual Finding field limits or case-insensitive duplicates.
