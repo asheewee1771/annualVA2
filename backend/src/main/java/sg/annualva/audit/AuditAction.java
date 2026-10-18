@@ -111,7 +111,27 @@ public enum AuditAction {
      * A Cyber Manager or VA POC read the progress counts of a VA Submission (story 38), as a read of the VA Submission is
      * recorded. The System's own SMO/Tech Lead reading them is not. About the System and the VA Submission; no detail.
      */
-    READINESS_VIEWED("readiness-viewed", "database");
+    READINESS_VIEWED("readiness-viewed", "database"),
+    /**
+     * An SMO/Tech Lead set how a Scan Report is provided (story 23): uploaded, not applicable or entered by hand (SUCCESS,
+     * with {@code report_type} and {@code mode}), or was refused because the VA Submission takes no changes in its present
+     * state or the Scan Report already holds a report file or a Finding (REFUSED, with a fixed reason). About the System
+     * and the VA Submission; never the justification.
+     */
+    REPORT_MODE_SET("report-mode-set", "database"),
+    /**
+     * Someone who may see the System read how its Scan Reports are provided. A justification is what a person wrote, so the
+     * read is audited for every role, the System's own SMO/Tech Lead included. About the System and the VA Submission, with
+     * the number of Scan Reports; never a justification.
+     */
+    SCAN_REPORTS_VIEWED("scan-reports-viewed", "database"),
+    /**
+     * An SMO/Tech Lead entered a Finding by hand (story 23; SUCCESS, about the new Finding, with {@code report_type}), or
+     * was refused because the VA Submission takes no changes in its present state, the Scan Report is not marked for
+     * Findings entered by hand, or it already has that Finding (REFUSED, with a fixed reason). About the System and the VA
+     * Submission; never the title, identifier, package or rule.
+     */
+    FINDING_ENTERED("finding-entered", "database");
 
     private final String ecs;
     private final String category;

@@ -29,11 +29,16 @@ import sg.annualva.parser.Severity;
  * @param reviewState where the Cyber Manager's review of the current proposal is; null for a Finding with no proposal
  * @param currentProposal the Finding Status the SMO/Tech Lead last proposed with its fields (story 35); null until one is
  *     (earlier proposals are kept and read through the Finding's history)
+ * @param source PARSED for a Finding read from a file, MANUAL for one the SMO/Tech Lead typed in (story 23), which is always
+ *     shown as Manually Entered and has no place
+ * @param title what the Finding is, in words, as the SMO/Tech Lead typed it for a Finding entered by hand; null for a parsed
+ *     one
  */
 public record FindingView(
         UUID id, UUID systemId, ReportType reportType, String identityKey, String identifier, String packageOrRule,
         Severity severity, boolean didNotComplete, @Nullable Confidence confidence, int occurrenceCount,
-        List<SourceFile> sourceFiles, @Nullable ReviewState reviewState, @Nullable ProposalView currentProposal) {
+        List<SourceFile> sourceFiles, @Nullable ReviewState reviewState, @Nullable ProposalView currentProposal,
+        FindingSource source, @Nullable String title) {
 
     /** An uploaded Scan Report file a Finding was read from. */
     public record SourceFile(UUID id, String name) {}

@@ -32,7 +32,8 @@ class FindingStore {
     /** A Finding as the table holds it, before its places are added. */
     record Row(UUID id, UUID systemId, ReportType reportType, String identityKey, String identifier,
             String packageOrRule, Severity severity, boolean didNotComplete, @Nullable Confidence confidence,
-            int occurrenceCount, @Nullable ReviewState reviewState, @Nullable ProposalView currentProposal) {}
+            int occurrenceCount, @Nullable ReviewState reviewState, @Nullable ProposalView currentProposal,
+            FindingSource source, @Nullable String title) {}
 
     /** Where a Finding is: the VA Submission it belongs to and that VA Submission's System. */
     record Located(UUID submissionId, UUID systemId) {}
@@ -48,8 +49,8 @@ class FindingStore {
      */
     private static final String UPSERT =
             "INSERT INTO finding (submission_id, system_id, report_type, identity_key, identity_hash, identifier, "
-            + "package_or_rule, severity, created_at) "
-            + "SELECT :submission, :system, :type, u.key, u.hash, u.identifier, u.subject, u.severity, :now "
+            + "package_or_rule, severity, source, created_at) "
+            + "SELECT :submission, :system, :type, u.key, u.hash, u.identifier, u.subject, u.severity, 'PARSED', :now "
             + "FROM unnest(CAST(:keys AS text[]), CAST(:hashes AS text[]), CAST(:identifiers AS text[]), "
             + "CAST(:subjects AS text[]), CAST(:severities AS text[])) AS u(key, hash, identifier, subject, severity) "
             + "ORDER BY u.hash ON CONFLICT (submission_id, identity_hash) DO NOTHING";
@@ -99,7 +100,7 @@ class FindingStore {
             + "(SELECT o.confidence FROM finding_occurrence o WHERE o.finding_id = f.id AND o.confidence IS NOT NULL "
             + "ORDER BY array_position(" + CONFIDENCE_ORDER + ", o.confidence) LIMIT 1) AS confidence, "
             + "(SELECT count(*) FROM finding_occurrence o WHERE o.finding_id = f.id) AS occurrences, "
-            + "f.review_state, " + PROPOSAL_COLUMNS
+            + "f.review_state, f.source, f.title, " + PROPOSAL_COLUMNS
             + "FROM finding f LEFT JOIN finding_status_proposal p ON p.id = f.current_proposal_id " + REPLACED_FILE
             + FILTERED
             + "ORDER BY array_position(" + SEVERITY_ORDER + ", f.severity), f.identifier, f.package_or_rule, f.seq "
@@ -278,7 +279,8 @@ class FindingStore {
                         Severity.valueOf(rs.getString("severity")), rs.getBoolean("did_not_complete"),
                         confidenceOf(rs.getString("confidence")), rs.getInt("occurrences"),
                         reviewStateOf(rs.getString("review_state")),
-                        rs.getObject("proposal_id") == null ? null : proposal(rs)))
+                        rs.getObject("proposal_id") == null ? null : proposal(rs),
+                        FindingSource.valueOf(rs.getString("source")), rs.getString("title")))
                 .list();
     }
 

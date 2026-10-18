@@ -42,7 +42,11 @@ public enum DetailKey {
     /** Who a proposal was made as: a fixed code such as {@code RESCAN} (ticket 21). */
     PROPOSED_AS,
     /** The rescan whose settlement made a proposal (ticket 21); {@link #FILE_ID} on a proposal is its approval memo. */
-    RESCAN_FILE_ID;
+    RESCAN_FILE_ID,
+    /** The Scan Report an entry is about: a fixed code such as {@code BURP_SUITE} (ticket 22). */
+    REPORT_TYPE,
+    /** How a Scan Report is provided: {@code UPLOAD}, {@code NOT_APPLICABLE} or {@code MANUAL} (ticket 22). */
+    MODE;
 
     /** The key as stored: lower-case with underscores. */
     String json() {

@@ -189,7 +189,7 @@ public class Findings {
                 .map(row -> new FindingView(row.id(), row.systemId(), row.reportType(), row.identityKey(),
                         row.identifier(), row.packageOrRule(), row.severity(), row.didNotComplete(), row.confidence(),
                         row.occurrenceCount(), sources.getOrDefault(row.id(), List.of()), row.reviewState(),
-                        row.currentProposal()))
+                        row.currentProposal(), row.source(), row.title()))
                 .toList();
         audit.record(actor.attribute(AuditEvent.of(AuditAction.FINDINGS_VIEWED, AuditOutcome.SUCCESS))
                 .onSystem(systemId).onSubmission(submissionId).with(DetailKey.COUNT, items.size()));
@@ -258,7 +258,8 @@ public class Findings {
         return proposals;
     }
 
-    private static String sha256(String text) {
+    /** The lower-case hex SHA-256 of an identity key: what a VA Submission keys its Findings on. */
+    static String sha256(String text) {
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(text.getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException e) {

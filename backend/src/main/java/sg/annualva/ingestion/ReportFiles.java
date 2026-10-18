@@ -21,6 +21,7 @@ import sg.annualva.audit.AuditLog;
 import sg.annualva.audit.AuditOutcome;
 import sg.annualva.audit.DetailKey;
 import sg.annualva.finding.ReportType;
+import sg.annualva.finding.ScanReports;
 import sg.annualva.scan.CleanFiles;
 import sg.annualva.scan.MalwareScan;
 import sg.annualva.submission.Submissions;
@@ -48,6 +49,7 @@ public class ReportFiles {
     private static final String FALLBACK_NAME = "file";
 
     private final Submissions submissions;
+    private final ScanReports scanReports;
     private final ReportFileStore store;
     private final MalwareScan scan;
     private final CleanFiles cleanFiles;
@@ -58,10 +60,11 @@ public class ReportFiles {
     private final Clock clock;
     private final TransactionTemplate transaction;
 
-    ReportFiles(Submissions submissions, ReportFileStore store, MalwareScan scan, CleanFiles cleanFiles,
-            AccessGuard guard, CurrentUser user, AuditActor actor, AuditLog audit, Clock clock,
+    ReportFiles(Submissions submissions, ScanReports scanReports, ReportFileStore store, MalwareScan scan,
+            CleanFiles cleanFiles, AccessGuard guard, CurrentUser user, AuditActor actor, AuditLog audit, Clock clock,
             TransactionTemplate transaction) {
         this.submissions = submissions;
+        this.scanReports = scanReports;
         this.store = store;
         this.scan = scan;
         this.cleanFiles = cleanFiles;
@@ -255,9 +258,18 @@ public class ReportFiles {
         }
     }
 
-    /** Records the file and audits the upload in one transaction, so the log never names a file that was not kept. */
+    /**
+     * Records the file and audits the upload in one transaction, so the log never names a file that was not kept. A report
+     * file goes only to a Scan Report that is uploaded, not one marked not applicable or entered by hand (ticket 22); the
+     * Scan Report is held until the file is kept, so its mode cannot change in between.
+     */
     private UUID keep(Submissions.FileTarget target, ReportType reportType, FileKind kind, String name, long size,
             MalwareScan.Quarantined held, @Nullable UUID replacesId) {
+        if (kind == FileKind.MACHINE_READABLE && !scanReports.takesReportFiles(target.submissionId(), reportType)) {
+            throw refused(target, replacesId, "wrong-report-mode", HttpStatus.CONFLICT, "wrong-report-mode",
+                    "This Scan Report is marked not applicable or for Findings entered by hand, so it takes no report "
+                    + "files. Supporting evidence can still be attached.");
+        }
         Instant now = clock.instant();
         UUID id = store.insert(target.submissionId(), reportType, kind, name, size, held.sha256(), held.key(),
                 user.id(), now, replacesId);

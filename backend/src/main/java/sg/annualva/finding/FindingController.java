@@ -25,7 +25,7 @@ import sg.annualva.web.Page;
  * The SMO/Tech Lead of the System proposes a Finding Status for a Finding (story 35); a Cyber Manager, a VA POC who is not
  * its SMO or an Auditor is refused with 403, and an SMO of another System gets 404. The same SMO/Tech Lead applies one
  * status to several Findings in one batch (story 37), and anyone who may see the System reads the progress counts (story
- * 38).
+ * 38). The same SMO/Tech Lead types in the Findings of a Scan Report its tool cannot export (story 23).
  */
 @RestController
 public class FindingController {
@@ -35,10 +35,12 @@ public class FindingController {
 
     private final Findings findings;
     private final BulkProposals bulk;
+    private final ManualFindings manual;
 
-    FindingController(Findings findings, BulkProposals bulk) {
+    FindingController(Findings findings, BulkProposals bulk, ManualFindings manual) {
         this.findings = findings;
         this.bulk = bulk;
+        this.manual = manual;
     }
 
     /**
@@ -98,6 +100,20 @@ public class FindingController {
     public ResponseEntity<BatchView> bulkPropose(@PathVariable UUID id, @RequestBody BulkProposalRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore())
                 .body(bulk.propose(id, request));
+    }
+
+    /**
+     * A Finding typed in by the SMO/Tech Lead for a Scan Report marked for Findings entered by hand (story 23): 201 with the
+     * Finding, which is always shown as Manually Entered. A wrong field is a 400 {@code invalid-field} that names it; a Scan
+     * Report not marked MANUAL is 409 {@code wrong-report-mode}; a Finding it already has is 409
+     * {@code duplicate-finding}; a VA Submission that is not in Draft or Returned for Rework is 409
+     * {@code invalid-transition}.
+     */
+    @PostMapping("/api/submissions/{id}/findings/manual")
+    @PreAuthorize("hasRole('SMO')")
+    public ResponseEntity<FindingView> enter(@PathVariable UUID id, @RequestBody ManualFindingRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore())
+                .body(manual.enter(id, request));
     }
 
     /** Every proposal of the Finding, the latest first: the history it keeps. Audited for every role. */

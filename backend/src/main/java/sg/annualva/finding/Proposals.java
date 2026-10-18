@@ -67,6 +67,16 @@ class Proposals {
      * @throws RejectedRequestException 409 {@code invalid-transition} when it is not in Draft or Returned for Rework
      */
     Submissions.FileTarget target(UUID submissionId, AuditAction refusedAs, @Nullable UUID findingId) {
+        return editable(submissionId, refusedAs, findingId, "This VA Submission takes no new proposals in its present state.");
+    }
+
+    /**
+     * The VA Submission, once the caller may change what the SMO/Tech Lead prepares in it now: its Findings, their proposals
+     * and how its Scan Reports are provided (ticket 22). The same rule as {@link #target}, with the refusal's own sentence.
+     *
+     * @param refusal the fixed sentence of the 409
+     */
+    Submissions.FileTarget editable(UUID submissionId, AuditAction refusedAs, @Nullable UUID findingId, String refusal) {
         // The files and the Findings are edited in the same states: the SMO/Tech Lead is still preparing the VA Submission.
         Submissions.FileTarget target = submissions.fileTarget(submissionId, Need.SUBMIT);
         if (!target.acceptsFiles()) {
@@ -74,8 +84,7 @@ class Proposals {
                     .onSystem(target.systemId()).onSubmission(submissionId);
             audit.recordIndependently((findingId == null ? refused : refused.onFinding(findingId))
                     .with(DetailKey.REASON, "state-not-editable"));
-            throw new RejectedRequestException(HttpStatus.CONFLICT, "invalid-transition",
-                    "This VA Submission takes no new proposals in its present state.");
+            throw new RejectedRequestException(HttpStatus.CONFLICT, "invalid-transition", refusal);
         }
         return target;
     }

@@ -78,9 +78,17 @@ public final class ApiClient {
     }
 
     public Response postJson(String path, String json) {
+        return sendJson("POST", path, json);
+    }
+
+    public Response putJson(String path, String json) {
+        return sendJson("PUT", path, json);
+    }
+
+    private Response sendJson(String method, String path, String json) {
         var request = HttpRequest.newBuilder(URI.create(baseUrl + path))
                 .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(json));
+                .method(method, HttpRequest.BodyPublishers.ofString(json));
         if (csrfToken != null && csrfHeader != null) {
             request.header(csrfHeader, csrfToken);
         }

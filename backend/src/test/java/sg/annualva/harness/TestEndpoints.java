@@ -230,6 +230,7 @@ public class TestEndpoints {
                 jdbc.sql("DELETE FROM finding").update();
                 jdbc.sql("DELETE FROM report_file_stage").update();
                 jdbc.sql("DELETE FROM report_file").update();
+                jdbc.sql("DELETE FROM report_slot").update();
                 jdbc.sql("DELETE FROM submission_participation").update();
                 jdbc.sql("DELETE FROM va_submission").update();
                 jdbc.sql("DELETE FROM role_grant WHERE system_id IS NOT NULL").update();
@@ -313,6 +314,18 @@ public class TestEndpoints {
         public Map<String, String> findingReview(@PathVariable UUID id, @PathVariable String state) {
             jdbc.sql("UPDATE finding SET review_state = :state WHERE id = :id AND current_proposal_id IS NOT NULL")
                     .param("state", state).param("id", id).update();
+            return Map.of("state", state);
+        }
+
+        /**
+         * The Cyber Manager's review of a not-applicable Scan Report's justification, which the review engine (ticket 28)
+         * will set: for the tests that a new justification puts it back to PENDING.
+         */
+        @PostMapping("/api/test/submissions/{id}/reports/{type}/review/{state}")
+        public Map<String, String> reportReview(@PathVariable UUID id, @PathVariable String type,
+                @PathVariable String state) {
+            jdbc.sql("UPDATE report_slot SET review_state = :state WHERE submission_id = :id AND report_type = :type "
+                    + "AND mode = 'NOT_APPLICABLE'").param("state", state).param("id", id).param("type", type).update();
             return Map.of("state", state);
         }
 

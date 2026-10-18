@@ -63,6 +63,12 @@ public final class Arrange {
         assertThat(client.post("/api/test/findings/" + findingId + "/review/" + state).status()).isEqualTo(200);
     }
 
+    /** Sets the review state of a not-applicable Scan Report's justification, as the review engine of a later ticket will. */
+    public void reportReview(String submissionId, String reportType, String state) {
+        assertThat(client.post("/api/test/submissions/" + submissionId + "/reports/" + reportType + "/review/" + state)
+                .status()).isEqualTo(200);
+    }
+
     /** Puts a VA Submission in a state no command enters yet. */
     public void submissionState(String submissionId, String state) {
         assertThat(client.post("/api/test/submissions/" + submissionId + "/state/" + state).status()).isEqualTo(200);
