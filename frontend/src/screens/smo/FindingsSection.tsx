@@ -196,6 +196,7 @@ function FindingsList({
         />
       ) : null}
       <FindingsTable
+        submissionId={submissionId}
         items={data.items}
         selected={selection.selected}
         onToggle={selection.toggle}

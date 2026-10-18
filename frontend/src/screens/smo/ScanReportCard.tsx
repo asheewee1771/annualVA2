@@ -1,9 +1,10 @@
-import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { ApiError, type Problem } from "../../api/problem.ts";
 import {
   EVIDENCE_UPLOAD_LIMITS,
   fetchReportFileContent,
   REPORT_UPLOAD_LIMITS,
+  replaceReportFile,
   uploadReportFile,
   type FileKind,
   type PipelineStatus,
@@ -12,7 +13,7 @@ import {
 import { ClassifiedField } from "../../components/ClassifiedField.tsx";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { saveFile } from "../shared/saveFile.ts";
-import type { ScanReport } from "./scanReports.ts";
+import { inProgress, type ScanReport } from "./scanReports.ts";
 
 const UNREACHABLE: Problem = { type: "about:blank", title: "The server could not be reached", status: 0 };
 
@@ -95,18 +96,120 @@ function refusalFor(report: ScanReport, kind: FileKind, file: File): Problem | u
   return undefined;
 }
 
-/** One file with its pipeline status and, when it was rejected, the server's plain message. */
-function FileRow({
+/**
+ * A report file that can be replaced with a rescan: one whose findings were read, that no rescan has replaced and that has
+ * no rescan still on its way through the checks. The server decides; this only offers the control where it can succeed.
+ */
+function isReplaceable(file: ReportFile, files: readonly ReportFile[]): boolean {
+  return (
+    file.kind === "MACHINE_READABLE" &&
+    file.status === "PARSED" &&
+    file.supersededBy === null &&
+    !files.some((other) => other.replacesId === file.id && inProgress(other))
+  );
+}
+
+/**
+ * Replace one report file with a rescan of it (story 39). The rescan is checked like any upload; the file and its findings
+ * stay as they are until the rescan's findings are read, and a rescan that is rejected changes nothing. It is rendered
+ * below the list of files, not inside its live region, and takes the focus when it opens.
+ */
+function ReplaceForm({
   submissionId,
   report,
   file,
+  classification,
+  onClose,
+  onReplaced,
   onProblem,
 }: {
   submissionId: string;
   report: ScanReport;
   file: ReportFile;
-  onProblem: (problem: Problem) => void;
+  classification: string;
+  onClose: () => void;
+  onReplaced: () => void;
+  onProblem: (problem: Problem | undefined) => void;
 }) {
+  const [chosen, setChosen] = useState<File | undefined>(undefined);
+  const [busy, setBusy] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
+  const inputId = `replace-${file.id}`;
+  const limits = REPORT_UPLOAD_LIMITS[report.type];
+
+  useEffect(() => {
+    input.current?.focus();
+  }, [file.id]);
+
+  function choose(event: ChangeEvent<HTMLInputElement>) {
+    const next = event.target.files?.[0];
+    const refused = next ? refusalFor(report, "MACHINE_READABLE", next) : undefined;
+    onProblem(refused);
+    setChosen(refused ? undefined : next);
+  }
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!chosen) return;
+    setBusy(true);
+    onProblem(undefined);
+    try {
+      await replaceReportFile(submissionId, file.id, chosen);
+      onClose();
+    } catch (failure) {
+      onProblem(problemOf(failure));
+    } finally {
+      setBusy(false);
+      onReplaced();
+    }
+  }
+
+  return (
+    <form onSubmit={(event) => void submit(event)}>
+      <p className="muted">
+        The rescan is checked like any upload. Once its findings are read, the findings it still reports keep their
+        status, new ones are added, and any it no longer reports in any file are proposed Remediated for the Cyber
+        Manager to review. This file is kept, marked as replaced.
+      </p>
+      <ClassifiedField
+        label={`Rescan of ${file.name} (${limits.extensions.join(", ")}, up to ${megabytes(limits.maxBytes)})`}
+        classification={classification}
+        id={inputId}
+      >
+        <input ref={input} id={inputId} type="file" accept={limits.extensions.join(",")} onChange={choose} />
+      </ClassifiedField>
+      <p>
+        <button type="submit" className="button" disabled={!chosen || busy}>
+          {busy ? "Uploading…" : "Replace"}
+        </button>{" "}
+        <button type="button" className="button button--secondary" onClick={onClose} disabled={busy}>
+          Cancel
+        </button>
+      </p>
+    </form>
+  );
+}
+
+/**
+ * One file with its pipeline status and, when it was rejected, the server's plain message; a rescan names the file it
+ * replaces, a replaced file says so, and a report file that can be replaced offers Replace.
+ */
+function FileRow({
+  submissionId,
+  report,
+  file,
+  files,
+  onReplace,
+  onProblem,
+}: {
+  submissionId: string;
+  report: ScanReport;
+  file: ReportFile;
+  files: readonly ReportFile[];
+  onReplace: (file: ReportFile) => void;
+  onProblem: (problem: Problem | undefined) => void;
+}) {
+  const replaced = file.replacesId === null ? undefined : files.find((other) => other.id === file.replacesId);
   async function save() {
     try {
       saveFile(await fetchReportFileContent(submissionId, file));
@@ -119,6 +222,12 @@ function FileRow({
     <li>
       <strong>{file.name}</strong> <span className="muted">({megabytes(file.sizeBytes)})</span>{" "}
       <span className={isRejected(file) ? "flag flag--danger" : "flag"}>{STATUS_LABELS[file.status]}</span>
+      {file.supersededBy !== null ? (
+        <>
+          {" "}
+          <span className="flag">Replaced by a rescan</span>
+        </>
+      ) : null}
       {isAccepted(file) ? (
         <>
           {" "}
@@ -127,6 +236,15 @@ function FileRow({
           </button>
         </>
       ) : null}
+      {isReplaceable(file, files) ? (
+        <>
+          {" "}
+          <button type="button" className="button button--secondary" onClick={() => onReplace(file)}>
+            Replace<span className="visually-hidden"> {file.name}</span>
+          </button>
+        </>
+      ) : null}
+      {replaced ? <p className="muted">Rescan of {replaced.name}</p> : null}
       {file.message ? <p>{file.message}</p> : null}
       {file.status === "REJECTED_TOO_LARGE" && file.kind === "MACHINE_READABLE" && report.tooLargeHint ? (
         <p>{report.tooLargeHint}</p>
@@ -230,10 +348,17 @@ function FileSection({
   onChanged: () => void;
 }) {
   const [problem, setProblem] = useState<Problem | undefined>(undefined);
+  const [replacingId, setReplacingId] = useState<string | undefined>(undefined);
+  // When the Replace form closes (sent or cancelled), the focus goes back to the files, whose list it was opened from.
+  const heading = useRef<HTMLHeadingElement>(null);
+  // Read from the latest list, so a file that can no longer be replaced closes its form.
+  const replacing = files.find((file) => file.id === replacingId && isReplaceable(file, files));
   const evidence = kind === "EVIDENCE";
   return (
     <>
-      <h4>{evidence ? "Supporting evidence" : "Report files"}</h4>
+      <h4 ref={heading} tabIndex={-1}>
+        {evidence ? "Supporting evidence" : "Report files"}
+      </h4>
       {evidence ? (
         <p className="muted">
           PDF or HTML reports for people to read. They are scanned for malware but never read for findings, and an HTML
@@ -245,10 +370,33 @@ function FileSection({
       ) : (
         <ul className="plain-list" aria-live="polite">
           {files.map((file) => (
-            <FileRow key={file.id} submissionId={submissionId} report={report} file={file} onProblem={setProblem} />
+            <FileRow
+              key={file.id}
+              submissionId={submissionId}
+              report={report}
+              file={file}
+              files={files}
+              onReplace={(file) => setReplacingId(file.id)}
+              onProblem={setProblem}
+            />
           ))}
         </ul>
       )}
+      {replacing ? (
+        <ReplaceForm
+          key={replacing.id}
+          submissionId={submissionId}
+          report={report}
+          file={replacing}
+          classification={classification}
+          onClose={() => {
+            setReplacingId(undefined);
+            heading.current?.focus();
+          }}
+          onReplaced={onChanged}
+          onProblem={setProblem}
+        />
+      ) : null}
       {problem ? <ErrorPanel problem={problem} /> : null}
       <UploadForm
         submissionId={submissionId}
@@ -263,8 +411,9 @@ function FileSection({
 }
 
 /**
- * One Scan Report (stories 20, 22, 24 and 27): its machine-readable files and, apart from them, its supporting evidence,
- * each with its pipeline status and, for a rejected one, the plain message the server gave, and the control to add more.
+ * One Scan Report (stories 20, 22, 24, 27 and 39): its machine-readable files and, apart from them, its supporting evidence,
+ * each with its pipeline status and, for a rejected one, the plain message the server gave, and the control to add more;
+ * a report file whose findings were read can be replaced with a rescan.
  * Several files make one Scan Report. Evidence is never shown in the page: it is only offered as a download.
  */
 export function ScanReportCard({

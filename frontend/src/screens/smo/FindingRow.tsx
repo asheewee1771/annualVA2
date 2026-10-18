@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
-import { proposeStatus, type Finding, type FindingStatus } from "../../api/findings.ts";
+import { proposeStatus, type Finding, type FindingStatus, type SourceFile } from "../../api/findings.ts";
 import { ApiError, type Problem } from "../../api/problem.ts";
-import type { ReportFile } from "../../api/reportFiles.ts";
+import { fetchReportFileContent, type ReportFile } from "../../api/reportFiles.ts";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import {
   inputFor,
@@ -12,6 +12,7 @@ import {
   STATUSES,
   type FieldName,
 } from "./findingStatuses.ts";
+import { saveFile } from "../shared/saveFile.ts";
 import { ProposalFieldInput } from "./ProposalFieldInput.tsx";
 import { SCAN_REPORTS } from "./scanReports.ts";
 
@@ -79,9 +80,45 @@ function ProposalForm({
   );
 }
 
-/** The status proposed so far, its review, whether it was Bulk-set, and what was proposed; or that there is none yet. */
-function StatusCell({ finding }: { finding: Finding }) {
+/**
+ * The file a rescan replaced, where a Finding the rescan proposed Remediated was last reported (story 39): its name, as
+ * text, and a download through the file endpoint, so the Cyber Manager can check what the old scan said.
+ */
+function ReplacedFile({
+  submissionId,
+  file,
+  onProblem,
+}: {
+  submissionId: string;
+  file: SourceFile;
+  onProblem: (problem: Problem | undefined) => void;
+}) {
+  async function save() {
+    onProblem(undefined);
+    try {
+      saveFile(await fetchReportFileContent(submissionId, file));
+    } catch (failure) {
+      onProblem(failure instanceof ApiError ? failure.problem : UNREACHABLE);
+    }
+  }
+
+  return (
+    <p className="muted">
+      Last reported in {file.name}{" "}
+      <button type="button" className="button button--secondary" onClick={() => void save()}>
+        Download<span className="visually-hidden"> {file.name}</span>
+      </button>
+    </p>
+  );
+}
+
+/**
+ * The status proposed so far, its review, whether it was Bulk-set or made by a rescan, and what was proposed; or that there
+ * is none yet.
+ */
+function StatusCell({ submissionId, finding }: { submissionId: string; finding: Finding }) {
   const proposal = finding.currentProposal;
+  const [problem, setProblem] = useState<Problem | undefined>(undefined);
   if (!proposal) {
     return (
       <td>
@@ -94,7 +131,12 @@ function StatusCell({ finding }: { finding: Finding }) {
       <strong>{statusSpec(proposal.status).label}</strong>
       {finding.reviewState ? <span className="muted"> · {REVIEW_LABELS[finding.reviewState]}</span> : null}
       {proposal.batchId ? <span className="muted"> · Bulk-set</span> : null}
+      {proposal.proposedAs === "RESCAN" ? <span className="muted"> · Rescan</span> : null}
       <p className="muted finding-detail">{proposalDetail(proposal)}</p>
+      {proposal.replacedFile ? (
+        <ReplacedFile submissionId={submissionId} file={proposal.replacedFile} onProblem={setProblem} />
+      ) : null}
+      {problem ? <ErrorPanel problem={problem} /> : null}
     </td>
   );
 }
@@ -105,6 +147,7 @@ function StatusCell({ finding }: { finding: Finding }) {
  * that opens the fields the chosen one requires. Every text was typed by a person or read from a report, so it is text.
  */
 export function FindingRow({
+  submissionId,
   finding,
   selected,
   onToggle,
@@ -112,6 +155,7 @@ export function FindingRow({
   classification,
   onProposed,
 }: {
+  submissionId: string;
   finding: Finding;
   /** Whether its tick box is ticked, for the bulk bar. */
   selected: boolean;
@@ -162,7 +206,7 @@ export function FindingRow({
           {finding.occurrenceCount}
           <span className="visually-hidden"> places</span>
         </td>
-        <StatusCell finding={finding} />
+        <StatusCell submissionId={submissionId} finding={finding} />
         <td>
           <label htmlFor={selectId} className="visually-hidden">
             Propose a status for {finding.identifier}

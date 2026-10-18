@@ -82,6 +82,10 @@ export interface ReportFile {
   scanAttempts: number;
   /** An instant (UTC). */
   uploadedAt: string;
+  /** The parsed report file this one is a rescan of; null for an ordinary upload. */
+  replacesId: string | null;
+  /** The rescan that replaced this file once it was parsed; null while none has. A superseded file is kept. */
+  supersededBy: string | null;
 }
 
 const files = (submissionId: string): string => `/api/submissions/${encodeURIComponent(submissionId)}/files`;
@@ -110,9 +114,21 @@ export function uploadReportFile(
 }
 
 /**
+ * POST .../files/{fileId}/replace: uploads a rescan of one parsed report file (the SMO/Tech Lead of the System). It is
+ * quarantined and checked like any upload, and only once it is parsed does it take the old file's place: the Findings it
+ * still reports keep their status, new ones are added and those it no longer reports are proposed Remediated. A rescan that
+ * is rejected changes nothing.
+ */
+export function replaceReportFile(submissionId: string, fileId: string, file: File): Promise<ReportFile> {
+  const form = new FormData();
+  form.append("file", file);
+  return request<ReportFile>("POST", `${files(submissionId)}/${encodeURIComponent(fileId)}/replace`, form);
+}
+
+/**
  * GET .../files/{fileId}/content: the file as an attachment, only once it has passed every stage. It is handed to the
  * browser's save step and never shown in the page: an HTML evidence file is active content.
  */
-export function fetchReportFileContent(submissionId: string, file: ReportFile): Promise<Download> {
+export function fetchReportFileContent(submissionId: string, file: Pick<ReportFile, "id" | "name">): Promise<Download> {
   return download(`${files(submissionId)}/${encodeURIComponent(file.id)}/content`, file.name);
 }

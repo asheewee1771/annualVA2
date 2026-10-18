@@ -35,6 +35,16 @@ export interface Proposal {
   proposedAt: string;
   /** The Bulk-set batch it was proposed in; null for a proposal made for one Finding alone. */
   batchId: string | null;
+  /**
+   * Who made it: the SMO/Tech Lead, or a rescan that no longer reported the Finding anywhere (Remediated, with the rescan
+   * named in the evidence, for the Cyber Manager to review).
+   */
+  proposedAs: "SMO" | "RESCAN";
+  /**
+   * For a rescan's proposal, the file the rescan replaced: where the Finding was last reported. It is kept and downloaded
+   * like any file; null for every other proposal.
+   */
+  replacedFile: SourceFile | null;
 }
 
 /** An uploaded Scan Report file a Finding was read from. */

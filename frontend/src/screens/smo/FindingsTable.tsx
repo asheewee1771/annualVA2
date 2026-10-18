@@ -8,6 +8,7 @@ import { FindingRow } from "./FindingRow.tsx";
  * every row of the page.
  */
 export function FindingsTable({
+  submissionId,
   items,
   selected,
   onToggle,
@@ -16,6 +17,7 @@ export function FindingsTable({
   classification,
   onProposed,
 }: {
+  submissionId: string;
   items: readonly Finding[];
   selected: ReadonlySet<string>;
   onToggle: (findingId: string) => void;
@@ -62,6 +64,7 @@ export function FindingsTable({
           {items.map((finding) => (
             <FindingRow
               key={finding.id}
+              submissionId={submissionId}
               finding={finding}
               selected={selected.has(finding.id)}
               onToggle={onToggle}
