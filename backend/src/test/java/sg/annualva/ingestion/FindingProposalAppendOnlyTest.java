@@ -49,12 +49,36 @@ class FindingProposalAppendOnlyTest extends ProposalSeam1 {
     }
 
     private void insert(String status, String columns, String values) {
+        insert(status, "SMO", columns, values);
+    }
+
+    private void insert(String status, String proposedAs, String columns, String values) {
         // Direct SQL: the application's own validation would stop a bad row before the table ever saw it.
         UUID finding = application.sql("SELECT id FROM finding LIMIT 1").query(UUID.class).single();
         UUID user = application.sql("SELECT id FROM app_user LIMIT 1").query(UUID.class).single();
-        application.sql("INSERT INTO finding_status_proposal (finding_id, status, proposed_by, proposed_at" + columns
-                + ") VALUES (:finding, :status, :user, now()" + values + ")")
-                .param("finding", finding).param("status", status).param("user", user).update();
+        application.sql("INSERT INTO finding_status_proposal (finding_id, status, proposed_as, proposed_by, proposed_at"
+                + columns + ") VALUES (:finding, :status, :as, :user, now()" + values + ")")
+                .param("finding", finding).param("status", status).param("as", proposedAs).param("user", user).update();
+    }
+
+    @Test
+    void aRescanProposesRemediatedOnlyAndEveryProposalSaysWhoMadeIt() {
+        Draft draft = draftWithFindings();
+        proposedOne(draft);
+
+        assertThatThrownBy(() -> insert("FALSE_POSITIVE", "RESCAN", ", justification", ", 'x'")).as("a rescan's False Positive")
+                .isInstanceOf(DataAccessException.class).hasMessageContaining("finding_status_proposal_proposed_as_check");
+        assertThatThrownBy(() -> insert("REMEDIATED", "SOMEONE", ", evidence", ", 'x'")).as("an unknown maker")
+                .isInstanceOf(DataAccessException.class).hasMessageContaining("finding_status_proposal_proposed_as_check");
+        assertThatThrownBy(() -> insert("REMEDIATED", null, ", evidence", ", 'x'")).as("no maker")
+                .isInstanceOf(DataAccessException.class).hasMessageContaining("proposed_as");
+        assertThatThrownBy(() -> insert("REMEDIATED", "RESCAN", ", evidence", ", 'x'")).as("a rescan names the file it replaced")
+                .isInstanceOf(DataAccessException.class).hasMessageContaining("finding_status_proposal_proposed_as_check");
+        String file = application.sql("SELECT CAST(id AS text) FROM report_file LIMIT 1").query(String.class).single();
+        assertThatThrownBy(() -> insert("REMEDIATED", "SMO", ", evidence, replaced_file_id", ", 'x', '" + file + "'"))
+                .as("only a rescan names one").isInstanceOf(DataAccessException.class)
+                .hasMessageContaining("finding_status_proposal_proposed_as_check");
+        insert("REMEDIATED", "RESCAN", ", evidence, replaced_file_id", ", 'x', '" + file + "'");
     }
 
     @Test

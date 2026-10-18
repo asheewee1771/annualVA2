@@ -42,8 +42,9 @@ class FindingStore {
             .map(severity -> "'" + severity.name() + "'").collect(Collectors.joining(", ", "ARRAY[", "]"));
 
     /**
-     * Adds the Findings, or, when the VA Submission already has one with that identity (another file of the same Scan
-     * Report), keeps it and raises its severity to the worse of the two.
+     * Adds the new Findings, in hash order, each with the severity of its places in the file; one the VA Submission
+     * already has (another file of the same Scan Report) is kept as it is and rated from all its places afterwards
+     * ({@link #RERATE}), never from a severity it carried, which may be stale once places can be removed (ADR 0029).
      */
     private static final String UPSERT =
             "INSERT INTO finding (submission_id, system_id, report_type, identity_key, identity_hash, identifier, "
@@ -51,10 +52,7 @@ class FindingStore {
             + "SELECT :submission, :system, :type, u.key, u.hash, u.identifier, u.subject, u.severity, :now "
             + "FROM unnest(CAST(:keys AS text[]), CAST(:hashes AS text[]), CAST(:identifiers AS text[]), "
             + "CAST(:subjects AS text[]), CAST(:severities AS text[])) AS u(key, hash, identifier, subject, severity) "
-            + "ON CONFLICT (submission_id, identity_hash) DO UPDATE SET severity = "
-            + "CASE WHEN array_position(" + SEVERITY_ORDER + ", EXCLUDED.severity) "
-            + "< array_position(" + SEVERITY_ORDER + ", finding.severity) THEN EXCLUDED.severity "
-            + "ELSE finding.severity END";
+            + "ORDER BY u.hash ON CONFLICT (submission_id, identity_hash) DO NOTHING";
 
     /** The most sure first, so that a smaller position is a more sure one: the order of the enum, written once. */
     private static final String CONFIDENCE_ORDER = Arrays.stream(Confidence.values())
@@ -72,16 +70,19 @@ class FindingStore {
 
     private static final String PROPOSAL_COLUMNS =
             "p.id AS proposal_id, p.status, p.evidence, p.justification, p.reason, p.approver_name, p.approver_role, "
-            + "p.approval_memo_file_id, p.plan, p.target_date, p.proposed_at, p.batch_id ";
+            + "p.approval_memo_file_id, p.plan, p.target_date, p.proposed_at, p.batch_id, p.proposed_as, "
+            + "p.replaced_file_id, rp.display_name AS replaced_file_name ";
+
+    /** The file a rescan proposal names as the one it replaced, for its name. */
+    private static final String REPLACED_FILE = "LEFT JOIN report_file rp ON rp.id = p.replaced_file_id ";
 
     /**
-     * What the list is narrowed to, the same for the page and the count. Each part that is not given matches everything:
+     * What the list is narrowed to, the same for the page and the count (it reads the Finding only). Each part that is not given matches everything:
      * the Scan Report (no value), the severities (all five are passed), the review state (no value) and "needs
      * attention" (false), which is a Finding with no proposal yet or a Disputed one.
      */
     private static final String FILTERED =
-            "FROM finding f LEFT JOIN finding_status_proposal p ON p.id = f.current_proposal_id "
-            + "WHERE f.submission_id = :submission "
+            "WHERE f.submission_id = :submission "
             + "AND (CAST(:type AS text) IS NULL OR f.report_type = :type) "
             + "AND f.severity = ANY(CAST(:severities AS text[])) "
             + "AND (CAST(:review AS text) IS NULL OR f.review_state = :review) "
@@ -99,11 +100,12 @@ class FindingStore {
             + "ORDER BY array_position(" + CONFIDENCE_ORDER + ", o.confidence) LIMIT 1) AS confidence, "
             + "(SELECT count(*) FROM finding_occurrence o WHERE o.finding_id = f.id) AS occurrences, "
             + "f.review_state, " + PROPOSAL_COLUMNS
+            + "FROM finding f LEFT JOIN finding_status_proposal p ON p.id = f.current_proposal_id " + REPLACED_FILE
             + FILTERED
             + "ORDER BY array_position(" + SEVERITY_ORDER + ", f.severity), f.identifier, f.package_or_rule, f.seq "
             + "LIMIT :limit OFFSET :offset";
 
-    private static final String COUNT = "SELECT count(*) " + FILTERED;
+    private static final String COUNT = "SELECT count(*) FROM finding f " + FILTERED;
 
     /** The progress counts of one VA Submission; Carried Over and Target Date Missed have no column before Release 2. */
     private static final String READINESS =
@@ -133,10 +135,11 @@ class FindingStore {
      */
     private static final String INSERT_PROPOSALS =
             "INSERT INTO finding_status_proposal (finding_id, status, evidence, justification, reason, approver_name, "
-            + "approver_role, approval_memo_file_id, plan, target_date, batch_id, proposed_by, proposed_at) "
+            + "approver_role, approval_memo_file_id, plan, target_date, batch_id, proposed_as, replaced_file_id, proposed_by, "
+            + "proposed_at) "
             + "SELECT u.id, :status, CAST(:evidence AS text), CAST(:justification AS text), CAST(:reason AS text), "
             + "CAST(:approverName AS text), CAST(:approverRole AS text), CAST(:memo AS uuid), CAST(:plan AS text), "
-            + "CAST(:targetDate AS date), CAST(:batch AS uuid), :by, :now "
+            + "CAST(:targetDate AS date), CAST(:batch AS uuid), :proposedAs, CAST(:replaced AS uuid), :by, :now "
             + "FROM unnest(CAST(:ids AS uuid[])) WITH ORDINALITY AS u(id, n) ORDER BY u.n "
             + "RETURNING id, finding_id";
 
@@ -145,13 +148,68 @@ class FindingStore {
             "UPDATE finding f SET current_proposal_id = p.id, review_state = 'PENDING' "
             + "FROM finding_status_proposal p WHERE p.id = ANY(CAST(:proposals AS uuid[])) AND p.finding_id = f.id";
 
+    /**
+     * Every existing Finding a settlement will write: those of the VA Submission with one of the file's identity keys, and
+     * those named as well (a replaced file's). Each row is held until the transaction ends, all locked by this one
+     * statement in id order, as every proposal and Bulk-set locks them, so a settlement and a proposal over the same
+     * Findings wait for each other instead of deadlocking.
+     */
+    private static final String LOCK_FOR_SETTLEMENT =
+            "SELECT f.id FROM finding f WHERE f.submission_id = :submission "
+            + "AND (f.identity_hash = ANY(CAST(:hashes AS text[])) OR f.id = ANY(CAST(:ids AS uuid[]))) "
+            + "ORDER BY f.id FOR UPDATE OF f";
+
+    /**
+     * Settlements of one VA Submission run one at a time: a lock on the VA Submission held until the transaction ends,
+     * taken by settlements only (an advisory lock in a namespace of their own, keyed from the VA Submission's id). So the
+     * Findings a settlement locks and rates are counted after every earlier settlement of it has committed, and a key
+     * another settlement adds is never written here unlocked and unrated. Proposals do not take it.
+     */
+    private static final String SERIALISE_SETTLEMENTS =
+            "SELECT 1 FROM (SELECT pg_advisory_xact_lock(hashtextextended("
+            + "'finding-settlement:' || CAST(:submission AS text), 0))) l";
+
+    /** The Findings that have a place in this file, in id order. */
+    private static final String FINDINGS_OF_FILE =
+            "SELECT DISTINCT o.finding_id FROM finding_occurrence o WHERE o.report_file_id = :file ORDER BY o.finding_id";
+
+    /**
+     * A Finding a rescan proposed Remediated that a file reports again: the proposal no longer holds, so the Finding has no
+     * current proposal and no review (the proposal stays in its history). The ids of those of these keys whose current
+     * proposal was a rescan's.
+     */
+    private static final String WITHDRAW_RESCAN_PROPOSALS =
+            "UPDATE finding f SET current_proposal_id = NULL, review_state = NULL FROM finding_status_proposal p "
+            + "WHERE p.id = f.current_proposal_id AND p.proposed_as = 'RESCAN' AND f.submission_id = :submission "
+            + "AND f.identity_hash = ANY(CAST(:hashes AS text[])) RETURNING f.id";
+
+    private static final String REMOVE_OCCURRENCES = "DELETE FROM finding_occurrence WHERE report_file_id = :file";
+
+    /** A Finding's severity is the highest of its places: for each of these that still has a place, from those it has. */
+    private static final String RERATE =
+            "UPDATE finding f SET severity = (SELECT o.severity FROM finding_occurrence o WHERE o.finding_id = f.id "
+            + "ORDER BY array_position(" + SEVERITY_ORDER + ", o.severity) LIMIT 1) "
+            + "WHERE f.id = ANY(CAST(:ids AS uuid[])) "
+            + "AND EXISTS (SELECT 1 FROM finding_occurrence o WHERE o.finding_id = f.id)";
+
+    /**
+     * Those of these Findings that no file reports any more and whose current proposal is not already Remediated (whoever
+     * made it), in id order.
+     */
+    private static final String UNREPORTED =
+            "SELECT f.id FROM finding f WHERE f.id = ANY(CAST(:ids AS uuid[])) "
+            + "AND NOT EXISTS (SELECT 1 FROM finding_occurrence o WHERE o.finding_id = f.id) "
+            + "AND NOT EXISTS (SELECT 1 FROM finding_status_proposal p WHERE p.id = f.current_proposal_id "
+            + "AND p.status = 'REMEDIATED') ORDER BY f.id";
+
     /** A memo is a supporting evidence file of this VA Submission that has passed every check. */
     private static final String IS_READY_EVIDENCE =
             "SELECT count(*) FROM report_file WHERE id = :file AND submission_id = :submission AND kind = 'EVIDENCE' "
             + "AND pipeline_status = 'READY'";
 
     private static final String PROPOSALS =
-            "SELECT " + PROPOSAL_COLUMNS + "FROM finding_status_proposal p WHERE p.finding_id = :finding ORDER BY p.seq DESC";
+            "SELECT " + PROPOSAL_COLUMNS + "FROM finding_status_proposal p " + REPLACED_FILE
+            + "WHERE p.finding_id = :finding ORDER BY p.seq DESC";
 
     /** The uploaded files each of these Findings was read from, in the order the files were uploaded. */
     private static final String SOURCES =
@@ -251,7 +309,13 @@ class FindingStore {
                 rs.getString("approver_name"), rs.getString("approver_role"),
                 rs.getObject("approval_memo_file_id", UUID.class), rs.getString("plan"),
                 rs.getObject("target_date", LocalDate.class),
-                rs.getObject("proposed_at", OffsetDateTime.class).toInstant(), rs.getObject("batch_id", UUID.class));
+                rs.getObject("proposed_at", OffsetDateTime.class).toInstant(), rs.getObject("batch_id", UUID.class),
+                ProposedAs.valueOf(rs.getString("proposed_as")), replacedFile(rs));
+    }
+
+    private static ProposalView.@Nullable ReplacedFile replacedFile(ResultSet rs) throws SQLException {
+        UUID id = rs.getObject("replaced_file_id", UUID.class);
+        return id == null ? null : new ProposalView.ReplacedFile(id, rs.getString("replaced_file_name"));
     }
 
     private static @Nullable ReviewState reviewStateOf(@Nullable String name) {
@@ -296,10 +360,12 @@ class FindingStore {
      * path for a proposal for one Finding and for a batch. The Findings must be locked first ({@link #lockFindings}).
      *
      * @param batchId the batch the proposals are made in; null for a proposal for one Finding
+     * @param proposedAs who the proposals are made as
+     * @param replacedFileId for a rescan's proposals, the file the rescan replaced; null otherwise
      * @return the proposals' ids, in the order of the Findings
      */
-    List<UUID> propose(List<UUID> findingIds, ProposalFields.Parsed fields, @Nullable UUID batchId, UUID by,
-            Instant now) {
+    List<UUID> propose(List<UUID> findingIds, ProposalFields.Parsed fields, @Nullable UUID batchId,
+            ProposedAs proposedAs, @Nullable UUID replacedFileId, UUID by, Instant now) {
         Map<UUID, UUID> byFinding = new HashMap<>();
         jdbc.sql(INSERT_PROPOSALS)
                 .param("ids", ids(findingIds))
@@ -313,6 +379,8 @@ class FindingStore {
                 .param("plan", fields.plan())
                 .param("targetDate", fields.targetDate())
                 .param("batch", batchId)
+                .param("proposedAs", proposedAs.name())
+                .param("replaced", replacedFileId)
                 .param("by", by)
                 .param("now", now.atOffset(ZoneOffset.UTC))
                 .query((rs, row) -> Map.entry(rs.getObject("finding_id", UUID.class), rs.getObject("id", UUID.class)))
@@ -321,6 +389,48 @@ class FindingStore {
         List<UUID> proposalIds = findingIds.stream().map(byFinding::get).toList();
         jdbc.sql(SET_CURRENT).param("proposals", ids(proposalIds)).update();
         return proposalIds;
+    }
+
+    /**
+     * Locks, in one statement and in id order, every existing Finding of the VA Submission with one of these identity
+     * hashes or among the ones named.
+     *
+     * @return the ids locked, in id order
+     */
+    List<UUID> lockForSettlement(UUID submissionId, List<String> hashes, List<UUID> alsoLock) {
+        return jdbc.sql(LOCK_FOR_SETTLEMENT).param("submission", submissionId)
+                .param("hashes", hashes.toArray(String[]::new)).param("ids", ids(alsoLock)).query(UUID.class).list();
+    }
+
+    /** Waits for the VA Submission's settlement lock and holds it until the transaction ends. */
+    void serialiseSettlements(UUID submissionId) {
+        jdbc.sql(SERIALISE_SETTLEMENTS).param("submission", submissionId).query(Integer.class).single();
+    }
+
+    /** The Findings that have a place in this file, in id order. */
+    List<UUID> findingsOf(UUID fileId) {
+        return jdbc.sql(FINDINGS_OF_FILE).param("file", fileId).query(UUID.class).list();
+    }
+
+    /** Withdraws the current proposal of each of these keys where a rescan made it; those Findings' ids. */
+    List<UUID> withdrawRescanProposals(UUID submissionId, List<String> hashes) {
+        return jdbc.sql(WITHDRAW_RESCAN_PROPOSALS).param("submission", submissionId)
+                .param("hashes", hashes.toArray(String[]::new)).query(UUID.class).list();
+    }
+
+    /** Removes every place this file reported. */
+    void removeOccurrences(UUID fileId) {
+        jdbc.sql(REMOVE_OCCURRENCES).param("file", fileId).update();
+    }
+
+    /** Rates each of these Findings that still has a place by the places it has. */
+    void rerate(List<UUID> findingIds) {
+        jdbc.sql(RERATE).param("ids", ids(findingIds)).update();
+    }
+
+    /** Those of these Findings that no file reports any more, in id order. */
+    List<UUID> unreported(List<UUID> findingIds) {
+        return jdbc.sql(UNREPORTED).param("ids", ids(findingIds)).query(UUID.class).list();
     }
 
     private static String[] ids(List<UUID> ids) {

@@ -55,7 +55,8 @@ class SecurityConfig {
                         .requestMatchers("/api/system-register/**").hasRole("VA_POC")
                         // Only an SMO/Tech Lead uploads a Scan Report file (also a method rule); a file of up to 50 MB is
                         // not spooled for anyone else.
-                        .requestMatchers(HttpMethod.POST, "/api/submissions/*/files").hasRole("SMO")
+                        .requestMatchers(HttpMethod.POST, "/api/submissions/*/files", "/api/submissions/*/files/*/replace")
+                        .hasRole("SMO")
                         .anyRequest().authenticated())
                 // Synchronizer token pattern: the SPA bootstraps the token from GET /api/csrf and sends it
                 // back in the X-CSRF-TOKEN header. Cookie/double-submit is prohibited by the org standard.

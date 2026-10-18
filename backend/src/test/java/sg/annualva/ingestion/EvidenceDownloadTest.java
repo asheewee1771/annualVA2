@@ -333,7 +333,7 @@ class EvidenceDownloadTest extends IngestionSeam1 {
 
         assertThat(file.propertyNames()).containsExactlyInAnyOrder("id", "submissionId", "reportType", "kind", "name",
                 "sizeBytes", "uploadSha256", "status", "rejectCode", "message", "scanAttempts", "detectedFormat",
-                "uploadedAt", "stages");
+                "uploadedAt", "replacesId", "supersededBy", "stages");
         assertThat(file.toString()).doesNotContain(SENTINEL).doesNotContain("<script");
     }
 }

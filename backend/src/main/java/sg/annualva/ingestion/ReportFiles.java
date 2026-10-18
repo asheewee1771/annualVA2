@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -94,15 +95,58 @@ public class ReportFiles {
         }
         if (store.countLive(submissionId, reportType, kind) >= MAX_FILES_PER_REPORT) {
             throw refused(target, "too-many-files", HttpStatus.CONFLICT, "too-many-files",
-                    "This Scan Report already holds the most files it can. Ask the VA POC if one has to be replaced.");
+                    "This Scan Report already holds the most files of this kind it can. "
+                    + "A report file can be replaced with its rescan instead.");
         }
+        return quarantinedAndKept(target, reportType, kind, originalName, content, null);
+    }
+
+    /**
+     * Takes a rescan of one parsed report file (story 39). It is quarantined and walks the whole pipeline like any upload,
+     * and the file it replaces is left exactly as it is until the rescan is parsed: only then does the scan job move the
+     * Findings to it and mark the old file superseded ({@link ScanPoller}). A rescan that is rejected changes nothing, and
+     * the file can be replaced again. It takes the old file's place, so it is not counted against the Scan Report's 20
+     * files. The checks run in the order ownership, the file, the state of the VA Submission, whether the file can be
+     * replaced, then the content; a refusal after the file was found is audited as a refused upload.
+     *
+     * @throws ResourceNotFoundException for a VA Submission the caller is not the SMO/Tech Lead of, or a file that is not
+     *     one of its own
+     * @throws RejectedRequestException 409 {@code invalid-transition} when the VA Submission takes no files now, 409
+     *     {@code file-not-replaceable} for a file that is not a parsed report file or was replaced already, 409
+     *     {@code replace-in-progress} when a rescan of the file is already on its way, 400 {@code file-empty}, 503
+     *     {@code storage-unavailable}
+     */
+    public ReportFileView replace(UUID submissionId, UUID fileId, String originalName, byte[] content) {
+        Submissions.FileTarget target = submissions.fileTarget(submissionId, Need.SUBMIT);
+        ReportFileStore.Row replaced = file(submissionId, fileId);
+        if (!target.acceptsFiles()) {
+            throw refused(target, replaced.id(), "state-not-editable", HttpStatus.CONFLICT, "invalid-transition",
+                    "This VA Submission takes no new files in its present state.");
+        }
+        // Only a machine-readable file is ever PARSED (supporting evidence rests in READY, V13).
+        if (replaced.status() != PipelineStatus.PARSED || replaced.supersededBy() != null) {
+            throw refused(target, replaced.id(), "not-replaceable", HttpStatus.CONFLICT, "file-not-replaceable",
+                    "Only a report file whose findings were read, and that no rescan has replaced, can be replaced.");
+        }
+        try {
+            return quarantinedAndKept(target, replaced.reportType(), FileKind.MACHINE_READABLE, originalName, content,
+                    replaced.id());
+        } catch (DuplicateKeyException e) {
+            // The table lets one rescan of a file be live at a time, so two requests that race are settled there too.
+            throw refused(target, replaced.id(), "replace-in-progress", HttpStatus.CONFLICT, "replace-in-progress",
+                    "A rescan of this file is already being checked. Wait for it to finish.");
+        }
+    }
+
+    private ReportFileView quarantinedAndKept(Submissions.FileTarget target, ReportType reportType, FileKind kind,
+            String originalName, byte[] content, @Nullable UUID replacesId) {
         if (content.length == 0) {
             throw new RejectedRequestException(HttpStatus.BAD_REQUEST, "file-empty", "The file is empty.");
         }
         MalwareScan.Quarantined held = quarantine(content);
         try {
             UUID id = Objects.requireNonNull(transaction.execute(status -> keep(target, reportType, kind,
-                    displayName(originalName), content.length, held)));
+                    displayName(originalName), content.length, held, replacesId)));
             return view(id);
         } catch (RuntimeException e) {
             // Nothing was recorded, so nothing may stay in quarantine.
@@ -213,12 +257,13 @@ public class ReportFiles {
 
     /** Records the file and audits the upload in one transaction, so the log never names a file that was not kept. */
     private UUID keep(Submissions.FileTarget target, ReportType reportType, FileKind kind, String name, long size,
-            MalwareScan.Quarantined held) {
+            MalwareScan.Quarantined held, @Nullable UUID replacesId) {
         Instant now = clock.instant();
         UUID id = store.insert(target.submissionId(), reportType, kind, name, size, held.sha256(), held.key(),
-                user.id(), now);
-        audit.record(actor.attribute(AuditEvent.of(AuditAction.FILE_UPLOADED, AuditOutcome.SUCCESS))
-                .onSystem(target.systemId()).onSubmission(target.submissionId()).with(DetailKey.FILE_ID, id));
+                user.id(), now, replacesId);
+        AuditEvent uploaded = actor.attribute(AuditEvent.of(AuditAction.FILE_UPLOADED, AuditOutcome.SUCCESS))
+                .onSystem(target.systemId()).onSubmission(target.submissionId()).with(DetailKey.FILE_ID, id);
+        audit.record(replacesId == null ? uploaded : uploaded.with(DetailKey.REPLACED_FILE_ID, replacesId));
         return id;
     }
 
@@ -234,8 +279,16 @@ public class ReportFiles {
 
     private RejectedRequestException refused(Submissions.FileTarget target, String reason, HttpStatus status,
             String type, String detail) {
-        audit.recordIndependently(actor.attribute(AuditEvent.of(AuditAction.FILE_UPLOADED, AuditOutcome.REFUSED))
-                .onSystem(target.systemId()).onSubmission(target.submissionId()).with(DetailKey.REASON, reason));
+        return refused(target, null, reason, status, type, detail);
+    }
+
+    /** A refused upload, audited with its reason and, for a rescan, the file it was to replace. */
+    private RejectedRequestException refused(Submissions.FileTarget target, @Nullable UUID replacedFileId, String reason,
+            HttpStatus status, String type, String detail) {
+        AuditEvent refusal = actor.attribute(AuditEvent.of(AuditAction.FILE_UPLOADED, AuditOutcome.REFUSED))
+                .onSystem(target.systemId()).onSubmission(target.submissionId()).with(DetailKey.REASON, reason);
+        audit.recordIndependently(
+                replacedFileId == null ? refusal : refusal.with(DetailKey.REPLACED_FILE_ID, replacedFileId));
         return new RejectedRequestException(status, type, detail);
     }
 
@@ -248,7 +301,7 @@ public class ReportFiles {
         RejectCode code = row.rejectCode();
         return new ReportFileView(row.id(), row.submissionId(), row.reportType(), row.kind(), row.displayName(),
                 row.sizeBytes(), row.uploadSha256(), row.status(), code, code == null ? null : code.message(), row.scanAttempts(),
-                row.detectedFormat(), row.uploadedAt(),
+                row.detectedFormat(), row.uploadedAt(), row.replacesId(), row.supersededBy(),
                 stages.stream().map(stage -> new ReportFileView.Stage(stage.status(), stage.at())).toList());
     }
 

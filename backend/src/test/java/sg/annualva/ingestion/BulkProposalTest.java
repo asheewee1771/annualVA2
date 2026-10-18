@@ -329,7 +329,9 @@ class BulkProposalTest extends ProposalSeam1 {
         for (JsonNode one : perFinding) {
             assertThat(one.get("outcome").asString()).isEqualTo("SUCCESS");
             assertThat(one.get("submissionId").asString()).isEqualTo(draft.submissionId());
-            assertThat(one.get("detail").propertyNames()).containsExactlyInAnyOrder("batch_id", "finding_status");
+            assertThat(one.get("detail").propertyNames()).containsExactlyInAnyOrder("batch_id", "finding_status",
+                    "proposed_as");
+            assertThat(one.get("detail").get("proposed_as").asString()).isEqualTo("SMO");
             assertThat(one.get("detail").get("batch_id").asString()).isEqualTo(batchId);
             assertThat(one.get("detail").get("finding_status").asString()).isEqualTo("RISK_ACCEPTED");
             audited.add(one.get("findingId").asString());

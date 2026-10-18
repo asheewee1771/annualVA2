@@ -122,8 +122,9 @@ class ApprovalMemoTest extends ProposalSeam1 {
 
         JsonNode entries = entries("STATUS_PROPOSED", draft.systemId());
         assertThat(entries).hasSize(2);
-        assertThat(entries.get(0).get("detail").propertyNames()).containsExactly("finding_status");
-        assertThat(entries.get(1).get("detail").propertyNames()).containsExactlyInAnyOrder("finding_status", "file_id");
+        assertThat(entries.get(0).get("detail").propertyNames()).containsExactlyInAnyOrder("finding_status", "proposed_as");
+        assertThat(entries.get(1).get("detail").propertyNames()).containsExactlyInAnyOrder("finding_status", "proposed_as",
+                "file_id");
         assertThat(entries.get(1).get("detail").get("file_id").asString()).isEqualTo(memo);
         assertThat(entries.toString()).doesNotContain(SENTINEL);
     }

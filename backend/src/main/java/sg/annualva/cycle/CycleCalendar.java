@@ -2,6 +2,7 @@ package sg.annualva.cycle;
 
 import java.time.Clock;
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Month;
 import java.time.ZoneId;
@@ -42,7 +43,12 @@ public class CycleCalendar {
 
     /** Today's business date. */
     public LocalDate today() {
-        return clock.instant().atZone(businessZone).toLocalDate();
+        return dateOf(clock.instant());
+    }
+
+    /** The business date of an instant. */
+    public LocalDate dateOf(Instant instant) {
+        return instant.atZone(businessZone).toLocalDate();
     }
 
     /** The VA Cycle of that year, or nothing for a year outside {@value #FIRST_YEAR} to {@value #LAST_YEAR}. */

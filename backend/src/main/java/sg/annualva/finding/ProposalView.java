@@ -22,9 +22,16 @@ import org.jspecify.annotations.Nullable;
  * @param targetDate Remediation Planned: the business date (Asia/Singapore) the fix is planned for
  * @param proposedAt when it was proposed (UTC)
  * @param batchId the Bulk-set batch it was proposed in (story 37); null for a proposal made for this Finding alone
+ * @param proposedAs who made it: the SMO/Tech Lead, or a rescan that no longer reported the Finding (story 39)
+ * @param replacedFile for a rescan's proposal, the file the rescan replaced: where the Finding was last reported. It is
+ *     kept, superseded, and downloaded through the file endpoint like any file; null for every other proposal
  */
 public record ProposalView(
         UUID id, FindingStatus status, @Nullable String evidence, @Nullable String justification,
         @Nullable String reason, @Nullable String approverName, @Nullable String approverRole,
         @Nullable UUID approvalMemoFileId, @Nullable String plan, @Nullable LocalDate targetDate, Instant proposedAt,
-        @Nullable UUID batchId) {}
+        @Nullable UUID batchId, ProposedAs proposedAs, @Nullable ReplacedFile replacedFile) {
+
+    /** A Scan Report file a rescan replaced: its id and the name the person gave it (data, shown as text). */
+    public record ReplacedFile(UUID id, String name) {}
+}

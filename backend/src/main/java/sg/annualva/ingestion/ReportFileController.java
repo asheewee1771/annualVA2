@@ -43,18 +43,38 @@ public class ReportFileController {
     @PreAuthorize("hasRole('SMO')")
     public ResponseEntity<ReportFileView> upload(@PathVariable UUID id, @RequestParam ReportType reportType,
             @RequestParam FileKind kind, @RequestParam("file") MultipartFile file) {
-        byte[] content;
+        return accepted(id, files.upload(id, reportType, kind, nameOf(file), bytesOf(file)));
+    }
+
+    /**
+     * Uploads a rescan of one parsed report file (story 39): multipart with the {@code file} part only, as the rescan is of
+     * the old file's Scan Report and kind. Answered with 202 and the rescan's status, QUARANTINED; once the scan job has
+     * parsed it, the Findings move to it and the old file is superseded.
+     */
+    @PostMapping(path = "/api/submissions/{id}/files/{fileId}/replace", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('SMO')")
+    public ResponseEntity<ReportFileView> replace(@PathVariable UUID id, @PathVariable UUID fileId,
+            @RequestParam("file") MultipartFile file) {
+        return accepted(id, files.replace(id, fileId, nameOf(file), bytesOf(file)));
+    }
+
+    private static ResponseEntity<ReportFileView> accepted(UUID submissionId, ReportFileView uploaded) {
+        return ResponseEntity.accepted()
+                .location(URI.create("/api/submissions/" + submissionId + "/files/" + uploaded.id()))
+                .cacheControl(CacheControl.noStore())
+                .body(uploaded);
+    }
+
+    private static byte[] bytesOf(MultipartFile file) {
         try {
-            content = file.getBytes();
+            return file.getBytes();
         } catch (IOException e) {
             throw new RejectedRequestException(HttpStatus.BAD_REQUEST, "file-unreadable", "The file could not be read.");
         }
-        String name = file.getOriginalFilename() == null ? "" : file.getOriginalFilename();
-        ReportFileView uploaded = files.upload(id, reportType, kind, name, content);
-        return ResponseEntity.accepted()
-                .location(URI.create("/api/submissions/" + id + "/files/" + uploaded.id()))
-                .cacheControl(CacheControl.noStore())
-                .body(uploaded);
+    }
+
+    private static String nameOf(MultipartFile file) {
+        return file.getOriginalFilename() == null ? "" : file.getOriginalFilename();
     }
 
     /** The VA Submission's files with their pipeline status, oldest first. */

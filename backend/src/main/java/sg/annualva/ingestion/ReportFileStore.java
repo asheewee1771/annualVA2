@@ -31,13 +31,16 @@ class ReportFileStore {
      * @param cleanKey where the unchanged copy is held; null unless the file passed every stage
      * @param scanTicket the scanner's handle for the current attempt; never shown or logged
      * @param scanSubmittedAt when the current attempt began, or failed to begin
+     * @param replacesId the parsed report file this one is a rescan of; null for an ordinary upload
+     * @param supersededBy the rescan that replaced this file; null while it has not been
      */
     record Row(
             UUID id, UUID submissionId, UUID systemId, ReportType reportType, FileKind kind, String displayName,
             long sizeBytes, String uploadSha256, @Nullable String detectedFormat, @Nullable String quarantineKey,
             @Nullable String cleanKey, PipelineStatus status, @Nullable RejectCode rejectCode,
-            @Nullable String scanTicket, int scanAttempts, @Nullable Instant scanSubmittedAt, Instant uploadedAt,
-            @Nullable Instant scanDateFromFile, @Nullable String targetFromFile) {}
+            @Nullable String scanTicket, int scanAttempts, @Nullable Instant scanSubmittedAt, UUID uploadedBy,
+            Instant uploadedAt, @Nullable Instant scanDateFromFile, @Nullable String targetFromFile,
+            @Nullable UUID replacesId, @Nullable UUID supersededBy) {}
 
     /** One entry of the order a file went through. */
     record Stage(UUID fileId, PipelineStatus status, Instant at) {}
@@ -66,7 +69,8 @@ class ReportFileStore {
     private static final String COLUMNS =
             "SELECT f.id, f.submission_id, s.system_id, f.report_type, f.kind, f.display_name, f.size_bytes, "
             + "f.upload_sha256, f.detected_format, f.quarantine_key, f.clean_key, f.pipeline_status, f.reject_code, "
-            + "f.scan_ticket, f.scan_attempts, f.scan_submitted_at, f.uploaded_at, f.scan_date_from_file, f.target_from_file "
+            + "f.scan_ticket, f.scan_attempts, f.scan_submitted_at, f.uploaded_by, f.uploaded_at, f.scan_date_from_file, "
+            + "f.target_from_file, f.replaces_id, f.superseded_by "
             + "FROM report_file f JOIN va_submission s ON s.id = f.submission_id ";
 
     private static final String FIND = COLUMNS + "WHERE f.id = :id";
@@ -75,9 +79,9 @@ class ReportFileStore {
 
     private static final String INSERT =
             "INSERT INTO report_file (submission_id, report_type, kind, display_name, size_bytes, upload_sha256, "
-            + "quarantine_key, pipeline_status, uploaded_by, uploaded_at, updated_at) "
-            + "VALUES (:submission, :type, :kind, :name, :size, :sha, :quarantine, 'QUARANTINED', :by, :now, :now) "
-            + "RETURNING id";
+            + "quarantine_key, pipeline_status, uploaded_by, uploaded_at, updated_at, replaces_id) "
+            + "VALUES (:submission, :type, :kind, :name, :size, :sha, :quarantine, 'QUARANTINED', :by, :now, :now, "
+            + "CAST(:replaces AS uuid)) RETURNING id";
 
     private static final String INSERT_STAGE =
             "INSERT INTO report_file_stage (file_id, status, entered_at) VALUES (:file, :status, :now)";
@@ -86,10 +90,18 @@ class ReportFileStore {
             "SELECT file_id, status, entered_at FROM report_file_stage WHERE file_id = ANY(CAST(:files AS uuid[])) "
             + "ORDER BY seq";
 
-    /** Files that still count against a Scan Report's limit: every one but the rejected. */
+    /** Files that still count against a Scan Report's limit: every one but the rejected and the superseded. */
     private static final String COUNT_LIVE =
             "SELECT count(*) FROM report_file WHERE submission_id = :submission AND report_type = :type "
-            + "AND kind = :kind AND reject_code IS NULL";
+            + "AND kind = :kind AND reject_code IS NULL AND superseded_by IS NULL";
+
+    /**
+     * A parsed file is superseded by its rescan, in the transaction that records the rescan as parsed. Only a parsed file
+     * that nothing has superseded yet; a unique index lets only one rescan of a file be live, so this always applies.
+     */
+    private static final String SUPERSEDE =
+            "UPDATE report_file SET superseded_by = :rescan, superseded_at = :now, updated_at = :now "
+            + "WHERE id = :id AND pipeline_status = 'PARSED' AND superseded_by IS NULL";
 
     private static final String IN_FLIGHT =
             "SELECT id FROM report_file WHERE pipeline_status = 'SCAN_SUBMITTED' ORDER BY seq";
@@ -139,9 +151,14 @@ class ReportFileStore {
         this.jdbc = jdbc;
     }
 
-    /** Records a quarantined file and the first stage it entered. */
+    /**
+     * Records a quarantined file and the first stage it entered.
+     *
+     * @param replacesId the parsed report file it is a rescan of, or null for an ordinary upload
+     * @throws org.springframework.dao.DuplicateKeyException when that file already has a rescan on its way or parsed
+     */
     UUID insert(UUID submissionId, ReportType type, FileKind kind, String displayName, long sizeBytes, String sha256,
-            String quarantineKey, UUID uploadedBy, Instant now) {
+            String quarantineKey, UUID uploadedBy, Instant now, @Nullable UUID replacesId) {
         UUID id = jdbc.sql(INSERT)
                 .param("submission", submissionId)
                 .param("type", type.name())
@@ -152,10 +169,16 @@ class ReportFileStore {
                 .param("quarantine", quarantineKey)
                 .param("by", uploadedBy)
                 .param("now", utc(now))
+                .param("replaces", replacesId)
                 .query(UUID.class)
                 .single();
         stage(id, PipelineStatus.QUARANTINED, now);
         return id;
+    }
+
+    /** @return whether the file was a parsed one that nothing had superseded */
+    boolean supersede(UUID fileId, UUID rescanId, Instant now) {
+        return jdbc.sql(SUPERSEDE).param("id", fileId).param("rescan", rescanId).param("now", utc(now)).update() == 1;
     }
 
     Optional<Row> find(UUID id) {
@@ -275,8 +298,9 @@ class ReportFileStore {
                 rs.getString("clean_key"), PipelineStatus.valueOf(rs.getString("pipeline_status")),
                 code == null ? null : RejectCode.valueOf(code), rs.getString("scan_ticket"),
                 rs.getInt("scan_attempts"), submitted == null ? null : submitted.toInstant(),
-                rs.getObject("uploaded_at", OffsetDateTime.class).toInstant(),
-                scanned == null ? null : scanned.toInstant(), rs.getString("target_from_file"));
+                rs.getObject("uploaded_by", UUID.class), rs.getObject("uploaded_at", OffsetDateTime.class).toInstant(),
+                scanned == null ? null : scanned.toInstant(), rs.getString("target_from_file"),
+                rs.getObject("replaces_id", UUID.class), rs.getObject("superseded_by", UUID.class));
     }
 
     private static OffsetDateTime utc(Instant instant) {

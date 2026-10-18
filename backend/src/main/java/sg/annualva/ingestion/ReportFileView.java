@@ -18,12 +18,16 @@ import sg.annualva.finding.ReportType;
  * @param scanAttempts scan attempts made so far, at most three
  * @param detectedFormat the format the bytes were found to be; null before the type check has run
  * @param uploadedAt when it was received (UTC)
+ * @param replacesId the parsed report file this one is a rescan of (story 39); null for an ordinary upload
+ * @param supersededBy the rescan that replaced this file once that rescan was parsed; null while it has not been. A
+ *     superseded file is kept, and can still be downloaded, until the retention ticket disposes of it
  * @param stages the order the file went through its stages, one entry each time it entered a status
  */
 public record ReportFileView(
         UUID id, UUID submissionId, ReportType reportType, FileKind kind, String name, long sizeBytes,
         String uploadSha256, PipelineStatus status, @Nullable RejectCode rejectCode, @Nullable String message, int scanAttempts,
-        @Nullable String detectedFormat, Instant uploadedAt, List<Stage> stages) {
+        @Nullable String detectedFormat, Instant uploadedAt, @Nullable UUID replacesId, @Nullable UUID supersededBy,
+        List<Stage> stages) {
 
     /** One status the file entered, and when (UTC). */
     public record Stage(PipelineStatus status, Instant at) {}

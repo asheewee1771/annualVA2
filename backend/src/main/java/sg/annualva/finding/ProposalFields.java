@@ -40,6 +40,18 @@ final class ProposalFields {
             @Nullable String approverName, @Nullable String approverRole, @Nullable UUID approvalMemoFileId,
             @Nullable String plan, @Nullable LocalDate targetDate) {}
 
+    /**
+     * Remediated, as a rescan proposes it for a Finding it reports nowhere (story 39): the evidence names the rescan, the
+     * scan date its report gives (left out when it gives none) and the date it was uploaded, both business dates. The name
+     * is the cleaned display name of an upload (at most 100 code points), so the text is always within {@link #MAX_TEXT}.
+     */
+    static Parsed remediatedByRescan(String name, @Nullable LocalDate scannedOn, LocalDate uploadedOn) {
+        String when = (scannedOn == null ? "" : "scanned " + scannedOn + ", ") + "uploaded " + uploadedOn;
+        String evidence = "Not reported by the rescan " + name + " (" + when
+                + "), nor by any other file of this Scan Report.";
+        return new Parsed(FindingStatus.REMEDIATED, evidence, null, null, null, null, null, null, null);
+    }
+
     /** The fields in the order they are checked, so the first problem reported is always the same one. */
     private enum Field {
         EVIDENCE("evidence"),

@@ -75,7 +75,7 @@ public class BulkProposals {
                 .with(DetailKey.FINDING_STATUS, fields.status().name());
         UUID memo = fields.approvalMemoFileId();
         audit.record(memo == null ? event : event.with(DetailKey.FILE_ID, memo));
-        proposals.write(target, ids, fields, batch);
+        proposals.write(target.submissionId(), target.systemId(), ids, fields, batch, proposals.caller());
         return new BatchView(batch, ids.size());
     }
 

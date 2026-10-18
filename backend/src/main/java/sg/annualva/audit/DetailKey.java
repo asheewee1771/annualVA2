@@ -36,7 +36,13 @@ public enum DetailKey {
     ROLES_GRANTED,
     ROLES_REVOKED,
     /** The Finding Status a proposal was for: one of four fixed codes such as {@code RISK_ACCEPTED}. */
-    FINDING_STATUS;
+    FINDING_STATUS,
+    /** The Scan Report file a rescan replaced (ticket 21); {@link #FILE_ID} is the rescan. */
+    REPLACED_FILE_ID,
+    /** Who a proposal was made as: a fixed code such as {@code RESCAN} (ticket 21). */
+    PROPOSED_AS,
+    /** The rescan whose settlement made a proposal (ticket 21); {@link #FILE_ID} on a proposal is its approval memo. */
+    RESCAN_FILE_ID;
 
     /** The key as stored: lower-case with underscores. */
     String json() {

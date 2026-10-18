@@ -101,24 +101,65 @@ class Proposals {
         return store.lockFindings(target.submissionId(), findingIds) == findingIds.size();
     }
 
-    /** Keeps a proposal for each Finding, in the order named, and audits each; the proposals as they were kept. */
-    List<ProposalView> write(Submissions.FileTarget target, List<UUID> findingIds, ProposalFields.Parsed fields,
-            @Nullable UUID batchId) {
+    /**
+     * Who proposals are made by. The caller ({@link #caller}) is the SMO/Tech Lead of the request; a rescan
+     * ({@link #rescan}) is the scan job acting for the SMO/Tech Lead who uploaded it, recorded as made by them and named as
+     * the actor of the audit entry, with {@code proposed_as} RESCAN, the rescan's file and the file it replaced.
+     *
+     * @param rescanFileId the rescan whose settlement made the proposals; null for the caller's
+     * @param replacedFile the file the rescan replaced; null for the caller's
+     */
+    record Proposer(
+            UUID id, ProposedAs as, @Nullable UUID rescanFileId, ProposalView.@Nullable ReplacedFile replacedFile) {
+
+        static Proposer rescan(UUID uploadedBy, UUID rescanFileId, ProposalView.ReplacedFile replacedFile) {
+            return new Proposer(uploadedBy, ProposedAs.RESCAN, rescanFileId, replacedFile);
+        }
+    }
+
+    /** The SMO/Tech Lead of the current request, as the one who proposes. */
+    Proposer caller() {
+        return new Proposer(user.id(), ProposedAs.SMO, null, null);
+    }
+
+    /**
+     * Keeps a proposal for each Finding, in the order named, and audits each: the one place every proposal is written and
+     * every {@code STATUS_PROPOSED} entry is built, for the caller and for a rescan alike. An entry always carries
+     * {@code finding_status} and {@code proposed_as}, then {@code batch_id} for a Bulk-set, {@code file_id} for an
+     * approval memo, and {@code rescan_file_id} and {@code replaced_file_id} for a rescan: each key means one thing.
+     *
+     * @return the proposals as they were kept
+     */
+    List<ProposalView> write(UUID submissionId, UUID systemId, List<UUID> findingIds, ProposalFields.Parsed fields,
+            @Nullable UUID batchId, Proposer by) {
         Instant now = clock.instant();
-        List<UUID> proposalIds = store.propose(findingIds, fields, batchId, user.id(), now);
+        ProposalView.ReplacedFile replaced = by.replacedFile();
+        List<UUID> proposalIds = store.propose(findingIds, fields, batchId, by.as(),
+                replaced == null ? null : replaced.id(), by.id(), now);
         UUID memo = fields.approvalMemoFileId();
         for (UUID findingId : findingIds) {
-            AuditEvent proposed = actor.attribute(AuditEvent.of(AuditAction.STATUS_PROPOSED, AuditOutcome.SUCCESS))
-                    .onSystem(target.systemId()).onSubmission(target.submissionId()).onFinding(findingId)
-                    .with(DetailKey.FINDING_STATUS, fields.status().name());
-            AuditEvent inBatch = batchId == null ? proposed : proposed.with(DetailKey.BATCH_ID, batchId);
-            audit.record(memo == null ? inBatch : inBatch.with(DetailKey.FILE_ID, memo));
+            AuditEvent proposed = attributed(AuditEvent.of(AuditAction.STATUS_PROPOSED, AuditOutcome.SUCCESS), by)
+                    .onSystem(systemId).onSubmission(submissionId).onFinding(findingId)
+                    .with(DetailKey.FINDING_STATUS, fields.status().name())
+                    .with(DetailKey.PROPOSED_AS, by.as().name());
+            proposed = withId(proposed, DetailKey.BATCH_ID, batchId);
+            proposed = withId(proposed, DetailKey.FILE_ID, memo);
+            proposed = withId(proposed, DetailKey.RESCAN_FILE_ID, by.rescanFileId());
+            audit.record(withId(proposed, DetailKey.REPLACED_FILE_ID, replaced == null ? null : replaced.id()));
         }
         return proposalIds.stream()
                 .map(id -> new ProposalView(id, fields.status(), fields.evidence(), fields.justification(),
                         fields.reason(), fields.approverName(), fields.approverRole(), memo, fields.plan(),
-                        fields.targetDate(), now, batchId))
+                        fields.targetDate(), now, batchId, by.as(), replaced))
                 .toList();
+    }
+
+    private AuditEvent attributed(AuditEvent event, Proposer by) {
+        return by.as() == ProposedAs.SMO ? actor.attribute(event) : actor.onBehalfOf(event, by.id());
+    }
+
+    private static AuditEvent withId(AuditEvent event, DetailKey key, @Nullable UUID id) {
+        return id == null ? event : event.with(key, id);
     }
 
     /** A new Bulk-set batch of the VA Submission, by the caller, now. */

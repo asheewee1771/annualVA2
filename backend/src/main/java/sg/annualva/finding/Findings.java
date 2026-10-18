@@ -5,10 +5,12 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,7 @@ import sg.annualva.audit.AuditEvent;
 import sg.annualva.audit.AuditLog;
 import sg.annualva.audit.AuditOutcome;
 import sg.annualva.audit.DetailKey;
+import sg.annualva.cycle.CycleCalendar;
 import sg.annualva.parser.ParsedReport;
 import sg.annualva.submission.Submissions;
 import sg.annualva.web.Page;
@@ -46,27 +49,104 @@ public class Findings {
     private final AccessGuard guard;
     private final AuditActor actor;
     private final AuditLog audit;
+    private final CycleCalendar calendar;
 
     Findings(FindingStore store, Proposals proposals, Submissions submissions, AccessGuard guard, AuditActor actor,
-            AuditLog audit) {
+            AuditLog audit, CycleCalendar calendar) {
         this.store = store;
         this.proposals = proposals;
         this.submissions = submissions;
         this.guard = guard;
         this.actor = actor;
         this.audit = audit;
+        this.calendar = calendar;
     }
 
     /**
+     * A parsed rescan that replaces a report file (story 39).
+     *
+     * @param fileId the rescan's own file id
+     * @param name the name the person gave it, as shown on the screen; it is named in the evidence of a Remediated proposal
+     * @param scannedAt when the rescan's report says the scan was made, or null when it says nothing; its business date is
+     *     named in that evidence too
+     * @param uploadedAt when it was uploaded (UTC); its business date is named in that evidence
+     * @param uploadedBy the SMO/Tech Lead who uploaded it: a rescan proposal is recorded as made by them, and they are the
+     *     actor of its audit entry, with {@code proposed_as} RESCAN saying it was made for them
+     * @param replaced the parsed report file the rescan replaces, with the name it is shown under
+     */
+    public record Rescan(
+            UUID fileId, String name, @Nullable Instant scannedAt, Instant uploadedAt, UUID uploadedBy,
+            ProposalView.ReplacedFile replaced) {}
+
+    /**
      * Keeps what a parser read from one file. It must run in the transaction that records the file as parsed, so a file
-     * is never parsed without its Findings or the other way round.
+     * is never parsed without its Findings or the other way round. A key whose current proposal a rescan made (Remediated,
+     * because a rescan reported it nowhere) and that this file reports again loses that proposal as current, which is a
+     * {@code PROPOSAL_WITHDRAWN} entry by the person who uploaded the file.
      *
      * @param systemId the System of the VA Submission
+     * @param uploadedBy the SMO/Tech Lead who uploaded the file: the actor of any change it makes to a proposal
      * @param now when the file was parsed (the clock bean's instant)
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public void record(UUID submissionId, UUID systemId, ReportType reportType, UUID reportFileId, ParsedReport parsed,
+    public void record(UUID submissionId, UUID systemId, ReportType reportType, UUID reportFileId, UUID uploadedBy,
+            ParsedReport parsed, Instant now) {
+        store.serialiseSettlements(submissionId);
+        keep(submissionId, systemId, reportType, reportFileId, uploadedBy, parsed, now, List.of(), null);
+    }
+
+    /**
+     * Moves the Findings from a replaced file to its parsed rescan (story 39), comparing identity keys against the old
+     * file's places only. It must run in the transaction that records the rescan as parsed, so the Findings never move
+     * without it or the other way round.
+     * <ul>
+     *   <li>A key the rescan still reports keeps its Finding with its proposals and its review: its places in the old file
+     *       are replaced by the rescan's, and its severity is the highest of the places it has now.
+     *   <li>A key the rescan no longer reports loses its places in the old file. A Finding then reported by no file gets a
+     *       new proposal, Remediated, made as RESCAN, whose evidence names the rescan, the scan date its report gives and
+     *       the date it was uploaded, and which names the replaced file; its review goes back to PENDING, so the Cyber
+     *       Manager confirms it like any other. A Finding whose current proposal is already Remediated is left as it is.
+     *   <li>A new key is a new Finding, with no proposal.
+     * </ul>
+     * A Finding still reported by another file of the VA Submission keeps those places and its status. The Remediated
+     * proposals go through the one proposal write path and audit builder ({@link Proposals#write}), made for the uploader.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void replace(UUID submissionId, UUID systemId, ReportType reportType, Rescan rescan, ParsedReport parsed,
             Instant now) {
+        store.serialiseSettlements(submissionId);
+        UUID replacedFileId = rescan.replaced().id();
+        // The replaced file is PARSED and has this one live rescan, so its places cannot change under the settlement.
+        List<UUID> touched = store.findingsOf(replacedFileId);
+        keep(submissionId, systemId, reportType, rescan.fileId(), rescan.uploadedBy(), parsed, now, touched,
+                replacedFileId);
+        List<UUID> gone = store.unreported(touched);
+        if (gone.isEmpty()) {
+            return;
+        }
+        Instant scanned = rescan.scannedAt();
+        ProposalFields.Parsed remediated = ProposalFields.remediatedByRescan(rescan.name(),
+                scanned == null ? null : calendar.dateOf(scanned), calendar.dateOf(rescan.uploadedAt()));
+        proposals.write(submissionId, systemId, gone, remediated, null,
+                Proposals.Proposer.rescan(rescan.uploadedBy(), rescan.fileId(), rescan.replaced()));
+    }
+
+    /**
+     * Keeps a file's Findings and places, once the caller holds the VA Submission's settlement lock (so no other settlement
+     * of it runs until this one commits). Every existing Finding it will write is locked first, in one statement in id
+     * order (the ones with the file's keys and the ones named to lock as well), as every proposal and Bulk-set locks them;
+     * new keys go in in hash order with the severity of their places. Then the places change (the file's are added, and a
+     * replaced file's removed), and every existing Finding it locked is rated by the places it has now: a Finding's
+     * severity is always the highest of its current places (ADR 0022 item 4), and one left with none keeps the severity it
+     * was last reported with. A key whose current proposal a rescan made is reported again here, so that proposal no
+     * longer holds: the Finding has no current proposal (so no review, a Confirmed one included), and each such Finding is
+     * a {@code PROPOSAL_WITHDRAWN} entry by the uploader, with the file's id and {@code proposed_as} RESCAN.
+     *
+     * @param alsoLock Findings to lock with the file's keys: a replaced file's (none for an ordinary upload)
+     * @param replacedFileId the file whose places are removed; null for an ordinary upload
+     */
+    private void keep(UUID submissionId, UUID systemId, ReportType reportType, UUID reportFileId, UUID uploadedBy,
+            ParsedReport parsed, Instant now, List<UUID> alsoLock, @Nullable UUID replacedFileId) {
         List<FindingStore.Keyed> findings = new ArrayList<>(parsed.findings().size());
         List<FindingStore.Placed> places = new ArrayList<>();
         for (ParsedReport.Finding finding : parsed.findings()) {
@@ -77,8 +157,22 @@ public class Findings {
                     place -> places.add(new FindingStore.Placed(hash, place.locator(), place.severity(),
                             place.didNotComplete(), place.confidence())));
         }
+        findings.sort(Comparator.comparing(FindingStore.Keyed::hash));
+        List<String> hashes = findings.stream().map(FindingStore.Keyed::hash).toList();
+        List<UUID> locked = store.lockForSettlement(submissionId, hashes, alsoLock);
         store.upsert(submissionId, systemId, reportType, findings, now);
         store.addOccurrences(submissionId, reportFileId, places);
+        if (replacedFileId != null) {
+            store.removeOccurrences(replacedFileId);
+        }
+        store.rerate(locked);
+        for (UUID findingId : store.withdrawRescanProposals(submissionId, hashes)) {
+            AuditEvent withdrawn = AuditEvent.of(AuditAction.PROPOSAL_WITHDRAWN, AuditOutcome.SUCCESS);
+            audit.record(actor.onBehalfOf(withdrawn, uploadedBy)
+                    .onSystem(systemId).onSubmission(submissionId).onFinding(findingId)
+                    .with(DetailKey.PROPOSED_AS, ProposedAs.RESCAN.name())
+                    .with(DetailKey.FILE_ID, reportFileId));
+        }
     }
 
     /**
@@ -144,7 +238,8 @@ public class Findings {
             // Located a moment ago in this VA Submission; Findings are never moved or removed.
             throw new ResourceNotFoundException();
         }
-        return proposals.write(target, one, fields, null).getFirst();
+        return proposals.write(target.submissionId(), target.systemId(), one, fields, null, proposals.caller())
+                .getFirst();
     }
 
     /**

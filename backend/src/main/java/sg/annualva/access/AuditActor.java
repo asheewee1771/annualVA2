@@ -1,5 +1,6 @@
 package sg.annualva.access;
 
+import java.util.UUID;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import sg.annualva.audit.AuditEvent;
@@ -19,5 +20,14 @@ public class AuditActor {
             return event.by(caller.getPrincipal().id(), RoleAuthentication.audited(caller.roles()));
         }
         return event;
+    }
+
+    /**
+     * The same event, by the SMO/Tech Lead whose upload caused what the scan job did on their behalf (ticket 21): the job
+     * has no caller of its own, and the change follows from that person's action (reviewer decisions, 2026-10-18). They
+     * uploaded it as an SMO/Tech Lead, the only role that uploads, so that is the role recorded.
+     */
+    public AuditEvent onBehalfOf(AuditEvent event, UUID uploadedBy) {
+        return event.by(uploadedBy, Role.SMO.name());
     }
 }

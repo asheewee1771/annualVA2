@@ -191,7 +191,8 @@ class FindingProposalTest extends ProposalSeam1 {
             assertThat(entry.get("actorRole").asString()).isEqualTo("SMO");
             assertThat(entry.get("systemId").asString()).isEqualTo(draft.systemId());
             assertThat(entry.get("submissionId").asString()).isEqualTo(draft.submissionId());
-            assertThat(entry.get("detail").propertyNames()).containsExactly("finding_status");
+            assertThat(entry.get("detail").propertyNames()).containsExactlyInAnyOrder("finding_status", "proposed_as");
+            assertThat(entry.get("detail").get("proposed_as").asString()).isEqualTo("SMO");
         }
         assertThat(entries.get(1).get("findingId").asString()).isEqualTo(id);
     }

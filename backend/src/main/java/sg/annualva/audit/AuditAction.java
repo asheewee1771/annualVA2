@@ -44,8 +44,9 @@ public enum AuditAction {
     SUBMISSION_VIEWED("submission-viewed", "database"),
     /**
      * An SMO/Tech Lead uploaded a Scan Report file and it was quarantined (SUCCESS), or the upload was refused because the
-     * VA Submission takes no files now or the Scan Report is full (REFUSED, with a fixed reason). About the System and the
-     * VA Submission, with the file id; never the file's name or content.
+     * VA Submission takes no files now or the Scan Report is full (REFUSED, with a fixed reason). A rescan (story 39) also
+     * names the file it replaces ({@code replaced_file_id}), and its refusals say why the file could not be replaced. About
+     * the System and the VA Submission, with the file id; never the file's name or content.
      */
     FILE_UPLOADED("file-uploaded", "file"),
     /**
@@ -53,6 +54,13 @@ public enum AuditAction {
      * oversized type, an unreadable file or one that fails its schema. Written by the scan job, so it has no actor.
      */
     FILE_REJECTED("file-rejected", "file"),
+    /**
+     * A rescan replaced a parsed report file (story 39): it was parsed, the Findings moved to it and the old file is
+     * superseded. Written by the scan job for the SMO/Tech Lead who uploaded the rescan, who is its actor; the upload of
+     * the rescan is their own {@code FILE_UPLOADED} entry. About the System and the VA Submission, with the rescan's {@code file_id} and the
+     * {@code replaced_file_id}; never a name or content.
+     */
+    FILE_REPLACED("file-replaced", "file"),
     /** Someone but the System's own SMO/Tech Lead read a file's pipeline status, or the list of a VA Submission's files. */
     FILE_VIEWED("file-viewed", "file"),
     /** A clean file's bytes were downloaded, by anyone who may see the System. */
@@ -72,10 +80,20 @@ public enum AuditAction {
     /**
      * An SMO/Tech Lead proposed a Finding Status (SUCCESS, with the status as a fixed code, and the memo file's id when a
      * Risk Accepted proposal has one, and the batch id when it was made in a Bulk-set batch), or was refused because the
-     * VA Submission takes no proposals in its present state (REFUSED, with a fixed reason). About the System, the VA Submission and the Finding; never the evidence,
+     * VA Submission takes no proposals in its present state (REFUSED, with a fixed reason). A Remediated proposal a rescan
+     * makes (story 39) is by the SMO/Tech Lead who uploaded the rescan, with {@code rescan_file_id} and {@code replaced_file_id}; every entry
+     * carries {@code proposed_as}. About the System, the VA Submission and the Finding; never the evidence,
      * justification, reason, approver, plan or date.
      */
     STATUS_PROPOSED("status-proposed", "database"),
+    /**
+     * A file reported again a Finding whose current proposal a rescan had made (Remediated, because the rescan reported it
+     * nowhere), so that proposal is no longer current: the Finding has no current proposal and no review (a Confirmed one
+     * included), and the proposal stays in its history (story 39). Written by the scan job for the SMO/Tech Lead who
+     * uploaded the file, who is its actor. About the System, the VA Submission and the Finding, with the file's
+     * {@code file_id} and {@code proposed_as} RESCAN; never any text.
+     */
+    PROPOSAL_WITHDRAWN("proposal-withdrawn", "database"),
     /**
      * Someone who may see the System read the history of the proposals of one Finding. The proposals carry what the SMO/Tech
      * Lead wrote, so the read is audited for every role. About the System, the VA Submission and the Finding, with the

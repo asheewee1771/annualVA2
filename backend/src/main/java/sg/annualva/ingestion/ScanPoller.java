@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
+import sg.annualva.access.AuditActor;
 import sg.annualva.audit.AuditAction;
 import sg.annualva.audit.AuditEvent;
 import sg.annualva.audit.AuditLog;
@@ -17,6 +18,7 @@ import sg.annualva.audit.AuditOutcome;
 import sg.annualva.audit.DetailKey;
 import sg.annualva.boundary.MalwareScanner.Verdict;
 import sg.annualva.finding.Findings;
+import sg.annualva.finding.ProposalView;
 import sg.annualva.parser.ParsedReport;
 import sg.annualva.scan.CleanFiles;
 import sg.annualva.scan.MalwareScan;
@@ -58,17 +60,19 @@ public class ScanPoller {
     private final CleanFiles cleanFiles;
     private final ScanProperties properties;
     private final AuditLog audit;
+    private final AuditActor actor;
     private final Findings findings;
     private final Clock clock;
     private final TransactionTemplate transaction;
 
     ScanPoller(ReportFileStore store, MalwareScan scan, CleanFiles cleanFiles, ScanProperties properties,
-            AuditLog audit, Findings findings, Clock clock, TransactionTemplate transaction) {
+            AuditLog audit, AuditActor actor, Findings findings, Clock clock, TransactionTemplate transaction) {
         this.store = store;
         this.scan = scan;
         this.cleanFiles = cleanFiles;
         this.properties = properties;
         this.audit = audit;
+        this.actor = actor;
         this.findings = findings;
         this.clock = clock;
         this.transaction = transaction;
@@ -275,7 +279,7 @@ public class ScanPoller {
             ParsedReport parsed = settlement.parsed();
             if (parsed != null) {
                 // With the status, in this transaction: a file is never PARSED without its Findings, or the other way round.
-                findings.record(file.submissionId(), file.systemId(), file.reportType(), file.id(), parsed, now);
+                keepFindings(file, parsed, now);
             }
             RejectCode code = settlement.rejectCode();
             if (code != null) {
@@ -289,6 +293,33 @@ public class ScanPoller {
             logged(file.id(), settlement.resting(), file.scanAttempts());
         }
         return written;
+    }
+
+    /**
+     * Keeps what the parser read. A rescan (story 39) instead supersedes the file it replaces first, then takes the
+     * Findings over from it and is audited as the replacement, all in the same transaction. A unique index lets only one
+     * rescan of a file be live, so nothing else can have superseded it; if something had, the settlement stops before it
+     * writes a Finding and rolls back.
+     */
+    private void keepFindings(ReportFileStore.Row file, ParsedReport parsed, Instant now) {
+        UUID replaced = file.replacesId();
+        if (replaced == null) {
+            findings.record(file.submissionId(), file.systemId(), file.reportType(), file.id(), file.uploadedBy(), parsed,
+                    now);
+            return;
+        }
+        if (!store.supersede(replaced, file.id(), now)) {
+            throw new IllegalStateException("The replaced file was no longer a parsed file that nothing superseded");
+        }
+        String replacedName = store.find(replaced).orElseThrow().displayName();
+        findings.replace(file.submissionId(), file.systemId(), file.reportType(),
+                new Findings.Rescan(file.id(), file.displayName(), parsed.metadata().scanDate(), file.uploadedAt(),
+                        file.uploadedBy(), new ProposalView.ReplacedFile(replaced, replacedName)), parsed, now);
+        // The job writes it, for the SMO/Tech Lead whose upload of the rescan caused it.
+        AuditEvent replacement = AuditEvent.of(AuditAction.FILE_REPLACED, AuditOutcome.SUCCESS);
+        audit.record(actor.onBehalfOf(replacement, file.uploadedBy())
+                .onSystem(file.systemId()).onSubmission(file.submissionId())
+                .with(DetailKey.FILE_ID, file.id()).with(DetailKey.REPLACED_FILE_ID, replaced));
     }
 
     /**
