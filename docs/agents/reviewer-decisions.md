@@ -183,3 +183,66 @@ Human decisions on reviewer findings. Check here before asking again. Each entry
 - **Finding:** a batch wrote one `BATCH_PROPOSED` entry with no Finding ids, so an audit search by Finding missed changes made in a batch, and tracing them relied on the proposal table that ticket 49's retention deletes.
 - **Chosen action:** keep the `BATCH_PROPOSED` entry and also write one `STATUS_PROPOSED` entry per Finding, carrying the `batch_id` (ids and fixed codes only, no text). Decided 2026-10-17.
 - **When to reuse:** any bulk change to many records: audit each record as well as the batch.
+
+## Rescan evidence names both the report's scan date and the upload date
+
+- **Area:** rescan Remediated proposals (ticket 21, ADR 0029), spec story 39
+- **Finding:** the evidence named only the rescan's business upload date; the report's own scan date was not used, though a reviewer usually means it.
+- **Chosen action:** name both: the scan date read from the report when it has one, and the upload date (Asia/Singapore business date of `uploaded_at`). Decided 2026-10-18.
+- **When to reuse:** any generated evidence or summary that dates a file.
+
+## A rescan proposal keeps the uploader as proposer and also names the uploader on its audit entry
+
+- **Area:** rescan proposals (ticket 21, ADR 0029), `finding_status_proposal.proposed_by`, `STATUS_PROPOSED`
+- **Finding:** `proposed_by` is the SMO who uploaded the rescan, `proposed_as=RESCAN` marks it automatic, and its audit entry had no actor.
+- **Chosen action:** keep `proposed_by` as the uploader and also record the uploader as the actor on the rescan's `STATUS_PROPOSED` and `FILE_REPLACED` entries, with `proposed_as` telling a reader it was automatic. Decided 2026-10-18.
+- **When to reuse:** any change the system makes as a consequence of a person's action: attribute it to that person and mark it automatic.
+
+## A superseded file's occurrences are deleted, and the rescan proposal points at the old file
+
+- **Area:** rescan settlement (ticket 21, ADR 0029)
+- **Finding:** the old file's occurrences are deleted, so a Finding a rescan proposes Remediated shows no places; where it was reported was only recoverable by downloading the old file.
+- **Chosen action:** keep deleting, and show the Cyber Manager the replaced file's name and a download link with the rescan proposal. Decided 2026-10-18.
+- **When to reuse:** any finding that rescan history is lost or that occurrence reads should filter superseded files.
+
+## Supporting evidence cannot be replaced; it is attached again
+
+- **Area:** file replacement (ticket 21, ADR 0029), evidence (ADR 0026)
+- **Finding:** only PARSED machine-readable files can be replaced; evidence rests in READY and gets `file-not-replaceable`, and still counts against the 20-file cap.
+- **Chosen action:** accept as built. Decided 2026-10-18.
+- **When to reuse:** any finding that evidence or a memo cannot be swapped; revisit with a delete-file ticket.
+
+## A Finding reported again after a rescan proposed it Remediated loses that proposal as current
+
+- **Area:** rescan settlement and ordinary settlement (ticket 21, ADR 0029)
+- **Finding:** a later file reporting the key again only added places, so the Remediated/RESCAN proposal stayed current with false evidence, the Finding was not under Needs attention, and its severity was not recalculated.
+- **Chosen action:** when a key whose current proposal is Remediated/RESCAN is reported again, clear `current_proposal_id` (history kept, only the pointer moves) and recalculate severity from its places. Decided 2026-10-18.
+- **When to reuse:** any automatic proposal whose basis a later fact contradicts.
+
+## Settlement locks every Finding it touches once, in id order, before writing
+
+- **Area:** rescan and ordinary settlement (tickets 13 to 21, ADR 0029), proposals and Bulk-set (ADR 0028)
+- **Finding:** the settlement locked the old file's Findings in id order, then the UPSERT locked other existing Findings in `unnest` order, so it could deadlock with a proposal or Bulk-set and either side could be the victim (a user would get a 500).
+- **Chosen action:** before the UPSERT, take one id-ordered `SELECT ... FOR UPDATE` over every existing Finding the settlement will touch (the old file's and those matching the rescan's identity keys), used by both the rescan and the ordinary path; correct ADR 0029. Decided 2026-10-18.
+- **When to reuse:** any transaction that locks more than one Finding: lock them all once, in id order, first.
+
+## A rescan does not re-propose a Finding whose current proposal is already Remediated
+
+- **Area:** rescan settlement (ticket 21, ADR 0029 item 5), spec story 39
+- **Finding:** a rescan no longer reporting a Finding always wrote a Remediated/RESCAN proposal and reset the review, even when the current proposal was already Remediated (adding re-review for no new information).
+- **Chosen action:** skip the rescan proposal when the current proposal's status is Remediated; still propose for any other status, including a Confirmed False Positive or Risk Accepted. Decided 2026-10-18.
+- **When to reuse:** any automatic proposal that would repeat the current status.
+
+## An early disposal of a superseded file deletes its bytes and keeps its record
+
+- **Area:** retention of superseded files (ticket 21, ADR 0029 item 7; ticket 49), spec "superseded uploads after endorsement"
+- **Finding:** the spec disposes of superseded uploads after endorsement, earlier than Cycle plus 3 years, but a RESCAN proposal (`finding_status_proposal.replaced_file_id`, append-only) and the rescan (`report_file.replaces_id`) reference the superseded `report_file` row, so deleting the row early fails on those foreign keys.
+- **Chosen action:** the early disposal deletes only the superseded file's bytes from the file store and keeps its `report_file` row (name, hash, links) until the Cycle-plus-3-years disposal; a download of a disposed file answers with a plain "disposed" problem. Keep the foreign keys. Ticket 49 gains an acceptance line; ADR 0029 item 7 is amended. Decided 2026-10-18.
+- **When to reuse:** any early disposal of a record other rows still reference: delete the content, keep the row until the full disposal.
+
+## A VA Submission cannot leave Draft or Returned for Rework while any of its files is scanning
+
+- **Area:** settlement of uploads and rescans (ticket 21, ADR 0021, ADR 0029); submit (ticket 25), exemption request (ticket 40), the Register's withdraw (ticket 43)
+- **Finding:** a rescan is accepted only in Draft or Returned for Rework but can settle after the submission has left those states, and the settlement then wrote Remediated proposals into a frozen or read-only submission. Ordinary uploads already settle regardless of state, and the plan's "none still scanning" rule covered only submit.
+- **Chosen action:** keep the settlement as built (one rule for ordinary and rescan uploads), and refuse every route that moves a VA Submission out of Draft or Returned for Rework while any of its files is still scanning: submit (ticket 25), exemption request (ticket 40) and the Register's withdraw (ticket 43, the row is Blocked). Those tickets gained acceptance lines; no code in ticket 21. Decided 2026-10-18.
+- **When to reuse:** any new route that moves a VA Submission out of an editable state, or any finding that a settlement can land in a frozen submission.

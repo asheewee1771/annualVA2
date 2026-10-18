@@ -33,3 +33,5 @@ Amended by ADR 0022: the parse stage follows the schema check for a format that 
 Amended by ADR 0023: XCCDF results and ARF files have a parser too (status `PARSED`), and a report over the Findings caps is `REJECTED_TOO_MANY_FINDINGS`, not `REJECTED_SCHEMA`.
 
 Amended by ADR 0026: a file of kind EVIDENCE (a PDF or HTML report) skips the schema check and the parse and rests in `READY`, which is viewable and downloadable like `SCHEMA_OK` and `PARSED`.
+
+Amended by ADR 0029: a parsed report file can be replaced with a rescan (`POST .../files/{fileId}/replace`); once the rescan is parsed the old file is superseded (`superseded_by`), stays viewable and downloadable, and no longer counts against the 20 files.

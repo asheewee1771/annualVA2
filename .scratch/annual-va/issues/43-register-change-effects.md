@@ -8,6 +8,7 @@
 **Effort (orchestrator estimate):** about 10.8 developer days across stories 5 (5.5), 6 (3.3), 7 (2.0); `*` marks the critical path. See `reports/dev-report.md`.
 
 - [ ] The preview classifies the effect of each row on in-flight work: WILL_WITHDRAW for a retired System with a non-final submission; WILL_MOVE for a Quarter change and WILL_TRANSFER for an SMO or Cyber Manager change on a System with a non-final submission, both shown and both Blocked from applying in Release 1 with the reason; BLOCKED when the change would give one person two steps on an in-flight submission (for example the submission's Cyber Manager becoming its SMO).
+- [ ] A WILL_WITHDRAW row whose VA Submission has any file still scanning, including a rescan (ticket 21; decision 2026-10-18), is Blocked from applying with that reason until the scan settles; proven by a Seam 1 test.
 - [ ] Applying requires an explicit per-row confirmation for every WILL_WITHDRAW row, shown in the Will withdraw group of the Register screen; the apply sets the submission Withdrawn (read-only, excluded from dashboard counts and from reminders), audits it and notifies the SMO.
 - [ ] Every behaviour above is proven by Seam 1 tests through the HTTP API on a real PostgreSQL, with only the boundary adapters faked; the back-end and front-end gates pass.
 
