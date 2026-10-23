@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review — 26-overdue-flag</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall: PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">build: PASS · C0 H0 M0 L0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear: WARN · C0 H0 M2 L8</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review: WARN · C0 H0 M2 L8</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">semgrep: PASS · C0 H0 M0 L0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8: WARN · C0 H0 M0 L3</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react: WARN · C0 H0 M0 L2</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot: WARN · C0 H0 M2 L8</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">main</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report</h1>
+          <p class="text-sm text-slate-500 mt-1">Ticket 26: Overdue is a flag (soft windows, nothing locks). Round 2, after a correction pass. Uncommitted changes on <span class="font-mono">main</span> against HEAD 9fe1e65, including the untracked OverdueSweep, OverdueSweepJob, V20__overdue.sql, OverdueTest and ADR 0033.</p>
+        </div>
+        <div class="rounded-md border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900 space-y-1">
+          <p class="font-semibold">Round 2 scope (user-approved fast mode)</p>
+          <p><span class="font-semibold">Rerun this round:</span> build, thermo-nuclear (the round-1 failing check) and springboot (rerun because the correction changed the data layer).</p>
+          <p><span class="font-semibold">Carried over unchanged from round 1:</span> code-review, semgrep, im8 and react. Their line numbers refer to the round-1 tree; some lines in <span class="font-mono text-xs">SubmissionStore.java</span> have moved since.</p>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Executive Summary</h2>
+          <p class="text-xs text-slate-500 mt-1">Overall compliance evaluation status across all seven active checks. Overall: PASS. No check has a Critical or High finding. The round-1 High (thermo-nuclear H1, the state-to-window rule written in four places) is resolved.</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Check</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Status</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">C / H / M / L</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Summary</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">build <span class="block text-xs text-slate-400">rerun</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 0</td>
+              <td class="px-4 py-2">780 tests, 0 failures; JaCoCo instruction 98.06 %, branch 90.97 %, line 97.16 %; npm run check and fallow audit clean. Back-end log reused on a matching fingerprint (approved). Four Info notes only.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">thermo-nuclear <span class="block text-xs text-slate-400">rerun</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 2 / 8</td>
+              <td class="px-4 py-2">H1 resolved: the rule now lives once in the SQL functions current_window_due and window_passed, and overdue is a generated column. Mediums: OVERDUE_AFTER_MOVE is an opt-in fragment a future transition can omit silently (N1); Not Started Overdue still leaks into the inbox as a second read (M2).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">code-review <span class="block text-xs text-slate-400">carried over</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 2 / 8</td>
+              <td class="px-4 py-2">Standards: a start racing the Not Started sweep can audit one System twice, contrary to ADR 0033. Spec: the VA POC half of story 71 is not exposed and no ticket owns it. No scope creep.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">semgrep <span class="block text-xs text-slate-400">carried over</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 0</td>
+              <td class="px-4 py-2">No finding on any line ticket 26 added or changed. Five pre-existing findings in unchanged code are listed for reference and not counted, including the known test-only tainted-SQL High in TestEndpoints.java (unchanged since 4b1d087).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">im8 <span class="block text-xs text-slate-400">carried over</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 3</td>
+              <td class="px-4 py-2">All touched controls pass. Low: start/sweep race (lm-4), ArchUnit guard misses method references (as-7), no health signal for the sweep (lm-16, tracked to ticket 52).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">react <span class="block text-xs text-slate-400">carried over</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 2</td>
+              <td class="px-4 py-2">Two optional Lows on the prepare screen: one fact rendered from two conditions; an invalid instant throws during render (pre-existing pattern).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">springboot <span class="block text-xs text-slate-400">rerun</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 2 / 8</td>
+              <td class="px-4 py-2">The correction holds: IMMUTABLE functions are correct, the generated column fits every read and write, the clock is read once. Mediums: nothing in the database enforces the move rule (D-1); the two-instance safety claim has no test (T-1).</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-600">No Critical or High findings in any check.</p>
+          <p class="text-xs text-slate-500">Recurring themes worth acting on before tickets 30 and 33 to 35 add transitions:</p>
+          <ul class="list-disc pl-5 space-y-1 text-xs text-slate-500">
+            <li>Applying the move rule is still a convention: thermo-nuclear N1 and springboot D-1 both flag that a future UPDATE omitting <span class="font-mono">OVERDUE_AFTER_MOVE</span> keeps a stale flag silently (<span class="font-mono">backend/src/main/java/sg/annualva/submission/SubmissionStore.java:54-61</span>).</li>
+            <li>The start and the Not Started sweep can race under READ COMMITTED and write a second SUBMISSION_OVERDUE entry, contrary to ADR 0033 item 3 (code-review Medium, im8 L-1, springboot D-2).</li>
+          </ul>
+        </div>
+      </div>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build <span class="text-xs text-slate-400 font-normal">(rerun)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-400">Info</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/OverdueSweepJob.java</td>
+              <td class="px-4 py-2 font-mono text-xs">all</td>
+              <td class="px-4 py-2">0 % coverage: the property-gated @Scheduled wrapper is off in Seam 1 by design (ADR 0012); OverdueSweep is fully covered (138/138 instructions, 12/12 branches). Matches the ScanPollerJob precedent. Not counted.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-400">Info</td>
+              <td class="px-4 py-2 font-mono text-xs">artifacts/do-work/verify/backend-verify.log</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">Back-end result reused from a log whose fingerprint matches the current tree (bd7ce3e1…), as approved. Not counted.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-400">Info</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/adapters/oidc/MccHttp.java</td>
+              <td class="px-4 py-2 font-mono text-xs">51</td>
+              <td class="px-4 py-2">Pre-existing deprecation warning outside the changeset. Not counted.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-400">Info</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/api/problem.ts, frontend/src/components/ErrorPanel.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">Existing fallow health refactoring targets, none above threshold and none introduced here. Not counted.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear <span class="text-xs text-slate-400 font-normal">(rerun)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">54-61, 120-123, 207-210</td>
+              <td class="px-4 py-2">N1 (new): OVERDUE_AFTER_MOVE is an opt-in SQL fragment with hidden :state and :today parameters, and ADR 0033 item 4 asks every future transition to include it. A transition that omits it compiles and passes its tests but keeps a stale flag. Route every state change through one private store method (move) that owns the state column, the flag and the business date.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td>
+              <td class="px-4 py-2 font-mono text-xs">370-378</td>
+              <td class="px-4 py-2">M2 (round 1, still open): Not Started Overdue is a second public read (overdueNotStarted) with a second query (SubmissionStore.java:88-90, 243-250); SmoInbox.java:96-118 merges the two and threads a bare boolean. Every later Overdue reader will repeat it. Have inCycle return one per-System status that includes the Not Started flag.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">27-30, 97-98, 308-311</td>
+              <td class="px-4 py-2">M1 (round 1, partly resolved, now Low): the database derives overdue, but Row, Submission (Submissions.java:76-80) and the wire (submissions.ts:41, 43) still carry both overdue and overdueSince. Derive overdue from overdueSince on this read.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">80-86, 231-240</td>
+              <td class="px-4 py-2">N2: FLAG_NOT_STARTED binds review and endorse dates it never reads, and splices NOT_STARTED as a quoted SQL literal (the only spliced value in the store). Bind it as :state instead.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">39, 60</td>
+              <td class="px-4 py-2">N3: NOT_STARTED and OVERDUE_AFTER_MOVE are package-visible but used only inside SubmissionStore; make them private so the fragment cannot be spliced elsewhere.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V20__overdue.sql</td>
+              <td class="px-4 py-2 font-mono text-xs">11-25</td>
+              <td class="px-4 py-2">N4: current_window_due lists five state literals with no ELSE; a renamed or newly added waiting state is silently never flagged. Add one assertion that ties the V8 state list to the waiting states, and point SubmissionStore at the defining migration.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">docs/adr/0033-overdue-is-a-stored-flag-set-by-an-idempotent-sweep-and-the-windows-stay-soft.md</td>
+              <td class="px-4 py-2 font-mono text-xs">9</td>
+              <td class="px-4 py-2">N5: item 3 still names CycleCalendar.cycles(); the code uses cyclesOn(today) (OverdueSweep.java:64).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/OverdueSweep.java</td>
+              <td class="px-4 py-2 font-mono text-xs">64-75</td>
+              <td class="px-4 py-2">L2 (round 1, partly resolved): audit construction is one method now, but the Not Started pass still sends one INSERT per Cycle and Quarter on every pass, now without the Java pre-filter. Optional: one unnest statement over (System, Cycle) pairs.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">36, 39</td>
+              <td class="px-4 py-2">L3 (round 1, open): Flagged.state is a String and NOT_STARTED is a second spelling beside SmoInbox.State.NOT_STARTED (SmoInbox.java:35). Fix or record as an accepted trade-off.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ManualFindingTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">265-269</td>
+              <td class="px-4 py-2">L5 (round 1, open): this test and ScanReportModeTest.java:298-302 are patched one by one against future-dated audit entries; add a shared harness helper such as auditFor(systemId).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-emerald-700">Resolved</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V20__overdue.sql</td>
+              <td class="px-4 py-2 font-mono text-xs">11-31</td>
+              <td class="px-4 py-2">H1 (round 1 High): the state-to-window rule now exists once (current_window_due / window_passed), SubmissionStore.windowPassed is the only Java caller, and overdue is a generated column. Round-1 M3, L1 and L4 are also fixed. Not counted.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review <span class="text-xs text-slate-400 font-normal">(carried over from round 1)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">38-44, 50-54 (round-1 tree)</td>
+              <td class="px-4 py-2">Standards 1: under READ COMMITTED a start and the Not Started sweep each miss the other's uncommitted row, so the next pass flags the Draft again with a second SUBMISSION_OVERDUE entry and a later overdue_since. Contradicts ADR 0033 items 3 and 5.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/SmoInbox.java</td>
+              <td class="px-4 py-2 font-mono text-xs">98</td>
+              <td class="px-4 py-2">Spec 1: story 71 is half delivered. The VA POC cannot see Not Started Overdue (the only read is the SMO inbox, 403 for a VA POC). ADR 0033 hands it to ticket 33, but ticket 33 has no Overdue criterion, so no ticket owns it.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">docs/adr/0033-overdue-is-a-stored-flag-set-by-an-idempotent-sweep-and-the-windows-stay-soft.md</td>
+              <td class="px-4 py-2 font-mono text-xs">item 5</td>
+              <td class="px-4 py-2">Standards 2: drops ADR 0012's scheduler_lock lease for this job without listing 0012 in its Amends line.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">90 (round-1 tree)</td>
+              <td class="px-4 py-2">Standards 3: a comment (and ADR 0033 item 4) says "late", which CONTEXT.md lists under Avoid for Overdue.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterSystems.java</td>
+              <td class="px-4 py-2 font-mono text-xs">69, 82 (round-1 tree)</td>
+              <td class="px-4 py-2">Standards 4: possible duplicated code in everyActive() versus active(Need), and two near-identical audit chains in OverdueSweep.java:61, 78.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">182, 188 (round-1 tree)</td>
+              <td class="px-4 py-2">Standards 5: data clump, now and today travel together in different parameter orders.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">32 (round-1 tree)</td>
+              <td class="px-4 py-2">Standards 6: primitive obsession, Flagged.state is a String and NOT_STARTED a string constant (OverdueSweep.java:37) although SubmissionState exists.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td>
+              <td class="px-4 py-2 font-mono text-xs">375 (round-1 tree)</td>
+              <td class="px-4 py-2">Standards 7: one concept named in two orders, overdueNotStarted versus notStartedOverdue in SubmissionStore.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/OverdueSweepJob.java</td>
+              <td class="px-4 py-2 font-mono text-xs">26</td>
+              <td class="px-4 py-2">Standards 8: annualva.overdue.sweep-interval is only a @Scheduled placeholder default, not a typed, validated property like ScanProperties.pollInterval.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">.scratch/annual-va/issues/</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">Spec 2: deferred flag-follows-window work (tickets 30, 33, 34, 40, 43) is recorded only in ADR 0033, not as criteria in the tickets that own it.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep <span class="text-xs text-slate-400 font-normal">(carried over from round 1)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-400">Info (pre-existing High)</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/harness/TestEndpoints.java</td>
+              <td class="px-4 py-2 font-mono text-xs">308-310</td>
+              <td class="px-4 py-2">tainted-sql-string in the test-only reportFileFault endpoint. Code unchanged since 4b1d087, prefix checked against [A-Z_]+, never ships. Not counted, as in round 1 and earlier tickets.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-400">Info (pre-existing Medium)</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/arch/ArchitectureTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">118</td>
+              <td class="px-4 py-2">unsafe-reflection on Class.forName over a constant array in a test. Line not changed by ticket 26. Not counted.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-400">Info (pre-existing Medium)</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ManualFindingTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">169</td>
+              <td class="px-4 py-2">Bidirectional-character rule: an intentional U+202E inside a test string literal proving content is stored as plain text. Line not changed. Not counted.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-400">Info (pre-existing Medium)</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ScanReportModeTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">147</td>
+              <td class="px-4 py-2">Same intentional U+202E test-data pattern. Line not changed. Not counted.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-400">Info (pre-existing Medium)</td>
+              <td class="px-4 py-2 font-mono text-xs">scripts/mock-mockpass-assertions.js</td>
+              <td class="px-4 py-2 font-mono text-xs">11</td>
+              <td class="px-4 py-2">path-join-resolve-traversal in the development-only MockPass mock over constant file names. File not changed. Not counted.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8 <span class="text-xs text-slate-400 font-normal">(carried over from round 1)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">FLAG_NOT_STARTED, start INSERT</td>
+              <td class="px-4 py-2">L-1 (lm-4): a start and the sweep can race, writing a duplicate SUBMISSION_OVERDUE entry and a stale Not Started record, contrary to ADR 0033 item 3. Serialise per System and Cycle, or amend the ADR.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/arch/ArchitectureTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">onlyTheOverdueSweepListsSystemsPastTheAccessGuard</td>
+              <td class="px-4 py-2">L-2 (as-7): the rule uses callMethod, which does not match method references (register::everyActive), so a future guard bypass could slip through. Widen it to every access.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/OverdueSweep.java</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">L-3 (lm-16, tracked deferral to ticket 52): no success/failure signal or flagged-count meter for the hourly sweep; ticket 52 should cover the job's own health and a missed-pass alert.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react <span class="text-xs text-slate-400 font-normal">(carried over from round 1)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SubmissionPrepareScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">247-256</td>
+              <td class="px-4 py-2">L1: the Overdue pill renders on data.overdue and the "Overdue since" line on data.overdueSince, so one fact hangs on two conditions. Gate both on the same value. Optional.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SubmissionPrepareScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">255</td>
+              <td class="px-4 py-2">L2: a malformed overdueSince makes WHEN.format throw a RangeError during render, unwinding to the root ErrorBoundary. Same pre-existing pattern as acceptedAt and submittedAt; one helper would cover all three. Optional.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot <span class="text-xs text-slate-400 font-normal">(rerun)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">OVERDUE_AFTER_MOVE</td>
+              <td class="px-4 py-2">D-1 (data): nothing in the database enforces the move rule. A future move into a final or frozen state that omits the fragment keeps overdue = true forever, and the sweep never revisits final states. Add a CHECK that overdue_since is null unless current_window_due is non-null, plus a guard that every "UPDATE va_submission SET state" constant includes the fragment.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/OverdueTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">T-1 (test): ADR 0033 item 5 claims two concurrent passes flag nothing twice and cannot deadlock, replacing ADR 0012's lease, but no test runs two passes at once. Add a two-thread test like SubmissionStartTest's start race.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">INSERT, FLAG_NOT_STARTED</td>
+              <td class="px-4 py-2">D-2 (data/batch): a start and a pass running together can both flag the same System, giving two SUBMISSION_OVERDUE entries (ADR 0033 item 3). Self-corrects within an hour; serialise with an advisory lock or soften the ADR.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V20__overdue.sql</td>
+              <td class="px-4 py-2 font-mono text-xs">window_passed</td>
+              <td class="px-4 py-2">D-3 (data): window_passed calls current_window_due unqualified, so it depends on search_path; a hazard for pg_dump/restore once used in a constraint or index. Use a SQL-standard RETURN body or schema-qualify.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V20__overdue.sql</td>
+              <td class="px-4 py-2 font-mono text-xs">last statement</td>
+              <td class="px-4 py-2">D-4 (data): re-adding audit_entry_detail_check re-checks the whole audit log under ACCESS EXCLUSIVE. Pre-existing pattern; use NOT VALID then VALIDATE in future migrations.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/OverdueSweep.java</td>
+              <td class="px-4 py-2 font-mono text-xs">sweep()</td>
+              <td class="px-4 py-2">B-1 (batch/data): no lock_timeout; one pass can wait without limit on another instance's uncommitted Not Started insert. SET LOCAL lock_timeout at the start of the pass.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/OverdueSweepJob.java</td>
+              <td class="px-4 py-2 font-mono text-xs">run()</td>
+              <td class="px-4 py-2">B-2 (logging/batch): a pass logs nothing, records no metric, and its audit entries carry correlation id "none". Put a fresh correlation id in the MDC and log one structured line (ids and counts only).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/OverdueSweep.java</td>
+              <td class="px-4 py-2 font-mono text-xs">audit</td>
+              <td class="px-4 py-2">C-1 (core, Clock): AuditLog reads the clock again per entry, so occurredAt differs from overdue_since in production; the test passes only because its clock is frozen. Pass now into the audit, or note it in ADR 0033 item 6.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/OverdueTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">T-2 (test): two untested branches, a start before any pass has flagged the System, and a flag set again after a submit cleared it.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/OverdueTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">T-3 (test): loops over states and Systems, and two tests move the clock backwards. Use a @ParameterizedTest and forward-only clocks.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+    </main>
+  </body>
+</html>
