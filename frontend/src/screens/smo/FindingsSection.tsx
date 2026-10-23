@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   fetchFindings,
   fetchMatchingIds,
-  fetchReadiness,
   MAX_BATCH_SIZE,
   type Finding,
   type FindingFilter,
@@ -16,6 +15,7 @@ import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { FilterChips, type Chip } from "../../components/FilterChips.tsx";
 import { ProgressBar } from "../../components/ProgressBar.tsx";
 import { useResource, type Resource } from "../../hooks/useResource.ts";
+import { Editable } from "./Editable.tsx";
 import { BulkBar } from "./BulkBar.tsx";
 import { FindingsTable, Pager } from "./FindingsTable.tsx";
 import { SCAN_REPORTS } from "./scanReports.ts";
@@ -100,6 +100,18 @@ function FileAgeNotice({ readiness }: { readiness: Readiness }) {
   );
 }
 
+/** The progress bar and the files whose age stands in the way, once the server has said; or why it could not. */
+function ReadinessPanel({ readiness }: { readiness: Resource<Readiness> }) {
+  if (readiness.error) return <ErrorPanel problem={readiness.error.problem} />;
+  if (!readiness.data) return null;
+  return (
+    <>
+      <ReadinessBar readiness={readiness.data} />
+      <FileAgeNotice readiness={readiness.data} />
+    </>
+  );
+}
+
 /** The ticked Findings, kept across pages of one chip and cleared when the chip changes or a batch is applied. */
 function useSelection() {
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
@@ -157,22 +169,23 @@ function SelectAllMatching({
 
   return (
     <>
-      <p>
-        <button type="button" className="button button--secondary" disabled={busy} onClick={() => void select()}>
-          {busy ? "Selecting…" : `Select all ${total} Findings that match`}
-        </button>
-      </p>
+      <Editable>
+        <p>
+          <button type="button" className="button button--secondary" disabled={busy} onClick={() => void select()}>
+            {busy ? "Selecting…" : `Select all ${total} Findings that match`}
+          </button>
+        </p>
+      </Editable>
       {problem ? <ErrorPanel problem={problem} /> : null}
     </>
   );
 }
 
-/** The page of Findings the chip shows, and the progress counts, asked for again when a file is read or a status changes. */
-function useFindingsData(
+/** The page of Findings the chip shows, asked for again when a file is read or a Finding is entered by hand. */
+function useFindings(
   submissionId: string,
   files: readonly ReportFile[],
   entered: number,
-  confirmed: number,
   filter: FindingFilter,
   page: number,
 ) {
@@ -189,20 +202,7 @@ function useFindingsData(
     void entered;
     return fetchFindings(submissionId, filter, page, PAGE_SIZE);
   }, [submissionId, filter, page, parsed, entered]);
-  const loadReadiness = useCallback(() => {
-    // `confirmed` is why the age of the files is asked for again after a scan date was confirmed.
-    void parsed;
-    void entered;
-    void confirmed;
-    return fetchReadiness(submissionId);
-  }, [submissionId, parsed, entered, confirmed]);
-  const findings = useResource(load);
-  const readiness = useResource(loadReadiness);
-  const reload = () => {
-    findings.reload();
-    readiness.reload();
-  };
-  return { findings, readiness, reload };
+  return useResource(load);
 }
 
 /** The list part of the section: what the chip shows, page by page, with the select-all of the whole chip. */
@@ -280,8 +280,9 @@ function useClampedPage(data: FindingPage | undefined, page: number, setPage: (p
 /**
  * The Findings read from the Scan Reports (stories 28, 35 to 38), as a spreadsheet-style list, the most severe first: filter
  * chips the server applies, a tick box on each row with a select-all, a select on each row to propose a Finding Status for
- * that Finding, a sticky bulk bar that applies one status to every ticked Finding, and a progress bar. The list and the
- * progress are asked for again when a file has been read into Findings (a file becomes PARSED) and after each proposal.
+ * that Finding, a sticky bulk bar that applies one status to every ticked Finding, and a progress bar. The list is asked
+ * for again when a file has been read into Findings (a file becomes PARSED), and the list and the progress after each
+ * proposal.
  * The approval memo of a Risk Accepted proposal is chosen among the supporting evidence files that have finished their
  * checks.
  */
@@ -289,15 +290,15 @@ export function FindingsSection({
   submissionId,
   files,
   entered,
-  confirmed,
+  readiness,
   classification,
 }: {
   submissionId: string;
   files: readonly ReportFile[];
   /** How many Findings were entered by hand on this screen: a new one is why the list is asked for again. */
   entered: number;
-  /** How many scan dates were confirmed on this screen: a new one is why the age of the files is asked for again. */
-  confirmed: number;
+  /** The screen's readiness, shared with the Declaration; asked for again here after each proposal. */
+  readiness: Resource<Readiness>;
   classification: string;
 }) {
   const [chip, setChip] = useState<ChipKey>("attention");
@@ -306,14 +307,11 @@ export function FindingsSection({
   // Only this submission's files, as the Scan Report cards show.
   const ofThisSubmission = files.filter((file) => file.submissionId === submissionId);
   const filter = FILTERS[chip];
-  const { findings, readiness, reload } = useFindingsData(
-    submissionId,
-    ofThisSubmission,
-    entered,
-    confirmed,
-    filter,
-    page,
-  );
+  const findings = useFindings(submissionId, ofThisSubmission, entered, filter, page);
+  const reload = () => {
+    findings.reload();
+    readiness.reload();
+  };
   const memos = ofThisSubmission.filter((file) => file.kind === "EVIDENCE" && file.status === "READY");
   useClampedPage(findings.data, page, setPage);
   // After a batch is applied the bulk bar goes away; the focus goes to the heading, above the new counts.
@@ -334,9 +332,7 @@ export function FindingsSection({
         Every Finding needs a status before you can submit. Choose one on its row and give what it requires, or tick
         several and apply one status to them all; the Cyber Manager then confirms it or sends it back.
       </p>
-      {readiness.data ? <ReadinessBar readiness={readiness.data} /> : null}
-      {readiness.data ? <FileAgeNotice readiness={readiness.data} /> : null}
-      {readiness.error ? <ErrorPanel problem={readiness.error.problem} /> : null}
+      <ReadinessPanel readiness={readiness} />
       <FilterChips label="Show Findings" chips={CHIPS} selected={chip} onSelect={choose} />
       <FindingsList
         submissionId={submissionId}
@@ -351,18 +347,20 @@ export function FindingsSection({
         onProposed={reload}
       />
       {selection.selected.size > 0 ? (
-        <BulkBar
-          submissionId={submissionId}
-          selectedIds={[...selection.selected]}
-          memos={memos}
-          classification={classification}
-          onApplied={() => {
-            selection.clear();
-            reload();
-            heading.current?.focus();
-          }}
-          onClear={selection.clear}
-        />
+        <Editable>
+          <BulkBar
+            submissionId={submissionId}
+            selectedIds={[...selection.selected]}
+            memos={memos}
+            classification={classification}
+            onApplied={() => {
+              selection.clear();
+              reload();
+              heading.current?.focus();
+            }}
+            onClear={selection.clear}
+          />
+        </Editable>
       ) : null}
     </section>
   );

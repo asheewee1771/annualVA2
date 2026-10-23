@@ -14,6 +14,7 @@ import type { ScanReportMode } from "../../api/scanReports.ts";
 import { ClassifiedField } from "../../components/ClassifiedField.tsx";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { saveFile } from "../shared/saveFile.ts";
+import { Editable } from "./Editable.tsx";
 import { ManualFindingForm } from "./ManualFindingForm.tsx";
 import { ScanDateForm } from "./ScanDateForm.tsx";
 import { ScanReportModeForm } from "./ScanReportModeForm.tsx";
@@ -244,9 +245,11 @@ function FileRow({
       {isReplaceable(file, files) ? (
         <>
           {" "}
-          <button type="button" className="button button--secondary" onClick={() => onReplace(file)}>
-            Replace<span className="visually-hidden"> {file.name}</span>
-          </button>
+          <Editable>
+            <button type="button" className="button button--secondary" onClick={() => onReplace(file)}>
+              Replace<span className="visually-hidden"> {file.name}</span>
+            </button>
+          </Editable>
         </>
       ) : null}
       {replaced ? <p className="muted">Rescan of {replaced.name}</p> : null}
@@ -341,6 +344,77 @@ function isConfirmable(file: ReportFile): boolean {
   return file.kind === "MACHINE_READABLE" && file.status === "PARSED" && file.supersededBy === null;
 }
 
+/** The scan date and target of each report file whose findings were read, disabled once the VA Submission is submitted. */
+function ScanDates({
+  submissionId,
+  files,
+  classification,
+  onConfirmed,
+}: {
+  submissionId: string;
+  files: readonly ReportFile[];
+  classification: string;
+  onConfirmed: () => void;
+}) {
+  if (files.length === 0) return null;
+  return (
+    <>
+      <h4>Scan dates and targets</h4>
+      <p className="muted">
+        Confirm when each scan was made and what it scanned, or correct what the file says. A file more than 90 days old
+        cannot be submitted, and a changed target is marked for the Cyber Manager.
+      </p>
+      <Editable>
+        {files.map((file) => (
+          <ScanDateForm
+            key={file.id}
+            submissionId={submissionId}
+            file={file}
+            classification={classification}
+            onConfirmed={onConfirmed}
+          />
+        ))}
+      </Editable>
+    </>
+  );
+}
+
+/** The files of one kind, each with its status, or a line saying there are none yet. */
+function FileList({
+  submissionId,
+  report,
+  evidence,
+  files,
+  onReplace,
+  onProblem,
+}: {
+  submissionId: string;
+  report: ScanReport;
+  evidence: boolean;
+  files: readonly ReportFile[];
+  onReplace: (file: ReportFile) => void;
+  onProblem: (problem: Problem | undefined) => void;
+}) {
+  if (files.length === 0) {
+    return <p>{evidence ? "No supporting evidence attached yet." : "No files uploaded yet."}</p>;
+  }
+  return (
+    <ul className="plain-list" aria-live="polite">
+      {files.map((file) => (
+        <FileRow
+          key={file.id}
+          submissionId={submissionId}
+          report={report}
+          file={file}
+          files={files}
+          onReplace={onReplace}
+          onProblem={onProblem}
+        />
+      ))}
+    </ul>
+  );
+}
+
 /**
  * The files of one kind, each with its status, and the control to add more; a problem shows beside the control. Below the
  * report files (outside their live region), the scan date and target of each one whose findings were read.
@@ -380,65 +454,48 @@ function FileSection({
           file is never shown here: it downloads as a file, so open it only if you trust it.
         </p>
       ) : null}
-      {files.length === 0 ? (
-        <p>{evidence ? "No supporting evidence attached yet." : "No files uploaded yet."}</p>
-      ) : (
-        <ul className="plain-list" aria-live="polite">
-          {files.map((file) => (
-            <FileRow
-              key={file.id}
-              submissionId={submissionId}
-              report={report}
-              file={file}
-              files={files}
-              onReplace={(file) => setReplacingId(file.id)}
-              onProblem={setProblem}
-            />
-          ))}
-        </ul>
-      )}
-      {replacing ? (
-        <ReplaceForm
-          key={replacing.id}
-          submissionId={submissionId}
-          report={report}
-          file={replacing}
-          classification={classification}
-          onClose={() => {
-            setReplacingId(undefined);
-            heading.current?.focus();
-          }}
-          onReplaced={onChanged}
-          onProblem={setProblem}
-        />
-      ) : null}
-      {problem ? <ErrorPanel problem={problem} /> : null}
-      {files.some(isConfirmable) ? (
-        <>
-          <h4>Scan dates and targets</h4>
-          <p className="muted">
-            Confirm when each scan was made and what it scanned, or correct what the file says. A file more than 90 days
-            old cannot be submitted, and a changed target is marked for the Cyber Manager.
-          </p>
-          {files.filter(isConfirmable).map((file) => (
-            <ScanDateForm
-              key={file.id}
-              submissionId={submissionId}
-              file={file}
-              classification={classification}
-              onConfirmed={onScanDateConfirmed}
-            />
-          ))}
-        </>
-      ) : null}
-      <UploadForm
+      <FileList
         submissionId={submissionId}
         report={report}
-        kind={kind}
-        classification={classification}
-        onUploaded={onChanged}
+        evidence={evidence}
+        files={files}
+        onReplace={(file) => setReplacingId(file.id)}
         onProblem={setProblem}
       />
+      {replacing ? (
+        <Editable>
+          <ReplaceForm
+            key={replacing.id}
+            submissionId={submissionId}
+            report={report}
+            file={replacing}
+            classification={classification}
+            onClose={() => {
+              setReplacingId(undefined);
+              heading.current?.focus();
+            }}
+            onReplaced={onChanged}
+            onProblem={setProblem}
+          />
+        </Editable>
+      ) : null}
+      {problem ? <ErrorPanel problem={problem} /> : null}
+      <ScanDates
+        submissionId={submissionId}
+        files={files.filter(isConfirmable)}
+        classification={classification}
+        onConfirmed={onScanDateConfirmed}
+      />
+      <Editable>
+        <UploadForm
+          submissionId={submissionId}
+          report={report}
+          kind={kind}
+          classification={classification}
+          onUploaded={onChanged}
+          onProblem={setProblem}
+        />
+      </Editable>
     </>
   );
 }
@@ -481,22 +538,26 @@ export function ScanReportCard({
       <h3 id={`report-${report.type}`}>{report.title}</h3>
       <p className="muted">{report.note}</p>
       {mode ? (
-        <ScanReportModeForm
-          key={`${mode.mode}|${mode.justification ?? ""}`}
-          submissionId={submissionId}
-          report={report}
-          current={mode}
-          classification={classification}
-          onChanged={onModeChanged}
-        />
+        <Editable>
+          <ScanReportModeForm
+            key={`${mode.mode}|${mode.justification ?? ""}`}
+            submissionId={submissionId}
+            report={report}
+            current={mode}
+            classification={classification}
+            onChanged={onModeChanged}
+          />
+        </Editable>
       ) : null}
       {mode?.mode === "MANUAL" ? (
-        <ManualFindingForm
-          submissionId={submissionId}
-          report={report}
-          classification={classification}
-          onEntered={onFindingEntered}
-        />
+        <Editable>
+          <ManualFindingForm
+            submissionId={submissionId}
+            report={report}
+            classification={classification}
+            onEntered={onFindingEntered}
+          />
+        </Editable>
       ) : null}
       {kinds.map((kind) => (
         <FileSection

@@ -338,6 +338,22 @@ body {
   padding: 0;
 }
 
+/* Controls that change a VA Submission, disabled together once it is submitted; no box of its own. */
+.plain-fieldset {
+  display: contents;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.declaration-text {
+  margin: 8px 0;
+  padding: 8px 12px;
+  border-left: 4px solid var(--accent);
+  white-space: pre-line;
+}
+
 .preview {
   margin-top: 16px;
 }

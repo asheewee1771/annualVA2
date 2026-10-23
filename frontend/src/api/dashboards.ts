@@ -1,10 +1,10 @@
 import { request } from "./client.ts";
 
 /** How a System in a Quarter is shown; the other states arrive with the commands that enter them. */
-export type InboxState = "NOT_STARTED" | "DRAFT";
+export type InboxState = "NOT_STARTED" | "DRAFT" | "IN_REVIEW" | "RETURNED_FOR_REWORK";
 
 /** What the signed-in person should do next with a System. */
-export type NextAction = "START_SUBMISSION" | "PREPARE_SUBMISSION";
+export type NextAction = "START_SUBMISSION" | "PREPARE_SUBMISSION" | "AWAIT_REVIEW";
 
 /** The heading the server puts a System under. */
 export type InboxGroup = "NEEDS_YOUR_ACTION" | "WAITING_ON_OTHERS" | "DONE";

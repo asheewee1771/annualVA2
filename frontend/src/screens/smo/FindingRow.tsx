@@ -13,6 +13,7 @@ import {
   type FieldName,
 } from "./findingStatuses.ts";
 import { saveFile } from "../shared/saveFile.ts";
+import { Editable } from "./Editable.tsx";
 import { ProposalFieldInput } from "./ProposalFieldInput.tsx";
 import { SCAN_REPORTS } from "./scanReports.ts";
 
@@ -141,6 +142,11 @@ function StatusCell({ submissionId, finding }: { submissionId: string; finding: 
   );
 }
 
+/** A Critical or High Finding is flagged as a danger. */
+function severityClass(finding: Finding): string {
+  return finding.severity === "CRITICAL" || finding.severity === "HIGH" ? "flag flag--danger" : "flag";
+}
+
 /**
  * One Finding as a row of the list, and the control to propose a status for it (stories 28 and 35): the severity, what the
  * report called it, where it was found, the status proposed so far with the review of it, and a select of the four statuses
@@ -173,17 +179,15 @@ export function FindingRow({
     <>
       <tr className={selected ? "row--selected" : undefined}>
         <td>
-          <input id={tickId} type="checkbox" checked={selected} onChange={() => onToggle(finding.id)} />
-          <label htmlFor={tickId} className="visually-hidden">
-            Select {finding.identifier}
-          </label>
+          <Editable>
+            <input id={tickId} type="checkbox" checked={selected} onChange={() => onToggle(finding.id)} />
+            <label htmlFor={tickId} className="visually-hidden">
+              Select {finding.identifier}
+            </label>
+          </Editable>
         </td>
         <td>
-          <span
-            className={finding.severity === "CRITICAL" || finding.severity === "HIGH" ? "flag flag--danger" : "flag"}
-          >
-            {SEVERITY_LABELS[finding.severity]}
-          </span>
+          <span className={severityClass(finding)}>{SEVERITY_LABELS[finding.severity]}</span>
         </td>
         <td className="mono">
           {finding.identifier}
@@ -215,37 +219,41 @@ export function FindingRow({
         </td>
         <StatusCell submissionId={submissionId} finding={finding} />
         <td>
-          <label htmlFor={selectId} className="visually-hidden">
-            Propose a status for {finding.identifier}
-          </label>
-          <select
-            id={selectId}
-            value={chosen}
-            onChange={(event) => setChosen(event.target.value as FindingStatus | "")}
-          >
-            <option value="">{proposal ? "Change status…" : "Propose a status…"}</option>
-            {STATUSES.map((status) => (
-              <option key={status.value} value={status.value}>
-                {status.label}
-              </option>
-            ))}
-          </select>
+          <Editable>
+            <label htmlFor={selectId} className="visually-hidden">
+              Propose a status for {finding.identifier}
+            </label>
+            <select
+              id={selectId}
+              value={chosen}
+              onChange={(event) => setChosen(event.target.value as FindingStatus | "")}
+            >
+              <option value="">{proposal ? "Change status…" : "Propose a status…"}</option>
+              {STATUSES.map((status) => (
+                <option key={status.value} value={status.value}>
+                  {status.label}
+                </option>
+              ))}
+            </select>
+          </Editable>
         </td>
       </tr>
       {chosen ? (
         <tr>
           <td colSpan={8}>
-            <ProposalForm
-              key={chosen}
-              finding={finding}
-              status={chosen}
-              memos={memos}
-              classification={classification}
-              onProposed={() => {
-                setChosen("");
-                onProposed();
-              }}
-            />
+            <Editable>
+              <ProposalForm
+                key={chosen}
+                finding={finding}
+                status={chosen}
+                memos={memos}
+                classification={classification}
+                onProposed={() => {
+                  setChosen("");
+                  onProposed();
+                }}
+              />
+            </Editable>
           </td>
         </tr>
       ) : null}

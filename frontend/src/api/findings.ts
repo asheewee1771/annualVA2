@@ -1,5 +1,6 @@
 import { request } from "./client.ts";
 import type { ReportType } from "./reportFiles.ts";
+import type { Reason } from "./problem.ts";
 
 /** How severe a Finding is, the most severe first. */
 export type Severity = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "INFORMATIONAL";
@@ -206,6 +207,8 @@ export interface Readiness {
   tooOld: NamedFile[];
   /** Report files with no scan date to judge (none in the file, or only a Burp export time), until one is given. */
   undated: NamedFile[];
+  /** Every reason it cannot be submitted now, apart from the Declaration ticked on the screen; empty when ready. */
+  blockers: Reason[];
 }
 
 /** GET /api/submissions/{id}/readiness: the progress counts of the VA Submission's Findings. */

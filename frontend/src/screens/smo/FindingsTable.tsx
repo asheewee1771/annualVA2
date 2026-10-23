@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { Finding } from "../../api/findings.ts";
 import type { ReportFile } from "../../api/reportFiles.ts";
+import { Editable } from "./Editable.tsx";
 import { FindingRow } from "./FindingRow.tsx";
 
 /**
@@ -40,16 +41,18 @@ export function FindingsTable({
         <thead>
           <tr>
             <th scope="col">
-              <input
-                id="findings-tick-page"
-                ref={pageBox}
-                type="checkbox"
-                checked={pageTicked}
-                onChange={() => onTogglePage(items)}
-              />
-              <label htmlFor="findings-tick-page" className="visually-hidden">
-                Select every Finding on this page
-              </label>
+              <Editable>
+                <input
+                  id="findings-tick-page"
+                  ref={pageBox}
+                  type="checkbox"
+                  checked={pageTicked}
+                  onChange={() => onTogglePage(items)}
+                />
+                <label htmlFor="findings-tick-page" className="visually-hidden">
+                  Select every Finding on this page
+                </label>
+              </Editable>
             </th>
             <th scope="col">Severity</th>
             <th scope="col">Finding</th>

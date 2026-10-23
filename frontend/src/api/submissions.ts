@@ -1,7 +1,12 @@
 import { request } from "./client.ts";
 
 /** Where a VA Submission is in its life; the other states arrive with the commands that enter them. */
-export type SubmissionState = "DRAFT";
+export type SubmissionState = "DRAFT" | "IN_REVIEW" | "RETURNED_FOR_REWORK";
+
+/** Whether the SMO/Tech Lead is still preparing it: anything else is read-only (the server refuses changes). */
+export function isEditable(state: SubmissionState): boolean {
+  return state === "DRAFT" || state === "RETURNED_FOR_REWORK";
+}
 
 /** The steps at which a person acts on a VA Submission. */
 export type SubmissionStep = "SUBMIT";
@@ -12,6 +17,16 @@ export interface Acted {
   userId: string;
   /** An instant (UTC). */
   at: string;
+}
+
+/** The Declaration as accepted at the latest submit: the exact wording of its version, who accepted it and when. */
+export interface AcceptedDeclaration {
+  version: number;
+  text: string;
+  /** A user id, never a name or email. */
+  acceptedBy: string;
+  /** An instant (UTC). */
+  acceptedAt: string;
 }
 
 /** A VA Submission. Dates are business dates (YYYY-MM-DD, Asia/Singapore). */
@@ -28,7 +43,19 @@ export interface Submission {
   reviewDue: string;
   endorseDue: string;
   startedAt: string;
+  /** When it was last submitted for review (an instant, UTC); null until it is. */
+  submittedAt: string | null;
+  /** The Declaration accepted at its latest submit; null until it is submitted. */
+  declaration: AcceptedDeclaration | null;
   acted: Acted[];
+}
+
+/** The fixed Declaration wording the SMO/Tech Lead accepts when submitting. */
+export interface DeclarationText {
+  version: number;
+  text: string;
+  /** True while the wording is not the agreed one: the screen marks it. */
+  placeholder: boolean;
 }
 
 /**
@@ -42,4 +69,21 @@ export function startSubmission(systemId: string, cycle?: number): Promise<Submi
 /** GET /api/submissions/{id}: for anyone who may see the System. */
 export function fetchSubmission(id: string): Promise<Submission> {
   return request<Submission>("GET", `/api/submissions/${encodeURIComponent(id)}`);
+}
+
+/** GET /api/declaration-text: the wording to accept now. */
+export function fetchDeclarationText(): Promise<DeclarationText> {
+  return request<DeclarationText>("GET", "/api/declaration-text");
+}
+
+/**
+ * POST /api/submissions/{id}/submit: submits for review with the Declaration of this version ticked. The server answers
+ * 409 `not-ready` with every reason it cannot be submitted yet (`reasons`), and 409 `invalid-transition` once it is not
+ * in Draft or Returned for Rework.
+ */
+export function submitSubmission(id: string, declarationVersion: number): Promise<Submission> {
+  return request<Submission>("POST", `/api/submissions/${encodeURIComponent(id)}/submit`, {
+    declarationAccepted: true,
+    declarationVersion,
+  });
 }

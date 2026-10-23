@@ -23,11 +23,17 @@ const GROUPS: readonly { group: InboxGroup; title: string; empty: string }[] = [
   { group: "DONE", title: "Done", empty: "Nothing is done yet." },
 ];
 
-const STATE_LABELS: Readonly<Record<InboxState, string>> = { NOT_STARTED: "Not Started", DRAFT: "Draft" };
+const STATE_LABELS: Readonly<Record<InboxState, string>> = {
+  NOT_STARTED: "Not Started",
+  DRAFT: "Draft",
+  IN_REVIEW: "In Review",
+  RETURNED_FOR_REWORK: "Returned for Rework",
+};
 
 const ACTION_LABELS: Readonly<Record<NextAction, string>> = {
   START_SUBMISSION: "Start the VA Submission",
   PREPARE_SUBMISSION: "Prepare and submit the VA Submission",
+  AWAIT_REVIEW: "The Cyber Manager reviews it",
 };
 
 const UNREACHABLE: Problem = { type: "about:blank", title: "The server could not be reached", status: 0 };
@@ -45,7 +51,8 @@ function RowAction({
   if (system.submissionId) {
     return (
       <AppLink path={submissionPath(system.submissionId)}>
-        Continue<span className="visually-hidden"> the VA Submission for {system.systemId}</span>
+        {system.state === "IN_REVIEW" ? "View" : "Continue"}
+        <span className="visually-hidden"> the VA Submission for {system.systemId}</span>
       </AppLink>
     );
   }

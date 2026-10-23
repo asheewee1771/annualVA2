@@ -1,33 +1,231 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { dayLabel } from "../../api/cycles.ts";
+import { fetchReadiness, type Readiness } from "../../api/findings.ts";
+import { ApiError, type Problem, type Reason, type ReasonFile } from "../../api/problem.ts";
 import { fetchReportFiles } from "../../api/reportFiles.ts";
 import { fetchScanReportModes } from "../../api/scanReports.ts";
-import { fetchSubmission, type Submission, type SubmissionState } from "../../api/submissions.ts";
+import {
+  fetchDeclarationText,
+  fetchSubmission,
+  isEditable,
+  submitSubmission,
+  type AcceptedDeclaration,
+  type DeclarationText,
+  type Submission,
+  type SubmissionState,
+} from "../../api/submissions.ts";
 import { AppLink } from "../../app/AppLink.tsx";
 import { ClassifiedField } from "../../components/ClassifiedField.tsx";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { useResource, type Resource } from "../../hooks/useResource.ts";
+import { EditableContext } from "./Editable.tsx";
 import { FindingsSection } from "./FindingsSection.tsx";
 import { SMO_AREA_PATH } from "./paths.ts";
 import { ScanReportsSection } from "./ScanReportsSection.tsx";
+import { SCAN_REPORTS } from "./scanReports.ts";
 
-const STATE_LABELS: Readonly<Record<SubmissionState, string>> = { DRAFT: "Draft" };
+const STATE_LABELS: Readonly<Record<SubmissionState, string>> = {
+  DRAFT: "Draft",
+  IN_REVIEW: "In Review",
+  RETURNED_FOR_REWORK: "Returned for Rework",
+};
 
-/** The Declaration stays off until the submit command arrives with its own ticket; it is shown so the order of the work is. */
-function DeclarationSection({ classification }: { classification: string }) {
+const WHEN = new Intl.DateTimeFormat("en-SG", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Singapore" });
+
+const UNREACHABLE: Problem = { type: "about:blank", title: "The server could not be reached", status: 0 };
+
+/** A file a reason names, by its name and its Scan Report, as text. */
+function fileWords(file: ReasonFile): string {
+  const report = SCAN_REPORTS.find((each) => each.type === file.reportType);
+  return `${file.name} (${report ? report.title : file.reportType})`;
+}
+
+/** What stands in the way of submitting, each reason in the server's words with the files it names. */
+function ReasonList({ reasons }: { reasons: readonly Reason[] }) {
+  return (
+    <ul>
+      {reasons.map((reason, index) => (
+        <li key={`${reason.reason}-${reason.reportType ?? ""}-${index}`}>
+          {reason.message}
+          {reason.files.length > 0 ? (
+            <ul>
+              {reason.files.map((file) => (
+                <li key={file.fileId}>{fileWords(file)}</li>
+              ))}
+            </ul>
+          ) : null}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** The Declaration as it was accepted at the latest submit: the exact wording kept with the VA Submission. */
+function AcceptedDeclarationView({ declaration }: { declaration: AcceptedDeclaration }) {
+  return (
+    <>
+      <p>
+        Declaration version {declaration.version}, accepted {WHEN.format(new Date(declaration.acceptedAt))}:
+      </p>
+      <p className="declaration-text">{declaration.text}</p>
+    </>
+  );
+}
+
+/** Once submitted: when, that it is read-only now, and the Declaration as it was accepted. */
+function SubmittedDeclaration({ submission }: { submission: Submission }) {
   return (
     <section className="card" aria-labelledby="declaration">
       <h3 id="declaration">Declaration</h3>
+      {submission.submittedAt ? (
+        <p>
+          Submitted for review on {WHEN.format(new Date(submission.submittedAt))}. This VA Submission is read-only now.
+        </p>
+      ) : null}
+      {submission.declaration ? <AcceptedDeclarationView declaration={submission.declaration} /> : null}
+    </section>
+  );
+}
+
+/** The current wording, marked when it is a placeholder, and the tick box that accepts it. */
+function DeclarationWording({
+  text,
+  ticked,
+  busy,
+  classification,
+  onTick,
+}: {
+  text: DeclarationText;
+  ticked: boolean;
+  busy: boolean;
+  classification: string;
+  onTick: (ticked: boolean) => void;
+}) {
+  return (
+    <>
       <p className="muted">
-        You can accept the Declaration and submit for review once every Scan Report is in and every Finding has a
-        proposed status.
+        Version {text.version}
+        {text.placeholder ? (
+          <>
+            {" "}
+            <span className="flag flag--warning">Placeholder wording, not yet agreed</span>
+          </>
+        ) : null}
       </p>
+      <p className="declaration-text">{text.text}</p>
       <ClassifiedField label="I accept the Declaration" classification={classification} id="declaration-accepted">
-        <input id="declaration-accepted" type="checkbox" disabled />
+        <input
+          id="declaration-accepted"
+          type="checkbox"
+          checked={ticked}
+          disabled={busy}
+          onChange={(event) => onTick(event.target.checked)}
+        />
       </ClassifiedField>
+    </>
+  );
+}
+
+/** The server's refusal of a submit, with every reason it listed. */
+function SubmitProblem({ problem }: { problem: Problem }) {
+  return (
+    <>
+      <ErrorPanel problem={problem} />
+      {problem.reasons && problem.reasons.length > 0 ? <ReasonList reasons={problem.reasons} /> : null}
+    </>
+  );
+}
+
+/**
+ * Submits with the version shown. A refusal is kept to show; the wording is read again and must be ticked again, and what
+ * stands in the way is read again.
+ */
+function useSubmit(
+  submissionId: string,
+  declaration: Resource<DeclarationText>,
+  onSubmitted: () => void,
+  onRefused: () => void,
+) {
+  const [ticked, setTicked] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<Problem | undefined>(undefined);
+
+  async function submit(version: number) {
+    setBusy(true);
+    setProblem(undefined);
+    try {
+      await submitSubmission(submissionId, version);
+      onSubmitted();
+    } catch (failure) {
+      setProblem(failure instanceof ApiError ? failure.problem : UNREACHABLE);
+      setTicked(false);
+      declaration.reload();
+      onRefused();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return { ticked, setTicked, busy, problem, submit };
+}
+
+/**
+ * The Declaration and Submit while the VA Submission is prepared (stories 40 and 41). Submit stays disabled, with every
+ * reason the server gives shown, until nothing stands in the way and the current wording is ticked; the server checks
+ * again and lists its reasons if it refuses.
+ */
+function DeclarationForm({
+  submission,
+  readiness,
+  classification,
+  onSubmitted,
+}: {
+  submission: Submission;
+  readiness: Resource<Readiness>;
+  classification: string;
+  onSubmitted: () => void;
+}) {
+  const declaration = useResource(fetchDeclarationText);
+  const { ticked, setTicked, busy, problem, submit } = useSubmit(
+    submission.id,
+    declaration,
+    onSubmitted,
+    readiness.reload,
+  );
+  const text = declaration.data;
+  const blockers = readiness.data?.blockers ?? [];
+  const ready = readiness.data !== undefined && blockers.length === 0;
+
+  return (
+    <section className="card" aria-labelledby="declaration">
+      <h3 id="declaration">Declaration</h3>
+      {declaration.error ? <ErrorPanel problem={declaration.error.problem} /> : null}
+      {text ? (
+        <DeclarationWording
+          text={text}
+          ticked={ticked}
+          busy={busy}
+          classification={classification}
+          onTick={setTicked}
+        />
+      ) : (
+        <p className="muted">Loading the Declaration…</p>
+      )}
+      {blockers.length > 0 ? (
+        <div className="notice" role="status">
+          <p>Before you can submit:</p>
+          <ReasonList reasons={blockers} />
+        </div>
+      ) : null}
+      {problem ? <SubmitProblem problem={problem} /> : null}
       <p>
-        <button type="button" className="button" disabled>
-          Submit for review
+        <button
+          type="button"
+          className="button"
+          disabled={!ready || !ticked || !text || busy}
+          onClick={() => text && void submit(text.version)}
+        >
+          {busy ? "Submitting…" : "Submit for review"}
         </button>
       </p>
     </section>
@@ -64,12 +262,11 @@ function SubmissionSummary({ submission }: { submission: Resource<Submission> })
 }
 
 /**
- * Where the SMO/Tech Lead prepares a VA Submission (stories 19, 20, 23, 24, 25, 26, 28 and 35): the three Scan Report cards
- * with how each is provided, their files and each file's pipeline status (asked for again while a file is still being
- * checked), the scan date and target of each report file and the form to enter a Finding by hand, the Findings read from
- * them or entered
- * with a status to propose for each, and the Declaration, disabled until the submit command arrives. The state and the
- * dates are the server's.
+ * Where the SMO/Tech Lead prepares a VA Submission (stories 19, 20, 23, 24, 25, 26, 28, 35, 40 and 41): the three Scan
+ * Report cards with how each is provided, their files and each file's pipeline status (asked for again while a file is
+ * still being checked), the scan date and target of each report file and the form to enter a Finding by hand, the Findings
+ * read from them or entered with a status to propose for each, and the Declaration with Submit. Once submitted, the screen
+ * is read-only. The state, the dates and what stands in the way of submitting are the server's.
  */
 export function SubmissionPrepareScreen({
   submissionId,
@@ -85,10 +282,18 @@ export function SubmissionPrepareScreen({
   const files = useResource(loadFiles);
   const loadModes = useCallback(() => fetchScanReportModes(submissionId), [submissionId]);
   const modes = useResource(loadModes);
+  // What stands in the way of submitting: one read, shown by the Findings and the Declaration, asked for again by each
+  // change below, after a proposal and after a refused submit.
+  const loadReadiness = useCallback(() => fetchReadiness(submissionId), [submissionId]);
+  const readiness = useResource(loadReadiness);
+  const reloadReadiness = readiness.reload;
+  // A file that finishes its checks, and a Scan Report whose mode changed, change it too.
+  useEffect(() => {
+    if (files.data && modes.data) reloadReadiness();
+  }, [files.data, modes.data, reloadReadiness]);
   // Counts the Findings entered by hand on this screen, so the Findings are asked for again after each.
   const [entered, setEntered] = useState(0);
-  // Counts the scan dates confirmed on this screen, so the age of the files is asked for again after each.
-  const [confirmed, setConfirmed] = useState(0);
+  const editable = data ? isEditable(data.state) : false;
 
   return (
     <>
@@ -97,24 +302,36 @@ export function SubmissionPrepareScreen({
       </p>
       <SubmissionSummary submission={submission} />
       {data ? (
-        <>
+        <EditableContext.Provider value={editable}>
           <ScanReportsSection
             submissionId={submissionId}
             files={files}
             modes={modes}
             classification={classification}
-            onFindingEntered={() => setEntered((count) => count + 1)}
-            onScanDateConfirmed={() => setConfirmed((count) => count + 1)}
+            onFindingEntered={() => {
+              setEntered((count) => count + 1);
+              reloadReadiness();
+            }}
+            onScanDateConfirmed={reloadReadiness}
           />
           <FindingsSection
             submissionId={submissionId}
             files={files.data ?? []}
             entered={entered}
-            confirmed={confirmed}
+            readiness={readiness}
             classification={classification}
           />
-          <DeclarationSection classification={classification} />
-        </>
+          {editable ? (
+            <DeclarationForm
+              submission={data}
+              readiness={readiness}
+              classification={classification}
+              onSubmitted={submission.reload}
+            />
+          ) : (
+            <SubmittedDeclaration submission={data} />
+          )}
+        </EditableContext.Provider>
       ) : null}
     </>
   );
