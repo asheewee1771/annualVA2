@@ -74,6 +74,13 @@ public final class Arrange {
         assertThat(client.post("/api/test/submissions/" + submissionId + "/state/" + state).status()).isEqualTo(200);
     }
 
+    /** Adds the next version of the Declaration wording, not a placeholder, as a later migration will; returns it. */
+    public int declarationVersion() {
+        var response = client.post("/api/test/declaration-text");
+        assertThat(response.status()).as(response.body()).isEqualTo(200);
+        return ApiClient.json(response).get("version").asInt();
+    }
+
     /** A person known by email only, as the System Register creates them; returns the user id. */
     public String preRegister(String email) {
         var response = client.postJson("/api/test/users", "{\"email\":\"" + email + "\"}");

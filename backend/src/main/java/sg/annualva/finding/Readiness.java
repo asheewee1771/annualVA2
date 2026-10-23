@@ -1,10 +1,13 @@
 package sg.annualva.finding;
 
 import java.util.List;
+import sg.annualva.submission.SubmitReadiness.Blocker;
+import sg.annualva.submission.SubmitReadiness.NamedFile;
 
 /**
- * How far a VA Submission is (stories 26 and 38): what the progress bar shows, and the report files whose age stands in the
- * way of submitting. Counts and file names only, never report content.
+ * How far a VA Submission is (stories 26, 38 and 40): what the progress bar shows, the report files whose age stands in the
+ * way of submitting, and every reason it cannot be submitted yet. Counts, fixed sentences and file names only, never
+ * report content.
  *
  * @param total every Finding of the VA Submission
  * @param proposed the Findings that have a proposed Finding Status, whatever its review
@@ -15,7 +18,9 @@ import java.util.List;
  * @param disputed the Findings whose current proposal the Cyber Manager Disputed
  * @param tooOld the report files more than 90 days old at today's business date, by name, in upload order
  * @param undated the report files with no scan date to judge, by name, in upload order: the SMO/Tech Lead gives one
+ * @param blockers every reason the VA Submission cannot be submitted now apart from the Declaration, which the
+ *     SMO/Tech Lead ticks when submitting; empty when nothing else stands in the way. The submit refuses with the same.
  */
 public record Readiness(
         long total, long proposed, long unproposed, long awaitingReview, long carriedOver, long targetDateMissed,
-        long disputed, List<ReportFileAges.NamedFile> tooOld, List<ReportFileAges.NamedFile> undated) {}
+        long disputed, List<NamedFile> tooOld, List<NamedFile> undated, List<Blocker> blockers) {}

@@ -50,10 +50,10 @@ public class Findings {
     private final AuditActor actor;
     private final AuditLog audit;
     private final CycleCalendar calendar;
-    private final ReportFileAges fileAges;
+    private final SubmitChecks checks;
 
     Findings(FindingStore store, Proposals proposals, Submissions submissions, AccessGuard guard, AuditActor actor,
-            AuditLog audit, CycleCalendar calendar, ReportFileAges fileAges) {
+            AuditLog audit, CycleCalendar calendar, SubmitChecks checks) {
         this.store = store;
         this.proposals = proposals;
         this.submissions = submissions;
@@ -61,7 +61,7 @@ public class Findings {
         this.actor = actor;
         this.audit = audit;
         this.calendar = calendar;
-        this.fileAges = fileAges;
+        this.checks = checks;
     }
 
     /**
@@ -184,7 +184,7 @@ public class Findings {
      */
     @Transactional
     public Page<FindingView> list(UUID submissionId, FindingFilter filter, int page, int size) {
-        UUID systemId = submissions.systemOf(submissionId, Need.VIEW);
+        UUID systemId = submissions.systemOf(submissionId);
         List<FindingStore.Row> rows = store.page(submissionId, filter, size, (long) page * size);
         Map<UUID, List<FindingView.SourceFile>> sources = store.sources(rows.stream().map(FindingStore.Row::id).toList());
         List<FindingView> items = rows.stream()
@@ -200,16 +200,16 @@ public class Findings {
 
     /**
      * The progress counts of a VA Submission (story 38) and the report files whose age stands in the way of submitting
-     * (story 26: more than 90 days old at today's business date, or with no scan date to judge), for anyone who may see
-     * its System. They are counts and file names, not report content, so they follow the rule for a read of the VA Submission itself (reviewer decisions, "Reading a single VA
+     * (story 26: more than 90 days old at today's business date, or with no scan date to judge), and every reason it cannot
+     * be submitted apart from the Declaration ({@link SubmitChecks}, story 40), for anyone who may see its System. They are counts and file names, not report content, so they follow the rule for a read of the VA Submission itself (reviewer decisions, "Reading a single VA
      * Submission is audited unless the owning SMO/Tech Lead reads it"): a read by a Cyber Manager or a VA POC is a
      * {@code READINESS_VIEWED} entry with ids only, and the owner's own reads, which the screen repeats after every
      * proposal, write nothing. One the caller may not see is "not found", the same as one that does not exist.
      */
     @Transactional
     public Readiness readiness(UUID submissionId) {
-        UUID systemId = submissions.systemOf(submissionId, Need.VIEW);
-        Readiness readiness = store.readiness(submissionId, fileAges.of(submissionId));
+        UUID systemId = submissions.systemOf(submissionId);
+        Readiness readiness = checks.readiness(submissionId);
         if (!guard.scope(Need.SUBMIT).contains(systemId)) {
             audit.record(actor.attribute(AuditEvent.of(AuditAction.READINESS_VIEWED, AuditOutcome.SUCCESS))
                     .onSystem(systemId).onSubmission(submissionId));
@@ -234,7 +234,7 @@ public class Findings {
     @Transactional
     public ProposalView propose(UUID findingId, ProposalRequest request) {
         FindingStore.Located located = store.locate(findingId).orElseThrow(ResourceNotFoundException::new);
-        Submissions.FileTarget target = proposals.target(located.submissionId(), AuditAction.STATUS_PROPOSED, findingId);
+        Submissions.EditTarget target = proposals.target(located.submissionId(), AuditAction.STATUS_PROPOSED, findingId);
         ProposalFields.Parsed fields = proposals.fields(target, request);
         List<UUID> one = List.of(findingId);
         if (!proposals.lock(target, one)) {
@@ -253,7 +253,7 @@ public class Findings {
     @Transactional
     public List<ProposalView> history(UUID findingId) {
         FindingStore.Located located = store.locate(findingId).orElseThrow(ResourceNotFoundException::new);
-        submissions.systemOf(located.submissionId(), Need.VIEW);
+        submissions.systemOf(located.submissionId());
         List<ProposalView> proposals = store.proposals(findingId);
         audit.record(actor.attribute(AuditEvent.of(AuditAction.FINDING_PROPOSALS_VIEWED, AuditOutcome.SUCCESS))
                 .onSystem(located.systemId()).onSubmission(located.submissionId()).onFinding(findingId)

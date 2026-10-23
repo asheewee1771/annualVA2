@@ -63,6 +63,9 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         if (ex.field() != null) {
             problem.setProperty("field", ex.field());
         }
+        if (!ex.reasons().isEmpty()) {
+            problem.setProperty("reasons", ex.reasons());
+        }
         return problem;
     }
 

@@ -9,7 +9,7 @@ import tools.jackson.databind.JsonNode;
  * What the tests of ticket 22 share (story 23): how a Scan Report is provided (uploaded, marked not applicable, or entered by
  * hand) and the Findings the SMO/Tech Lead types in, through the calls a person's browser makes.
  */
-abstract class ScanReportSeam1 extends ProposalSeam1 {
+abstract class ScanReportSeam1 extends ScanDateSeam1 {
 
     static final String UPLOAD = "UPLOAD";
     static final String NOT_APPLICABLE = "NOT_APPLICABLE";

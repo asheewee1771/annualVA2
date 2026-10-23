@@ -10,6 +10,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 import sg.annualva.parser.Severity;
+import sg.annualva.submission.Submissions;
 
 /**
  * How the Scan Reports of a VA Submission are provided, and the Findings typed in by hand (ADR 0030). Constant SQL, named
@@ -80,7 +81,8 @@ class ScanReportStore {
      * The Scan Report's mode, its row held until the transaction ends: shared by a write that relies on the mode, or
      * exclusive for a mode change.
      */
-    Slot lock(UUID submissionId, ReportType type, boolean exclusive) {
+    Slot lock(Submissions.EditTarget target, ReportType type, boolean exclusive) {
+        UUID submissionId = target.submissionId();
         jdbc.sql(ENSURE).param("submission", submissionId).param("type", type.name()).update();
         return jdbc.sql(exclusive ? LOCK_EXCLUSIVE : LOCK_SHARED)
                 .param("submission", submissionId)
@@ -96,10 +98,10 @@ class ScanReportStore {
     }
 
     /** Writes the mode of a Scan Report whose row the caller holds ({@link #lock}). */
-    void set(UUID submissionId, ReportType type, Slot slot) {
+    void set(Submissions.EditTarget target, ReportType type, Slot slot) {
         ReviewState review = slot.reviewState();
         jdbc.sql(UPDATE)
-                .param("submission", submissionId)
+                .param("submission", target.submissionId())
                 .param("type", type.name())
                 .param("mode", slot.mode().name())
                 .param("justification", slot.justification())
@@ -120,10 +122,10 @@ class ScanReportStore {
     }
 
     /** Keeps a Finding entered by hand; its id, or nothing when the VA Submission already has that Finding. */
-    Optional<UUID> insertManual(UUID submissionId, UUID systemId, Manual finding, Instant now) {
+    Optional<UUID> insertManual(Submissions.EditTarget target, Manual finding, Instant now) {
         return jdbc.sql(INSERT_MANUAL)
-                .param("submission", submissionId)
-                .param("system", systemId)
+                .param("submission", target.submissionId())
+                .param("system", target.systemId())
                 .param("type", finding.reportType().name())
                 .param("key", finding.key())
                 .param("hash", finding.hash())

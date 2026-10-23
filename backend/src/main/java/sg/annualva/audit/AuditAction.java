@@ -43,6 +43,13 @@ public enum AuditAction {
      */
     SUBMISSION_VIEWED("submission-viewed", "database"),
     /**
+     * An SMO/Tech Lead submitted a VA Submission for review (story 40; SUCCESS, with {@code state_from}, {@code state_to}
+     * and the {@code declaration_version} accepted), or was refused because it is not in Draft or Returned for Rework, or
+     * something stands in the way of submitting it (REFUSED, with a fixed reason and, for the latter, the {@code count} of
+     * reasons). About the System and the VA Submission; never the Declaration wording or a file name.
+     */
+    SUBMISSION_SUBMITTED("submission-submitted", "database"),
+    /**
      * An SMO/Tech Lead uploaded a Scan Report file and it was quarantined (SUCCESS), or the upload was refused because the
      * VA Submission takes no files now or the Scan Report is full (REFUSED, with a fixed reason). A rescan (story 39) also
      * names the file it replaces ({@code replaced_file_id}), and its refusals say why the file could not be replaced. About

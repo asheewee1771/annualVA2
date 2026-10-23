@@ -96,6 +96,9 @@ public class TestEndpoints {
         /** The Systems that "exist", standing in for the System Register's table. */
         private final Set<UUID> systems = ConcurrentHashMap.newKeySet();
 
+        /** The Declaration versions a test added; the reset removes them, never the ones the migrations added. */
+        private final Set<Integer> addedDeclarationVersions = ConcurrentHashMap.newKeySet();
+
         private final AppUserStore users;
         private final RoleGrantStore grants;
         private final AccessGuard guard;
@@ -231,6 +234,19 @@ public class TestEndpoints {
                 jdbc.sql("DELETE FROM report_file_stage").update();
                 jdbc.sql("DELETE FROM report_file").update();
                 jdbc.sql("DELETE FROM report_slot").update();
+                // The accepted Declarations are append-only too (V19). The versions of the wording the migrations added are
+                // kept; one a test added is removed, after the Declarations that name it.
+                jdbc.sql("ALTER TABLE declaration DISABLE TRIGGER declaration_append_only").update();
+                jdbc.sql("DELETE FROM declaration").update();
+                jdbc.sql("ALTER TABLE declaration ENABLE TRIGGER declaration_append_only").update();
+                if (!addedDeclarationVersions.isEmpty()) {
+                    jdbc.sql("ALTER TABLE declaration_text DISABLE TRIGGER declaration_text_append_only").update();
+                    for (int version : addedDeclarationVersions) {
+                        jdbc.sql("DELETE FROM declaration_text WHERE version = :version").param("version", version)
+                                .update();
+                    }
+                    jdbc.sql("ALTER TABLE declaration_text ENABLE TRIGGER declaration_text_append_only").update();
+                }
                 jdbc.sql("DELETE FROM submission_participation").update();
                 jdbc.sql("DELETE FROM va_submission").update();
                 jdbc.sql("DELETE FROM role_grant WHERE system_id IS NOT NULL").update();
@@ -238,7 +254,23 @@ public class TestEndpoints {
                 jdbc.sql("DELETE FROM va_system").update();
             });
             systems.clear();
+            addedDeclarationVersions.clear();
             return Map.of("reset", "yes");
+        }
+
+        /**
+         * A new version of the Declaration wording, the agreed one, as a later migration adds it (ticket 24): the version
+         * after the highest. The reset removes it.
+         */
+        @PostMapping("/api/test/declaration-text")
+        public Map<String, Integer> declarationText() {
+            int version = jdbc.sql("INSERT INTO declaration_text (version, text, placeholder) "
+                            + "SELECT max(version) + 1, 'AGREED WORDING FOR A TEST. I declare what I submit is accurate.', "
+                            + "false FROM declaration_text RETURNING version")
+                    .query(Integer.class)
+                    .single();
+            addedDeclarationVersions.add(version);
+            return Map.of("version", version);
         }
 
         /** One pass of the scan job, which {@code annualva.scheduling.enabled=false} keeps from running by itself in tests. */

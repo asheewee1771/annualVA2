@@ -93,6 +93,63 @@ class ArchitectureTest {
                 .check(main);
     }
 
+    /**
+     * ADR 0032 item 5 as a gate: what the SMO/Tech Lead prepares in a VA Submission is written only under the VA
+     * Submission's shared lock, which {@code Submissions.lockForEdit} takes and which no submit can pass. Each statement that
+     * writes it takes an {@code EditTarget}, and only {@code lockForEdit} makes one (its constructor is private), so a new
+     * write path cannot skip the lock or the state check. The unlocked {@code precheckEdit} exists only for the upload's
+     * early refusal, before its bytes are quarantined, and the class that uses it must also take the lock to keep the file.
+     */
+    @Test
+    void writesToPreparedContentTakeTheEditLock() throws Exception {
+        Class<?> editTarget = Class.forName("sg.annualva.submission.Submissions$EditTarget");
+        String[][] writes = {
+            {"sg.annualva.ingestion.ReportFileStore", "insert"},
+            {"sg.annualva.ingestion.ReportFileStore", "confirm"},
+            {"sg.annualva.finding.ScanReportStore", "lock"},
+            {"sg.annualva.finding.ScanReportStore", "set"},
+            {"sg.annualva.finding.ScanReportStore", "insertManual"},
+            {"sg.annualva.finding.Proposals", "lock"},
+            {"sg.annualva.finding.Proposals", "fields"},
+            {"sg.annualva.finding.Proposals", "newBatch"},
+        };
+        var missing = new ArrayList<String>();
+        for (String[] write : writes) {
+            Method[] named = Arrays.stream(Class.forName(write[0]).getDeclaredMethods())
+                    .filter(method -> method.getName().equals(write[1])).toArray(Method[]::new);
+            if (named.length == 0 || !Arrays.stream(named).allMatch(
+                    method -> Arrays.asList(method.getParameterTypes()).contains(editTarget))) {
+                missing.add(write[0] + "." + write[1]);
+            }
+        }
+        assertThat(missing).as("writes that do not take an EditTarget").isEmpty();
+        assertThat(Arrays.stream(editTarget.getDeclaredConstructors()).allMatch(c -> Modifier.isPrivate(c.getModifiers())))
+                .as("only Submissions.lockForEdit makes an EditTarget").isTrue();
+
+        noClasses().that().doNotHaveFullyQualifiedName("sg.annualva.ingestion.ReportFiles")
+                .and().resideOutsideOfPackage("sg.annualva.submission..")
+                .should().callMethod(sg.annualva.submission.Submissions.class, "precheckEdit", java.util.UUID.class,
+                        sg.annualva.submission.Submissions.Refusal.class)
+                .because("the unlocked early check is only for refusing an upload before its bytes are quarantined")
+                .check(main);
+        methods().that().areDeclaredIn(Class.forName("sg.annualva.ingestion.ReportFiles"))
+                .and().haveName("keep")
+                .should(new com.tngtech.archunit.lang.ArchCondition<com.tngtech.archunit.core.domain.JavaMethod>(
+                        "take the edit lock before keeping a file") {
+                    @Override
+                    public void check(com.tngtech.archunit.core.domain.JavaMethod method,
+                            com.tngtech.archunit.lang.ConditionEvents events) {
+                        boolean locks = method.getMethodCallsFromSelf().stream()
+                                .anyMatch(call -> call.getTarget().getName().equals("lockForEdit"));
+                        if (!locks) {
+                            events.add(com.tngtech.archunit.lang.SimpleConditionEvent.violated(method,
+                                    method.getFullName() + " keeps a file without Submissions.lockForEdit"));
+                        }
+                    }
+                })
+                .check(main);
+    }
+
     @Test
     void noStandardStreamsLoggingOrGenericExceptions() {
         NO_CLASSES_SHOULD_ACCESS_STANDARD_STREAMS.check(main);

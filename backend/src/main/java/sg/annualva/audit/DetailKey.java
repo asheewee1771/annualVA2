@@ -50,7 +50,9 @@ public enum DetailKey {
     /** Whether a confirmed scan date differs from the report file's own day (ticket 23): a flag, never the date. */
     DATE_CHANGED,
     /** Whether a confirmed target differs from the one the report file names (ticket 23): a flag, never the target. */
-    TARGET_CHANGED;
+    TARGET_CHANGED,
+    /** The Declaration version a submit accepted (ticket 25): a number, never the wording. */
+    DECLARATION_VERSION;
 
     /** The key as stored: lower-case with underscores. */
     String json() {

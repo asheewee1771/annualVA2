@@ -9,7 +9,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import sg.annualva.access.AuditActor;
 import sg.annualva.access.CurrentUser;
-import sg.annualva.access.Need;
 import sg.annualva.audit.AuditAction;
 import sg.annualva.audit.AuditEvent;
 import sg.annualva.audit.AuditLog;
@@ -66,7 +65,7 @@ class Proposals {
      * @throws ResourceNotFoundException for a VA Submission of a System the caller is not SMO/Tech Lead of
      * @throws RejectedRequestException 409 {@code invalid-transition} when it is not in Draft or Returned for Rework
      */
-    Submissions.FileTarget target(UUID submissionId, AuditAction refusedAs, @Nullable UUID findingId) {
+    Submissions.EditTarget target(UUID submissionId, AuditAction refusedAs, @Nullable UUID findingId) {
         return editable(submissionId, refusedAs, findingId, "This VA Submission takes no new proposals in its present state.");
     }
 
@@ -76,17 +75,16 @@ class Proposals {
      *
      * @param refusal the fixed sentence of the 409
      */
-    Submissions.FileTarget editable(UUID submissionId, AuditAction refusedAs, @Nullable UUID findingId, String refusal) {
+    Submissions.EditTarget editable(UUID submissionId, AuditAction refusedAs, @Nullable UUID findingId, String refusal) {
         // The files and the Findings are edited in the same states: the SMO/Tech Lead is still preparing the VA Submission.
-        Submissions.FileTarget target = submissions.fileTarget(submissionId, Need.SUBMIT);
-        if (!target.acceptsFiles()) {
+        // The VA Submission is held shared until the write commits, so a submit cannot land in between (ADR 0032).
+        return submissions.lockForEdit(submissionId, (submission, system) -> {
             AuditEvent refused = actor.attribute(AuditEvent.of(refusedAs, AuditOutcome.REFUSED))
-                    .onSystem(target.systemId()).onSubmission(submissionId);
+                    .onSystem(system).onSubmission(submission);
             audit.recordIndependently((findingId == null ? refused : refused.onFinding(findingId))
                     .with(DetailKey.REASON, "state-not-editable"));
-            throw new RejectedRequestException(HttpStatus.CONFLICT, "invalid-transition", refusal);
-        }
-        return target;
+            return new RejectedRequestException(HttpStatus.CONFLICT, "invalid-transition", refusal);
+        });
     }
 
     /**
@@ -95,7 +93,7 @@ class Proposals {
      * @throws RejectedRequestException 400 {@code invalid-field} naming the field that is wrong, or the memo when it is not
      *     a supporting evidence file of this VA Submission that has finished its checks
      */
-    ProposalFields.Parsed fields(Submissions.FileTarget target, ProposalRequest request) {
+    ProposalFields.Parsed fields(Submissions.EditTarget target, ProposalRequest request) {
         ProposalFields.Parsed fields = ProposalFields.parse(request, calendar.today());
         UUID memo = fields.approvalMemoFileId();
         if (memo != null && !store.isReadyEvidence(memo, target.submissionId())) {
@@ -106,7 +104,7 @@ class Proposals {
     }
 
     /** Locks the named Findings of the VA Submission; whether every one named is a Finding of it. */
-    boolean lock(Submissions.FileTarget target, List<UUID> findingIds) {
+    boolean lock(Submissions.EditTarget target, List<UUID> findingIds) {
         return store.lockFindings(target.submissionId(), findingIds) == findingIds.size();
     }
 
@@ -172,7 +170,7 @@ class Proposals {
     }
 
     /** A new Bulk-set batch of the VA Submission, by the caller, now. */
-    UUID newBatch(Submissions.FileTarget target) {
+    UUID newBatch(Submissions.EditTarget target) {
         return store.newBatch(target.submissionId(), user.id(), clock.instant());
     }
 }

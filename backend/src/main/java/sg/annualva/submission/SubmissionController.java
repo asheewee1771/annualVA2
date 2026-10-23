@@ -43,6 +43,20 @@ public class SubmissionController {
                 .body(started);
     }
 
+    /**
+     * Submits the VA Submission for review with the Declaration ticked: 200 with it In Review, or 409 listing every reason
+     * it cannot be submitted yet.
+     *
+     * @param request whether the Declaration was ticked and the version shown; {@code {}} ticks nothing (a 409 listing the
+     *     Declaration), and a request with no body at all is a 400
+     */
+    @PostMapping("/api/submissions/{id}/submit")
+    @PreAuthorize("hasRole('SMO')")
+    public ResponseEntity<Submissions.Submission> submit(@PathVariable UUID id,
+            @RequestBody Submissions.DeclarationAnswer request) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(submissions.submit(id, request));
+    }
+
     @GetMapping("/api/submissions/{id}")
     @PreAuthorize("hasAnyRole('SMO','CYBER_MANAGER','VA_POC')")
     public ResponseEntity<Submissions.Submission> submission(@PathVariable UUID id) {

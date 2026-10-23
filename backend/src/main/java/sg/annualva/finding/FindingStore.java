@@ -289,12 +289,16 @@ class FindingStore {
     }
 
     /** The counts of the VA Submission's Findings, beside the verdict on its report files' age. */
-    Readiness readiness(UUID submissionId, ReportFileAges.Ages ages) {
+    /** The progress counts of the VA Submission's Findings. */
+    Counts counts(UUID submissionId) {
         return jdbc.sql(READINESS).param("submission", submissionId)
-                .query((rs, row) -> new Readiness(rs.getLong("total"), rs.getLong("proposed"), rs.getLong("unproposed"),
-                        rs.getLong("awaiting_review"), 0, 0, rs.getLong("disputed"), ages.tooOld(), ages.undated()))
+                .query((rs, row) -> new Counts(rs.getLong("total"), rs.getLong("proposed"), rs.getLong("unproposed"),
+                        rs.getLong("awaiting_review"), rs.getLong("disputed")))
                 .single();
     }
+
+    /** How many Findings a VA Submission has, by proposal and review. */
+    record Counts(long total, long proposed, long unproposed, long awaitingReview, long disputed) {}
 
     private JdbcClient.StatementSpec filtered(String sql, UUID submissionId, FindingFilter filter) {
         List<Severity> severities = filter.severities().isEmpty() ? List.of(Severity.values()) : filter.severities();

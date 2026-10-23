@@ -16,6 +16,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 import sg.annualva.finding.ReportType;
 import sg.annualva.parser.ParsedReport;
+import sg.annualva.submission.Submissions;
 
 /**
  * The Scan Report file tables. Constant SQL, named parameters (as-2). Every change the scan job makes is guarded by the
@@ -113,12 +114,7 @@ class ReportFileStore {
      */
     private static final String CONFIRM =
             "UPDATE report_file SET scan_date_confirmed = :scanDate, target_confirmed = :target, updated_at = :now "
-            + "WHERE id = :id AND pipeline_status = 'PARSED' AND superseded_by IS NULL";
-
-    /** The report files whose scan date is judged by the age rule: parsed, and not replaced by a rescan. Oldest first. */
-    private static final String LIVE_PARSED = COLUMNS
-            + "WHERE f.submission_id = :submission AND f.pipeline_status = 'PARSED' AND f.superseded_by IS NULL "
-            + "ORDER BY f.seq";
+            + "WHERE id = :id AND submission_id = :submission AND pipeline_status = 'PARSED' AND superseded_by IS NULL";
 
     private static final String IN_FLIGHT =
             "SELECT id FROM report_file WHERE pipeline_status = 'SCAN_SUBMITTED' ORDER BY seq";
@@ -174,10 +170,10 @@ class ReportFileStore {
      * @param replacesId the parsed report file it is a rescan of, or null for an ordinary upload
      * @throws org.springframework.dao.DuplicateKeyException when that file already has a rescan on its way or parsed
      */
-    UUID insert(UUID submissionId, ReportType type, FileKind kind, String displayName, long sizeBytes, String sha256,
-            String quarantineKey, UUID uploadedBy, Instant now, @Nullable UUID replacesId) {
+    UUID insert(Submissions.EditTarget submission, ReportType type, FileKind kind, String displayName, long sizeBytes,
+            String sha256, String quarantineKey, UUID uploadedBy, Instant now, @Nullable UUID replacesId) {
         UUID id = jdbc.sql(INSERT)
-                .param("submission", submissionId)
+                .param("submission", submission.submissionId())
                 .param("type", type.name())
                 .param("kind", kind.name())
                 .param("name", displayName)
@@ -199,16 +195,12 @@ class ReportFileStore {
     }
 
     /** @return whether the file was still a parsed one that no rescan had replaced; false means nothing was written */
-    boolean confirm(UUID fileId, LocalDate scanDate, String target, Instant now) {
-        return jdbc.sql(CONFIRM).param("id", fileId).param("scanDate", scanDate).param("target", target)
+    boolean confirm(Submissions.EditTarget submission, UUID fileId, LocalDate scanDate, String target, Instant now) {
+        return jdbc.sql(CONFIRM).param("id", fileId).param("submission", submission.submissionId()).param("scanDate", scanDate).param("target", target)
                 .param("now", utc(now)).update() == 1;
     }
 
     /** The VA Submission's parsed report files that no rescan has replaced, oldest first. */
-    List<Row> liveParsed(UUID submissionId) {
-        return jdbc.sql(LIVE_PARSED).param("submission", submissionId).query((rs, row) -> row(rs)).list();
-    }
-
     Optional<Row> find(UUID id) {
         return jdbc.sql(FIND).param("id", id).query((rs, row) -> row(rs)).optional();
     }

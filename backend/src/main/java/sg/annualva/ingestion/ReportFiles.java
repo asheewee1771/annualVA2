@@ -94,13 +94,9 @@ public class ReportFiles {
      */
     public ReportFileView upload(UUID submissionId, ReportType reportType, FileKind kind, String originalName,
             byte[] content) {
-        Submissions.FileTarget target = submissions.fileTarget(submissionId, Need.SUBMIT);
-        if (!target.acceptsFiles()) {
-            throw refused(target, "state-not-editable", HttpStatus.CONFLICT, "invalid-transition",
-                    "This VA Submission takes no new files in its present state.");
-        }
+        Submissions.ReadTarget target = submissions.precheckEdit(submissionId, notEditable(null));
         if (store.countLive(submissionId, reportType, kind) >= MAX_FILES_PER_REPORT) {
-            throw refused(target, "too-many-files", HttpStatus.CONFLICT, "too-many-files",
+            throw refused(target, null, "too-many-files", HttpStatus.CONFLICT, "too-many-files",
                     "This Scan Report already holds the most files of this kind it can. "
                     + "A report file can be replaced with its rescan instead.");
         }
@@ -123,12 +119,9 @@ public class ReportFiles {
      *     {@code storage-unavailable}
      */
     public ReportFileView replace(UUID submissionId, UUID fileId, String originalName, byte[] content) {
-        Submissions.FileTarget target = submissions.fileTarget(submissionId, Need.SUBMIT);
+        // A file of another SMO's VA Submission is "not found" here or by the ownership check: the same answer either way.
         ReportFileStore.Row replaced = file(submissionId, fileId);
-        if (!target.acceptsFiles()) {
-            throw refused(target, replaced.id(), "state-not-editable", HttpStatus.CONFLICT, "invalid-transition",
-                    "This VA Submission takes no new files in its present state.");
-        }
+        Submissions.ReadTarget target = submissions.precheckEdit(submissionId, notEditable(replaced.id()));
         // Only a machine-readable file is ever PARSED (supporting evidence rests in READY, V13).
         if (replaced.status() != PipelineStatus.PARSED || replaced.supersededBy() != null) {
             throw refused(target, replaced.id(), "not-replaceable", HttpStatus.CONFLICT, "file-not-replaceable",
@@ -144,7 +137,7 @@ public class ReportFiles {
         }
     }
 
-    private ReportFileView quarantinedAndKept(Submissions.FileTarget target, ReportType reportType, FileKind kind,
+    private ReportFileView quarantinedAndKept(Submissions.ReadTarget target, ReportType reportType, FileKind kind,
             String originalName, byte[] content, @Nullable UUID replacesId) {
         if (content.length == 0) {
             throw new RejectedRequestException(HttpStatus.BAD_REQUEST, "file-empty", "The file is empty.");
@@ -164,7 +157,7 @@ public class ReportFiles {
     /** The VA Submission's files, oldest first, for anyone who may see its System. */
     @Transactional
     public List<ReportFileView> list(UUID submissionId) {
-        Submissions.FileTarget target = submissions.fileTarget(submissionId, Need.VIEW);
+        Submissions.ReadTarget target = submissions.readTarget(submissionId);
         List<ReportFileStore.Row> rows = store.ofSubmission(submissionId);
         var stages = store.stages(rows.stream().map(ReportFileStore.Row::id).toList());
         auditView(target, null, rows.size());
@@ -174,7 +167,7 @@ public class ReportFiles {
     /** One file's pipeline status. The file must belong to the VA Submission in the path, else it is not found. */
     @Transactional
     public ReportFileView status(UUID submissionId, UUID fileId) {
-        Submissions.FileTarget target = submissions.fileTarget(submissionId, Need.VIEW);
+        Submissions.ReadTarget target = submissions.readTarget(submissionId);
         ReportFileStore.Row row = file(submissionId, fileId);
         auditView(target, fileId, 1);
         return view(row, store.stages(List.of(fileId)).getOrDefault(fileId, List.of()));
@@ -187,7 +180,7 @@ public class ReportFiles {
      */
     @Transactional
     public ReportFileMetadataView metadata(UUID submissionId, UUID fileId) {
-        Submissions.FileTarget target = submissions.fileTarget(submissionId, Need.VIEW);
+        Submissions.ReadTarget target = submissions.readTarget(submissionId);
         ReportFileStore.Row row = parsedFile(submissionId, fileId);
         audit.record(actor.attribute(AuditEvent.of(AuditAction.FILE_METADATA_VIEWED, AuditOutcome.SUCCESS))
                 .onSystem(target.systemId()).onSubmission(submissionId).with(DetailKey.FILE_ID, fileId));
@@ -212,16 +205,16 @@ public class ReportFiles {
      */
     @Transactional
     public ReportFileMetadataView confirmMetadata(UUID submissionId, UUID fileId, ReportFileMetadataRequest request) {
-        Submissions.FileTarget target = submissions.fileTarget(submissionId, Need.SUBMIT);
+        // A file of another SMO's VA Submission is "not found" here or by the ownership check: the same answer either way.
         ReportFileStore.Row row = parsedFile(submissionId, fileId);
-        if (!target.acceptsFiles()) {
-            throw refusedConfirmation(target, fileId, "state-not-editable", "invalid-transition",
-                    "This VA Submission's files cannot be changed in its present state.");
-        }
+        // Held shared until the confirmation commits: a submit judging the scan dates cannot run in between (ADR 0032).
+        Submissions.EditTarget target = submissions.lockForEdit(submissionId, (submission, system) ->
+                refusedConfirmation(submission, system, fileId, "state-not-editable", "invalid-transition",
+                        "This VA Submission's files cannot be changed in its present state."));
         MetadataFields.Parsed fields = MetadataFields.parse(request, calendar.today());
-        if (!store.confirm(row.id(), fields.scanDate(), fields.target(), clock.instant())) {
+        if (!store.confirm(target, row.id(), fields.scanDate(), fields.target(), clock.instant())) {
             // Written only while no rescan has replaced the file, checked in the one statement that writes it.
-            throw refusedConfirmation(target, fileId, "superseded", "file-superseded",
+            throw refusedConfirmation(submissionId, target.systemId(), fileId, "superseded", "file-superseded",
                     "A rescan has replaced this file, which is kept as it was. Confirm the rescan's scan date and target "
                     + "instead.");
         }
@@ -249,10 +242,10 @@ public class ReportFiles {
     }
 
     /** A refused confirmation, audited in an entry of its own with the file and a fixed reason. */
-    private RejectedRequestException refusedConfirmation(Submissions.FileTarget target, UUID fileId, String reason,
+    private RejectedRequestException refusedConfirmation(UUID submissionId, UUID systemId, UUID fileId, String reason,
             String type, String detail) {
         audit.recordIndependently(actor.attribute(AuditEvent.of(AuditAction.FILE_METADATA_CONFIRMED, AuditOutcome.REFUSED))
-                .onSystem(target.systemId()).onSubmission(target.submissionId()).with(DetailKey.FILE_ID, fileId)
+                .onSystem(systemId).onSubmission(submissionId).with(DetailKey.FILE_ID, fileId)
                 .with(DetailKey.REASON, reason));
         return new RejectedRequestException(HttpStatus.CONFLICT, type, detail);
     }
@@ -277,7 +270,7 @@ public class ReportFiles {
     }
 
     private Grant grantDownload(UUID submissionId, UUID fileId) {
-        Submissions.FileTarget target = submissions.fileTarget(submissionId, Need.VIEW);
+        Submissions.ReadTarget target = submissions.readTarget(submissionId);
         ReportFileStore.Row row = file(submissionId, fileId);
         String cleanKey = row.cleanKey();
         if (!row.status().viewable() || cleanKey == null) {
@@ -323,15 +316,19 @@ public class ReportFiles {
      * file goes only to a Scan Report that is uploaded, not one marked not applicable or entered by hand (ticket 22); the
      * Scan Report is held until the file is kept, so its mode cannot change in between.
      */
-    private UUID keep(Submissions.FileTarget target, ReportType reportType, FileKind kind, String name, long size,
+    private UUID keep(Submissions.ReadTarget checked, ReportType reportType, FileKind kind, String name, long size,
             MalwareScan.Quarantined held, @Nullable UUID replacesId) {
-        if (kind == FileKind.MACHINE_READABLE && !scanReports.takesReportFiles(target.submissionId(), reportType)) {
-            throw refused(target, replacesId, "wrong-report-mode", HttpStatus.CONFLICT, "wrong-report-mode",
+        // Checked again now that the bytes are held: the VA Submission is held shared until the file is kept, so a submit
+        // that came in meanwhile is either seen here or waits for this file (ADR 0032).
+        Submissions.EditTarget target = submissions.lockForEdit(checked.submissionId(), notEditable(replacesId));
+        if (kind == FileKind.MACHINE_READABLE && !scanReports.takesReportFiles(target, reportType)) {
+            throw refused(target.submissionId(), target.systemId(), replacesId, "wrong-report-mode", HttpStatus.CONFLICT,
+                    "wrong-report-mode",
                     "This Scan Report is marked not applicable or for Findings entered by hand, so it takes no report "
                     + "files. Supporting evidence can still be attached.");
         }
         Instant now = clock.instant();
-        UUID id = store.insert(target.submissionId(), reportType, kind, name, size, held.sha256(), held.key(),
+        UUID id = store.insert(target, reportType, kind, name, size, held.sha256(), held.key(),
                 user.id(), now, replacesId);
         AuditEvent uploaded = actor.attribute(AuditEvent.of(AuditAction.FILE_UPLOADED, AuditOutcome.SUCCESS))
                 .onSystem(target.systemId()).onSubmission(target.submissionId()).with(DetailKey.FILE_ID, id);
@@ -340,7 +337,7 @@ public class ReportFiles {
     }
 
     /** Audits a read of status unless the caller is the System's own SMO/Tech Lead; a list is one entry with the count. */
-    private void auditView(Submissions.FileTarget target, @Nullable UUID fileId, int count) {
+    private void auditView(Submissions.ReadTarget target, @Nullable UUID fileId, int count) {
         if (guard.scope(Need.SUBMIT).contains(target.systemId())) {
             return;
         }
@@ -349,16 +346,25 @@ public class ReportFiles {
         audit.record(fileId == null ? event : event.with(DetailKey.FILE_ID, fileId));
     }
 
-    private RejectedRequestException refused(Submissions.FileTarget target, String reason, HttpStatus status,
-            String type, String detail) {
-        return refused(target, null, reason, status, type, detail);
+    /**
+     * The refusal of an upload or a rescan to a VA Submission that takes no files in its present state, for
+     * {@link Submissions#precheckEdit} and {@link Submissions#lockForEdit}: one sentence for both checks.
+     */
+    private Submissions.Refusal notEditable(@Nullable UUID replacedFileId) {
+        return (submission, system) -> refused(submission, system, replacedFileId, "state-not-editable",
+                HttpStatus.CONFLICT, "invalid-transition", "This VA Submission takes no new files in its present state.");
+    }
+
+    private RejectedRequestException refused(Submissions.ReadTarget target, @Nullable UUID replacedFileId, String reason,
+            HttpStatus status, String type, String detail) {
+        return refused(target.submissionId(), target.systemId(), replacedFileId, reason, status, type, detail);
     }
 
     /** A refused upload, audited with its reason and, for a rescan, the file it was to replace. */
-    private RejectedRequestException refused(Submissions.FileTarget target, @Nullable UUID replacedFileId, String reason,
-            HttpStatus status, String type, String detail) {
+    private RejectedRequestException refused(UUID submissionId, UUID systemId, @Nullable UUID replacedFileId,
+            String reason, HttpStatus status, String type, String detail) {
         AuditEvent refusal = actor.attribute(AuditEvent.of(AuditAction.FILE_UPLOADED, AuditOutcome.REFUSED))
-                .onSystem(target.systemId()).onSubmission(target.submissionId()).with(DetailKey.REASON, reason);
+                .onSystem(systemId).onSubmission(submissionId).with(DetailKey.REASON, reason);
         audit.recordIndependently(
                 replacedFileId == null ? refusal : refusal.with(DetailKey.REPLACED_FILE_ID, replacedFileId));
         return new RejectedRequestException(status, type, detail);

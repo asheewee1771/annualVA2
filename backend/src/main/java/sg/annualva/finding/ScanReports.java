@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import sg.annualva.access.AuditActor;
-import sg.annualva.access.Need;
 import sg.annualva.audit.AuditAction;
 import sg.annualva.audit.AuditEvent;
 import sg.annualva.audit.AuditLog;
@@ -62,7 +61,7 @@ public class ScanReports {
      */
     @Transactional
     public List<ScanReportView> list(UUID submissionId) {
-        UUID systemId = submissions.systemOf(submissionId, Need.VIEW);
+        UUID systemId = submissions.systemOf(submissionId);
         Map<ReportType, ScanReportStore.Slot> slots = store.ofSubmission(submissionId);
         List<ScanReportView> reports = Arrays.stream(ReportType.values())
                 .map(type -> view(type, slots.getOrDefault(type, ScanReportStore.Slot.UPLOADED)))
@@ -89,11 +88,11 @@ public class ScanReports {
      */
     @Transactional
     public ScanReportView setMode(UUID submissionId, ReportType type, ReportModeRequest request) {
-        Submissions.FileTarget target = proposals.editable(submissionId, AuditAction.REPORT_MODE_SET, null,
+        Submissions.EditTarget target = proposals.editable(submissionId, AuditAction.REPORT_MODE_SET, null,
                 "This VA Submission's Scan Reports cannot be changed in its present state.");
         ReportMode mode = mode(type, request.mode());
         String justification = justification(mode, request.justification());
-        ScanReportStore.Slot current = store.lock(submissionId, type, true);
+        ScanReportStore.Slot current = store.lock(target, type, true);
         if (current.mode() != mode && store.hasContent(submissionId, type)) {
             audit.recordIndependently(actor.attribute(AuditEvent.of(AuditAction.REPORT_MODE_SET, AuditOutcome.REFUSED))
                     .onSystem(target.systemId()).onSubmission(submissionId).with(DetailKey.REASON, "report-not-empty"));
@@ -101,7 +100,7 @@ public class ScanReports {
                     "This Scan Report already holds a report file or a Finding, so how it is provided cannot change.");
         }
         ScanReportStore.Slot slot = new ScanReportStore.Slot(mode, justification, review(mode, justification, current));
-        store.set(submissionId, type, slot);
+        store.set(target, type, slot);
         audit.record(actor.attribute(AuditEvent.of(AuditAction.REPORT_MODE_SET, AuditOutcome.SUCCESS))
                 .onSystem(target.systemId()).onSubmission(submissionId)
                 .with(DetailKey.REPORT_TYPE, type.name()).with(DetailKey.MODE, mode.name()));
@@ -114,13 +113,13 @@ public class ScanReports {
      * it keeps the file.
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public boolean takesReportFiles(UUID submissionId, ReportType type) {
-        return store.lock(submissionId, type, false).mode() == ReportMode.UPLOAD;
+    public boolean takesReportFiles(Submissions.EditTarget target, ReportType type) {
+        return store.lock(target, type, false).mode() == ReportMode.UPLOAD;
     }
 
     /** The mode of a Scan Report, its row held shared until the caller's transaction ends (a Finding typed in). */
-    ReportMode lockedMode(UUID submissionId, ReportType type) {
-        return store.lock(submissionId, type, false).mode();
+    ReportMode lockedMode(Submissions.EditTarget target, ReportType type) {
+        return store.lock(target, type, false).mode();
     }
 
     /** A not-applicable justification is reviewed: a new one awaits the Cyber Manager, the same one keeps its review. */

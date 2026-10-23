@@ -61,7 +61,7 @@ public class BulkProposals {
      */
     @Transactional
     public BatchView propose(UUID submissionId, BulkProposalRequest request) {
-        Submissions.FileTarget target = proposals.target(submissionId, AuditAction.BATCH_PROPOSED, null);
+        Submissions.EditTarget target = proposals.target(submissionId, AuditAction.BATCH_PROPOSED, null);
         List<UUID> ids = findingIds(request.findingIds());
         ProposalFields.Parsed fields = proposals.fields(target, request.proposal());
         if (!proposals.lock(target, ids)) {

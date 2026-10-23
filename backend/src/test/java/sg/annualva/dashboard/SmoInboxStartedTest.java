@@ -51,6 +51,26 @@ class SmoInboxStartedTest extends InboxSeam1 {
     }
 
     @Test
+    void aSubmittedSystemWaitsOnTheReviewAndOneReturnedForReworkNeedsTheSmoAgain() {
+        registerSystems();
+        ApiClient smo = signedInAs(SMO_A);
+        String submission = ApiClient.json(start(smo, idOf(inbox(smo), "SYS-D1"))).get("id").asString();
+        arrange.submissionState(submission, "IN_REVIEW");
+
+        JsonNode inReview = item(inbox(smo), "systems", "SYS-D1");
+
+        assertThat(inReview.get("state").asString()).isEqualTo("IN_REVIEW");
+        assertThat(inReview.get("nextAction").asString()).isEqualTo("AWAIT_REVIEW");
+        assertThat(inReview.get("nextActionDueOn").asString()).isEqualTo("2027-08-29");
+        assertThat(inReview.get("group").asString()).isEqualTo("WAITING_ON_OTHERS");
+        arrange.submissionState(submission, "RETURNED_FOR_REWORK");
+        JsonNode returned = item(inbox(smo), "systems", "SYS-D1");
+        assertThat(returned.get("state").asString()).isEqualTo("RETURNED_FOR_REWORK");
+        assertThat(returned.get("nextAction").asString()).isEqualTo("PREPARE_SUBMISSION");
+        assertThat(returned.get("group").asString()).isEqualTo("NEEDS_YOUR_ACTION");
+    }
+
+    @Test
     void aSystemNotStartedStaysNotStartedWithNoSubmissionAndTheOtherSmosInboxIsUnchanged() {
         registerSystems();
         ApiClient smo = signedInAs(SMO_A);

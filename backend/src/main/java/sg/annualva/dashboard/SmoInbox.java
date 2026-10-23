@@ -31,13 +31,17 @@ public class SmoInbox {
     /** How a System in a Quarter is shown; the other states arrive with the commands that enter them. */
     public enum State {
         NOT_STARTED,
-        DRAFT
+        DRAFT,
+        IN_REVIEW,
+        RETURNED_FOR_REWORK
     }
 
     /** What the caller should do next with a System. */
     public enum NextAction {
         START_SUBMISSION,
-        PREPARE_SUBMISSION
+        PREPARE_SUBMISSION,
+        /** Submitted: the Cyber Manager reviews it by the end of the Review Window. */
+        AWAIT_REVIEW
     }
 
     /** The heading a System is listed under on the screen. */
@@ -108,12 +112,25 @@ public class SmoInbox {
                 quarter.submitDue(), Group.NEEDS_YOUR_ACTION);
     }
 
-    /** A Draft needs the SMO to prepare and submit it by the Submission Window's end. */
+    /**
+     * A Draft, and one Returned for Rework, needs the SMO to prepare and submit it by the Submission Window's end (the
+     * rework queue of ticket 31 may date rework otherwise); one In Review waits on the Cyber Manager until the Review
+     * Window's end.
+     */
     private static Item started(RegisterSystems.ActiveSystem system, Submissions.Summary submission) {
         return switch (submission.state()) {
-            case DRAFT -> new Item(system.id(), system.systemId(), system.name(), system.quarter(), State.DRAFT,
-                    submission.id(), submission.submitDue(), submission.reviewDue(), submission.endorseDue(),
+            case DRAFT -> item(system, submission, State.DRAFT, NextAction.PREPARE_SUBMISSION, submission.submitDue(),
+                    Group.NEEDS_YOUR_ACTION);
+            case RETURNED_FOR_REWORK -> item(system, submission, State.RETURNED_FOR_REWORK,
                     NextAction.PREPARE_SUBMISSION, submission.submitDue(), Group.NEEDS_YOUR_ACTION);
+            case IN_REVIEW -> item(system, submission, State.IN_REVIEW, NextAction.AWAIT_REVIEW, submission.reviewDue(),
+                    Group.WAITING_ON_OTHERS);
         };
+    }
+
+    private static Item item(RegisterSystems.ActiveSystem system, Submissions.Summary submission, State state,
+            NextAction next, LocalDate dueOn, Group group) {
+        return new Item(system.id(), system.systemId(), system.name(), system.quarter(), state, submission.id(),
+                submission.submitDue(), submission.reviewDue(), submission.endorseDue(), next, dueOn, group);
     }
 }

@@ -69,14 +69,14 @@ public class ManualFindings {
      */
     @Transactional
     public FindingView enter(UUID submissionId, ManualFindingRequest request) {
-        Submissions.FileTarget target = proposals.editable(submissionId, AuditAction.FINDING_ENTERED, null,
+        Submissions.EditTarget target = proposals.editable(submissionId, AuditAction.FINDING_ENTERED, null,
                 "This VA Submission takes no new Findings in its present state.");
         ScanReportStore.Manual finding = read(request);
-        if (scanReports.lockedMode(submissionId, finding.reportType()) != ReportMode.MANUAL) {
+        if (scanReports.lockedMode(target, finding.reportType()) != ReportMode.MANUAL) {
             throw refused(target, "wrong-report-mode",
                     "Findings are entered by hand only for a Scan Report marked for Findings entered by hand.");
         }
-        UUID id = store.insertManual(submissionId, target.systemId(), finding, clock.instant())
+        UUID id = store.insertManual(target, finding, clock.instant())
                 .orElseThrow(() -> refused(target, "duplicate-finding",
                         "This Scan Report already has a Finding with this identifier and package or rule."));
         audit.record(actor.attribute(AuditEvent.of(AuditAction.FINDING_ENTERED, AuditOutcome.SUCCESS))
@@ -88,7 +88,7 @@ public class ManualFindings {
     }
 
     /** Audits a refusal in an entry of its own, then answers 409 with the reason as its type; fixed text only. */
-    private RejectedRequestException refused(Submissions.FileTarget target, String reason, String detail) {
+    private RejectedRequestException refused(Submissions.EditTarget target, String reason, String detail) {
         audit.recordIndependently(actor.attribute(AuditEvent.of(AuditAction.FINDING_ENTERED, AuditOutcome.REFUSED))
                 .onSystem(target.systemId()).onSubmission(target.submissionId()).with(DetailKey.REASON, reason));
         return new RejectedRequestException(HttpStatus.CONFLICT, reason, detail);

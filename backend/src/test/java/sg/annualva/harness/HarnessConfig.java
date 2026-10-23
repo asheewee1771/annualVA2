@@ -31,6 +31,12 @@ public class HarnessConfig {
         return new InMemoryFileStore();
     }
 
+    /** What the VA Submission commands published, as a consumer after the commit sees it. */
+    @Bean
+    RecordedSubmissionEvents recordedSubmissionEvents() {
+        return new RecordedSubmissionEvents();
+    }
+
     /** The malware scanner: clean, sanitised, blocked or never finishes, by keyword in the file name. */
     @Bean
     @Primary
