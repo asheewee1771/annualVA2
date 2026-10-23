@@ -25,8 +25,8 @@ export interface InboxSystem {
   nextAction: NextAction;
   nextActionDueOn: string;
   group: InboxGroup;
-  /** Set by the server once the Overdue flag exists; the screen shows the pill when it is true. */
-  overdue?: boolean;
+  /** The Overdue flag the server's sweep set: its window passed without the next step. Nothing locks. */
+  overdue: boolean;
 }
 
 /** A System in a Quarter the manual process still runs: named only, nothing to do in the app. */

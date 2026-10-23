@@ -37,7 +37,10 @@ export interface Submission {
   cycle: number;
   quarter: number;
   state: SubmissionState;
+  /** Its current window passed without the next step; nothing locks. */
   overdue: boolean;
+  /** When the Overdue flag was set (an instant, UTC); null while it is clear. */
+  overdueSince: string | null;
   endorsedLate: boolean;
   submitDue: string;
   reviewDue: string;

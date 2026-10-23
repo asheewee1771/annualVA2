@@ -251,6 +251,9 @@ function SubmissionSummary({ submission }: { submission: Resource<Submission> })
               </>
             ) : null}
           </p>
+          {data.overdueSince ? (
+            <p className="muted">Overdue since {WHEN.format(new Date(data.overdueSince))}.</p>
+          ) : null}
           <p className="muted">
             Submit by {dayLabel(data.submitDue)}, reviewed by {dayLabel(data.reviewDue)}, endorsed by{" "}
             {dayLabel(data.endorseDue)}. The windows are soft: nothing locks when one passes.
