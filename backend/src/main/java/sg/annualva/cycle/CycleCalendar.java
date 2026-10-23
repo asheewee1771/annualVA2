@@ -61,8 +61,16 @@ public class CycleCalendar {
      * live Cycle starts, only that Cycle (upcoming).
      */
     public List<VaCycle> cycles() {
+        return cyclesOn(today());
+    }
+
+    /**
+     * The same, on a business date the caller has already read, so a job that reads the clock once sees one day
+     * throughout its pass.
+     */
+    public List<VaCycle> cyclesOn(LocalDate today) {
         int first = live.firstLiveCycle();
-        int last = Math.max(first, runningYear(today()));
+        int last = Math.max(first, runningYear(today));
         var cycles = new ArrayList<VaCycle>();
         for (int year = first; year <= last; year++) {
             cycles.add(build(year));

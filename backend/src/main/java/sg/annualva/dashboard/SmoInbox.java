@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
@@ -23,7 +24,8 @@ import sg.annualva.submission.Submissions;
  *
  * <p>A System with no VA Submission is Not Started and needs the SMO to start it, even before its Quarter begins; its
  * dates are the Quarter's. One with a VA Submission shows its state, the dates the submission was started with and the
- * submission's id, so the screen can open it. Overdue is a flag added by the Overdue ticket; the inbox does not guess it.
+ * submission's id, so the screen can open it. Overdue is the flag the Overdue sweep stored, on the VA Submission or on the
+ * Not Started System (ADR 0033); the inbox does not work it out from the dates.
  */
 @Service
 public class SmoInbox {
@@ -58,11 +60,12 @@ public class SmoInbox {
      * @param reviewDue the last day of the Review Window
      * @param endorseDue the Quarter's last day
      * @param nextActionDueOn the day the next action is due
+     * @param overdue whether its window passed without the next step; nothing locks
      */
     public record Item(
             UUID id, String systemId, String name, int quarter, State state, @Nullable UUID submissionId,
             LocalDate submitDue, LocalDate reviewDue, LocalDate endorseDue, NextAction nextAction,
-            LocalDate nextActionDueOn, Group group) {}
+            LocalDate nextActionDueOn, Group group, boolean overdue) {}
 
     /** A System whose Quarter the manual process still runs: named, with no state, dates or action. */
     public record HandledOutside(UUID id, String systemId, String name, int quarter) {}
@@ -90,8 +93,9 @@ public class SmoInbox {
     public Inbox inbox(@Nullable Integer requested) {
         VaCycle cycle = calendar.running(requested);
         List<RegisterSystems.ActiveSystem> mine = register.active(Need.SUBMIT).stream().sorted(BY_QUARTER_THEN_ID).toList();
-        Map<UUID, Submissions.Summary> started =
-                submissions.inCycle(mine.stream().map(RegisterSystems.ActiveSystem::id).toList(), cycle.year());
+        List<UUID> ids = mine.stream().map(RegisterSystems.ActiveSystem::id).toList();
+        Map<UUID, Submissions.Summary> started = submissions.inCycle(ids, cycle.year());
+        Set<UUID> overdueNotStarted = submissions.overdueNotStarted(ids, cycle.year());
         List<Item> systems = new ArrayList<>();
         List<HandledOutside> outside = new ArrayList<>();
         for (RegisterSystems.ActiveSystem system : mine) {
@@ -100,16 +104,18 @@ public class SmoInbox {
                 outside.add(new HandledOutside(system.id(), system.systemId(), system.name(), system.quarter()));
             } else {
                 Submissions.Summary submission = started.get(system.id());
-                systems.add(submission == null ? notStarted(system, quarter) : started(system, submission));
+                systems.add(submission == null
+                        ? notStarted(system, quarter, overdueNotStarted.contains(system.id()))
+                        : started(system, submission));
             }
         }
         return new Inbox(cycle.year(), List.copyOf(systems), List.copyOf(outside));
     }
 
-    private static Item notStarted(RegisterSystems.ActiveSystem system, Quarter quarter) {
+    private static Item notStarted(RegisterSystems.ActiveSystem system, Quarter quarter, boolean overdue) {
         return new Item(system.id(), system.systemId(), system.name(), system.quarter(), State.NOT_STARTED, null,
                 quarter.submitDue(), quarter.reviewDue(), quarter.endorseDue(), NextAction.START_SUBMISSION,
-                quarter.submitDue(), Group.NEEDS_YOUR_ACTION);
+                quarter.submitDue(), Group.NEEDS_YOUR_ACTION, overdue);
     }
 
     /**
@@ -131,6 +137,7 @@ public class SmoInbox {
     private static Item item(RegisterSystems.ActiveSystem system, Submissions.Summary submission, State state,
             NextAction next, LocalDate dueOn, Group group) {
         return new Item(system.id(), system.systemId(), system.name(), system.quarter(), state, submission.id(),
-                submission.submitDue(), submission.reviewDue(), submission.endorseDue(), next, dueOn, group);
+                submission.submitDue(), submission.reviewDue(), submission.endorseDue(), next, dueOn, group,
+                submission.overdue());
     }
 }

@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -68,8 +69,22 @@ public class RegisterSystems {
     @Transactional(readOnly = true)
     public List<ActiveSystem> active(Need need) {
         SystemScope scope = guard.scope(need);
+        return activeWhere(scope::contains);
+    }
+
+    /**
+     * Every System still in the Register, in System ID order, for a scheduled job, which acts for nobody (the Overdue
+     * sweep, ADR 0033). It skips the access guard, so it is never for a request: the architecture test names its callers.
+     */
+    @Transactional(readOnly = true)
+    public List<ActiveSystem> everyActive() {
+        return activeWhere(id -> true);
+    }
+
+    /** The Systems still in the Register whose id passes the test, in System ID order. */
+    private List<ActiveSystem> activeWhere(Predicate<UUID> include) {
         return store.systems().stream()
-                .filter(system -> !system.retired() && scope.contains(system.id()))
+                .filter(system -> !system.retired() && include.test(system.id()))
                 .map(system -> new ActiveSystem(system.id(), system.code(), system.name(), system.quarter()))
                 .toList();
     }

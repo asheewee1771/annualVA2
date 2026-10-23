@@ -42,6 +42,7 @@ import sg.annualva.audit.AuditOutcome;
 import sg.annualva.audit.DetailKey;
 import sg.annualva.access.RoleGrantStore;
 import sg.annualva.ingestion.ScanPoller;
+import sg.annualva.submission.OverdueSweep;
 import sg.annualva.web.ProblemResponses;
 import sg.annualva.web.ResourceNotFoundException;
 
@@ -108,10 +109,13 @@ public class TestEndpoints {
         private final AuditLog audit;
         private final TransactionTemplate transaction;
         private final ScanPoller scanPoller;
+        private final OverdueSweep overdueSweep;
 
         public TestController(AppUserStore users, RoleGrantStore grants, AccessGuard guard, StepUp stepUp, JdbcClient jdbc,
-                Clock clock, AuditLog audit, TransactionTemplate transaction, ScanPoller scanPoller) {
+                Clock clock, AuditLog audit, TransactionTemplate transaction, ScanPoller scanPoller,
+                OverdueSweep overdueSweep) {
             this.scanPoller = scanPoller;
+            this.overdueSweep = overdueSweep;
             this.users = users;
             this.grants = grants;
             this.guard = guard;
@@ -248,6 +252,7 @@ public class TestEndpoints {
                     jdbc.sql("ALTER TABLE declaration_text ENABLE TRIGGER declaration_text_append_only").update();
                 }
                 jdbc.sql("DELETE FROM submission_participation").update();
+                jdbc.sql("DELETE FROM not_started_overdue").update();
                 jdbc.sql("DELETE FROM va_submission").update();
                 jdbc.sql("DELETE FROM role_grant WHERE system_id IS NOT NULL").update();
                 jdbc.sql("DELETE FROM register_upload").update();
@@ -278,6 +283,13 @@ public class TestEndpoints {
         public Map<String, String> scan() {
             scanPoller.poll();
             return Map.of("ran", "scan");
+        }
+
+        /** One pass of the Overdue sweep, which {@code annualva.scheduling.enabled=false} keeps from running by itself in tests. */
+        @PostMapping("/api/test/jobs/overdue")
+        public Map<String, String> overdue() {
+            overdueSweep.sweep();
+            return Map.of("ran", "overdue");
         }
 
         /**

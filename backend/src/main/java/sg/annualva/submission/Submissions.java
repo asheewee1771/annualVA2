@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
@@ -38,7 +39,8 @@ import sg.annualva.web.ResourceNotFoundException;
  * at the submitting step, the first fact segregation of duties rests on. Starting is allowed before the Quarter begins. A
  * System has one VA Submission per Cycle, so a second start is refused (409 {@code invalid-transition}), as is the start
  * of a System whose Quarter is Handled outside the app. Once nothing stands in the way and the SMO/Tech Lead has accepted
- * the Declaration, they submit it for review ({@link #submit}). Each command checks, in this order: ownership (the access
+ * the Declaration, they submit it for review ({@link #submit}). The windows are soft: a VA Submission the Overdue sweep
+ * flagged ({@link OverdueSweep}) takes every command it took before. Each command checks, in this order: ownership (the access
  * guard, so a System the caller may not reach is "not found", ADR 0013), the Cycle or the state, then the preconditions,
  * then writes, records the step and audits, all in one transaction. A refusal is audited as well, in a transaction of its
  * own (ADR 0014), because the command's own rolls back.
@@ -63,17 +65,19 @@ public class Submissions {
      *
      * @param cycle the VA Cycle's year
      * @param quarter 1 to 4
-     * @param overdue the Overdue flag; set by the sweep of a later ticket, so false until then
+     * @param overdue the Overdue flag: its current window passed without the next step (ADR 0033); nothing locks
      * @param endorsedLate whether it was endorsed after the Quarter's last day
      * @param startedAt when it was started (UTC)
      * @param submittedAt when it was last submitted for review (UTC); null until it is
+     * @param overdueSince when the Overdue flag was set (UTC); null while it is clear
      * @param declaration the Declaration accepted at its latest submit; null until it is submitted
      * @param acted who acted at which step, in the order they first did
      */
     public record Submission(
             UUID id, UUID systemId, int cycle, int quarter, SubmissionState state, boolean overdue, boolean endorsedLate,
             LocalDate submitDue, LocalDate reviewDue, LocalDate endorseDue, Instant startedAt,
-            @Nullable Instant submittedAt, @Nullable AcceptedDeclaration declaration, List<Acted> acted) {}
+            @Nullable Instant submittedAt, @Nullable Instant overdueSince, @Nullable AcceptedDeclaration declaration,
+            List<Acted> acted) {}
 
     /**
      * A VA Submission someone may see, for a read of what hangs off it (its files, Findings and Scan Reports). It grants
@@ -118,8 +122,14 @@ public class Submissions {
         RuntimeException refuse(UUID submissionId, UUID systemId);
     }
 
-    /** What the SMO inbox needs of a started VA Submission. */
-    public record Summary(UUID id, SubmissionState state, LocalDate submitDue, LocalDate reviewDue, LocalDate endorseDue) {}
+    /**
+     * What the SMO inbox needs of a started VA Submission.
+     *
+     * @param overdue the Overdue flag (ADR 0033)
+     */
+    public record Summary(
+            UUID id, SubmissionState state, LocalDate submitDue, LocalDate reviewDue, LocalDate endorseDue,
+            boolean overdue) {}
 
     /**
      * What the SMO/Tech Lead says about the Declaration when submitting.
@@ -178,7 +188,7 @@ public class Submissions {
         Instant now = clock.instant();
         UUID caller = user.id();
         UUID id = store.insert(systemId, cycle.year(), quarter.number(), SubmissionState.DRAFT, quarter.submitDue(),
-                quarter.reviewDue(), quarter.endorseDue(), now, caller).orElseThrow(() -> refusedStart(systemId,
+                quarter.reviewDue(), quarter.endorseDue(), now, calendar.dateOf(now), caller).orElseThrow(() -> refusedStart(systemId,
                         "already-started", "This System already has a VA Submission in this VA Cycle."));
         store.recordParticipation(id, caller, SubmissionStep.SUBMIT, now);
         audit.record(actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_STARTED, AuditOutcome.SUCCESS))
@@ -215,7 +225,7 @@ public class Submissions {
         Instant now = clock.instant();
         UUID caller = user.id();
         store.acceptDeclaration(id, declaration.version(), caller, now);
-        store.submitted(id, SubmissionState.IN_REVIEW, caller, now);
+        store.submitted(id, SubmissionState.IN_REVIEW, caller, now, calendar.dateOf(now));
         store.recordParticipation(id, caller, SubmissionStep.SUBMIT, now);
         audit.record(actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_SUBMITTED, AuditOutcome.SUCCESS))
                 .onSystem(systemId).onSubmission(id)
@@ -338,7 +348,7 @@ public class Submissions {
         guard.requireSystem(row.systemId(), Need.VIEW);
         return new Submission(row.id(), row.systemId(), row.cycleYear(), row.quarter(), row.state(), row.overdue(),
                 row.endorsedLate(), row.submitDue(), row.reviewDue(), row.endorseDue(), row.startedAt(),
-                row.submittedAt(), store.latestDeclaration(id).orElse(null), store.participation(id));
+                row.submittedAt(), row.overdueSince(), store.latestDeclaration(id).orElse(null), store.participation(id));
     }
 
     /**
@@ -351,9 +361,20 @@ public class Submissions {
         Map<UUID, Summary> started = new HashMap<>();
         for (SubmissionStore.Row row : store.inCycle(systemIds.stream().filter(scope::contains).toList(), cycleYear)) {
             started.put(row.systemId(),
-                    new Summary(row.id(), row.state(), row.submitDue(), row.reviewDue(), row.endorseDue()));
+                    new Summary(row.id(), row.state(), row.submitDue(), row.reviewDue(), row.endorseDue(),
+                            row.overdue()));
         }
         return started;
+    }
+
+    /**
+     * The Systems among these, in one Cycle, that the Overdue sweep flagged while they had no VA Submission (Not
+     * Started), for a read model. Only Systems the caller may see are answered.
+     */
+    @Transactional(readOnly = true)
+    public Set<UUID> overdueNotStarted(Collection<UUID> systemIds, int cycleYear) {
+        var scope = guard.scope(Need.VIEW);
+        return store.notStartedOverdue(systemIds.stream().filter(scope::contains).toList(), cycleYear);
     }
 
     /**

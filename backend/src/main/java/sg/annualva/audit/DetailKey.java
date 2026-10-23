@@ -52,7 +52,12 @@ public enum DetailKey {
     /** Whether a confirmed target differs from the one the report file names (ticket 23): a flag, never the target. */
     TARGET_CHANGED,
     /** The Declaration version a submit accepted (ticket 25): a number, never the wording. */
-    DECLARATION_VERSION;
+    DECLARATION_VERSION,
+    /**
+     * The state a VA Submission was in when something happened to it that is not a move (ticket 26: the Overdue sweep),
+     * or {@code NOT_STARTED} for a System with none: a fixed code.
+     */
+    STATE;
 
     /** The key as stored: lower-case with underscores. */
     String json() {

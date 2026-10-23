@@ -150,6 +150,21 @@ class ArchitectureTest {
                 .check(main);
     }
 
+    /**
+     * ADR 0033: {@code RegisterSystems.everyActive} lists every System without asking the access guard, because the
+     * Overdue sweep acts for nobody. Only that job may call it, so no request can list Systems past the guard (ADR 0013).
+     * A later scheduled job that needs it adds itself here.
+     */
+    @Test
+    void onlyTheOverdueSweepListsSystemsPastTheAccessGuard() throws Exception {
+        // Named by reflection, so a rename of the method or of its caller breaks this test instead of emptying the rule.
+        String method = sg.annualva.register.RegisterSystems.class.getMethod("everyActive").getName();
+        noClasses().that().doNotHaveFullyQualifiedName(sg.annualva.submission.OverdueSweep.class.getName())
+                .should().callMethod(sg.annualva.register.RegisterSystems.class, method)
+                .because("it skips the access guard, so only a scheduled job, which acts for nobody, may list every System")
+                .check(main);
+    }
+
     @Test
     void noStandardStreamsLoggingOrGenericExceptions() {
         NO_CLASSES_SHOULD_ACCESS_STANDARD_STREAMS.check(main);

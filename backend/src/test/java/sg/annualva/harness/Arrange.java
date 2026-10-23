@@ -40,6 +40,11 @@ public final class Arrange {
         assertThat(client.post("/api/test/jobs/scan").status()).isEqualTo(200);
     }
 
+    /** One pass of the Overdue sweep, which a test runs by hand after moving the clock, because scheduling is off in tests. */
+    public void overdueSweep() {
+        assertThat(client.post("/api/test/jobs/overdue").status()).isEqualTo(200);
+    }
+
     /** Makes writes moving a file to a status with this prefix fail in the database; "off" removes the fault. */
     public void reportFileFault(String prefix) {
         assertThat(client.post("/api/test/faults/report-file/" + prefix).status()).isEqualTo(200);

@@ -262,8 +262,11 @@ class ManualFindingTest extends ScanReportSeam1 {
         assertThat(success.get("actorRole").asString()).isEqualTo("SMO");
         assertThat(success.get("detail").propertyNames()).containsExactly("report_type");
         assertThat(success.get("detail").get("report_type").asString()).isEqualTo(DEPENDENCY_CHECK);
-        String audit = otherVaPoc().get("/api/audit-entries?size=200").body();
+        // The suite shares one audit log and other tests write entries dated later, so this System's entries are read
+        // by System to be sure they are there; the newest page of the whole log is checked as well.
+        String audit = otherVaPoc().get("/api/audit-entries?size=200&system=" + draft.systemId()).body();
         assertThat(audit).doesNotContain(SENTINEL).contains("FINDING_ENTERED");
+        assertThat(otherVaPoc().get("/api/audit-entries?size=200").body()).doesNotContain(SENTINEL);
         assertThat(output.getAll()).doesNotContain(SENTINEL).contains("finding-entered");
         assertThat(String.join("\n", bodies)).as("error bodies").doesNotContain(SENTINEL);
         assertThat(kept.toString()).as("the Finding is data, so it is returned").contains(SENTINEL);

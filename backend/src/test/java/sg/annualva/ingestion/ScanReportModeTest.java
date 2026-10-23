@@ -295,8 +295,11 @@ class ScanReportModeTest extends ScanReportSeam1 {
             assertThat(entry.get("submissionId").asString()).isEqualTo(id);
             assertThat(entry.get("detail").propertyNames()).containsExactlyInAnyOrder("report_type", "mode");
         }
-        String audit = otherVaPoc().get("/api/audit-entries?size=200").body();
+        // The suite shares one audit log and other tests write entries dated later, so this System's entries are read
+        // by System to be sure they are there; the newest page of the whole log is checked as well.
+        String audit = otherVaPoc().get("/api/audit-entries?size=200&system=" + draft.systemId()).body();
         assertThat(audit).doesNotContain(SENTINEL).contains("REPORT_MODE_SET");
+        assertThat(otherVaPoc().get("/api/audit-entries?size=200").body()).doesNotContain(SENTINEL);
         assertThat(output.getAll()).doesNotContain(SENTINEL).contains("report-mode-set");
         assertThat(String.join("\n", bodies)).as("error bodies").doesNotContain(SENTINEL);
     }
