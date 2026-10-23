@@ -9,7 +9,8 @@ export type FileKind = "MACHINE_READABLE" | "EVIDENCE";
 
 /**
  * Where a file is in the upload pipeline. The stages run in a fixed order (quarantine, malware scan, type check, schema
- * check, parse; SCHEMA_OK is only a stage a file passes through on its way to PARSED, as every format has a parser); a
+ * check, parse, then the age check, which rejects a scan dated after today; SCHEMA_OK is only a stage a file passes through
+ * on its way to PARSED, as every format has a parser); a
  * supporting evidence file stops after the type check and rests in READY, never read; a REJECTED_ status says the file
  * stopped at one of them and why.
  */
@@ -30,7 +31,8 @@ export type PipelineStatus =
   | "REJECTED_UNREADABLE"
   | "REJECTED_SCHEMA"
   | "REJECTED_HASH_MISMATCH"
-  | "REJECTED_ENCRYPTED";
+  | "REJECTED_ENCRYPTED"
+  | "REJECTED_FUTURE_DATED";
 
 const MEGABYTE = 1024 * 1024;
 
@@ -123,6 +125,53 @@ export function replaceReportFile(submissionId: string, fileId: string, file: Fi
   const form = new FormData();
   form.append("file", file);
   return request<ReportFile>("POST", `${files(submissionId)}/${encodeURIComponent(fileId)}/replace`, form);
+}
+
+/** The longest a confirmed target may be: the server's limit. */
+export const MAX_TARGET_LENGTH = 200;
+
+/**
+ * What a parsed report file says about the scan, and what the SMO/Tech Lead confirmed of it. Everything but the flags is
+ * report content or what a person typed: text only.
+ */
+export interface ReportFileMetadata {
+  fileId: string;
+  /** The business date (yyyy-mm-dd, Singapore) of the scan the file names; null when it names none. */
+  scanDay: string | null;
+  /** True for a Burp Suite export, whose only date is when it was exported, not when the scan was made. */
+  scanDateIsExportTime: boolean;
+  /** The target the file names; null when it names none. */
+  target: string | null;
+  /** The scan date the SMO/Tech Lead gave (yyyy-mm-dd); null until they confirm it. */
+  confirmedScanDate: string | null;
+  confirmedTarget: string | null;
+  /**
+   * True when the confirmed scan date differs from the file's own day (for a Burp export, its export day): flagged for the
+   * reviewer, never refused.
+   */
+  scanDateEdited: boolean;
+  /** True when the confirmed target differs from the file's: flagged for the reviewer, never refused. */
+  targetEdited: boolean;
+}
+
+const metadataOf = (submissionId: string, fileId: string): string =>
+  `${files(submissionId)}/${encodeURIComponent(fileId)}/metadata`;
+
+/** GET .../files/{fileId}/metadata: the scan date and target a parsed report file names, and what was confirmed. */
+export function fetchReportFileMetadata(submissionId: string, fileId: string): Promise<ReportFileMetadata> {
+  return request<ReportFileMetadata>("GET", metadataOf(submissionId, fileId));
+}
+
+/**
+ * PUT .../files/{fileId}/metadata: the SMO/Tech Lead confirms or corrects the scan date (yyyy-mm-dd, not after today) and
+ * the target. A scan date or target that differs from the file's is flagged, never refused; a field that is wrong is a 400 that names it.
+ */
+export function confirmReportFileMetadata(
+  submissionId: string,
+  fileId: string,
+  confirmation: { scanDate: string; target: string },
+): Promise<ReportFileMetadata> {
+  return request<ReportFileMetadata>("PUT", metadataOf(submissionId, fileId), confirmation);
 }
 
 /**

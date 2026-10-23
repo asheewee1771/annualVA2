@@ -7,6 +7,7 @@ import {
   type Finding,
   type FindingFilter,
   type FindingPage,
+  type NamedFile,
   type Readiness,
 } from "../../api/findings.ts";
 import { ApiError, type Problem } from "../../api/problem.ts";
@@ -17,6 +18,7 @@ import { ProgressBar } from "../../components/ProgressBar.tsx";
 import { useResource, type Resource } from "../../hooks/useResource.ts";
 import { BulkBar } from "./BulkBar.tsx";
 import { FindingsTable, Pager } from "./FindingsTable.tsx";
+import { SCAN_REPORTS } from "./scanReports.ts";
 
 const PAGE_SIZE = 100;
 
@@ -54,6 +56,47 @@ function ReadinessBar({ readiness }: { readiness: Readiness }) {
       {readiness.carriedOver > 0 ? ` ${readiness.carriedOver} Carried Over.` : null}
       {readiness.targetDateMissed > 0 ? ` ${readiness.targetDateMissed} Target Date Missed.` : null}
     </ProgressBar>
+  );
+}
+
+/** A report file named by its name and its Scan Report, as text. */
+function fileWords(file: NamedFile): string {
+  const report = SCAN_REPORTS.find((each) => each.type === file.reportType);
+  return `${file.name} (${report ? report.title : file.reportType})`;
+}
+
+/**
+ * The report files whose age stands in the way of submitting (story 26), as the server judged them at today's date: those
+ * more than 90 days old, and those with no scan date to judge. Each is named.
+ */
+function FileAgeNotice({ readiness }: { readiness: Readiness }) {
+  if (readiness.tooOld.length === 0 && readiness.undated.length === 0) return null;
+  return (
+    <div className="notice" role="status">
+      {readiness.tooOld.length > 0 ? (
+        <>
+          <p>
+            More than 90 days old, so the VA Submission cannot be submitted with them. Replace each with a newer scan,
+            or correct its scan date on its Scan Report if the file has it wrong:
+          </p>
+          <ul>
+            {readiness.tooOld.map((file) => (
+              <li key={file.fileId}>{fileWords(file)}</li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+      {readiness.undated.length > 0 ? (
+        <>
+          <p>No scan date yet. Give the date each scan was made on its Scan Report:</p>
+          <ul>
+            {readiness.undated.map((file) => (
+              <li key={file.fileId}>{fileWords(file)}</li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+    </div>
   );
 }
 
@@ -129,6 +172,7 @@ function useFindingsData(
   submissionId: string,
   files: readonly ReportFile[],
   entered: number,
+  confirmed: number,
   filter: FindingFilter,
   page: number,
 ) {
@@ -146,10 +190,12 @@ function useFindingsData(
     return fetchFindings(submissionId, filter, page, PAGE_SIZE);
   }, [submissionId, filter, page, parsed, entered]);
   const loadReadiness = useCallback(() => {
+    // `confirmed` is why the age of the files is asked for again after a scan date was confirmed.
     void parsed;
     void entered;
+    void confirmed;
     return fetchReadiness(submissionId);
-  }, [submissionId, parsed, entered]);
+  }, [submissionId, parsed, entered, confirmed]);
   const findings = useResource(load);
   const readiness = useResource(loadReadiness);
   const reload = () => {
@@ -243,12 +289,15 @@ export function FindingsSection({
   submissionId,
   files,
   entered,
+  confirmed,
   classification,
 }: {
   submissionId: string;
   files: readonly ReportFile[];
   /** How many Findings were entered by hand on this screen: a new one is why the list is asked for again. */
   entered: number;
+  /** How many scan dates were confirmed on this screen: a new one is why the age of the files is asked for again. */
+  confirmed: number;
   classification: string;
 }) {
   const [chip, setChip] = useState<ChipKey>("attention");
@@ -257,7 +306,14 @@ export function FindingsSection({
   // Only this submission's files, as the Scan Report cards show.
   const ofThisSubmission = files.filter((file) => file.submissionId === submissionId);
   const filter = FILTERS[chip];
-  const { findings, readiness, reload } = useFindingsData(submissionId, ofThisSubmission, entered, filter, page);
+  const { findings, readiness, reload } = useFindingsData(
+    submissionId,
+    ofThisSubmission,
+    entered,
+    confirmed,
+    filter,
+    page,
+  );
   const memos = ofThisSubmission.filter((file) => file.kind === "EVIDENCE" && file.status === "READY");
   useClampedPage(findings.data, page, setPage);
   // After a batch is applied the bulk bar goes away; the focus goes to the heading, above the new counts.
@@ -279,6 +335,7 @@ export function FindingsSection({
         several and apply one status to them all; the Cyber Manager then confirms it or sends it back.
       </p>
       {readiness.data ? <ReadinessBar readiness={readiness.data} /> : null}
+      {readiness.data ? <FileAgeNotice readiness={readiness.data} /> : null}
       {readiness.error ? <ErrorPanel problem={readiness.error.problem} /> : null}
       <FilterChips label="Show Findings" chips={CHIPS} selected={chip} onSelect={choose} />
       <FindingsList

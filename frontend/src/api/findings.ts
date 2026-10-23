@@ -180,7 +180,17 @@ export function proposeInBulk(
   });
 }
 
-/** How far the Findings are: what the progress bar shows. Carried Over and Target Date Missed are none in Release 1. */
+/** A report file as the readiness check names it: the name the person gave it is text, never markup. */
+export interface NamedFile {
+  fileId: string;
+  name: string;
+  reportType: ReportType;
+}
+
+/**
+ * How far the VA Submission is: what the progress bar shows (Carried Over and Target Date Missed are none in Release 1),
+ * and the report files whose age stands in the way of submitting.
+ */
 export interface Readiness {
   total: number;
   /** With a proposed status, whatever its review. */
@@ -192,6 +202,10 @@ export interface Readiness {
   carriedOver: number;
   targetDateMissed: number;
   disputed: number;
+  /** Report files more than 90 days old at today's date, in upload order. */
+  tooOld: NamedFile[];
+  /** Report files with no scan date to judge (none in the file, or only a Burp export time), until one is given. */
+  undated: NamedFile[];
 }
 
 /** GET /api/submissions/{id}/readiness: the progress counts of the VA Submission's Findings. */

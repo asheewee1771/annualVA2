@@ -9,8 +9,9 @@ import { inProgress, SCAN_REPORTS } from "./scanReports.ts";
 /**
  * The three Scan Report cards of a VA Submission with how each is provided and their files. A file moves through the
  * malware scan and the checks on the server, so the list is asked for again until none is still on its way (and not while
- * the tab is hidden). The list is the screen's, shared with the Findings, whose approval memos are among its files; so is
- * the word that a Finding was entered by hand, after which the Findings are asked for again.
+ * the tab is hidden). The list is the screen's, shared with the Findings, whose approval memos are among its files; so are
+ * the word that a Finding was entered by hand, after which the Findings are asked for again, and the word that a scan date
+ * was confirmed, after which the readiness is.
  */
 export function ScanReportsSection({
   submissionId,
@@ -18,12 +19,14 @@ export function ScanReportsSection({
   modes,
   classification,
   onFindingEntered,
+  onScanDateConfirmed,
 }: {
   submissionId: string;
   files: Resource<ReportFile[]>;
   modes: Resource<ScanReportMode[]>;
   classification: string;
   onFindingEntered: () => void;
+  onScanDateConfirmed: () => void;
 }) {
   // Only this submission's files: a screen that was showing another submission never shows its files for a moment.
   const ofThisSubmission = (files.data ?? []).filter((file) => file.submissionId === submissionId);
@@ -50,6 +53,7 @@ export function ScanReportsSection({
           onChanged={files.reload}
           onModeChanged={modes.reload}
           onFindingEntered={onFindingEntered}
+          onScanDateConfirmed={onScanDateConfirmed}
         />
       ))}
     </>

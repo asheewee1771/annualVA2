@@ -16,7 +16,7 @@ export interface AuditEntry {
   submissionId: string | null;
   findingId: string | null;
   correlationId: string;
-  detail: Record<string, string | number>;
+  detail: Record<string, string | number | boolean>;
 }
 
 export interface AuditPage {

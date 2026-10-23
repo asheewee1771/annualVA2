@@ -15,6 +15,7 @@ import { ClassifiedField } from "../../components/ClassifiedField.tsx";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { saveFile } from "../shared/saveFile.ts";
 import { ManualFindingForm } from "./ManualFindingForm.tsx";
+import { ScanDateForm } from "./ScanDateForm.tsx";
 import { ScanReportModeForm } from "./ScanReportModeForm.tsx";
 import { inProgress, type ScanReport } from "./scanReports.ts";
 
@@ -39,6 +40,7 @@ const STATUS_LABELS: Readonly<Record<PipelineStatus, string>> = {
   REJECTED_SCHEMA: "Rejected",
   REJECTED_HASH_MISMATCH: "Rejected",
   REJECTED_ENCRYPTED: "Rejected: password protected",
+  REJECTED_FUTURE_DATED: "Rejected: dated in the future",
 };
 
 function isAccepted(file: ReportFile): boolean {
@@ -334,7 +336,15 @@ function UploadForm({
   );
 }
 
-/** The files of one kind, each with its status, and the control to add more; a problem shows beside the control. */
+/** A report file whose scan date and target are confirmed: its findings were read and no rescan has replaced it. */
+function isConfirmable(file: ReportFile): boolean {
+  return file.kind === "MACHINE_READABLE" && file.status === "PARSED" && file.supersededBy === null;
+}
+
+/**
+ * The files of one kind, each with its status, and the control to add more; a problem shows beside the control. Below the
+ * report files (outside their live region), the scan date and target of each one whose findings were read.
+ */
 function FileSection({
   submissionId,
   report,
@@ -342,6 +352,7 @@ function FileSection({
   files,
   classification,
   onChanged,
+  onScanDateConfirmed,
 }: {
   submissionId: string;
   report: ScanReport;
@@ -349,6 +360,7 @@ function FileSection({
   files: readonly ReportFile[];
   classification: string;
   onChanged: () => void;
+  onScanDateConfirmed: () => void;
 }) {
   const [problem, setProblem] = useState<Problem | undefined>(undefined);
   const [replacingId, setReplacingId] = useState<string | undefined>(undefined);
@@ -401,6 +413,24 @@ function FileSection({
         />
       ) : null}
       {problem ? <ErrorPanel problem={problem} /> : null}
+      {files.some(isConfirmable) ? (
+        <>
+          <h4>Scan dates and targets</h4>
+          <p className="muted">
+            Confirm when each scan was made and what it scanned, or correct what the file says. A file more than 90 days
+            old cannot be submitted, and a changed target is marked for the Cyber Manager.
+          </p>
+          {files.filter(isConfirmable).map((file) => (
+            <ScanDateForm
+              key={file.id}
+              submissionId={submissionId}
+              file={file}
+              classification={classification}
+              onConfirmed={onScanDateConfirmed}
+            />
+          ))}
+        </>
+      ) : null}
       <UploadForm
         submissionId={submissionId}
         report={report}
@@ -414,10 +444,11 @@ function FileSection({
 }
 
 /**
- * One Scan Report (stories 20, 22, 23, 24, 27 and 39): how it is provided, then its machine-readable files when it is
+ * One Scan Report (stories 20, 22, 23, 24, 25, 27 and 39): how it is provided, then its machine-readable files when it is
  * uploaded, the form to enter a Finding by hand when its tool cannot export one, and, in every mode, its supporting
  * evidence. Each file shows its pipeline status and, for a rejected one, the plain message the server gave, with the
- * control to add more; a report file whose findings were read can be replaced with a rescan.
+ * control to add more; a report file whose findings were read can be replaced with a rescan, and its scan date and target
+ * are confirmed or corrected.
  * Several files make one Scan Report. Evidence is never shown in the page: it is only offered as a download.
  */
 export function ScanReportCard({
@@ -429,6 +460,7 @@ export function ScanReportCard({
   onChanged,
   onModeChanged,
   onFindingEntered,
+  onScanDateConfirmed,
 }: {
   submissionId: string;
   report: ScanReport;
@@ -439,6 +471,8 @@ export function ScanReportCard({
   onChanged: () => void;
   onModeChanged: () => void;
   onFindingEntered: () => void;
+  /** A scan date and target were confirmed: the age of the files is asked for again. */
+  onScanDateConfirmed: () => void;
 }) {
   // Report files are offered unless the Scan Report is known to be not applicable or entered by hand.
   const kinds: readonly FileKind[] = mode && mode.mode !== "UPLOAD" ? ["EVIDENCE"] : ["MACHINE_READABLE", "EVIDENCE"];
@@ -473,6 +507,7 @@ export function ScanReportCard({
           files={files.filter((file) => file.kind === kind)}
           classification={classification}
           onChanged={onChanged}
+          onScanDateConfirmed={onScanDateConfirmed}
         />
       ))}
     </section>
