@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review — 25-declaration-and-submit</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall: PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">build PASS · C0 H0 M0 L0 · round 2</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN · C0 H0 M5 L6 · round 2</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN · C0 H0 M1 L17 · round 1</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">semgrep PASS · C0 H0 M0 L0 · round 1</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN · C0 H0 M0 L3 · round 1</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react WARN · C0 H0 M2 L5 · round 1</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN · C0 H0 M4 L15 · round 1</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">main</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report</h2>
+          <p class="text-xs text-slate-500 mt-1">Ticket 25: tick the Declaration and submit for review (stories 40 and 41, ADR 0032). Uncommitted working tree against HEAD <span class="font-mono">dec56b2</span>. Round 2, after the correction pass for round 1's two thermo-nuclear Highs.</p>
+        </div>
+        <div class="rounded border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 space-y-2">
+          <p>All seven artifacts (build, thermo-nuclear, code-review, semgrep, im8, react, springboot) were present and readable, one per check, before aggregation.</p>
+          <p><span class="font-semibold">Rerun this round:</span> build and thermo-nuclear. <span class="font-semibold">Carried over unchanged from round 1:</span> code-review, semgrep, im8, react and springboot. This is the user-approved fast mode, which reruns only the failing checks plus build. The carried-over findings were written against the round 1 tree, so some of their line numbers, and a few findings the correction pass touched (for example react #2, code-review S9 and S13, springboot D-8), may already be out of date. thermo-nuclear round 2 reports which of these the correction pass resolved.</p>
+          <p><span class="font-semibold">build</span> reused the saved back-end verify log because the tree fingerprint matched (<span class="font-mono text-xs">eddc2d62…2450</span>, identical to <span class="font-mono text-xs">artifacts/do-work/verify/backend-verify.fingerprint</span>). The front-end check was run fresh. This follows the approved fast mode and is treated as a valid build result.</p>
+        </div>
+        <p class="text-sm text-slate-700">Gate verdict: <span class="font-semibold text-emerald-700">PASS</span>. No check reports a Critical or High finding in this ticket's code. thermo-nuclear confirms that both round 1 Highs are resolved: the edit lock is now an <span class="font-mono text-xs">EditTarget</span> capability returned only by <span class="font-mono text-xs">Submissions.lockForEdit</span> and required by the store writes, and the <span class="font-mono text-xs">editable</span> prop chain is replaced by one <span class="font-mono text-xs">EditableContext</span> and <span class="font-mono text-xs">&lt;Editable&gt;</span> fieldset. It now reports Mediums and Lows only, so it is WARN. build reported PASS with three informational notes only. semgrep found nothing on a line this ticket added or changed; its only High (<span class="font-mono text-xs">TestEndpoints.reportFileFault</span>) is pre-existing, test-only and a likely false positive, and is not counted against this ticket, as in round 1 and the ticket 22 gate.</p>
+        <p class="text-sm text-slate-700">Recorded decisions (<span class="font-mono text-xs">docs/agents/reviewer-decisions.md</span>) and ADR 0032 were applied by each child check. No finding below was downgraded by the aggregator. thermo-nuclear asks that its Mediums be fixed or recorded as deferrals before commit.</p>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Check</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Round</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Status</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">C / H / M / L</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Summary of gaps</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 font-medium">build</td>
+              <td class="px-4 py-2 text-xs">Rerun (round 2)</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 0</td>
+              <td class="px-4 py-2">BUILD SUCCESS: 766 tests, 0 failures, 0 errors; JaCoCo line 97.27 %, branch 90.99 % (gate 80 %). Front-end <span class="font-mono text-xs">npm run check</span> exit 0. Three informational notes only.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">thermo-nuclear</td>
+              <td class="px-4 py-2 text-xs">Rerun (round 2)</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 5 / 6</td>
+              <td class="px-4 py-2">Both round 1 Highs resolved. New Medium: the ArchUnit lock gate checks a fail-open list of method names, and the proposal INSERT path sits outside it. Four Mediums carried from round 1.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">code-review</td>
+              <td class="px-4 py-2 text-xs">Carried over (round 1)</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 17</td>
+              <td class="px-4 py-2">Every acceptance criterion met. S1: the 409 <span class="font-mono text-xs">not-ready</span> body carries file display names, against the as-13 class Javadoc, with no recorded human decision. Seam 1 gaps on read-only-after-submit and the submitting step.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">semgrep</td>
+              <td class="px-4 py-2 text-xs">Carried over (round 1)</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 0</td>
+              <td class="px-4 py-2">No finding on ticket 25 lines. Two pre-existing P2 results (one High, one Medium) outside the change, not counted.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">im8</td>
+              <td class="px-4 py-2 text-xs">Carried over (round 1)</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 3</td>
+              <td class="px-4 py-2">Resolves ticket 22/23 im8 L-2 (unlocked state check). Lows: refusal audit records only a count; as-13 contract wording; ticket 49 lacks a line for the <span class="font-mono text-xs">declaration</span> table.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">react</td>
+              <td class="px-4 py-2 text-xs">Carried over (round 1)</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 2 / 5</td>
+              <td class="px-4 py-2">Submit is re-enabled after success until the reload lands; readiness lifted through an effect (thermo-nuclear round 2 reports this effect removed).</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">springboot</td>
+              <td class="px-4 py-2 text-xs">Carried over (round 1)</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 4 / 15</td>
+              <td class="px-4 py-2">Row-lock design verified. Lock relies on READ COMMITTED without stating it; after-commit consumer pitfalls for tickets 36/37; upload re-check under the lock and the V19 append-only triggers are untested.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-700">No Critical or High finding in this ticket's code. The most significant open items are Mediums:</p>
+          <ul class="space-y-3 text-sm text-slate-700">
+            <li>
+              <span class="text-amber-600">Medium</span> · thermo-nuclear #1 · <span class="font-mono text-xs">backend/src/test/java/sg/annualva/arch/ArchitectureTest.java:106-115</span>, <span class="font-mono text-xs">backend/src/main/java/sg/annualva/finding/Proposals.java:140-145</span>, <span class="font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingStore.java:356, 374</span>
+              <p class="mt-1">The lock gate is a hand-kept list of 8 method names, so a new store write is unchecked until someone adds it. <span class="font-mono text-xs">FindingStore.propose</span> and <span class="font-mono text-xs">newBatch</span> take raw UUIDs, so a new proposal path could skip the VA Submission lock. ADR 0032 item 5's "a new write path cannot skip the lock" is not yet true for proposals.</p>
+            </li>
+            <li>
+              <span class="text-amber-600">Medium</span> · code-review S1 / im8 L-2 · <span class="font-mono text-xs">backend/src/main/java/sg/annualva/web/RejectedRequestException.java:9, 45</span>
+              <p class="mt-1">The 409 <span class="font-mono text-xs">not-ready</span> body carries file display names against the class's as-13 contract; a human ruling should be recorded in reviewer-decisions.</p>
+            </li>
+            <li>
+              <span class="text-amber-600">Medium</span> · springboot D-1, T-1, T-2 · <span class="font-mono text-xs">Submissions.java</span>, <span class="font-mono text-xs">ReportFiles.java</span>, <span class="font-mono text-xs">V19__declaration_and_submit.sql</span>
+              <p class="mt-1">The lock design relies on READ COMMITTED without stating it; the keep-time state re-check and the V19 append-only triggers have no Seam 1 test.</p>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build <span class="text-xs text-slate-500 font-normal">(rerun, round 2)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-700 space-y-1">
+          <p>Back end: saved <span class="font-mono text-xs">./mvnw -B -ntp clean verify</span> log reused (fingerprint match). BUILD SUCCESS, 766 tests, 0 failures, 0 errors, 0 skipped; all coverage checks met (instruction 98.08 %, branch 90.99 %, line 97.27 %). Front end: Prettier, <span class="font-mono text-xs">tsc -b</span>, <span class="font-mono text-xs">vite build</span>, no-raw-HTML, dependency-cruiser (68 modules, no violations) and fallow (no dead code, health 78 / B) all pass.</p>
+          <p>Informational notes (not findings): B1 a pre-existing deprecation warning in <span class="font-mono text-xs">MccHttp.java:51</span>, outside this change; B2 fallow health advisories on large functions in touched files (<span class="font-mono text-xs">FindingRow</span> 108 lines, <span class="font-mono text-xs">FindingsSection</span> 79, <span class="font-mono text-xs">FileSection</span> 80, <span class="font-mono text-xs">SubmissionPrepareScreen.tsx</span> top by triage concern) with no threshold breached; B3 ERROR-level log lines from tests that exercise refusal paths on purpose.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody><tr><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td></tr></tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear <span class="text-xs text-slate-500 font-normal">(rerun, round 2)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-700 space-y-2">
+          <p>Round 1 High 1 (edit lock as a convention): <span class="font-semibold">resolved</span>. <span class="font-mono text-xs">fileTarget</span> and <span class="font-mono text-xs">FileTarget.acceptsFiles</span> are deleted; <span class="font-mono text-xs">Submissions.lockForEdit(id, Refusal)</span> checks ownership, takes <span class="font-mono text-xs">FOR SHARE</span> and refuses on state in one call, returning <span class="font-mono text-xs">EditTarget</span> (private constructor), which <span class="font-mono text-xs">ReportFileStore.insert/confirm</span> and <span class="font-mono text-xs">ScanReportStore.lock/set/insertManual</span> now require. The unlocked precheck is <span class="font-mono text-xs">precheckEdit</span>, returning a <span class="font-mono text-xs">ReadTarget</span> that cannot write. An ArchUnit gate was added. Residual gap: finding #1.</p>
+          <p>Round 1 High 2 (<span class="font-mono text-xs">editable</span> drilled through about 44 sites): <span class="font-semibold">resolved</span>. One mechanism, <span class="font-mono text-xs">EditableContext</span> plus <span class="font-mono text-xs">&lt;Editable&gt;</span> (a fieldset disabled while not editable). Round 1 Medium 3 (readiness mirrored upward through an effect) is also resolved; the screen owns one readiness resource.</p>
+          <p>No file crosses 1,000 lines; the largest are <span class="font-mono text-xs">ScanReportCard.tsx</span> (576), <span class="font-mono text-xs">FindingStore.java</span> (473), <span class="font-mono text-xs">ReportFiles.java</span> (409) and <span class="font-mono text-xs">Submissions.java</span> (395).</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/arch/ArchitectureTest.java; backend/src/main/java/sg/annualva/finding/Proposals.java; finding/FindingStore.java</td><td class="px-4 py-2 font-mono text-xs">106-115, 128-150; 140-145; 356, 374</td><td class="px-4 py-2">#1 (new) The lock gate checks a fail-open list of 8 method names, and the real proposal INSERT (<span class="font-mono text-xs">FindingStore.propose</span>, <span class="font-mono text-xs">newBatch</span>) takes raw UUIDs outside it. Suggested: put <span class="font-mono text-xs">EditTarget</span> on those writes, give the rescan settlement a named entry point, replace the list with a whole-class rule plus an explicit exemption list, delete the two redundant clauses, and correct ADR 0032 item 5.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmitReadiness.java; finding/Readiness.java; frontend/src/api/problem.ts</td><td class="px-4 py-2 font-mono text-xs">29, 37; 4-5; 21, 31</td><td class="px-4 py-2">#2 (carried, round 1 #4) The readiness contract sits in <span class="font-mono text-xs">submission</span>, so <span class="font-mono text-xs">ReportType</span> becomes a <span class="font-mono text-xs">String</span> end to end. The fuller move contradicts ADR 0032 and needs a human call.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Declarations.java; Submissions.java; SubmissionStore.java</td><td class="px-4 py-2 font-mono text-xs">29-31; 59, 130, 209, 217, 230-241; 71-82, 158-182</td><td class="px-4 py-2">#3 (carried, round 1 #5) <span class="font-mono text-xs">Declarations</span> is a one-line wrapper; the Declaration logic is spread over <span class="font-mono text-xs">Submissions</span> and <span class="font-mono text-xs">SubmissionStore</span>.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">frontend/src/api/problem.ts; api/findings.ts</td><td class="px-4 py-2 font-mono text-xs">18-33, 45-78; 185, 211</td><td class="px-4 py-2">#4 (carried, round 1 #8) Bespoke runtime guards for <span class="font-mono text-xs">reasons</span> only, and two TS types for one server record.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ScanReportSeam1.java; SubmitSeam1.java</td><td class="px-4 py-2 font-mono text-xs">12; 18</td><td class="px-4 py-2">#5 (carried, round 1 #9) The Seam 1 inheritance spine is 9 levels deep; the submit tests live in <span class="font-mono text-xs">ingestion</span>.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java; ingestion/ReportFiles.java; finding/Proposals.java</td><td class="px-4 py-2 font-mono text-xs">116-119; 245, 353-370; 81-87</td><td class="px-4 py-2">#6 (new) The <span class="font-mono text-xs">Refusal</span> callback and the refusal helpers take positional UUIDs instead of typed targets, and return an untyped <span class="font-mono text-xs">RuntimeException</span>.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td><td class="px-4 py-2 font-mono text-xs">84, 276-279, 306-313</td><td class="px-4 py-2">#7 (new) <span class="font-mono text-xs">precheckEdit</span> returns a <span class="font-mono text-xs">ReadTarget</span>, and <span class="font-mono text-xs">systemOf</span> is a wrapper over <span class="font-mono text-xs">readTarget</span> that adds nothing.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SubmissionPrepareScreen.tsx; FindingsSection.tsx</td><td class="px-4 py-2 font-mono text-xs">291-293, 295, 311-320; 197-204, 311-314</td><td class="px-4 py-2">#8 (new) Readiness is refreshed three ways, including an effect that refetches on every 3-second file poll.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/Editable.tsx</td><td class="px-4 py-2 font-mono text-xs">8</td><td class="px-4 py-2">#9 (new) <span class="font-mono text-xs">EditableContext</span> defaults to <span class="font-mono text-xs">true</span>, so a component reused outside the prepare screen is editable (fails open).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td><td class="px-4 py-2 font-mono text-xs">206, 294, 326-334</td><td class="px-4 py-2">#10 (new or carried) <span class="font-mono text-xs">held(id, boolean forSubmit, …)</span> brings back a boolean mode, with a locate-then-lock double read.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/web/RejectedRequestException.java; finding/SubmitChecks.java; finding/FindingStore.java; frontend/src/screens/smo/SubmissionPrepareScreen.tsx; SmoInboxScreen.tsx</td><td class="px-4 py-2 font-mono text-xs">21, 28, 45, 61; 54-78; 112, 291-292; 27-35; 26-31, 54</td><td class="px-4 py-2">#11 (carried, round 1 #10, #11, #14, #15) Untyped <span class="font-mono text-xs">List&lt;?&gt; reasons</span>, scattered reason strings, stacked Javadoc and stale <span class="font-mono text-xs">READINESS</span> name, a 10th <span class="font-mono text-xs">UNREACHABLE</span> copy, duplicated <span class="font-mono text-xs">STATE_LABELS</span>, client-side inbox link label.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review <span class="text-xs text-slate-500 font-normal">(carried over unchanged from round 1)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-700">
+          <p>Spec: every acceptance criterion of ticket 25 is implemented and exercised through Seam 1. The placeholder Declaration seed is in scope and clearly marked, so it is not a finding.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/web/RejectedRequestException.java; submission/SubmitReadiness.java</td><td class="px-4 py-2 font-mono text-xs">9, 45; 36-37</td><td class="px-4 py-2">S1 The 409 <span class="font-mono text-xs">not-ready</span> body carries file display names, against the AGENTS.md error-body rule and the as-13 class Javadoc. ADR 0032 chose this, but no human ruling is recorded in reviewer-decisions.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">README.md</td><td class="px-4 py-2 font-mono text-xs">175</td><td class="px-4 py-2">S2 Still says "a disabled Declaration until the submit ticket fills it".</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingStore.java</td><td class="px-4 py-2 font-mono text-xs">291-292</td><td class="px-4 py-2">S3 Stale stacked Javadoc block.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionController.java</td><td class="px-4 py-2 font-mono text-xs">50-55</td><td class="px-4 py-2">S4 Javadoc says "an empty body accepts nothing", but a missing body gets 400 (same as P4).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/SubmitTest.java</td><td class="px-4 py-2 font-mono text-xs">108-129</td><td class="px-4 py-2">S5 After submit, manual Finding, Bulk-set, rescan Replace and evidence upload are not proven refused.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/SubmitRulesTest.java</td><td class="px-4 py-2 font-mono text-xs">183</td><td class="px-4 py-2">S6 Possible duplicated fixture (<span class="font-mono text-xs">otherDraft</span>, <span class="font-mono text-xs">draftOfOtherSystem</span>, <span class="font-mono text-xs">ApprovalMemoTest.otherDraft</span>).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td><td class="px-4 py-2 font-mono text-xs">170-174, 236, 249-252</td><td class="px-4 py-2">S7 Possible duplicated locate, <span class="font-mono text-xs">requireSystem</span>, lock sequence; the row is read twice.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SmoInboxScreen.tsx; SubmissionPrepareScreen.tsx</td><td class="px-4 py-2 font-mono text-xs">—</td><td class="px-4 py-2">S8 Duplicated <span class="font-mono text-xs">STATE_LABELS</span> and another <span class="font-mono text-xs">UNREACHABLE</span> copy.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionStore.java</td><td class="px-4 py-2 font-mono text-xs">122</td><td class="px-4 py-2">S9 Flag argument <span class="font-mono text-xs">lock(UUID id, boolean exclusive)</span>.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V19__declaration_and_submit.sql</td><td class="px-4 py-2 font-mono text-xs">28</td><td class="px-4 py-2">S10 Constraint <span class="font-mono text-xs">declaration_text_length_check</span> on <span class="font-mono text-xs">declaration</span> reads as if it belonged to <span class="font-mono text-xs">declaration_text</span>.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmitReadiness.java; frontend/src/api/problem.ts</td><td class="px-4 py-2 font-mono text-xs">—</td><td class="px-4 py-2">S11 Possible primitive obsession: <span class="font-mono text-xs">reportType</span> as a string; <span class="font-mono text-xs">reasons</span> as <span class="font-mono text-xs">List&lt;?&gt;</span>.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Declarations.java</td><td class="px-4 py-2 font-mono text-xs">29-31</td><td class="px-4 py-2">S12 Possible middle man: <span class="font-mono text-xs">current()</span> only passes through to the store.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/FindingsSection.tsx; ScanReportsSection.tsx</td><td class="px-4 py-2 font-mono text-xs">—</td><td class="px-4 py-2">S13 Possible data clump: <span class="font-mono text-xs">editable</span>, <span class="font-mono text-xs">classification</span>, <span class="font-mono text-xs">submissionId</span> and callbacks passed together down both chains.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/Submit*.java</td><td class="px-4 py-2 font-mono text-xs">—</td><td class="px-4 py-2">S14 Ticket 25 tests live in <span class="font-mono text-xs">ingestion</span> rather than <span class="font-mono text-xs">submission</span>.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/SubmitTest.java</td><td class="px-4 py-2 font-mono text-xs">56-58</td><td class="px-4 py-2">P1 "Records the submitting step" is not really proven: <span class="font-mono text-xs">hasSize(1)</span> passes even if submit never records it.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/SubmitTest.java</td><td class="px-4 py-2 font-mono text-xs">108-129</td><td class="px-4 py-2">P2 Read-only after submit is incompletely proven at Seam 1 (same gap as S5).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/SmoInbox.java</td><td class="px-4 py-2 font-mono text-xs">124-125</td><td class="px-4 py-2">P3 <span class="font-mono text-xs">RETURNED_FOR_REWORK</span> uses <span class="font-mono text-xs">submitDue()</span>; the spec decision points to <span class="font-mono text-xs">reviewDue()</span> (deferred to ticket 31 in a comment).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionController.java</td><td class="px-4 py-2 font-mono text-xs">50-55</td><td class="px-4 py-2">P4 A submit with no body gets 400 instead of the 409 <span class="font-mono text-xs">not-ready</span>; use <span class="font-mono text-xs">required = false</span> or fix the Javadoc.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep <span class="text-xs text-slate-500 font-normal">(carried over unchanged from round 1)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-700 space-y-2">
+          <p>Semgrep 1.179.0 from the <span class="font-mono text-xs">semgrep/semgrep:latest</span> Docker image (recorded Semgrep runner decision), rulesets <span class="font-mono text-xs">p/security-audit</span> and <span class="font-mono text-xs">p/default</span>. All 47 changed or untracked files were scanned, including the 8 test files in a second explicit pass. No finding falls on a line ticket 25 added or changed.</p>
+          <p>Pre-existing, not counted against this ticket: P2 High (ERROR) <span class="font-mono text-xs">java.spring.security.injection.tainted-sql-string</span> at <span class="font-mono text-xs">backend/src/test/java/sg/annualva/harness/TestEndpoints.java:268-270</span> (<span class="font-mono text-xs">reportFileFault</span>), unchanged by this ticket, test-only, and a likely false positive because the prefix is checked against <span class="font-mono text-xs">[A-Z_]+</span>. P2 Medium <span class="font-mono text-xs">path-join-resolve-traversal</span> in <span class="font-mono text-xs">scripts/mock-mockpass-assertions.js:11</span>, development-only with a constant argument. A parse error on <span class="font-mono text-xs">backend/mvnw</span> is informational.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody><tr><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td></tr></tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8 <span class="text-xs text-slate-500 font-normal">(carried over unchanged from round 1)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-700 space-y-2">
+          <p>PASS with notes. Submit checks role then ownership; the state and readiness checks run under a row lock, and every write to prepared content takes that row shared, which resolves ticket 22 and 23 im8 L-2. Success and every refusal are audited with ids and fixed codes only; a sentinel test proves typed text never reaches the 409 body or the audit entry. The Declaration snapshot and wording table are append-only. The new tick box has a classification label.</p>
+          <p>Tracked deferrals unchanged: as-12 production scanner (ticket 51), lm-16 and pm-6 (ticket 52), retention (ticket 49, see L-3). Manual review items: placeholder Declaration must be superseded by a new version from ticket 24 before UAT; tickets 36 and 37 must consume <span class="font-mono text-xs">SubmissionEvent</span> after commit only; verify the lock serialisation under concurrency at SIT; confirm service-layer parsing without controller <span class="font-mono text-xs">@Valid</span> and record it.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td><td class="px-4 py-2 font-mono text-xs">319</td><td class="px-4 py-2">L-1 (lm-4) A <span class="font-mono text-xs">not-ready</span> refusal records how many reasons there were, not which fixed codes; add a reasons detail key or record a decision.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/web/RejectedRequestException.java</td><td class="px-4 py-2 font-mono text-xs">8-9, 45</td><td class="px-4 py-2">L-2 (as-13) The 409 body now names files by display name, contradicting the class contract; reword it and optionally narrow <span class="font-mono text-xs">withReasons</span>.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">.scratch/annual-va/issues/49-retention-and-disposal.md</td><td class="px-4 py-2 font-mono text-xs">12</td><td class="px-4 py-2">L-3 (retention) Ticket 49 has no acceptance line for the new append-only <span class="font-mono text-xs">declaration</span> table.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react <span class="text-xs text-slate-500 font-normal">(carried over unchanged from round 1)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SubmissionPrepareScreen.tsx</td><td class="px-4 py-2 font-mono text-xs"><span>useSubmit</span>, <span>DeclarationForm</span></td><td class="px-4 py-2">#1 After a successful submit the form is re-enabled and still shows Draft until the reload lands; a failed reload leaves the screen editable. Use the returned <span class="font-mono text-xs">Submission</span>.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/FindingsSection.tsx; SubmissionPrepareScreen.tsx</td><td class="px-4 py-2 font-mono text-xs">onReadiness effect</td><td class="px-4 py-2">#2 Readiness is pushed to the parent through an effect and loses loading and error state, so Submit can be enabled on stale readiness.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SubmissionPrepareScreen.tsx</td><td class="px-4 py-2 font-mono text-xs">DeclarationForm</td><td class="px-4 py-2">#3 "Loading the Declaration…" shows forever next to the error when the wording fails to load.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SubmissionPrepareScreen.tsx</td><td class="px-4 py-2 font-mono text-xs">ReasonList</td><td class="px-4 py-2">#4 List key includes the array index.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SubmissionPrepareScreen.tsx</td><td class="px-4 py-2 font-mono text-xs">SubmitProblem</td><td class="px-4 py-2">#5 Refusal reasons sit outside the <span class="font-mono text-xs">role="alert"</span> region and may duplicate the blockers list.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/FindingsSection.tsx; FindingRow.tsx</td><td class="px-4 py-2 font-mono text-xs">useSelection, chosen</td><td class="px-4 py-2">#6 Ticked Findings and a chosen status stay shown once the VA Submission turns read-only.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SubmissionPrepareScreen.tsx</td><td class="px-4 py-2 font-mono text-xs">WHEN.format</td><td class="px-4 py-2">#7 <span class="font-mono text-xs">Intl.DateTimeFormat.format</span> throws <span class="font-mono text-xs">RangeError</span> on an unparsable instant, crashing the render.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot <span class="text-xs text-slate-500 font-normal">(carried over unchanged from round 1)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-700">
+          <p>Seven skills run (core, web, data, batch, security, logging, test). Row-lock design and after-commit event publication verified for this ticket. Security, logging and batch reviews raised nothing above Low.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td><td class="px-4 py-2 font-mono text-xs">170, 249</td><td class="px-4 py-2">D-1 The lock design depends on READ COMMITTED, but nothing states or enforces it.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java; SubmissionEvent.java</td><td class="px-4 py-2 font-mono text-xs">195</td><td class="px-4 py-2">D-2 Synchronous after-commit consumers (tickets 36/37) would hold a connection, turn listener errors into 500 after commit, and lose events on crash.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/ReportFiles.java</td><td class="px-4 py-2 font-mono text-xs">331</td><td class="px-4 py-2">T-1 The state re-check under the lock when an upload is kept is untested, though testable deterministically via a fake-scanner hook.</td></tr>
+            <tr><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V19__declaration_and_submit.sql</td><td class="px-4 py-2 font-mono text-xs">35-48</td><td class="px-4 py-2">T-2 The append-only triggers on <span class="font-mono text-xs">declaration</span> and <span class="font-mono text-xs">declaration_text</span> are untested.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionStore.java</td><td class="px-4 py-2 font-mono text-xs">127, 162</td><td class="px-4 py-2">D-3 Update and insert counts unchecked; a 0-row Declaration insert would pass silently.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionStore.java</td><td class="px-4 py-2 font-mono text-xs">lock</td><td class="px-4 py-2">D-4 No <span class="font-mono text-xs">lock_timeout</span> or transaction timeout on row-lock waits.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionStore.java</td><td class="px-4 py-2 font-mono text-xs">56</td><td class="px-4 py-2">D-5 <span class="font-mono text-xs">FOR SHARE</span> MultiXact and WAL cost; note only.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V19__declaration_and_submit.sql</td><td class="px-4 py-2 font-mono text-xs">67-75</td><td class="px-4 py-2">D-6 Audit constraint re-added with full validation under <span class="font-mono text-xs">ACCESS EXCLUSIVE</span>; use <span class="font-mono text-xs">NOT VALID</span> then <span class="font-mono text-xs">VALIDATE</span> from the next migration.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V19__declaration_and_submit.sql</td><td class="px-4 py-2 font-mono text-xs">—</td><td class="px-4 py-2">D-7 Missing FK indexes; misleading <span class="font-mono text-xs">declaration_text_length_check</span> name on <span class="font-mono text-xs">declaration</span>.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/ReportFileStore.java</td><td class="px-4 py-2 font-mono text-xs">119, 208</td><td class="px-4 py-2">D-8 <span class="font-mono text-xs">liveParsed</span> is now dead code.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/SubmitChecks.java</td><td class="px-4 py-2 font-mono text-xs">43-49</td><td class="px-4 py-2">C-1 Self-invocation of an <span class="font-mono text-xs">@Transactional</span> method (harmless today).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td><td class="px-4 py-2 font-mono text-xs">constructor</td><td class="px-4 py-2">C-2 Ten collaborators; consider moving the submit command out (advisory).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionController.java</td><td class="px-4 py-2 font-mono text-xs">54-55</td><td class="px-4 py-2">W-1 A missing body is a 400, not the documented <span class="font-mono text-xs">declaration-not-accepted</span>.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/web/RejectedRequestException.java</td><td class="px-4 py-2 font-mono text-xs">21, 45</td><td class="px-4 py-2">W-2 <span class="font-mono text-xs">List&lt;?&gt; reasons</span> is untyped; use a marker interface.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionController.java</td><td class="px-4 py-2 font-mono text-xs">53</td><td class="px-4 py-2">W-3 No explicit <span class="font-mono text-xs">consumes</span> media type (advisory).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V19__declaration_and_submit.sql</td><td class="px-4 py-2 font-mono text-xs">53-57</td><td class="px-4 py-2">S-1 Nothing stops the placeholder Declaration wording reaching UAT or production.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/SubmitTest.java</td><td class="px-4 py-2 font-mono text-xs">—</td><td class="px-4 py-2">T-3 Read-only test omits manual Finding, Bulk-set, evidence upload and rescan.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/SubmitTest.java; SubmitSeam1.java</td><td class="px-4 py-2 font-mono text-xs">—</td><td class="px-4 py-2">T-4 Loops and conditionals in tests.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/Submit*.java</td><td class="px-4 py-2 font-mono text-xs">—</td><td class="px-4 py-2">T-5 Submit tests live in the <span class="font-mono text-xs">ingestion</span> package (advisory).</td></tr>
+          </tbody>
+        </table>
+      </details>
+    </main>
+  </body>
+</html>
