@@ -13,3 +13,5 @@ Status: accepted
 Consequences: the inbox gains `submissionId`, the state `DRAFT` and the next action `PREPARE_SUBMISSION` (due on the submission's own `submit_due`); a Draft is listed under Needs your action. The Register's reset in the Seam 1 harness also clears submissions. A Register apply that retires or moves a System with a started submission is not handled here: Withdrawn and the Release 2 move rules arrive with the Register change effects ticket (43), and until then the row stays and its System id keeps resolving (a System is never deleted).
 
 Amended by ADR 0032: submitting is the second command (`POST /api/submissions/{id}/submit`), and the read gains `submittedAt` and the `declaration` accepted at the latest submit.
+
+Amended by ADR 0033: the Overdue sweep sets `overdue` and `overdue_since` (the read gains `overdueSince`), and a start takes the flag a Not Started System already has.

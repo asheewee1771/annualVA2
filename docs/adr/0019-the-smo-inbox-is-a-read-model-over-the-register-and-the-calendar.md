@@ -10,3 +10,5 @@ Status: accepted
 4. **Overdue is not guessed.** The Overdue flag is a stored fact set by the sweep in the Overdue ticket (26), not a date comparison made at read time. The inbox response has no `overdue` field yet; that ticket adds it to each item, and the screen already shows the pill when it is true. A Not Started System past its Submission Window is therefore not flagged until then.
 
 Consequences: the inbox is not audited (it names no report or Finding, like the Register list, ADR 0018); a System added partway through a Quarter shows the Quarter's dates until the Release 2 mid-cycle changes give it its own windows; the response is not paged (an SMO holds a handful of Systems).
+
+Amended by ADR 0033: the inbox answers `overdue` on every item, Not Started included, from the flag the sweep stored.

@@ -17,3 +17,5 @@ Not done here, on purpose: the agreed Declaration wording and its owner (ticket 
 Consequences: every write to a VA Submission's prepared content now also locks its row shared, which is cheap and never waits except on a submit; a Burp Suite file needs its scan date given before submitting (ADR 0031); the readiness read and the submit refuse with the same reasons, so the screen and the server never disagree about what is left to do.
 
 Amends ADR 0020 (the submit is the second command; the VA Submission read gains `submittedAt` and `declaration`), ADR 0028 item 6 and ADR 0031 item 6 (the readiness read gains `blockers`; `ReportFileAges` becomes `ReportFileReadiness`), and ADR 0030 item 6 (a write to a Scan Report locks the VA Submission shared before the Scan Report).
+
+Amended by ADR 0033: a submit keeps the Overdue flag only if the Review Window has passed as well.

@@ -274,3 +274,24 @@ Human decisions on reviewer findings. Check here before asking again. Each entry
 - **Finding:** ADR 0031 item 2 left a changed scan date unflagged, so confirming a later date could take a file out of the 90-day `tooOld` list unnoticed; spec line 229 says anything else the SMO changes is "flagged, not blocked" (code-review Spec P1, im8 M-1).
 - **Chosen action:** flag it. The metadata view returns `scanDateEdited` when the confirmed date differs from the file's own day (for a Burp export, its export day; one rule for every format), and the Scan Report card marks it next to "Target edited". The age rule still judges the confirmed date, so a wrong file date can be corrected. `FILE_METADATA_CONFIRMED` gains the boolean details `date_changed` and `target_changed`, never the values. The readiness list is unchanged; the review screens (ticket 28 onwards) read the same flag. ADR 0031 item 2 is amended. Decided 2026-10-21.
 - **When to reuse:** any SMO override of a value read from a report file: flag it beside the value and in the audit entry as a boolean, and do not block it.
+
+## Overdue clears when a submit moves into a window that has not passed
+
+- **Area:** the Overdue flag (ticket 26, ADR 0033 item 4), submit (ticket 25)
+- **Finding:** the glossary says a VA Submission is Overdue when its current window has passed, but the ticket did not say whether a flag set in Draft survives a submit made while the Review Window is still open.
+- **Chosen action:** keep as built. A submit keeps the flag and its `overdue_since` only if `review_due` has also passed; otherwise it clears both with no audit entry of its own, the `SUBMISSION_SUBMITTED` entry being the record and the earlier `SUBMISSION_OVERDUE` entry keeping the late submit. The sweep flags the VA Submission again if the review runs late. Decided 2026-10-23.
+- **When to reuse:** any transition that moves a flagged VA Submission into a new window: the flag follows the current window, it is not a permanent "was late" mark.
+
+## Not Started Systems are swept in every Cycle the app runs that is not closed
+
+- **Area:** the Overdue sweep (ticket 26, ADR 0033 item 3, ADR 0019), added Systems (Release 2 story 10), reminders (ticket 38)
+- **Finding:** a System added to the Register after its Quarter's Submission Window has passed is flagged Not Started Overdue on the next sweep; `va_system.added_on` could be used to skip it.
+- **Chosen action:** keep as built until Release 2 gives an added System its own windows; do not use `added_on`, which would also hide a real non-start by a System added late in its Quarter. Ticket 38 and the Release 2 added-System work note that an added System's SMO is reminded at once. Decided 2026-10-23.
+- **When to reuse:** any finding that an added System is Overdue or reminded too early before Release 2.
+
+## The Overdue sweep skips VA Submissions of retired Systems
+
+- **Area:** the Overdue sweep (ticket 26), retiring a System (ticket 43)
+- **Finding:** the sweep flagged and audited the Draft or In Review VA Submission of a retired System, which nobody can see or act on until ticket 43 withdraws it.
+- **Chosen action:** exclude VA Submissions whose System is retired from the sweep now, with a Seam 1 test. Decided 2026-10-23.
+- **When to reuse:** any job that acts on VA Submissions: skip those of retired Systems unless the job is the one that withdraws them.
