@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review — 23-scan-date-target-and-age-rules</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall: PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">build PASS · C0 H0 M0 L0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN · C0 H0 M5 L6</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN · C0 H0 M2 L10</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">semgrep WARN · C0 H0 M0 L24</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN · C0 H0 M1 L4 (round 1)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react WARN · C0 H0 M2 L5 (round 1)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN · C0 H0 M1 L10 (round 1)</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">main (uncommitted, HEAD f9813e4)</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report</h1>
+          <p class="text-sm text-slate-500 mt-1">Ticket 23: confirm scan date and target; enforce the age rules (stories 25 and 26, ADR 0031). Scope: the uncommitted working tree on <span class="font-mono">main</span> against HEAD <span class="font-mono">f9813e4</span>. Round 2, after a correction pass.</p>
+        </div>
+        <div class="rounded border border-sky-200 bg-sky-50 p-3 text-sm text-slate-700">
+          <p><span class="font-semibold">Round 2 scope (approved fast mode).</span> build, thermo-nuclear, code-review and semgrep were rerun against the corrected working tree. <span class="font-semibold">im8, react and springboot are carried over unchanged from round 1</span>; they were not rerun, and their findings describe the round-1 code. Some of them may already be addressed by the correction pass (for example im8 M-1, a moved scan date not visible in the audit trail, is the point the 2026-10-21 decision and the new <span class="font-mono text-xs">scanDateEdited</span> / <span class="font-mono text-xs">date_changed</span> flags settle, as the round-2 code-review confirms).</p>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Executive Summary</h2>
+          <p class="text-xs text-slate-500 mt-1">Overall compliance evaluation status across all active checks. Overall status is PASS: no check reports FAIL and no check has a Critical or High finding. The round-1 blockers (thermo-nuclear High on scan-date rule ownership, code-review Spec P1 on unflagged scan-date changes, semgrep P0 raw bidi character) are all resolved.</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Check</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Status</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">C / H / M / L</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Summary of gaps</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">build</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 0</td>
+              <td class="px-4 py-2">Back-end verify (748 tests, 0 failures; ArchUnit 11/11; JaCoCo line and branch at least 80 %) reused under a matching working-tree fingerprint; front-end <span class="font-mono text-xs">npm run check</span> and <span class="font-mono text-xs">fallow audit</span> run fresh and clean. Three Info notes only.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">thermo-nuclear</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 5 / 6</td>
+              <td class="px-4 py-2">Run-1 High resolved by the new <span class="font-mono text-xs">ingestion.ScanFacts</span>. Five run-1 Mediums remain open (refresh-counter drilling, store composes <span class="font-mono text-xs">Readiness</span>, third copy of field validation, scan-date block inside shared <span class="font-mono text-xs">FileSection</span>, flat nullable metadata contract). The reviewer calls #3 and #4 presumptive blockers under its own bar until fixed or accepted in <span class="font-mono text-xs">reviewer-decisions.md</span>; under this dispatcher's mapping they are Medium.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">code-review</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 2 / 10</td>
+              <td class="px-4 py-2">The 2026-10-21 decision is fully implemented and the run-1 Spec P1 is closed. Remaining: S1 two <span class="font-mono text-xs">ScanFacts</span> types one package apart (Medium); P1 no Seam 1 test shows a date confirmed for an undated file sets <span class="font-mono text-xs">scanDateEdited</span> / <span class="font-mono text-xs">date_changed</span> (Medium); stale help text and minor smells (Low).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">semgrep</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 24</td>
+              <td class="px-4 py-2">Check self-reports PASS: 0 P0, 0 P1. Run-1 P0 (raw bidi character in <span class="font-mono text-xs">ScanDateConfirmTest.java</span>) is resolved. The 24 Low items are P2 (pre-existing or non-shipped review artefacts, document only); WARN comes from the dispatcher's severity mapping.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">im8 <span class="text-xs text-slate-500">(round 1)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 4</td>
+              <td class="px-4 py-2">Carried over from round 1. lm-4 M-1: a corrected scan date was not distinguishable in the audit trail (since addressed by the 2026-10-21 decision; not re-verified by im8). Low notes on raw target length, unlocked state check, overwrite of earlier confirmations, CHECK-violation log text.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">react <span class="text-xs text-slate-500">(round 1)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 2 / 5</td>
+              <td class="px-4 py-2">Carried over from round 1. Burp export time pre-filled as the scan date; keyed remount after save drops focus with no announcement. Low items on stale state, per-file audited reads, live region, dependency trick, date hint.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">springboot <span class="text-xs text-slate-500">(round 1)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 10</td>
+              <td class="px-4 py-2">Carried over from round 1. State check and confirmation write are not serialised against a future Submit (ticket 25 must close it). Low items on projections, optimistic locking, migration locks, DI growth, test logic.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-600">No Critical or High findings in any check. The Medium items most worth acting on before commit:</p>
+          <ul class="space-y-3 text-sm">
+            <li class="rounded border border-amber-200 bg-amber-50 p-3">
+              <span class="text-amber-600">Medium</span> · code-review (Spec P1) ·
+              <span class="font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ScanDateConfirmTest.java:89-99</span>,
+              <span class="font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/FileAgeReadinessTest.java:113</span>
+              <p class="mt-1">No Seam 1 test shows that confirming a date for a file that names none sets <span class="font-mono text-xs">scanDateEdited</span> and the audit flag <span class="font-mono text-xs">date_changed</span>. The logic in <span class="font-mono text-xs">ScanFacts.java:52</span> is correct but unguarded.</p>
+            </li>
+            <li class="rounded border border-amber-200 bg-amber-50 p-3">
+              <span class="text-amber-600">Medium</span> · thermo-nuclear (#3, presumptive blocker under its bar) ·
+              <span class="font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/MetadataFields.java:34-67</span>
+              <p class="mt-1">Third copy of the "clean to one line, required, bounded" check and second copy of the "ISO date with bounds" check (compare <span class="font-mono text-xs">ProposalFields.java:155-192</span>, <span class="font-mono text-xs">ManualFindings.java:110-128</span>). Extract a shared <span class="font-mono text-xs">RequestFields</span> helper, or accept it in <span class="font-mono text-xs">reviewer-decisions.md</span>.</p>
+            </li>
+            <li class="rounded border border-amber-200 bg-amber-50 p-3">
+              <span class="text-amber-600">Medium</span> · thermo-nuclear (#4, presumptive blocker under its bar) ·
+              <span class="font-mono text-xs">frontend/src/screens/smo/ScanReportCard.tsx:340-446</span>
+              <p class="mt-1">A scan-date block sits inside the shared per-kind <span class="font-mono text-xs">FileSection</span> behind a kind check that is always false for evidence. Extract a <span class="font-mono text-xs">ScanDatesList</span> rendered once after the MACHINE_READABLE section, or accept it in <span class="font-mono text-xs">reviewer-decisions.md</span>.</p>
+            </li>
+            <li class="rounded border border-amber-200 bg-amber-50 p-3">
+              <span class="text-amber-600">Medium</span> · code-review (S1) and thermo-nuclear (#6, Low) ·
+              <span class="font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/ScanFacts.java:23</span>
+              <p class="mt-1">The new <span class="font-mono text-xs">ingestion.ScanFacts</span> shares its simple name with <span class="font-mono text-xs">parser.ScanFacts</span>, which models the same scan date and target one layer down. Rename (for example <span class="font-mono text-xs">ConfirmedScan</span> or <span class="font-mono text-xs">ScanDating</span>).</p>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td></tr>
+          </tbody>
+        </table>
+        <p class="px-5 py-3 text-xs text-slate-500 border-t border-slate-100">Info only: pre-existing javac deprecation warning in <span class="font-mono">MccHttp.java:51</span> (not in this changeset); <span class="font-mono">fallow health</span> advisory below threshold (<span class="font-mono">ScanReportCard.tsx</span> is the top churn hotspot with three functions over 60 lines; new <span class="font-mono">ScanDateForm.tsx</span> health 86.2); back-end results reused from the saved verify log under the identical working-tree fingerprint <span class="font-mono">7482ee05</span>, as approved. No front-end unit tests by design.</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/FindingsSection.tsx (+ SubmissionPrepareScreen, ScanReportsSection, ScanReportCard)</td>
+              <td class="px-4 py-2 font-mono text-xs">171-201, 338</td>
+              <td class="px-4 py-2">#1 (open since run 1): a second refresh counter passed down four levels with a <span class="font-mono text-xs">void confirmed</span> dependency trick; <span class="font-mono text-xs">FileAgeNotice</span> lives in the Findings section. Lift readiness to the screen and pass <span class="font-mono text-xs">reload</span> down.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingStore.java; Findings.java; Readiness.java</td>
+              <td class="px-4 py-2 font-mono text-xs">291-297; 212; 19-21</td>
+              <td class="px-4 py-2">#2 (open): the store takes the port's <span class="font-mono text-xs">Ages</span> only to copy it into <span class="font-mono text-xs">Readiness</span>; the public record exposes a type nested in the port. Compose in <span class="font-mono text-xs">Findings.readiness</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/MetadataFields.java</td>
+              <td class="px-4 py-2 font-mono text-xs">34-67</td>
+              <td class="px-4 py-2">#3 (open; presumptive blocker under the reviewer's bar): third copy of one-line/required/bounded validation and second copy of the ISO date check (vs <span class="font-mono text-xs">ProposalFields</span>, <span class="font-mono text-xs">ManualFindings</span>). Add a shared <span class="font-mono text-xs">RequestFields</span> helper.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ScanReportCard.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">340-342, 348-446</td>
+              <td class="px-4 py-2">#4 (open; presumptive blocker under the reviewer's bar): scan-date block added to the shared <span class="font-mono text-xs">FileSection</span> behind <span class="font-mono text-xs">isConfirmable</span>, always false for evidence. Extract <span class="font-mono text-xs">ScanDatesList</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/ReportFileMetadataView.java; ScanFacts.java; frontend/src/api/reportFiles.ts; ScanDateForm.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">30-33; 23-25; 136-154; 31-34, 69-70</td>
+              <td class="px-4 py-2">#5 (open, grown): fields set only together are flat and nullable, now with a third flat boolean; <span class="font-mono text-xs">scanDate</span> and <span class="font-mono text-xs">scanDay</span> both ship and the client reads one. Nest <span class="font-mono text-xs">FileSays</span> / <span class="font-mono text-xs">Confirmed</span> records.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/ScanFacts.java</td>
+              <td class="px-4 py-2 font-mono text-xs">23</td>
+              <td class="px-4 py-2">#6 (new): same simple name as <span class="font-mono text-xs">parser.ScanFacts</span>. Rename to say what it adds.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/ScanPoller.java; FileChecks.java; MetadataFields.java; FileAges.java</td>
+              <td class="px-4 py-2 font-mono text-xs">181-183; 44-48, 65-71; 56-61; 24, 37-46</td>
+              <td class="px-4 py-2">#7: future-dated check is an unnamed <span class="font-mono text-xs">Predicate&lt;Instant&gt;</span> that recomputes the business day outside <span class="font-mono text-xs">ScanFacts</span>; the three age bounds live in three classes.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/ReportFiles.java</td>
+              <td class="px-4 py-2 font-mono text-xs">228-233</td>
+              <td class="px-4 py-2">#8 (partly resolved): the row is read back after the write to compute flags already known; the audit-ordering hazard is gone.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ScanDateForm.tsx; FindingsSection.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">15, 18-28; 63-66</td>
+              <td class="px-4 py-2">#9: <span class="font-mono text-xs">UNREACHABLE</span> now in nine files; the <span class="font-mono text-xs">fileWords</span> fallback can never run; nested ternary in <span class="font-mono text-xs">FromTheFile</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/ReportFileStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">106-108, 114-116, 119-121</td>
+              <td class="px-4 py-2">#10: the "live parsed file" predicate is written out in three SQL strings and one front-end function.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SubmissionPrepareScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">38-65</td>
+              <td class="px-4 py-2">#11: the unrelated <span class="font-mono text-xs">SubmissionSummary</span> extraction should be its own <span class="font-mono text-xs">refactor</span> commit.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="px-5 py-3 text-xs text-slate-500 border-t border-slate-100">Resolved since round 1: the High on scan-date rule ownership. <span class="font-mono">ingestion/ScanFacts.java:23-65</span> now owns the judged day, the export-time-only rule, both edited flags and the view; the audit flags and the response come from the same object.</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/ScanFacts.java</td>
+              <td class="px-4 py-2 font-mono text-xs">23</td>
+              <td class="px-4 py-2">S1 (Standards): possible Mysterious Name; two different <span class="font-mono text-xs">ScanFacts</span> types one package apart.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ScanDateConfirmTest.java; FileAgeReadinessTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">89-99; 113</td>
+              <td class="px-4 py-2">P1 (Spec, test gap): no test shows a date confirmed for a file that names none sets <span class="font-mono text-xs">scanDateEdited</span> and <span class="font-mono text-xs">date_changed</span> (ADR 0031 item 2).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ScanReportCard.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">421</td>
+              <td class="px-4 py-2">S2 / P3: the help text names only "a changed target"; since the 2026-10-21 decision a changed scan date is marked too.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ScanDateConfirmTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">24-41</td>
+              <td class="px-4 py-2">P2 (Spec, test gap): the Singapore-vs-UTC day boundary of "the file's own day" is untested for the edited flag.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/MetadataFields.java; parser/ScanFacts.java; V18 CHECK</td>
+              <td class="px-4 py-2 font-mono text-xs">18</td>
+              <td class="px-4 py-2">S3: the target bound of 200 is defined twice in the back end and again in the V18 CHECK.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SubmissionPrepareScreen.tsx; ScanReportsSection.tsx; ScanReportCard.tsx; FindingsSection.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">91, 107; 22, 29; 175, 196, 300</td>
+              <td class="px-4 py-2">S4: the <span class="font-mono text-xs">confirmed</span> reload counter is passed through five places beside <span class="font-mono text-xs">entered</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/FindingsSection.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">72</td>
+              <td class="px-4 py-2">S5: the same list block is written out for <span class="font-mono text-xs">tooOld</span> and <span class="font-mono text-xs">undated</span> in <span class="font-mono text-xs">FileAgeNotice</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/ReportFiles.java</td>
+              <td class="px-4 py-2 font-mono text-xs">247</td>
+              <td class="px-4 py-2">S6: <span class="font-mono text-xs">metadataView</span> is a one-caller Middle Man.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/FindingsSection.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">63</td>
+              <td class="px-4 py-2">S7: <span class="font-mono text-xs">fileWords</span> returns a label; <span class="font-mono text-xs">fileLabel</span> would say so.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SubmissionPrepareScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">38</td>
+              <td class="px-4 py-2">S8: the <span class="font-mono text-xs">SubmissionSummary</span> extraction is unrelated; commit it separately.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ScanReportCard.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">340</td>
+              <td class="px-4 py-2">S9: <span class="font-mono text-xs">isConfirmable</span> repeats the server's "live parsed" rule (display filter only; noted).</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="px-5 py-3 text-xs text-slate-500 border-t border-slate-100">Every point of the 2026-10-21 decision and ADR 0031 item 2 as amended is met; the run-1 Spec P1 (High) is closed. No scope creep. The Low count of 10 follows the artifact (Standards S2 to S9, Spec P2 and P3); S2 and P3 describe the same help-text issue and share one row above.</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">artifacts/code-reviewer/03-…-compliance.html through 23-…-compliance.html (21 files)</td>
+              <td class="px-4 py-2 font-mono text-xs">6 or 7</td>
+              <td class="px-4 py-2">P2-1 to P2-21: <span class="font-mono text-xs">html.security.audit.missing-integrity</span>; generated review reports load the Tailwind CDN script with no SRI attribute. Local review artefacts, not shipped code.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">scripts/mock-mockpass-assertions.js</td>
+              <td class="px-4 py-2 font-mono text-xs">11</td>
+              <td class="px-4 py-2">P2-22: <span class="font-mono text-xs">path-join-resolve-traversal</span> in a local dev mock script; not part of the app; unchanged since run 1.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">artifacts/code-reviewer/23-scan-date-target-and-age-rules-compliance.html</td>
+              <td class="px-4 py-2 font-mono text-xs">103, 349 (round-1 report)</td>
+              <td class="px-4 py-2">P2-23 (not a Semgrep hit): the round-1 report contained a raw U+202E character. Addressed by this regenerated report, which writes the escape only as text (<span class="font-mono text-xs">&#92;u202E</span>).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">FindingProposalFieldsTest.java; ManualFindingTest.java; ScanReportModeTest.java; BurpRulesTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">P2-24 (unscanned note, carried from run 1): earlier tickets' test files still hold raw U+202E. Outside this diff; separate clean-up.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="px-5 py-3 text-xs text-slate-500 border-t border-slate-100">Check self-reports PASS: 0 P0, 0 P1. Run-1 P0 resolved: <span class="font-mono">ScanDateConfirmTest.java</span> now uses escapes on lines 135 and 145, and a byte scan of all 45 changed or new files found no raw bidi or zero-width characters in source. Rulesets <span class="font-mono">p/security-audit</span> + <span class="font-mono">p/default</span>, three passes (whole repo, 13 untracked files, 31 modified files); no rule matched any changed or new production or test file. WARN reflects the dispatcher's severity mapping of the 24 pre-existing Low items.</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8 <span class="text-xs text-slate-500">(carried over from round 1)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/FileAges.java</td>
+              <td class="px-4 py-2 font-mono text-xs">56-65</td>
+              <td class="px-4 py-2">M-1 (lm-4): a corrected scan date decides the 90-day block but the <span class="font-mono text-xs">FILE_METADATA_CONFIRMED</span> entry and the view cannot show it was moved. Add fixed detail codes and a <span class="font-mono text-xs">scanDateEdited</span> flag, or record a decision keeping ADR 0031 item 2.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/MetadataFields.java</td>
+              <td class="px-4 py-2 font-mono text-xs">36</td>
+              <td class="px-4 py-2">L-1 (as-1): the raw <span class="font-mono text-xs">target</span> is cleaned before its length is bounded.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/ReportFiles.java</td>
+              <td class="px-4 py-2 font-mono text-xs">215</td>
+              <td class="px-4 py-2">L-2 (as-7): the editable-state check is not serialised with a state change; tracked to ticket 25.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/ReportFileStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">114-116</td>
+              <td class="px-4 py-2">L-3 (lm-4): confirming again overwrites the earlier confirmed values; ticket 28 should decide what is kept beside a review.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/web/ApiExceptionHandler.java</td>
+              <td class="px-4 py-2 font-mono text-xs">86-92</td>
+              <td class="px-4 py-2">L-4 (lm-19): a V18 CHECK violation would log PostgreSQL's "Failing row contains" text with typed values (unreachable today).</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="px-5 py-3 text-xs text-slate-500 border-t border-slate-100">Carried over unchanged from round 1 (not rerun in round 2 under the approved fast mode). Findings and line numbers describe the round-1 working tree.</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react <span class="text-xs text-slate-500">(carried over from round 1)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ScanDateForm.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">63</td>
+              <td class="px-4 py-2">The Burp export day is pre-filled as the scan date, so one click confirms the date ADR 0031 says must not be judged. Consider starting a Burp file empty.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ScanDateForm.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">150-159</td>
+              <td class="px-4 py-2">The keyed remount after a save removes the focused Confirm button and nothing announces success; restore focus to a heading and use a live region.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ScanDateForm.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">156-159</td>
+              <td class="px-4 py-2">Stale "Not confirmed yet." with Confirm enabled between the PUT answer and the reload.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ScanDateForm.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">139-140</td>
+              <td class="px-4 py-2">One audited metadata GET per parsed file on every mount (awareness only).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/FindingsSection.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">142-170</td>
+              <td class="px-4 py-2"><span class="font-mono text-xs">role="status"</span> region is mounted with its content already in it and holds lists.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/FindingsSection.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">187-194</td>
+              <td class="px-4 py-2"><span class="font-mono text-xs">confirmed</span> counter used only as a hook dependency through <span class="font-mono text-xs">void</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ScanDateForm.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">91-98</td>
+              <td class="px-4 py-2">The date input has no <span class="font-mono text-xs">max</span>/<span class="font-mono text-xs">min</span> hint for the server's range (by design under ADR 0031 item 7).</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="px-5 py-3 text-xs text-slate-500 border-t border-slate-100">Carried over unchanged from round 1 (not rerun in round 2 under the approved fast mode). Findings and line numbers describe the round-1 working tree.</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot <span class="text-xs text-slate-500">(carried over from round 1)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/ReportFiles.java (confirmMetadata); submission/Submissions.java; ReportFileStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">M1: the VA Submission state check and the confirmation write are not serialised against a state change; ticket 25's submit should take <span class="font-mono text-xs">FOR UPDATE</span> and editors <span class="font-mono text-xs">FOR SHARE</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/ReportFileStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">L1: <span class="font-mono text-xs">LIVE_PARSED</span> fetches 24 columns plus a join to use six.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/ReportFileStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">L2: <span class="font-mono text-xs">CONFIRM</span> has no optimistic concurrency check; last writer wins silently.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V18__report_file_confirmed_scan_date.sql</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">L3: CHECK constraints rebuilt under ACCESS EXCLUSIVE; use <span class="font-mono text-xs">NOT VALID</span> then <span class="font-mono text-xs">VALIDATE</span> after go-live.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/ReportFiles.java; ScanPoller.java</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">L4: constructors keep growing (12 and 10 dependencies); both inject <span class="font-mono text-xs">Clock</span> and <span class="font-mono text-xs">CycleCalendar</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/ReportFileController.java</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">L5: request body validated by hand rather than <span class="font-mono text-xs">@Valid</span> (deliberate, existing pattern; no change).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/ReportFileController.java</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">L6: <span class="font-mono text-xs">@PutMapping</span> declares no <span class="font-mono text-xs">consumes</span> (optional, app-wide).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/ReportFileMetadataRequest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">L7: no size bound on a JSON request string before the field check (app-wide).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/Readiness.java</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">L8: the wire contract exposes the port's <span class="font-mono text-xs">ReportFileAges.NamedFile</span> type.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ScanDateConfirmTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">L9: loops and an <span class="font-mono text-xs">if</span> in tests weaken the REFUSED/SUCCESS assertion; use <span class="font-mono text-xs">@ParameterizedTest</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/UploadPipelineTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">L10: inline fully-qualified names; sample rewritten by global string replace; duplicated metadata path helper.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="px-5 py-3 text-xs text-slate-500 border-t border-slate-100">Carried over unchanged from round 1 (not rerun in round 2 under the approved fast mode). Findings and line numbers describe the round-1 working tree.</p>
+      </details>
+    </main>
+  </body>
+</html>
