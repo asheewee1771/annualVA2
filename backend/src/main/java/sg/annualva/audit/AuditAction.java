@@ -72,6 +72,13 @@ public enum AuditAction {
      */
     FILE_METADATA_VIEWED("file-metadata-viewed", "file"),
     /**
+     * An SMO/Tech Lead confirmed or corrected the scan date and target of a parsed report file (story 25; SUCCESS), or was
+     * refused because the VA Submission takes no changes in its present state or a rescan has replaced the file (REFUSED,
+     * with a fixed reason). About the System and the VA Submission, with the file id and, on SUCCESS, whether the date and
+     * the target differ from the file's ({@code date_changed}, {@code target_changed}); never the date or the target.
+     */
+    FILE_METADATA_CONFIRMED("file-metadata-confirmed", "file"),
+    /**
      * Someone who may see the System listed the Findings of a VA Submission. The Findings carry report content, so the read
      * is audited for every role, the System's own SMO/Tech Lead included. One entry per list request, about the System and
      * the VA Submission, with the number of Findings returned; never an identifier, a package or a host.

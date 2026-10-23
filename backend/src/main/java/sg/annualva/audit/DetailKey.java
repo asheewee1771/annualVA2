@@ -5,7 +5,7 @@ import java.util.Locale;
 /**
  * The only keys an audit entry's {@code detail} may carry. The same list is a CHECK constraint on the table
  * ({@code audit_entry_detail_check}), so adding a key is a deliberate change to both. Each value is a fixed
- * code, an id or a number, never text a person typed or anything read from a report.
+ * code, an id, a number or a yes/no flag, never text a person typed or anything read from a report.
  */
 public enum DetailKey {
     STATE_FROM,
@@ -46,7 +46,11 @@ public enum DetailKey {
     /** The Scan Report an entry is about: a fixed code such as {@code BURP_SUITE} (ticket 22). */
     REPORT_TYPE,
     /** How a Scan Report is provided: {@code UPLOAD}, {@code NOT_APPLICABLE} or {@code MANUAL} (ticket 22). */
-    MODE;
+    MODE,
+    /** Whether a confirmed scan date differs from the report file's own day (ticket 23): a flag, never the date. */
+    DATE_CHANGED,
+    /** Whether a confirmed target differs from the one the report file names (ticket 23): a flag, never the target. */
+    TARGET_CHANGED;
 
     /** The key as stored: lower-case with underscores. */
     String json() {

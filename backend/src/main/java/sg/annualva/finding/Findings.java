@@ -50,9 +50,10 @@ public class Findings {
     private final AuditActor actor;
     private final AuditLog audit;
     private final CycleCalendar calendar;
+    private final ReportFileAges fileAges;
 
     Findings(FindingStore store, Proposals proposals, Submissions submissions, AccessGuard guard, AuditActor actor,
-            AuditLog audit, CycleCalendar calendar) {
+            AuditLog audit, CycleCalendar calendar, ReportFileAges fileAges) {
         this.store = store;
         this.proposals = proposals;
         this.submissions = submissions;
@@ -60,6 +61,7 @@ public class Findings {
         this.actor = actor;
         this.audit = audit;
         this.calendar = calendar;
+        this.fileAges = fileAges;
     }
 
     /**
@@ -197,8 +199,9 @@ public class Findings {
     }
 
     /**
-     * The progress counts of a VA Submission (story 38), for anyone who may see its System. They are counts, not report
-     * content, so they follow the rule for a read of the VA Submission itself (reviewer decisions, "Reading a single VA
+     * The progress counts of a VA Submission (story 38) and the report files whose age stands in the way of submitting
+     * (story 26: more than 90 days old at today's business date, or with no scan date to judge), for anyone who may see
+     * its System. They are counts and file names, not report content, so they follow the rule for a read of the VA Submission itself (reviewer decisions, "Reading a single VA
      * Submission is audited unless the owning SMO/Tech Lead reads it"): a read by a Cyber Manager or a VA POC is a
      * {@code READINESS_VIEWED} entry with ids only, and the owner's own reads, which the screen repeats after every
      * proposal, write nothing. One the caller may not see is "not found", the same as one that does not exist.
@@ -206,7 +209,7 @@ public class Findings {
     @Transactional
     public Readiness readiness(UUID submissionId) {
         UUID systemId = submissions.systemOf(submissionId, Need.VIEW);
-        Readiness readiness = store.readiness(submissionId);
+        Readiness readiness = store.readiness(submissionId, fileAges.of(submissionId));
         if (!guard.scope(Need.SUBMIT).contains(systemId)) {
             audit.record(actor.attribute(AuditEvent.of(AuditAction.READINESS_VIEWED, AuditOutcome.SUCCESS))
                     .onSystem(systemId).onSubmission(submissionId));

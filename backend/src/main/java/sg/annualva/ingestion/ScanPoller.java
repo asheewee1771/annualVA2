@@ -2,6 +2,7 @@ package sg.annualva.ingestion;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -17,6 +18,7 @@ import sg.annualva.audit.AuditLog;
 import sg.annualva.audit.AuditOutcome;
 import sg.annualva.audit.DetailKey;
 import sg.annualva.boundary.MalwareScanner.Verdict;
+import sg.annualva.cycle.CycleCalendar;
 import sg.annualva.finding.Findings;
 import sg.annualva.finding.ProposalView;
 import sg.annualva.parser.ParsedReport;
@@ -25,8 +27,9 @@ import sg.annualva.scan.MalwareScan;
 import sg.annualva.scan.ScanProperties;
 
 /**
- * Walks quarantined Scan Report files through the rest of the pipeline (stories 20, 20a, 24, 27): the malware scan,
- * then the type allowlist, the schema check and the parse ({@link FileChecks}) on the scanner's unchanged copy. The
+ * Walks quarantined Scan Report files through the rest of the pipeline (stories 20, 20a, 24, 26, 27): the malware scan,
+ * then the type allowlist, the schema check, the parse and the age check ({@link FileChecks}) on the scanner's unchanged
+ * copy, the age judged against today's business date by the {@code Clock} bean. The
  * stages run in that fixed order, and a file that fails one never reaches the next. A pass:
  * <ol>
  *   <li>asks the scanner about every file that is out with it: blocked, sanitised (the scanner had to change it, which is
@@ -62,11 +65,13 @@ public class ScanPoller {
     private final AuditLog audit;
     private final AuditActor actor;
     private final Findings findings;
+    private final CycleCalendar calendar;
     private final Clock clock;
     private final TransactionTemplate transaction;
 
     ScanPoller(ReportFileStore store, MalwareScan scan, CleanFiles cleanFiles, ScanProperties properties,
-            AuditLog audit, AuditActor actor, Findings findings, Clock clock, TransactionTemplate transaction) {
+            AuditLog audit, AuditActor actor, Findings findings, CycleCalendar calendar, Clock clock,
+            TransactionTemplate transaction) {
         this.store = store;
         this.scan = scan;
         this.cleanFiles = cleanFiles;
@@ -74,6 +79,7 @@ public class ScanPoller {
         this.audit = audit;
         this.actor = actor;
         this.findings = findings;
+        this.calendar = calendar;
         this.clock = clock;
         this.transaction = transaction;
     }
@@ -172,7 +178,9 @@ public class ScanPoller {
             return;
         }
         String cleanSha = MalwareScan.sha256(bytes);
-        FileChecks.Outcome checked = FileChecks.run(file.reportType(), file.kind(), bytes);
+        LocalDate today = calendar.dateOf(now);
+        FileChecks.Outcome checked = FileChecks.run(file.reportType(), file.kind(), bytes,
+                scanned -> calendar.dateOf(scanned).isAfter(today));
         if (!checked.passed()) {
             settle(file, new ReportFileStore.Settlement(checked.stages(), checked.rejection(), null, cleanSha,
                     checked.format(), file.scanAttempts(), null), now);

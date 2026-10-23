@@ -10,7 +10,8 @@ import tools.jackson.databind.JsonNode;
 
 /**
  * Story 20 (the pipeline) and story 24: an upload is quarantined and answered at once, then the stages run in the fixed
- * order quarantine, malware scan, type allowlist, schema check, and a file that fails a stage never reaches the next. The
+ * order quarantine, malware scan, type allowlist, schema check, parse with the pre-fill of the scan date and target, and
+ * the age check (story 26), and a file that fails a stage never reaches the next. The
  * order is proved by what a file ends up as when it would fail more than one stage, and by the stages a file went through.
  */
 class UploadPipelineTest extends IngestionSeam1 {
@@ -62,6 +63,25 @@ class UploadPipelineTest extends IngestionSeam1 {
         assertThat(file.get("message").isNull()).isTrue();
         assertThat(fileStore.count(FileStore.Zone.QUARANTINE)).as("the unscanned copy is gone").isZero();
         assertThat(fileStore.count(FileStore.Zone.CLEAN)).isEqualTo(1);
+    }
+
+    @Test
+    void theParseAndThePreFillComeAfterTheSchemaCheckAndTheAgeCheckComesLast() {
+        Draft draft = draft();
+        byte[] tomorrow = new String(Samples.dependencyCheckJson(), java.nio.charset.StandardCharsets.UTF_8)
+                .replace("2027-07-20", "2027-08-03").getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+        JsonNode parsed = settled(draft, DEPENDENCY_CHECK, "dc.json", Samples.dependencyCheckJson());
+        JsonNode future = settled(draft, DEPENDENCY_CHECK, "tomorrow.json", tomorrow);
+
+        assertThat(stages(parsed)).containsExactly("QUARANTINED", "SCAN_SUBMITTED", "SCAN_CLEAN", "TYPE_OK", "SCHEMA_OK",
+                "PARSED");
+        var metadata = draft.smo().get(fileAt(draft.submissionId(), parsed.get("id").asString()) + "/metadata");
+        assertThat(sg.annualva.harness.ApiClient.json(metadata).get("scanDay").asString()).as("pre-filled by the parse")
+                .isEqualTo("2027-07-20");
+        assertThat(future.get("status").asString()).isEqualTo("REJECTED_FUTURE_DATED");
+        assertThat(stages(future)).as("the age check needs the date the parse pre-filled").containsExactly("QUARANTINED",
+                "SCAN_SUBMITTED", "SCAN_CLEAN", "TYPE_OK", "SCHEMA_OK", "REJECTED_FUTURE_DATED");
     }
 
     @Test

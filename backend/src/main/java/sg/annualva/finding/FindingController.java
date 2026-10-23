@@ -66,8 +66,10 @@ public class FindingController {
 
     /**
      * The progress counts of the VA Submission's Findings (story 38): every Finding, those with a proposed status and
-     * those without one, those awaiting review, the Disputed ones, and the Carried Over and Target Date Missed ones (none before Release 2). A read
-     * by anyone but the System's own SMO/Tech Lead is audited, with ids only.
+     * those without one, those awaiting review, the Disputed ones, and the Carried Over and Target Date Missed ones (none before Release 2),
+     * and, by name, the report files more than 90 days old at today's business date ({@code tooOld}) and those with no
+     * scan date to judge ({@code undated}) (story 26). A read by anyone but the System's own SMO/Tech Lead is audited,
+     * with ids only.
      */
     @GetMapping("/api/submissions/{id}/readiness")
     @PreAuthorize("hasAnyRole('SMO','CYBER_MANAGER','VA_POC')")

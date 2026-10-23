@@ -2,8 +2,9 @@ package sg.annualva.ingestion;
 
 /**
  * Where a Scan Report file is in the upload pipeline. The stages run in a fixed order: quarantine, malware scan, type
- * allowlist, schema check, parse (which also pre-fills the scan date and target). The age ticket appends after them. A
- * supporting evidence file skips the last two: quarantine, scan, type allowlist, READY.
+ * allowlist, schema check, parse (which also pre-fills the scan date and target), then the age check, which refuses a scan
+ * dated after today and rests nowhere of its own: a file that passes it is PARSED. A supporting evidence file skips the
+ * last three: quarantine, scan, type allowlist, READY.
  * Nothing reads a file before it is clean, and nobody can view one until it has passed every stage there is. A file is
  * stored in the statuses it rests in (QUARANTINED, SCAN_SUBMITTED, PARSED, READY and the rejected ones); SCAN_CLEAN,
  * TYPE_OK and SCHEMA_OK are stages it passes through, recorded in its stage history when the outcome of the checks is
@@ -38,7 +39,9 @@ public enum PipelineStatus {
     REJECTED_SCHEMA,
     REJECTED_HASH_MISMATCH,
     /** A PDF that is password protected, which the scanner cannot inspect (supporting evidence only, ADR 0026). */
-    REJECTED_ENCRYPTED;
+    REJECTED_ENCRYPTED,
+    /** It parsed, but its report says the scan was made after today's business date: the age check (ADR 0031). */
+    REJECTED_FUTURE_DATED;
 
     /** The status of a file the pipeline rejected for this reason. */
     static PipelineStatus rejected(RejectCode code) {

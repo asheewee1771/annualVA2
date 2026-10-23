@@ -14,6 +14,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,8 +24,9 @@ import sg.annualva.web.RejectedRequestException;
 
 /**
  * The Scan Report files of a VA Submission. The SMO/Tech Lead of the System uploads (a Cyber Manager, a VA POC who is not
- * its SMO or an Auditor is refused with 403, an SMO of another System gets 404, ADR 0013); anyone who may see the System
- * reads a file's status and, once it is clean, downloads it as an attachment.
+ * its SMO or an Auditor is refused with 403, an SMO of another System gets 404, ADR 0013) and confirms the scan date and target
+ * of a parsed report file; anyone who may see the System reads a file's status and, once it is clean, downloads it as an
+ * attachment.
  */
 @RestController
 public class ReportFileController {
@@ -99,6 +102,20 @@ public class ReportFileController {
     @PreAuthorize("hasAnyRole('SMO','CYBER_MANAGER','VA_POC')")
     public ResponseEntity<ReportFileMetadataView> metadata(@PathVariable UUID id, @PathVariable UUID fileId) {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(files.metadata(id, fileId));
+    }
+
+    /**
+     * The SMO/Tech Lead of the System confirms or corrects the scan date ({@code scanDate}, yyyy-mm-dd, not after today) and
+     * the target ({@code target}, one line of up to 200 characters) of a parsed report file (story 25), and is answered
+     * with the metadata as it is now. A scan date or target that differs from the file's is flagged
+     * ({@code scanDateEdited}, {@code targetEdited}), never refused. A wrong field is a 400 {@code invalid-field} that names it; a VA Submission not in Draft or Returned for
+     * Rework is 409 {@code invalid-transition}; a file a rescan replaced is 409 {@code file-superseded}.
+     */
+    @PutMapping("/api/submissions/{id}/files/{fileId}/metadata")
+    @PreAuthorize("hasRole('SMO')")
+    public ResponseEntity<ReportFileMetadataView> confirmMetadata(@PathVariable UUID id, @PathVariable UUID fileId,
+            @RequestBody ReportFileMetadataRequest request) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(files.confirmMetadata(id, fileId, request));
     }
 
     /**

@@ -52,6 +52,10 @@ public record AuditEvent(
         return withDetail(detail.with(key, number));
     }
 
+    public AuditEvent with(DetailKey key, boolean flag) {
+        return withDetail(detail.with(key, flag));
+    }
+
     private AuditEvent withDetail(AuditDetail changed) {
         return new AuditEvent(action, outcome, actorId, actorRole, systemId, submissionId, findingId, changed);
     }

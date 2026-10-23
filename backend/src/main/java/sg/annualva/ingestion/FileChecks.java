@@ -1,8 +1,10 @@
 package sg.annualva.ingestion;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Predicate;
 import org.jspecify.annotations.Nullable;
 import sg.annualva.finding.ReportType;
 import sg.annualva.parser.ParsedReport;
@@ -10,7 +12,9 @@ import sg.annualva.parser.UnparseableReportException;
 
 /**
  * The stages a file goes through once the scanner has passed it, in their fixed order: the type allowlist, the schema
- * check and the parse (stories 20a, 20b, 21 and 24). A file that fails a stage never reaches
+ * check, the parse with the pre-fill of the scan date and target, and the age check (stories 20a, 20b, 21, 24, 25 and 26):
+ * a report that says it was scanned after today's business date is REJECTED_FUTURE_DATED, having passed the schema check
+ * and the parse (a report that names no date is not refused for it). A file that fails a stage never reaches
  * the next, and the stages it did pass are the ones it is recorded as having entered. Nothing is stored here: the caller
  * keeps the file's clean copy and writes the outcome only for a file that passed.
  */
@@ -37,7 +41,11 @@ final class FileChecks {
 
     private FileChecks() {}
 
-    static Outcome run(ReportType reportType, FileKind kind, byte[] content) {
+    /**
+     * @param afterToday whether an instant falls on a business date after today's: the age check, read from the clock by
+     *     the caller, so that this stays a pure function of what it is given
+     */
+    static Outcome run(ReportType reportType, FileKind kind, byte[] content, Predicate<Instant> afterToday) {
         if (kind == FileKind.EVIDENCE) {
             return evidence(content);
         }
@@ -55,6 +63,12 @@ final class FileChecks {
         }
         try {
             ParsedReport parsed = format.parser().parse(content);
+            Instant scanned = parsed.metadata().scanDate();
+            if (scanned != null && afterToday.test(scanned)) {
+                // The age check reads the date the parse pre-filled; its Findings are not kept.
+                return new Outcome(List.of(PipelineStatus.SCAN_CLEAN, PipelineStatus.TYPE_OK, PipelineStatus.SCHEMA_OK,
+                        PipelineStatus.REJECTED_FUTURE_DATED), RejectCode.FUTURE_DATED, format.name(), null);
+            }
             return new Outcome(List.of(PipelineStatus.SCAN_CLEAN, PipelineStatus.TYPE_OK, PipelineStatus.SCHEMA_OK,
                     PipelineStatus.PARSED), null, format.name(), parsed);
         } catch (UnparseableReportException e) {

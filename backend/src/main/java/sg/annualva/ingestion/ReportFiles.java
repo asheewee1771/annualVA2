@@ -20,6 +20,7 @@ import sg.annualva.audit.AuditEvent;
 import sg.annualva.audit.AuditLog;
 import sg.annualva.audit.AuditOutcome;
 import sg.annualva.audit.DetailKey;
+import sg.annualva.cycle.CycleCalendar;
 import sg.annualva.finding.ReportType;
 import sg.annualva.finding.ScanReports;
 import sg.annualva.scan.CleanFiles;
@@ -57,12 +58,13 @@ public class ReportFiles {
     private final CurrentUser user;
     private final AuditActor actor;
     private final AuditLog audit;
+    private final CycleCalendar calendar;
     private final Clock clock;
     private final TransactionTemplate transaction;
 
     ReportFiles(Submissions submissions, ScanReports scanReports, ReportFileStore store, MalwareScan scan,
-            CleanFiles cleanFiles, AccessGuard guard, CurrentUser user, AuditActor actor, AuditLog audit, Clock clock,
-            TransactionTemplate transaction) {
+            CleanFiles cleanFiles, AccessGuard guard, CurrentUser user, AuditActor actor, AuditLog audit,
+            CycleCalendar calendar, Clock clock, TransactionTemplate transaction) {
         this.submissions = submissions;
         this.scanReports = scanReports;
         this.store = store;
@@ -72,6 +74,7 @@ public class ReportFiles {
         this.user = user;
         this.actor = actor;
         this.audit = audit;
+        this.calendar = calendar;
         this.clock = clock;
         this.transaction = transaction;
     }
@@ -185,16 +188,73 @@ public class ReportFiles {
     @Transactional
     public ReportFileMetadataView metadata(UUID submissionId, UUID fileId) {
         Submissions.FileTarget target = submissions.fileTarget(submissionId, Need.VIEW);
-        ReportFileStore.Row row = file(submissionId, fileId);
-        if (row.status() != PipelineStatus.PARSED) {
-            // Only a parsed file has anything to say about the scan; supporting evidence is never read.
-            throw new ResourceNotFoundException();
-        }
+        ReportFileStore.Row row = parsedFile(submissionId, fileId);
         audit.record(actor.attribute(AuditEvent.of(AuditAction.FILE_METADATA_VIEWED, AuditOutcome.SUCCESS))
                 .onSystem(target.systemId()).onSubmission(submissionId).with(DetailKey.FILE_ID, fileId));
-        // A parsed file was given its report format by the type check.
-        boolean exportTime = ReportFormat.valueOf(Objects.requireNonNull(row.detectedFormat())).scanDateIsExportTime();
-        return new ReportFileMetadataView(fileId, row.scanDateFromFile(), exportTime, row.targetFromFile());
+        return metadataView(row);
+    }
+
+    /**
+     * Keeps the scan date and target the SMO/Tech Lead confirms or corrects for a parsed report file (story 25), beside what
+     * the file says. A scan date or target that differs from the file's is flagged, never refused, and the confirmed date
+     * is the one the age rule judges. The checks run in the order
+     * ownership and the file (a VA Submission of a System the caller is not SMO/Tech Lead of, or a file of it that is not
+     * parsed, is "not found"), the state of the VA Submission (the refusal is audited, ADR 0014), the fields (400, not
+     * audited), and last, in the statement that writes it, that no rescan has replaced the file (audited too); the
+     * confirmation is audited with the file's id and whether the date and the target differ from the file's, never the
+     * values.
+     *
+     * @throws ResourceNotFoundException as above
+     * @throws RejectedRequestException 409 {@code invalid-transition} when the VA Submission takes no changes now, 409
+     *     {@code file-superseded} for a file a rescan has replaced, 400 {@code invalid-field} naming {@code scanDate} (missing,
+     *     not a date written yyyy-mm-dd, after today or more than ten years ago) or {@code target} (missing, empty once
+     *     cleaned, or longer than 200 characters)
+     */
+    @Transactional
+    public ReportFileMetadataView confirmMetadata(UUID submissionId, UUID fileId, ReportFileMetadataRequest request) {
+        Submissions.FileTarget target = submissions.fileTarget(submissionId, Need.SUBMIT);
+        ReportFileStore.Row row = parsedFile(submissionId, fileId);
+        if (!target.acceptsFiles()) {
+            throw refusedConfirmation(target, fileId, "state-not-editable", "invalid-transition",
+                    "This VA Submission's files cannot be changed in its present state.");
+        }
+        MetadataFields.Parsed fields = MetadataFields.parse(request, calendar.today());
+        if (!store.confirm(row.id(), fields.scanDate(), fields.target(), clock.instant())) {
+            // Written only while no rescan has replaced the file, checked in the one statement that writes it.
+            throw refusedConfirmation(target, fileId, "superseded", "file-superseded",
+                    "A rescan has replaced this file, which is kept as it was. Confirm the rescan's scan date and target "
+                    + "instead.");
+        }
+        // The row was written in this transaction just now, so it is there to read back.
+        ScanFacts facts = ScanFacts.of(store.find(fileId).orElseThrow(), calendar);
+        // Whether the date and the target differ from the file's, as flags: never the values (reviewer decisions).
+        audit.record(actor.attribute(AuditEvent.of(AuditAction.FILE_METADATA_CONFIRMED, AuditOutcome.SUCCESS))
+                .onSystem(target.systemId()).onSubmission(submissionId).with(DetailKey.FILE_ID, fileId)
+                .with(DetailKey.DATE_CHANGED, facts.scanDateEdited()).with(DetailKey.TARGET_CHANGED, facts.targetEdited()));
+        return facts.view(fileId);
+    }
+
+    /** A file of this VA Submission that was parsed; any other is "not found": only a parsed file says anything of a scan. */
+    private ReportFileStore.Row parsedFile(UUID submissionId, UUID fileId) {
+        ReportFileStore.Row row = file(submissionId, fileId);
+        if (row.status() != PipelineStatus.PARSED) {
+            // Supporting evidence is never read, and a file still in the pipeline or rejected has nothing to say.
+            throw new ResourceNotFoundException();
+        }
+        return row;
+    }
+
+    private ReportFileMetadataView metadataView(ReportFileStore.Row row) {
+        return ScanFacts.of(row, calendar).view(row.id());
+    }
+
+    /** A refused confirmation, audited in an entry of its own with the file and a fixed reason. */
+    private RejectedRequestException refusedConfirmation(Submissions.FileTarget target, UUID fileId, String reason,
+            String type, String detail) {
+        audit.recordIndependently(actor.attribute(AuditEvent.of(AuditAction.FILE_METADATA_CONFIRMED, AuditOutcome.REFUSED))
+                .onSystem(target.systemId()).onSubmission(target.submissionId()).with(DetailKey.FILE_ID, fileId)
+                .with(DetailKey.REASON, reason));
+        return new RejectedRequestException(HttpStatus.CONFLICT, type, detail);
     }
 
     /** What a download was granted: the name to offer and where the bytes are. */

@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 
 /**
  * The allow-listed detail of an audit entry: keys from {@link DetailKey} only, values that are a short code
- * (letters, digits and {@code . _ : -}, at most 64), an id or a number. A value that is not one of those is a
+ * (letters, digits and {@code . _ : -}, at most 64), an id, a number or a yes/no flag. A value that is not one of those is a
  * programming error and is refused without being echoed, so free text cannot get in by construction (lm-19).
  */
 public final class AuditDetail {
@@ -41,7 +41,11 @@ public final class AuditDetail {
         return plus(key, number);
     }
 
-    /** The detail as stored: key to code, id or number. */
+    public AuditDetail with(DetailKey key, boolean flag) {
+        return plus(key, flag);
+    }
+
+    /** The detail as stored: key to code, id, number or flag. */
     Map<String, Object> values() {
         return values;
     }

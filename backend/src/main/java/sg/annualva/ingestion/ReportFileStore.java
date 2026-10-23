@@ -1,6 +1,7 @@
 package sg.annualva.ingestion;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -33,6 +34,8 @@ class ReportFileStore {
      * @param scanSubmittedAt when the current attempt began, or failed to begin
      * @param replacesId the parsed report file this one is a rescan of; null for an ordinary upload
      * @param supersededBy the rescan that replaced this file; null while it has not been
+     * @param scanDateConfirmed the business date the SMO/Tech Lead says the scan was made; null until they confirm it
+     * @param targetConfirmed the target the SMO/Tech Lead confirmed or corrected; null until they confirm it
      */
     record Row(
             UUID id, UUID submissionId, UUID systemId, ReportType reportType, FileKind kind, String displayName,
@@ -40,7 +43,8 @@ class ReportFileStore {
             @Nullable String cleanKey, PipelineStatus status, @Nullable RejectCode rejectCode,
             @Nullable String scanTicket, int scanAttempts, @Nullable Instant scanSubmittedAt, UUID uploadedBy,
             Instant uploadedAt, @Nullable Instant scanDateFromFile, @Nullable String targetFromFile,
-            @Nullable UUID replacesId, @Nullable UUID supersededBy) {}
+            @Nullable UUID replacesId, @Nullable UUID supersededBy, @Nullable LocalDate scanDateConfirmed,
+            @Nullable String targetConfirmed) {}
 
     /** One entry of the order a file went through. */
     record Stage(UUID fileId, PipelineStatus status, Instant at) {}
@@ -70,7 +74,7 @@ class ReportFileStore {
             "SELECT f.id, f.submission_id, s.system_id, f.report_type, f.kind, f.display_name, f.size_bytes, "
             + "f.upload_sha256, f.detected_format, f.quarantine_key, f.clean_key, f.pipeline_status, f.reject_code, "
             + "f.scan_ticket, f.scan_attempts, f.scan_submitted_at, f.uploaded_by, f.uploaded_at, f.scan_date_from_file, "
-            + "f.target_from_file, f.replaces_id, f.superseded_by "
+            + "f.target_from_file, f.replaces_id, f.superseded_by, f.scan_date_confirmed, f.target_confirmed "
             + "FROM report_file f JOIN va_submission s ON s.id = f.submission_id ";
 
     private static final String FIND = COLUMNS + "WHERE f.id = :id";
@@ -102,6 +106,19 @@ class ReportFileStore {
     private static final String SUPERSEDE =
             "UPDATE report_file SET superseded_by = :rescan, superseded_at = :now, updated_at = :now "
             + "WHERE id = :id AND pipeline_status = 'PARSED' AND superseded_by IS NULL";
+
+    /**
+     * The scan date and target the SMO/Tech Lead confirmed, only on a parsed file that no rescan has replaced: a file that
+     * is being superseded waits for the settlement that supersedes it, and then is not changed.
+     */
+    private static final String CONFIRM =
+            "UPDATE report_file SET scan_date_confirmed = :scanDate, target_confirmed = :target, updated_at = :now "
+            + "WHERE id = :id AND pipeline_status = 'PARSED' AND superseded_by IS NULL";
+
+    /** The report files whose scan date is judged by the age rule: parsed, and not replaced by a rescan. Oldest first. */
+    private static final String LIVE_PARSED = COLUMNS
+            + "WHERE f.submission_id = :submission AND f.pipeline_status = 'PARSED' AND f.superseded_by IS NULL "
+            + "ORDER BY f.seq";
 
     private static final String IN_FLIGHT =
             "SELECT id FROM report_file WHERE pipeline_status = 'SCAN_SUBMITTED' ORDER BY seq";
@@ -179,6 +196,17 @@ class ReportFileStore {
     /** @return whether the file was a parsed one that nothing had superseded */
     boolean supersede(UUID fileId, UUID rescanId, Instant now) {
         return jdbc.sql(SUPERSEDE).param("id", fileId).param("rescan", rescanId).param("now", utc(now)).update() == 1;
+    }
+
+    /** @return whether the file was still a parsed one that no rescan had replaced; false means nothing was written */
+    boolean confirm(UUID fileId, LocalDate scanDate, String target, Instant now) {
+        return jdbc.sql(CONFIRM).param("id", fileId).param("scanDate", scanDate).param("target", target)
+                .param("now", utc(now)).update() == 1;
+    }
+
+    /** The VA Submission's parsed report files that no rescan has replaced, oldest first. */
+    List<Row> liveParsed(UUID submissionId) {
+        return jdbc.sql(LIVE_PARSED).param("submission", submissionId).query((rs, row) -> row(rs)).list();
     }
 
     Optional<Row> find(UUID id) {
@@ -300,7 +328,8 @@ class ReportFileStore {
                 rs.getInt("scan_attempts"), submitted == null ? null : submitted.toInstant(),
                 rs.getObject("uploaded_by", UUID.class), rs.getObject("uploaded_at", OffsetDateTime.class).toInstant(),
                 scanned == null ? null : scanned.toInstant(), rs.getString("target_from_file"),
-                rs.getObject("replaces_id", UUID.class), rs.getObject("superseded_by", UUID.class));
+                rs.getObject("replaces_id", UUID.class), rs.getObject("superseded_by", UUID.class),
+                rs.getObject("scan_date_confirmed", LocalDate.class), rs.getString("target_confirmed"));
     }
 
     private static OffsetDateTime utc(Instant instant) {

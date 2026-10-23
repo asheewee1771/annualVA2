@@ -40,7 +40,14 @@ public enum RejectCode {
             "The scan result did not match the file that was uploaded, so the upload was rejected. Upload the file again."),
     /** A PDF that asks for a password to open: the scanner cannot inspect it, so it is not kept (ADR 0026, reviewer-decisions.md). */
     ENCRYPTED("encrypted",
-            "This PDF is password protected, so the upload was rejected. Upload a copy without a password.");
+            "This PDF is password protected, so the upload was rejected. Upload a copy without a password."),
+    /**
+     * The report says the scan was made after today's business date (story 26): the age check, the pipeline's last stage. A
+     * file whose report names no date is not refused for it.
+     */
+    FUTURE_DATED("future-dated",
+            "This file's scan date is after today, so the upload was rejected. Check the clock of the machine that made "
+            + "the scan, then export the report again.");
 
     private final String auditCode;
     private final String message;
