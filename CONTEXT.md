@@ -73,7 +73,11 @@ _Avoid_: failed check, skipped check
 How sure Burp Suite says it is that an issue is real: Certain, Firm or Tentative. A Finding's confidence is the most sure of its occurrences; a Tentative Finding is one the SMO/Tech Lead may mark False Positive with a reason. Only Burp rates its issues this way.
 
 **Export time**:
-The only date a Burp Suite export records: when the file was exported, not when the scan was made. It is offered as the scan date, flagged, for the SMO/Tech Lead to correct.
+The only date a Burp Suite export records: when the file was exported, not when the scan was made. It is offered as the scan date, flagged, for the SMO/Tech Lead to correct; until they give one, the file has no scan date.
+
+**Scan date**:
+The business date a scan was made: read from the report, then confirmed or corrected by the SMO/Tech Lead. A report dated after today is rejected at upload, and a file more than 90 days old at submission blocks submitting.
+_Avoid_: report date, upload date
 
 **Manually Entered Finding**:
 A Finding the SMO/Tech Lead typed in because the tool cannot export a machine-readable report; it is marked for closer review.

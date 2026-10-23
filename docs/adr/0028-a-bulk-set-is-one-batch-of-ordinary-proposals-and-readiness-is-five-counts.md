@@ -18,3 +18,5 @@ Not done here, on purpose: the review of a batch (ticket 29), carry-over and Tar
 Amended by ADR 0029: the scan job's settlement of a parsed file also locks every existing Finding it will write with one `SELECT ... FOR UPDATE` in id order before it writes, so the settlement, a proposal and a Bulk-set all take their locks once and in the same order.
 
 Amended by ADR 0029: `Proposals.write` takes an explicit proposer (the caller, or a rescan made for its uploader), so a rescan's Remediated proposals use the same write and the same audit builder, and every `STATUS_PROPOSED` entry carries `proposed_as`.
+
+Amended by ADR 0031: the readiness read also names, by `fileId`, `name` and `reportType`, the report files more than 90 days old at today's business date (`tooOld`) and those with no scan date to judge (`undated`).

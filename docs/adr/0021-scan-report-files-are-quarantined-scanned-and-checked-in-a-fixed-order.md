@@ -37,3 +37,5 @@ Amended by ADR 0026: a file of kind EVIDENCE (a PDF or HTML report) skips the sc
 Amended by ADR 0029: a parsed report file can be replaced with a rescan (`POST .../files/{fileId}/replace`); once the rescan is parsed the old file is superseded (`superseded_by`), stays viewable and downloadable, and no longer counts against the 20 files.
 
 Amended by ADR 0030: a report file (`kind=MACHINE_READABLE`) is refused with 409 `wrong-report-mode` when its Scan Report is marked not applicable or for Findings entered by hand, checked in the transaction that keeps the file with the Scan Report's row held; supporting evidence is accepted in every mode.
+
+Amended by ADR 0031: the age check is the last stage, after the parse and the pre-fill; a report dated after today's business date is `REJECTED_FUTURE_DATED` (stages `SCAN_CLEAN`, `TYPE_OK`, `SCHEMA_OK`, `REJECTED_FUTURE_DATED`) and keeps no Findings.

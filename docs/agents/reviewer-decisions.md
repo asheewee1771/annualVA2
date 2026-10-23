@@ -267,3 +267,10 @@ Human decisions on reviewer findings. Check here before asking again. Each entry
 - **Finding:** title at most 200, identifier 200, package or rule 500 characters (chosen bounds for IM8 as-1); a second Finding with the same report type, identifier and package or rule is refused (409 `duplicate-finding`), compared exactly and case-sensitively after cleaning, like the parsed keys.
 - **Chosen action:** accept as built. Decided 2026-10-18.
 - **When to reuse:** any finding about manual Finding field limits or case-insensitive duplicates.
+
+## A changed scan date is flagged, not blocked, and the confirmed date is still judged
+
+- **Area:** scan date confirmation (ticket 23, ADR 0031 items 2 and 5), audit `FILE_METADATA_CONFIRMED`
+- **Finding:** ADR 0031 item 2 left a changed scan date unflagged, so confirming a later date could take a file out of the 90-day `tooOld` list unnoticed; spec line 229 says anything else the SMO changes is "flagged, not blocked" (code-review Spec P1, im8 M-1).
+- **Chosen action:** flag it. The metadata view returns `scanDateEdited` when the confirmed date differs from the file's own day (for a Burp export, its export day; one rule for every format), and the Scan Report card marks it next to "Target edited". The age rule still judges the confirmed date, so a wrong file date can be corrected. `FILE_METADATA_CONFIRMED` gains the boolean details `date_changed` and `target_changed`, never the values. The readiness list is unchanged; the review screens (ticket 28 onwards) read the same flag. ADR 0031 item 2 is amended. Decided 2026-10-21.
+- **When to reuse:** any SMO override of a value read from a report file: flag it beside the value and in the audit entry as a boolean, and do not block it.
