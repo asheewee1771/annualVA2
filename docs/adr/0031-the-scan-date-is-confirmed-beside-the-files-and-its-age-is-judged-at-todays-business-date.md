@@ -17,3 +17,5 @@ Not done here, on purpose: refusing to submit (ticket 25 reads `tooOld` and `und
 Consequences: a Burp Suite file always needs its scan date given before its VA Submission can be submitted (once ticket 25 enforces `undated`); a file's age can be changed by correcting its date, which is audited (by id, with `date_changed`), flagged (`scanDateEdited`) and visible to the reviewer beside the file's own date; the readiness read now touches `report_file` as well as `finding`.
 
 Amends ADR 0021 (the age check is the last stage, and `REJECTED_FUTURE_DATED` a rejected status), ADR 0025 item 7 (the export time is offered and flagged, and is not judged by the age rule until a scan date is given) and ADR 0028 item 6 (readiness also names the files too old or undated).
+
+Amended by ADR 0032: `ReportFileAges` becomes `ReportFileReadiness`, which also names the files still being checked, the files dated after today and the Scan Reports that hold a file that was read; the submit refuses `tooOld`, `undated` and future-dated files under its lock on the VA Submission.

@@ -20,3 +20,5 @@ Not done here, on purpose: the Cyber Manager's confirm or Dispute of a not-appli
 Consequences: a mode chosen by mistake can be undone only before anything is added to the Scan Report; the review of a not-applicable Scan Report lives on `report_slot`, so ticket 28 reviews two kinds of thing (Findings and not-applicable Scan Reports) and its counts and its "every Finding confirmed" rule must include the second; a Scan Report entered by hand has no file, so the scan-date and age rules of ticket 23 have nothing to check for it.
 
 Amends ADR 0021 (an upload of a report file is refused when its Scan Report is not uploaded) and ADR 0027 (a Finding has a source and may have a title; the state rule of a proposal is shared with the mode change and the entry by hand).
+
+Amended by ADR 0032: every write to a Scan Report (and every other write to what the SMO/Tech Lead prepares) first holds the VA Submission's row shared, so a submit cannot land in between.

@@ -20,3 +20,5 @@ Amended by ADR 0029: the scan job's settlement of a parsed file also locks every
 Amended by ADR 0029: `Proposals.write` takes an explicit proposer (the caller, or a rescan made for its uploader), so a rescan's Remediated proposals use the same write and the same audit builder, and every `STATUS_PROPOSED` entry carries `proposed_as`.
 
 Amended by ADR 0031: the readiness read also names, by `fileId`, `name` and `reportType`, the report files more than 90 days old at today's business date (`tooOld`) and those with no scan date to judge (`undated`).
+
+Amended by ADR 0032: the readiness read also lists `blockers`, every reason the VA Submission cannot be submitted apart from the Declaration, which the submit refuses with too.
