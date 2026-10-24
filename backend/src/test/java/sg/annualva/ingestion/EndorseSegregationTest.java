@@ -42,6 +42,22 @@ class EndorseSegregationTest extends EndorseSeam1 {
     }
 
     @Test
+    void aVaPocWhoSubmittedItLeavesItToTheOtherVaPocAfterTheRegisterNamesAnotherSmo() {
+        Draft draft = readyDraft();
+        String sub = draft.submissionId();
+        registeredWith(POC_ONE, CM);
+        submitted(vaPoc(), sub);
+        registeredWith(SMO_A, CM);
+        ApiClient cm = signedInAs(CM);
+        confirmEverything(cm, sub);
+        passed(cm, sub);
+
+        assertSodConflict(endorse(vaPoc(), sub));
+
+        assertThat(endorsed(otherVaPoc(), sub).get("state").asString()).isEqualTo(ENDORSED);
+    }
+
+    @Test
     void aVaPocTheRegisterNamesAsItsSmoOrCyberManagerLeavesItToTheOtherVaPoc() {
         Draft draft = awaitingEndorsement();
         String sub = draft.submissionId();
