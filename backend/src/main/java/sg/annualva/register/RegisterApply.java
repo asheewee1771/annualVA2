@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,9 +56,10 @@ public class RegisterApply {
     private final CurrentUser user;
     private final CycleCalendar calendar;
     private final Clock clock;
+    private final ApplicationEventPublisher events;
 
     RegisterApply(RegisterStore store, RegisterRoles roles, StepUp stepUp, AuditLog audit, AuditActor actor,
-            CurrentUser user, CycleCalendar calendar, Clock clock) {
+            CurrentUser user, CycleCalendar calendar, Clock clock, ApplicationEventPublisher events) {
         this.store = store;
         this.roles = roles;
         this.stepUp = stepUp;
@@ -66,6 +68,7 @@ public class RegisterApply {
         this.user = user;
         this.calendar = calendar;
         this.clock = clock;
+        this.events = events;
     }
 
     /**
@@ -109,6 +112,7 @@ public class RegisterApply {
                     SystemSnapshot after = row.after();
                     store.updateSystem(row.existingSystemId(), after.name(), after.smoEmail(), after.cyberManagerEmail(),
                             quarter(after));
+                    announce(row.existingSystemId(), row.before(), after, now);
                     updated++;
                 }
                 case RETIRE -> {
@@ -178,6 +182,20 @@ public class RegisterApply {
             return false;
         }
         return baseline.stream().allMatch(system -> system.retired() || mentioned.contains(system.id()));
+    }
+
+    /**
+     * Publishes what an updated System's SMO/Tech Lead is told about (story 94): a move to another Quarter, and a transfer
+     * to another SMO/Tech Lead, each heard by the notifications after the commit (ADR 0043).
+     */
+    private void announce(UUID systemId, SystemSnapshot before, SystemSnapshot after, Instant now) {
+        if (!before.quarter().equals(after.quarter())) {
+            events.publishEvent(new SystemChangeEvent(systemId, SystemChangeEvent.Change.MOVED, null, now));
+        }
+        if (!before.smoEmail().equals(after.smoEmail())) {
+            events.publishEvent(
+                    new SystemChangeEvent(systemId, SystemChangeEvent.Change.TRANSFERRED, before.smoEmail(), now));
+        }
     }
 
     private static int quarter(SystemSnapshot snapshot) {
