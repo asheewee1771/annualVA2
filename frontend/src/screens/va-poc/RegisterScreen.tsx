@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { ApiError, type Problem } from "../../api/problem.ts";
-import { takeRestoredDraft } from "../../api/stepUp.ts";
+import { isStepUpRequired, takeRestoredDraft } from "../../api/stepUp.ts";
 import {
   applyRegisterPreview,
   fetchRegisterPreview,
@@ -141,10 +141,6 @@ function AppliedNotice({ applied }: { applied: AppliedRegister }) {
       </p>
     </div>
   );
-}
-
-function isStepUpRequired(problem: Problem): boolean {
-  return problem.type.endsWith("/step-up-required");
 }
 
 /** The preview a person was about to apply when they left for a fresh sign-in; reopened when they come back. */

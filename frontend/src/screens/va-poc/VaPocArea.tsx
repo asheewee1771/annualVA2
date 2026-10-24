@@ -5,6 +5,7 @@ import { AuditLogScreen } from "../shared/AuditLogScreen.tsx";
 import { QuarterBoardScreen, type BoardFor } from "../shared/QuarterBoardScreen.tsx";
 import { CycleMatrixScreen } from "./CycleMatrixScreen.tsx";
 import { EndorseScreen } from "./EndorseScreen.tsx";
+import { ExportsScreen } from "./ExportsScreen.tsx";
 import { endorsedSubmissionOf, endorsePath, VA_POC_PATH } from "./paths.ts";
 import { RegisterScreen } from "./RegisterScreen.tsx";
 
@@ -14,6 +15,7 @@ const ENDORSE_BOARD: BoardFor = { step: "endorse", linkOf: endorsePath };
 const MATRIX_PATH = "/va-poc/cycle-matrix";
 const AUDIT_LOG_PATH = "/va-poc/audit-log";
 const REGISTER_PATH = "/va-poc/register";
+const EXPORTS_PATH = "/va-poc/exports";
 
 /** A page beneath the area, with the way back. */
 function SubPage({ children }: { children: ReactNode }) {
@@ -29,7 +31,8 @@ function SubPage({ children }: { children: ReactNode }) {
 
 /**
  * The VA POC's working area (stories 64 and 65): two tabs, the Quarter board of every System and the Cycle matrix, and,
- * beneath the area, a VA Submission opened from the board (to endorse it), the System Register and the audit log.
+ * beneath the area, a VA Submission opened from the board (to endorse it), the System Register, the exports and the audit
+ * log.
  */
 export function VaPocArea({ path, classification }: AreaProps) {
   const endorsing = endorsedSubmissionOf(path);
@@ -40,6 +43,13 @@ export function VaPocArea({ path, classification }: AreaProps) {
     return (
       <SubPage>
         <RegisterScreen classification={classification} />
+      </SubPage>
+    );
+  }
+  if (path === EXPORTS_PATH) {
+    return (
+      <SubPage>
+        <ExportsScreen classification={classification} />
       </SubPage>
     );
   }
@@ -67,6 +77,9 @@ export function VaPocArea({ path, classification }: AreaProps) {
           </li>
           <li>
             <AppLink path={REGISTER_PATH}>System Register</AppLink>
+          </li>
+          <li>
+            <AppLink path={EXPORTS_PATH}>Exports</AppLink>
           </li>
           <li>
             <AppLink path={AUDIT_LOG_PATH}>Audit log</AppLink>

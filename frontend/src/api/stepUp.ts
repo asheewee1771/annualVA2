@@ -32,8 +32,9 @@ export interface StepUpOutcome {
 const ACTIONS: Readonly<Record<string, string>> = {
   "register-apply": "Applying the System Register",
   "submission-endorse": "Endorsing a VA Submission",
-  "submission-return": "Returning a VA Submission for rework",
   "cycle-close": "Closing a VA Cycle",
+  "submission-return": "Returning a VA Submission for rework",
+  "export-mgmt-summary": "Asking for the management summary",
 };
 
 export function describeAction(intent: string): string {
@@ -78,14 +79,7 @@ function store(key: string, value: unknown): void {
   }
 }
 
-/** Reads and removes an entry; an unreadable, damaged or abandoned (too old) one counts as nothing saved. */
-function take(key: string): unknown {
-  const value = read(key);
-  clearKey(key);
-  return value;
-}
-
-/** Reads an entry and leaves it; an unreadable, damaged or abandoned (too old) one counts as nothing saved. */
+/** Reads an entry; an unreadable, damaged or abandoned (too old) one counts as nothing saved. */
 function read(key: string): unknown {
   try {
     const raw = window.sessionStorage.getItem(key);
@@ -95,6 +89,13 @@ function read(key: string): unknown {
   } catch {
     return undefined;
   }
+}
+
+/** Reads and removes an entry. */
+function take(key: string): unknown {
+  const value = read(key);
+  clearKey(key);
+  return value;
 }
 
 /** Remembers the route and any draft before the browser leaves for the single sign-on. */
@@ -119,16 +120,19 @@ export function clearStepUpState(): void {
 }
 
 /**
- * The draft saved for this action, read once and forgotten by the form that owns the action. A draft saved for another
- * action is left for its own form, so two forms that each read theirs as they load never take each other's.
+ * The draft saved for this action, read once and forgotten by the form that owns the action. A draft for another action
+ * is left where it is, for its own form to take.
  */
 export function takeRestoredDraft(intent: string): unknown {
   const saved = read(DRAFT_KEY);
-  const mine =
-    typeof saved === "object" && saved !== null && "intent" in saved && saved.intent === intent && "draft" in saved;
-  if (!mine) return undefined;
+  if (typeof saved !== "object" || saved === null || !("intent" in saved) || saved.intent !== intent) return undefined;
   clearKey(DRAFT_KEY);
-  return saved.draft;
+  return "draft" in saved ? saved.draft : undefined;
+}
+
+/** Whether a refusal is the one the app answers with its step-up explanation, so a screen need not show it again. */
+export function isStepUpRequired(problem: Problem): boolean {
+  return problem.type.endsWith("/step-up-required");
 }
 
 /** The outcome in the address bar, removed from it so a reload does not show it again. */
