@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review — 48-cm-audit-history</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">build WARN · 0C 0H 0M 4L</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN · 0C 0H 4M 6L</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN · 0C 0H 2M 9L</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">semgrep PASS · 0C 0H 0M 0L</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN · 0C 0H 1M 2L</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react WARN · 0C 0H 1M 2L</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN · 0C 0H 0M 6L</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">impl/48-cm-audit-history</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report</h1>
+          <p class="text-sm text-slate-600 mt-1">Ticket 48 (story 85): a Cyber Manager reads the audit history of the VA Submissions they reviewed. Diff <span class="font-mono text-xs">integration/annual-va-r1...HEAD</span> on <span class="font-mono text-xs">impl/48-cm-audit-history</span> (HEAD 5b3c424, 3 commits, 20 files, +424/-33).</p>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Executive Summary</h2>
+          <p class="text-xs text-slate-500 mt-1">Overall compliance evaluation status across all active checks. Overall verdict: <strong>PASS</strong>. No check has a Critical or High finding; six checks carry Medium or Low findings (WARN).</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Check</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Status</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">C / H / M / L</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Summary of gaps</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 font-medium">build</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 4</td>
+              <td class="px-4 py-2">Every gate passed (845 tests, ArchUnit, JaCoCo line 97.43 % / branch 91.42 %, Prettier, tsc, vite, dependency-cruiser, fallow). Fast mode reused existing logs. Low notes only: one uncovered empty-scope guard, a pre-existing deprecation, fallow advisories.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">thermo-nuclear</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 4 / 6</td>
+              <td class="px-4 py-2">Read scope enforced in the controller with a fail-open query model; Clear widens the per-submission history; boolean flag soup in the Cyber Manager router; hand-mirrored action list with no drift guard.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">code-review</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 2 / 9</td>
+              <td class="px-4 py-2">All three acceptance criteria implemented. List test does not prove the "reviewed only" narrowing; the Audit history link leads to a 404 before the first review. Plus 2 informational notes and Low standards nits.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">semgrep</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 0</td>
+              <td class="px-4 py-2">469 rules over two passes, 0 findings, 0 errors. Manual spot-check confirms bound parameters only.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">im8</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 2</td>
+              <td class="px-4 py-2">lm-4: Cyber Manager reads of the audit log are not audited (needs a recorded human decision). ac-1: provisional ADR 0037 item 5 exposes others' reads and refusals. as-13: 404 UX on the history link.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">react</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 2</td>
+              <td class="px-4 py-2">Clear resets to <span class="font-mono text-xs">NO_FILTERS</span> rather than <span class="font-mono text-xs">initial</span>; <span class="font-mono text-xs">initial</span> read only on mount; accessible names still say "audit log".</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">springboot</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 6</td>
+              <td class="px-4 py-2">All seven Spring skills run. Low only: fail-open scope default, generic-plan scalability, no single snapshot, redundant DISTINCT, untested ADR 0037 scope rules, inline FQN.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-600">No Critical or High findings in any check. The Medium findings below are the most significant, grouped where several checks agree.</p>
+          <ul class="space-y-2 text-sm list-disc pl-5">
+            <li><span class="text-amber-600">Medium</span> (react #1, thermo-nuclear #2) — Clear on the per-submission history resets to <span class="font-mono text-xs">NO_FILTERS</span>, silently widening it to every reviewed VA Submission while the heading still says "of this VA Submission". <a class="font-mono text-xs text-blue-700 underline" href="../../frontend/src/screens/shared/AuditLogScreen.tsx">frontend/src/screens/shared/AuditLogScreen.tsx:92-95</a></li>
+            <li><span class="text-amber-600">Medium</span> (thermo-nuclear #1; springboot #1 rates it Low) — read scope is enforced only in the controller and <span class="font-mono text-xs">AuditFilter.within == null</span> means "every entry", so a future caller of <span class="font-mono text-xs">AuditLog.entries</span> reads the whole log. <a class="font-mono text-xs text-blue-700 underline" href="../../backend/src/main/java/sg/annualva/audit/AuditController.java">backend/src/main/java/sg/annualva/audit/AuditController.java:61</a></li>
+            <li><span class="text-amber-600">Medium</span> (code-review P1) — the list test runs with one VA Submission, so it does not prove the narrowing to "submissions the CM reviewed". <a class="font-mono text-xs text-blue-700 underline" href="../../backend/src/test/java/sg/annualva/ingestion/CmAuditHistoryTest.java">backend/src/test/java/sg/annualva/ingestion/CmAuditHistoryTest.java:101-115</a></li>
+            <li><span class="text-amber-600">Medium</span> (code-review P2; im8 F3 rates it Low) — the "Audit history" link on the review screen leads to a 404 error panel until the CM has recorded a review. <a class="font-mono text-xs text-blue-700 underline" href="../../frontend/src/screens/cyber-manager/ReviewScreen.tsx">frontend/src/screens/cyber-manager/ReviewScreen.tsx:96</a></li>
+            <li><span class="text-amber-600">Medium</span> (im8 F1, lm-4) — a Cyber Manager's read of the audit history writes no audit entry; needs a human decision recorded in reviewer-decisions.md. <a class="font-mono text-xs text-blue-700 underline" href="../../backend/src/main/java/sg/annualva/audit/AuditController.java">backend/src/main/java/sg/annualva/audit/AuditController.java:69</a></li>
+            <li><span class="text-amber-600">Medium</span> (thermo-nuclear #3, #4) — router flag soup and nested ternary in <a class="font-mono text-xs text-blue-700 underline" href="../../frontend/src/screens/cyber-manager/CyberManagerArea.tsx">CyberManagerArea.tsx:47-80</a>; front-end action list mirrors <span class="font-mono text-xs">AuditAction</span> with no drift guard in <a class="font-mono text-xs text-blue-700 underline" href="../../frontend/src/api/audit.ts">frontend/src/api/audit.ts:44-85</a>.</li>
+          </ul>
+        </div>
+      </div>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">Child verdict PASS: every gate passed (back end <span class="font-mono text-xs">./mvnw -B -ntp clean verify</span> BUILD SUCCESS, 845 tests, 0 failures; front end <span class="font-mono text-xs">npm run check</span> clean). Fast mode reused existing logs; only comment and doc text changed afterwards. Marked WARN under the severity mapping because of Low findings.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionStore.java</td>
+              <td class="px-4 py-2">321</td>
+              <td class="px-4 py-2">L1: the empty-input guard in <span class="font-mono text-xs">actedAt</span> is never executed; no Seam 1 test covers a Cyber Manager with no assigned Systems reading the history. Optional: add that case to <span class="font-mono text-xs">CmAuditHistoryTest</span>.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/adapters/oidc/MccHttp.java</td>
+              <td class="px-4 py-2">51</td>
+              <td class="px-4 py-2">L2: pre-existing deprecation warning (<span class="font-mono text-xs">RestClient.Builder.messageConverters(Consumer)</span>, marked for removal). Outside this change; track before the next Spring upgrade.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/shared/AuditLogScreen.tsx; frontend/src/screens/cyber-manager/ReviewScreen.tsx</td>
+              <td class="px-4 py-2">72</td>
+              <td class="px-4 py-2">L3: fallow health advisories (not failures): <span class="font-mono text-xs">AuditFilterForm</span> is 84 lines; <span class="font-mono text-xs">ReviewScreen.tsx</span> is an accelerating hotspot. Health score 78 B.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">—</td>
+              <td class="px-4 py-2">L4: fast mode reused logs rather than rebuilding HEAD; only comment and doc text changed since. Run the full gates before the release merge if policy requires it.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">Design is sound and small: the <span class="font-mono text-xs">AuditReaders</span> port keeps <span class="font-mono text-xs">audit</span> at the bottom of the module graph and no touched file nears 1k lines.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/audit/AuditController.java (also AuditFilter.java:22, AuditLog.java:59)</td>
+              <td class="px-4 py-2">61</td>
+              <td class="px-4 py-2">#1: the read scope is enforced in the controller, and the query model is fail-open (<span class="font-mono text-xs">within == null</span> means every entry). Move the scope, the 404 and the narrowing into <span class="font-mono text-xs">AuditLog.entries</span> via <span class="font-mono text-xs">AuditReaders</span>, so an unscoped read cannot be expressed by omission.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/shared/AuditLogScreen.tsx (with CyberManagerArea.tsx:31)</td>
+              <td class="px-4 py-2">92-95</td>
+              <td class="px-4 py-2">#2: <span class="font-mono text-xs">clear()</span> resets to <span class="font-mono text-xs">NO_FILTERS</span>, not <span class="font-mono text-xs">initial</span>, so Clear on the per-submission history shows every reviewed VA Submission under a heading that still says "of this VA Submission". Reset to <span class="font-mono text-xs">initial</span>, or make the pinned filter read-only.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/CyberManagerArea.tsx</td>
+              <td class="px-4 py-2">47-80</td>
+              <td class="px-4 py-2">#3: four overlapping derived booleans and a three-level ternary choose tab state and screen; <span class="font-mono text-xs">paths.ts</span> repeats the same prefix in two regexes. Replace with one <span class="font-mono text-xs">cmRoute(path)</span> returning a discriminated union and a <span class="font-mono text-xs">switch</span>.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/api/audit.ts</td>
+              <td class="px-4 py-2">44-85</td>
+              <td class="px-4 py-2">#4: the action list mirrors <span class="font-mono text-xs">AuditAction</span> by hand (had drifted to 11 of 40) with no drift guard. Publish codes from the server, or add a test comparing <span class="font-mono text-xs">AuditAction.values()</span> with the keys in <span class="font-mono text-xs">audit.ts</span>.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/access/AccessGuard.java (also AuditController.java:48, AuditHistoryScope.java:31)</td>
+              <td class="px-4 py-2">33-35</td>
+              <td class="px-4 py-2">#5: <span class="font-mono text-xs">Need.AUDIT</span> re-encodes ENDORSE's VA POC branch and REVIEW's Cyber Manager branch; who reads the log is stated in three places.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/audit/AuditReadScope.java</td>
+              <td class="px-4 py-2">12-23</td>
+              <td class="px-4 py-2">#6: the record can hold the contradictory state <span class="font-mono text-xs">(true, {ids})</span>, copies the set twice, and the concept takes three shapes in one request.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/audit/AuditStore.java</td>
+              <td class="px-4 py-2">108-110</td>
+              <td class="px-4 py-2">#7: third copy of the UUID-to-<span class="font-mono text-xs">String[]</span> helper (also in FindingStore and SubmissionStore).</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/shared/AuditLogScreen.tsx</td>
+              <td class="px-4 py-2">26-27, 35-45</td>
+              <td class="px-4 py-2">#8: the shared screen defaults <span class="font-mono text-xs">title</span> and <span class="font-mono text-xs">intro</span> to VA POC copy; make them required and move <span class="font-mono text-xs">VA_POC_INTRO</span> to <span class="font-mono text-xs">VaPocArea.tsx</span>.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/CyberManagerArea.tsx</td>
+              <td class="px-4 py-2">50</td>
+              <td class="px-4 py-2">#9: the per-submission history highlights the Audit history tab although it is reached from (and sits under) the Inbox, disagreeing with ADR 0037 item 6.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/CmAuditHistoryTest.java</td>
+              <td class="px-4 py-2">1</td>
+              <td class="px-4 py-2">#10: the test lives in <span class="font-mono text-xs">ingestion</span> only to extend <span class="font-mono text-xs">ReviewSeam1</span>; consider a shared review harness so it can sit beside <span class="font-mono text-xs">AuditReadTest</span>.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">Standards: 7 Low. Spec: AC1, AC2 and AC3 all implemented; 2 Medium, 2 Low, 2 Info. Access control judged sound (uniform unaudited 404, bound <span class="font-mono text-xs">uuid[]</span> scope, narrowing-only filters, SMO and no-role still 403).</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/CmAuditHistoryTest.java</td>
+              <td class="px-4 py-2">101-115</td>
+              <td class="px-4 py-2">P1 (Spec): the list query without <span class="font-mono text-xs">submission=</span> is checked with only one VA Submission, so it would also pass if scope were "every VA Submission on my Systems". Add a second, unreviewed VA Submission with audit entries on SYS-F1.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewScreen.tsx</td>
+              <td class="px-4 py-2">96</td>
+              <td class="px-4 py-2">P2 (Spec, UX): the "Audit history" link is shown on every review screen but leads to the 404 error panel until the CM has recorded a review. Show it only after a review, or turn the 404 into a neutral "no history yet" message.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/access/Need.java</td>
+              <td class="px-4 py-2">4</td>
+              <td class="px-4 py-2">S1: Javadoc still says the enum is named after the steps of the VA Submission flow; <span class="font-mono text-xs">AUDIT</span> is not a step.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/CmAuditHistoryTest.java</td>
+              <td class="px-4 py-2">86</td>
+              <td class="px-4 py-2">S2: test name uses "Reviewer", a synonym CONTEXT.md says to avoid for Cyber Manager.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/api/audit.ts</td>
+              <td class="px-4 py-2">81</td>
+              <td class="px-4 py-2">S3: label "Finding entered by hand" does not use the glossary term "Manually Entered Finding".</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/CmAuditHistoryTest.java</td>
+              <td class="px-4 py-2">68</td>
+              <td class="px-4 py-2">S4: <span class="font-mono text-xs">java.util.UUID.randomUUID()</span> written inline with its full package name instead of an import.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/.../ArchitectureTest.java (outside the diff)</td>
+              <td class="px-4 py-2">74</td>
+              <td class="px-4 py-2">S5: rule comment does not mention that <span class="font-mono text-xs">submission</span> now answers the <span class="font-mono text-xs">AuditReaders</span> read port.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/access/AccessGuard.java</td>
+              <td class="px-4 py-2">33</td>
+              <td class="px-4 py-2">S6 (judgement): the <span class="font-mono text-xs">AUDIT</span> case copies the shapes of ENDORSE and REVIEW. Accepted by ADR 0037; no action needed.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/audit/AuditReadScope.java; AuditStore.java:108</td>
+              <td class="px-4 py-2">12</td>
+              <td class="px-4 py-2">S7 (judgement): <span class="font-mono text-xs">AuditReadScope</span> mirrors <span class="font-mono text-xs">access.SystemScope</span> and <span class="font-mono text-xs">AuditStore.ids</span> repeats <span class="font-mono text-xs">SubmissionStore.ids</span>; acceptable given ArchUnit module boundaries.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/CmAuditHistoryTest.java</td>
+              <td class="px-4 py-2">58-71</td>
+              <td class="px-4 py-2">P3 (Spec): ADR 0037 item 2 paths untested: reading the VA Submission or a refused review does not grant scope; <span class="font-mono text-xs">BATCH_REVIEWED</span> granting scope; System retirement.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/access/AccessGuard.java</td>
+              <td class="px-4 py-2">33</td>
+              <td class="px-4 py-2">P4 (Spec): no test covers a VA POC who is also a Cyber Manager reading every entry.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-400">Info</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/api/audit.ts</td>
+              <td class="px-4 py-2">56-84</td>
+              <td class="px-4 py-2">P5: labels for every <span class="font-mono text-xs">AuditAction</span> also change the VA POC viewer; justified by the "same filters" requirement. No action.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-400">Info</td>
+              <td class="px-4 py-2 font-mono text-xs">docs/adr/0037-*.md</td>
+              <td class="px-4 py-2">—</td>
+              <td class="px-4 py-2">P6: items 3 and 5 are provisional and need human confirmation (list of every reviewed VA Submission; inclusion of other actors' reads and refusals).</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">Semgrep 1.179.0 (Docker, read-only mount, metrics off). Pass 1: <span class="font-mono text-xs">p/security-audit</span>, <span class="font-mono text-xs">p/default</span>, <span class="font-mono text-xs">p/secrets</span> (330 rules, 19 targets). Pass 2: <span class="font-mono text-xs">p/java</span>, <span class="font-mono text-xs">p/typescript</span>, <span class="font-mono text-xs">p/react</span>, <span class="font-mono text-xs">p/owasp-top-ten</span> (139 rules, 18 targets). Manual spot-check: SQL in <span class="font-mono text-xs">AuditStore</span> and <span class="font-mono text-xs">SubmissionStore</span> is built from constants with named bind parameters; page size bounded; no <span class="font-mono text-xs">dangerouslySetInnerHTML</span>.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">LR risk column. as-1, as-2, as-3, as-7, as-8, as-13, lm-19, dp-8 and pm-6 PASS; ac-1 PASS with note; lm-4 WARN. Manual checklist: a human decides F1 and confirms ADR 0037 provisional items 2, 3 and 5; retired-System path not covered by a test.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/audit/AuditController.java</td>
+              <td class="px-4 py-2">69</td>
+              <td class="px-4 py-2">F1 (lm-4): a Cyber Manager's read of the audit history writes no audit entry. ADR 0037 and README record this as intended, but no reviewer-decisions.md entry covers it. Have a human decide and record it, or record an <span class="font-mono text-xs">AUDIT_LOG_VIEWED</span> entry carrying filter ids only.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">docs/adr/0037-...md (:19, :33); backend/src/main/java/sg/annualva/audit/AuditStore.java</td>
+              <td class="px-4 py-2">41</td>
+              <td class="px-4 py-2">F2 (ac-1): under provisional ADR 0037 item 5 a Cyber Manager reads other people's <span class="font-mono text-xs">*_VIEWED</span> and <span class="font-mono text-xs">REQUEST_REFUSED</span> entries with their user ids, roles and correlation ids. A human confirms item 5, or the scope excludes those entries by others.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewScreen.tsx</td>
+              <td class="px-4 py-2">96</td>
+              <td class="px-4 py-2">F3 (as-13): the "Audit history" link before the first review gives the generic 404 ErrorPanel. Nothing leaks; may confuse users. Optional: explain in the intro text.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">Judged against ADR 0002 (Vite + React 19 + TS, hand-written router, <span class="font-mono text-xs">useResource</span>; no TanStack by design). Render purity, immutability, keys, conditional rendering, anchored route regexes and text-only rendering of entry fields all checked fine.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/shared/AuditLogScreen.tsx (with CyberManagerArea.tsx:31-36)</td>
+              <td class="px-4 py-2">92-95</td>
+              <td class="px-4 py-2">#1: Clear drops the submission scope on the single-submission history; <span class="font-mono text-xs">clear()</span> should call <span class="font-mono text-xs">setDraft(initial)</span> and <span class="font-mono text-xs">onApply(initial)</span>. Optionally make the VA Submission input read-only when scoped.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/shared/AuditLogScreen.tsx (also :81; CyberManagerArea.tsx:75)</td>
+              <td class="px-4 py-2">46</td>
+              <td class="px-4 py-2">#2: <span class="font-mono text-xs">initial</span> is read only on mount; correctness relies on the parent's <span class="font-mono text-xs">key={path}</span>. Document the prop ("read on mount; remount with a key to change it").</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/shared/AuditLogScreen.tsx</td>
+              <td class="px-4 py-2">98, 196</td>
+              <td class="px-4 py-2">#3: form and pager <span class="font-mono text-xs">aria-label</span>s still say "audit log" on the Cyber Manager's "Audit history"; derive from <span class="font-mono text-xs">title</span> or use <span class="font-mono text-xs">aria-labelledby</span>.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">Child verdict PASS (Low only). Skills run: spring-core, spring-web, spring-data, spring-batch (not applicable), spring-security, spring-logging, spring-test. Method security backed by <span class="font-mono text-xs">@EnableMethodSecurity</span>; no new log statements; tests are Seam 1 on shared Testcontainers with no context-cache fragmentation.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/audit/AuditFilter.java (also AuditLog.java:59, AuditReadScope.java:12)</td>
+              <td class="px-4 py-2">22</td>
+              <td class="px-4 py-2">#1 (security, core): fail-open default; scope enforced only in <span class="font-mono text-xs">AuditController</span>, <span class="font-mono text-xs">within == null</span> reads every entry; <span class="font-mono text-xs">AuditReadScope</span> accepts the mixed state and copies the set twice.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/audit/AuditStore.java</td>
+              <td class="px-4 py-2">41, 46</td>
+              <td class="px-4 py-2">#2 (data): the catch-all <span class="font-mono text-xs">IS NULL OR = ANY(...)</span> form can defeat <span class="font-mono text-xs">audit_entry_submission_idx</span> under a generic plan; pre-existing pattern. Run <span class="font-mono text-xs">EXPLAIN (ANALYZE)</span> on realistic volume before go-live.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/audit/AuditController.java (also AuditLog.java:59)</td>
+              <td class="px-4 py-2">61-69</td>
+              <td class="px-4 py-2">#3 (data): scope, page and count run in separate autocommit transactions, so a concurrent review can make them disagree. Optional single read-only snapshot.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionStore.java</td>
+              <td class="px-4 py-2">159-162</td>
+              <td class="px-4 py-2">#4 (data): redundant <span class="font-mono text-xs">DISTINCT</span>; the primary key <span class="font-mono text-xs">(submission_id, user_id, step)</span> already rules out duplicates.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/CmAuditHistoryTest.java</td>
+              <td class="px-4 py-2">60, 86</td>
+              <td class="px-4 py-2">#5 (test): untested ADR 0037 scope rules: a read-only or refused-review CM gets no scope; a retired System removes the history; a dual-role VA POC + CM reads every entry.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/CmAuditHistoryTest.java</td>
+              <td class="px-4 py-2">68</td>
+              <td class="px-4 py-2">#6 (test): inline fully qualified <span class="font-mono text-xs">java.util.UUID.randomUUID()</span>; import <span class="font-mono text-xs">java.util.UUID</span>.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+    </main>
+  </body>
+</html>

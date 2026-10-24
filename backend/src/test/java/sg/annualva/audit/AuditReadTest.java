@@ -16,11 +16,14 @@ import sg.annualva.harness.SignIn;
 import sg.annualva.harness.TestIdentity;
 import tools.jackson.databind.JsonNode;
 
-/** Story 84: the VA POCs, and only they, read the audit log, paged and filtered by actor, action, System, VA Submission and date. */
+/**
+ * Story 84: the VA POCs read the whole audit log, paged and filtered by actor, action, System, VA Submission and date. A
+ * Cyber Manager reads only the history of what they reviewed (story 85, {@code CmAuditHistoryTest}); nobody else reads it.
+ */
 class AuditReadTest extends AuditSeam1 {
 
     @Test
-    void onlyAVaPocCanReadTheLogAndEveryoneElseIsRefused() {
+    void onlyAVaPocOrACyberManagerCanReadTheLogAndEveryoneElseIsRefused() {
         assertThat(api.get("/api/audit-entries").status()).as("no session").isEqualTo(401);
 
         String system = arrange.system();
@@ -33,11 +36,14 @@ class AuditReadTest extends AuditSeam1 {
         var nobody = anotherBrowser();
         SignIn.signedIn(nobody, issuer, TestIdentity.of("af-a603", "reads.nobody@ci.annualva.test", "Reads Nobody"));
 
-        for (ApiClient other : List.of(smo, manager, nobody)) {
+        for (ApiClient other : List.of(smo, nobody)) {
             var response = other.get("/api/audit-entries");
             assertThat(response.status()).isEqualTo(403);
             assertThat(response.body()).doesNotContain("SIGN_IN");
         }
+        var unreviewed = manager.get("/api/audit-entries");
+        assertThat(unreviewed.status()).as("a Cyber Manager who reviewed nothing reads nothing").isEqualTo(200);
+        assertThat(ApiClient.json(unreviewed).get("total").asLong()).isZero();
         assertThat(reader().get("/api/audit-entries").status()).isEqualTo(200);
     }
 

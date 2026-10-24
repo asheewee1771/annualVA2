@@ -23,12 +23,27 @@ function when(instant: string): string {
   return Number.isNaN(date.getTime()) ? instant : WHEN.format(date);
 }
 
+const VA_POC_INTRO =
+  "Every sign-in, sign-out, refused request and action, newest first. Entries cannot be changed or deleted.";
+
 /**
  * The audit log (story 84): who did what, when, and with what outcome, filtered and paged by the server. It shows
- * ids and fixed codes only; a Finding appears as an id and never with its detail. Everything is rendered as text.
+ * ids and fixed codes only; a Finding appears as an id and never with its detail. Everything is rendered as text. The
+ * server decides which entries the reader may see: a VA POC every entry, a Cyber Manager the history of the VA
+ * Submissions they reviewed (story 85), so the same screen serves both with its own heading and starting filters.
  */
-export function AuditLogScreen({ classification }: { classification: string }) {
-  const [applied, setApplied] = useState<AuditFilters>(NO_FILTERS);
+export function AuditLogScreen({
+  classification,
+  title = "Audit log",
+  intro = VA_POC_INTRO,
+  initial = NO_FILTERS,
+}: {
+  classification: string;
+  title?: string;
+  intro?: string;
+  initial?: AuditFilters;
+}) {
+  const [applied, setApplied] = useState<AuditFilters>(initial);
   const [page, setPage] = useState(0);
   const load = useCallback(() => fetchAuditEntries(applied, page), [applied, page]);
   const log = useResource(load);
@@ -40,11 +55,9 @@ export function AuditLogScreen({ classification }: { classification: string }) {
 
   return (
     <div className="card">
-      <h2>Audit log</h2>
-      <p className="muted">
-        Every sign-in, sign-out, refused request and action, newest first. Entries cannot be changed or deleted.
-      </p>
-      <AuditFilterForm classification={classification} onApply={apply} />
+      <h2>{title}</h2>
+      <p className="muted">{intro}</p>
+      <AuditFilterForm classification={classification} initial={initial} onApply={apply} />
       {log.error ? <ErrorPanel problem={log.error.problem} /> : null}
       {log.data ? <AuditResults result={log.data} loading={log.loading} onPage={setPage} /> : null}
       {!log.data && !log.error ? (
@@ -58,12 +71,14 @@ export function AuditLogScreen({ classification }: { classification: string }) {
 
 function AuditFilterForm({
   classification,
+  initial,
   onApply,
 }: {
   classification: string;
+  initial: AuditFilters;
   onApply: (filters: AuditFilters) => void;
 }) {
-  const [draft, setDraft] = useState<AuditFilters>(NO_FILTERS);
+  const [draft, setDraft] = useState<AuditFilters>(initial);
 
   function set(name: keyof AuditFilters, value: string) {
     setDraft((current) => ({ ...current, [name]: value.trim() }));
@@ -74,9 +89,10 @@ function AuditFilterForm({
     onApply(draft);
   }
 
+  /** Back to the filters the screen opened with, so a VA Submission's own history stays that VA Submission's. */
   function clear() {
-    setDraft(NO_FILTERS);
-    onApply(NO_FILTERS);
+    setDraft(initial);
+    onApply(initial);
   }
 
   return (
