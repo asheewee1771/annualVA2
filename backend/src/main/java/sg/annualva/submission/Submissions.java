@@ -308,7 +308,7 @@ public class Submissions {
      * @throws RejectedRequestException 403 {@code sod-conflict} when the caller is also the System's Cyber Manager (story
      *     58: assigned to the reviewing step, so never its submitter); 409 {@code invalid-transition} when the Cycle is
      *     closed, the System was not in the Cycle (added after a newer Cycle opened, ADR 0044), it already has a VA
-     *     Submission in the Cycle that is not Not Started (one a rejected Exemption request made is taken, ADR 0046), or
+     *     Submission in the Cycle that is not Not Started (one a rejected Exemption request made is taken, ADR 0048), or
      *     its Quarter is Handled outside the app
      */
     @Transactional
@@ -320,8 +320,10 @@ public class Submissions {
         Quarter quarter = placed(systemId, cycleYear, refused);
         Instant now = clock.instant();
         UUID caller = user.id();
-        UUID id = inserted(systemId, quarter, SubmissionState.DRAFT, now).orElseThrow(() -> refusedWith(refused,
-                "already-started", "This System already has a VA Submission in this VA Cycle."));
+        UUID id = inserted(systemId, quarter, SubmissionState.DRAFT, now)
+                .or(() -> store.takeNotStarted(systemId, quarter.cycle(), now, calendar.dateOf(now), caller))
+                .orElseThrow(() -> refusedWith(refused, "already-started",
+                        "This System already has a VA Submission in this VA Cycle."));
         store.recordParticipation(id, caller, SubmissionStep.SUBMIT, now);
         audit.record(actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_STARTED, AuditOutcome.SUCCESS))
                 .onSystem(systemId).onSubmission(id).with(DetailKey.STATE_TO, SubmissionState.DRAFT.name()));

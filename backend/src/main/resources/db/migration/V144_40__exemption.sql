@@ -1,4 +1,4 @@
--- Exemptions (ticket 40, stories 43 to 46, ADR 0046): an SMO/Tech Lead requests one for their System with evidence of a
+-- Exemptions (ticket 40, stories 43 to 46, ADR 0048): an SMO/Tech Lead requests one for their System with evidence of a
 -- VA in the 3 months before its Quarter (PRIOR_VA) or one scheduled in the 3 months after (SCHEDULED_VA); the VA
 -- Submission is frozen in Exemption Requested until a VA POC approves it (Exempted) or rejects it (back to exactly the
 -- state it was in).
@@ -55,11 +55,6 @@ ALTER TABLE va_submission ADD CONSTRAINT va_submission_state_check
     CHECK (state IN ('NOT_STARTED', 'DRAFT', 'IN_REVIEW', 'RETURNED_FOR_REWORK', 'AWAITING_ENDORSEMENT', 'ENDORSED',
                      'EXEMPTION_REQUESTED', 'EXEMPTED', 'WITHDRAWN', 'NOT_ENDORSED'));
 
--- Deciding an Exemption is the VA POC's endorsing step (ADR 0042), so the unused DECIDE step goes.
-ALTER TABLE submission_participation DROP CONSTRAINT submission_participation_step_check;
-ALTER TABLE submission_participation ADD CONSTRAINT submission_participation_step_check
-    CHECK (step IN ('SUBMIT', 'REVIEW', 'ENDORSE'));
-
 -- The audit log learns the Exemption an entry is about and its basis: an id and a fixed code, never the evidence.
 ALTER TABLE audit_entry DROP CONSTRAINT audit_entry_detail_check;
 ALTER TABLE audit_entry ADD CONSTRAINT audit_entry_detail_check
@@ -78,6 +73,7 @@ ALTER TABLE audit_entry ADD CONSTRAINT audit_entry_detail_check
 ALTER TABLE notification DROP CONSTRAINT notification_action_check;
 ALTER TABLE notification ADD CONSTRAINT notification_action_check CHECK (action IN ('REVIEW', 'REWORK', 'ENDORSE',
     'SUBMIT_OVERDUE', 'REVIEW_OVERDUE', 'ENDORSE_OVERDUE', 'SYSTEM_MOVED', 'SYSTEM_TRANSFERRED_TO_YOU',
-    'SYSTEM_TRANSFERRED_FROM_YOU', 'NOT_ENDORSED', 'VA_POC_REWORK', 'VA_POC_RETURNED', 'DECIDE_EXEMPTION', 'EXEMPTION_APPROVED', 'EXEMPTION_REJECTED'));
+    'SYSTEM_TRANSFERRED_FROM_YOU', 'NOT_ENDORSED', 'VA_POC_REWORK', 'VA_POC_RETURNED', 'DECIDE_EXEMPTION',
+    'EXEMPTION_APPROVED', 'EXEMPTION_REJECTED'));
 ALTER TABLE notification DROP CONSTRAINT notification_awaits_check;
 ALTER TABLE notification ADD CONSTRAINT notification_awaits_check CHECK (awaits IN ('ENDORSEMENT', 'EXEMPTION'));

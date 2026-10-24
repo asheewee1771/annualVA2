@@ -69,18 +69,30 @@ final class ExemptionFields {
         } catch (DateTimeParseException e) {
             throw refused(VA_DATE, "must be a date written yyyy-mm-dd.");
         }
-        LocalDate from = basis == Exemptions.Basis.PRIOR_VA ? quarter.startsOn().minusMonths(MONTHS)
-                : quarter.endsOn().plusDays(1);
-        LocalDate to = basis == Exemptions.Basis.PRIOR_VA ? quarter.startsOn().minusDays(1) : lapsesOn(quarter);
-        if (date.isBefore(from) || date.isAfter(to)) {
-            throw refused(VA_DATE, basis == Exemptions.Basis.PRIOR_VA
-                    ? "must fall within the 3 months before the Quarter, from " + from + " to " + to + "."
-                    : "must fall within the 3 months after the Quarter, from " + from + " to " + to + ".");
+        Window window = window(basis, quarter);
+        if (date.isBefore(window.from()) || date.isAfter(window.to())) {
+            throw refused(VA_DATE, "must fall within the 3 months " + window.side() + " the Quarter, from "
+                    + window.from() + " to " + window.to() + ".");
         }
-        if (basis == Exemptions.Basis.PRIOR_VA && date.isAfter(today)) {
+        if (window.done() && date.isAfter(today)) {
             throw refused(VA_DATE, "must not be after today for a VA already done.");
         }
         return date;
+    }
+
+    /**
+     * The days a VA of this basis may fall on, both included, and whether it is one already done.
+     *
+     * @param side "before" or "after" the Quarter, for the refusal's sentence
+     */
+    private record Window(LocalDate from, LocalDate to, String side, boolean done) {}
+
+    private static Window window(Exemptions.Basis basis, Quarter quarter) {
+        return switch (basis) {
+            case PRIOR_VA -> new Window(quarter.startsOn().minusMonths(MONTHS), quarter.startsOn().minusDays(1), "before",
+                    true);
+            case SCHEDULED_VA -> new Window(quarter.endsOn().plusDays(1), lapsesOn(quarter), "after", false);
+        };
     }
 
     private static RejectedRequestException refused(String field, String what) {

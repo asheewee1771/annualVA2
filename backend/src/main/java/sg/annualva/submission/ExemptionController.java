@@ -1,8 +1,8 @@
 package sg.annualva.submission;
 
-import java.net.URI;
 import java.util.UUID;
 import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Exemptions (ADR 0046). The SMO/Tech Lead of a System requests one (another role is refused with 403, an SMO of another
+ * Exemptions (ADR 0048). The SMO/Tech Lead of a System requests one (another role is refused with 403, an SMO of another
  * System gets 404, ADR 0013); a VA POC approves or rejects it after a fresh sign-in.
  */
 @RestController
@@ -25,17 +25,15 @@ public class ExemptionController {
 
     /**
      * Requests an Exemption and freezes the System's VA Submission, creating it for a Not Started System: 201 with the
-     * request and its address.
+     * request (no address: the VA POCs read it in their queue).
      *
      * @param id the System's own id (not its business System ID)
      */
     @PostMapping("/api/systems/{id}/exemptions")
     @PreAuthorize("hasRole('SMO')")
     public ResponseEntity<Exemptions.Exemption> request(@PathVariable UUID id, @RequestBody Exemptions.Request request) {
-        Exemptions.Exemption requested = exemptions.request(id, request);
-        return ResponseEntity.created(URI.create("/api/exemptions/" + requested.id()))
-                .cacheControl(CacheControl.noStore())
-                .body(requested);
+        return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore())
+                .body(exemptions.request(id, request));
     }
 
     /** Approves a pending Exemption: 200 with it decided. A step-up action ({@code exemption-decide}). */

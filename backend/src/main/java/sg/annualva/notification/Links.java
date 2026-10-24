@@ -1,6 +1,7 @@
 package sg.annualva.notification;
 
 import java.util.UUID;
+import sg.annualva.submission.SubmissionState;
 
 /**
  * The app paths a notification links to, the same paths the React app routes (its {@code paths.ts} per role): fixed
@@ -15,6 +16,18 @@ public final class Links {
     public static final String EXEMPTION_QUEUE = "/va-poc/exemptions";
 
     private Links() {}
+
+    /**
+     * Where the SMO/Tech Lead takes up a VA Submission in this state: their inbox while it is Not Started (to start it),
+     * the rework queue once it is Returned for Rework, and otherwise the VA Submission itself.
+     */
+    public static String forSmo(SubmissionState state, UUID submissionId) {
+        return switch (state) {
+            case NOT_STARTED -> SMO_INBOX;
+            case RETURNED_FOR_REWORK -> rework(submissionId);
+            default -> prepare(submissionId);
+        };
+    }
 
     /** Where the SMO/Tech Lead prepares a VA Submission. */
     public static String prepare(UUID submissionId) {

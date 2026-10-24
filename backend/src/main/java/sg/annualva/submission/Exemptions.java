@@ -27,7 +27,7 @@ import sg.annualva.web.RejectedRequestException;
 import sg.annualva.web.ResourceNotFoundException;
 
 /**
- * Exemptions (stories 43 to 46, ADR 0046). An SMO/Tech Lead requests one for their System at any time before it is
+ * Exemptions (stories 43 to 46, ADR 0048). An SMO/Tech Lead requests one for their System at any time before it is
  * endorsed, and the VA Submission is frozen in Exemption Requested; a VA POC approves it (Exempted, final, the work kept
  * for audit; conditional when it rests on a scheduled VA) or rejects it (back to exactly the state it was in, with the
  * Overdue flag it had). Both are step commands through {@link Submissions#atStep}: the request at the submitting step,
@@ -46,10 +46,26 @@ public class Exemptions {
         SCHEDULED_VA
     }
 
-    /** What a VA POC decided. */
+    /** What a VA POC decided, with the entry it is audited as. */
     public enum Decision {
-        APPROVED,
-        REJECTED
+        APPROVED(AuditAction.EXEMPTION_APPROVED),
+        REJECTED(AuditAction.EXEMPTION_REJECTED);
+
+        private final AuditAction action;
+
+        Decision(AuditAction action) {
+            this.action = action;
+        }
+
+        /** The state the VA Submission moves to: Exempted, or back to the state the request froze. */
+        SubmissionState to(SubmissionState frozen) {
+            return this == APPROVED ? SubmissionState.EXEMPTED : frozen;
+        }
+    }
+
+    /** An approved Exemption resting on a scheduled VA is conditional until its VA is confirmed (ticket 42). */
+    static boolean conditional(@Nullable Decision decision, Basis basis) {
+        return decision == Decision.APPROVED && basis == Basis.SCHEDULED_VA;
     }
 
     /**
@@ -209,13 +225,12 @@ public class Exemptions {
      * told and the other VA POC's item clears.
      */
     private Exemption decided(UUID exemptionId, Decision decision) {
-        AuditAction action = decision == Decision.APPROVED ? AuditAction.EXEMPTION_APPROVED : AuditAction.EXEMPTION_REJECTED;
+        AuditAction action = decision.action;
         ExemptionStore.Row request = exemptions.find(exemptionId).orElseThrow(ResourceNotFoundException::new);
         UUID id = request.submissionId();
         Submissions.AtStep target = submissions.atStep(id, DECIDING, actor.attribute(AuditEvent.of(action,
                 AuditOutcome.REFUSED)).with(DetailKey.EXEMPTION_ID, exemptionId), Submissions.Hold.EXCLUSIVE);
-        boolean approved = decision == Decision.APPROVED;
-        LocalDate lapsesOn = approved && request.basis() == Basis.SCHEDULED_VA
+        LocalDate lapsesOn = conditional(decision, request.basis())
                 ? ExemptionFields.lapsesOn(quarterOf(store.find(id).orElseThrow(ResourceNotFoundException::new)))
                 : null;
         Instant now = clock.instant();
@@ -224,13 +239,11 @@ public class Exemptions {
             throw new RejectedRequestException(HttpStatus.CONFLICT, NOT_ALLOWED_NOW,
                     "This Exemption request has been decided already.");
         }
-        SubmissionState to = approved ? SubmissionState.EXEMPTED : request.previousState();
+        SubmissionState to = decision.to(request.previousState());
         submissions.moved(target, to, now, today -> {
-            if (approved) {
-                store.moved(id, to, today);
-            } else {
-                store.restored(id, to, request.previousOverdueSince(), today);
-            }
+            // The flag's time from before the freeze comes back only if the new state's window has passed: never for
+            // Exempted, which waits on no window.
+            store.restored(id, to, request.previousOverdueSince(), today);
             return AuditEvent.of(action, AuditOutcome.SUCCESS).with(DetailKey.EXEMPTION_ID, exemptionId);
         });
         return view(exemptionId);
@@ -262,9 +275,8 @@ public class Exemptions {
     }
 
     private static Exemption view(ExemptionStore.Row row) {
-        boolean conditional = row.decision() == Decision.APPROVED && row.basis() == Basis.SCHEDULED_VA;
         return new Exemption(row.id(), row.submissionId(), row.systemId(), row.basis(), row.vaDate(), row.evidence(),
                 row.evidenceFileId(), row.previousState(), row.requestedBy(), row.requestedAt(), row.decision(),
-                row.decidedBy(), row.decidedAt(), conditional, row.lapsesOn());
+                row.decidedBy(), row.decidedAt(), conditional(row.decision(), row.basis()), row.lapsesOn());
     }
 }

@@ -32,9 +32,14 @@ class ExemptionStore {
 
     private static final String FIND = COLUMNS + "WHERE e.id = :id";
 
-    /** The pending request of each of these VA Submissions, oldest first: the queue's order. */
+    /**
+     * The pending request of each of these VA Submissions, oldest first: the queue's order. Pending is undecided and its
+     * VA Submission still Exemption Requested: a request a Cycle's close made moot (the VA Submission Not Endorsed) stays
+     * undecided and is not pending.
+     */
     private static final String PENDING =
-            COLUMNS + "WHERE e.decision IS NULL AND e.submission_id = ANY(CAST(:submissions AS uuid[])) ORDER BY e.seq";
+            COLUMNS + "WHERE e.decision IS NULL AND s.state = 'EXEMPTION_REQUESTED' "
+            + "AND e.submission_id = ANY(CAST(:submissions AS uuid[])) ORDER BY e.seq";
 
     private static final String INSERT =
             "INSERT INTO exemption (submission_id, basis, va_date, evidence, evidence_file_id, previous_state, "

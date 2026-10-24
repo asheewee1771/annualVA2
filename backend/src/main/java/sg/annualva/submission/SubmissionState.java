@@ -2,7 +2,7 @@ package sg.annualva.submission;
 
 /**
  * Where a VA Submission is in its life: the spec's ten states. A System with no VA Submission is Not Started; so is a VA
- * Submission an Exemption request created once the request is rejected (ticket 40, ADR 0046), which a start then takes
+ * Submission an Exemption request created once the request is rejected (ticket 40, ADR 0048), which a start then takes
  * from there. Every state is named here, so a read (a dashboard, the VA Submission itself) can show a VA Submission
  * whatever state it is in; the commands that enter the later ones arrive with their tickets, and until then nothing but a
  * test puts a VA Submission there.
