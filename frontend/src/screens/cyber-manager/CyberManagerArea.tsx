@@ -2,7 +2,7 @@ import { NO_FILTERS } from "../../api/audit.ts";
 import { AppLink } from "../../app/AppLink.tsx";
 import type { AreaProps } from "../shared/AreaProps.ts";
 import { AuditLogScreen } from "../shared/AuditLogScreen.tsx";
-import { QuarterBoardScreen } from "../shared/QuarterBoardScreen.tsx";
+import { QuarterBoardScreen, type BoardFor } from "../shared/QuarterBoardScreen.tsx";
 import { CmInboxScreen } from "./CmInboxScreen.tsx";
 import {
   auditedSubmissionOf,
@@ -13,6 +13,9 @@ import {
   reviewPath,
 } from "./paths.ts";
 import { ReviewScreen } from "./ReviewScreen.tsx";
+
+/** The Cyber Manager reads the board for their review, and a started System's card opens its review screen. */
+const REVIEW_BOARD: BoardFor = { step: "review", linkOf: reviewPath };
 
 const HISTORY_INTRO =
   "What happened to the VA Submissions you reviewed, on Systems still assigned to you, newest first. Findings appear " +
@@ -74,7 +77,7 @@ export function CyberManagerArea({ path, classification }: AreaProps) {
       ) : onHistory ? (
         <AuditHistory key={path} submissionId={audited} classification={classification} />
       ) : onBoard ? (
-        <QuarterBoardScreen classification={classification} whose="your Systems" />
+        <QuarterBoardScreen classification={classification} whose="your Systems" boardFor={REVIEW_BOARD} />
       ) : (
         <CmInboxScreen classification={classification} />
       )}

@@ -31,6 +31,7 @@ export interface StepUpOutcome {
 /** Plain words for the actions that need a step-up; an action not listed here is "This action". */
 const ACTIONS: Readonly<Record<string, string>> = {
   "register-apply": "Applying the System Register",
+  "submission-endorse": "Endorsing a VA Submission",
 };
 
 export function describeAction(intent: string): string {

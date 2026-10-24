@@ -2,11 +2,15 @@ import type { ReactNode } from "react";
 import { AppLink } from "../../app/AppLink.tsx";
 import type { AreaProps } from "../shared/AreaProps.ts";
 import { AuditLogScreen } from "../shared/AuditLogScreen.tsx";
-import { QuarterBoardScreen } from "../shared/QuarterBoardScreen.tsx";
+import { QuarterBoardScreen, type BoardFor } from "../shared/QuarterBoardScreen.tsx";
 import { CycleMatrixScreen } from "./CycleMatrixScreen.tsx";
+import { EndorseScreen } from "./EndorseScreen.tsx";
+import { endorsedSubmissionOf, endorsePath, VA_POC_PATH } from "./paths.ts";
 import { RegisterScreen } from "./RegisterScreen.tsx";
 
-const AREA_PATH = "/va-poc";
+/** A VA POC reads the board for the endorsement, and a started System's card opens its VA Submission. */
+const ENDORSE_BOARD: BoardFor = { step: "endorse", linkOf: endorsePath };
+
 const MATRIX_PATH = "/va-poc/cycle-matrix";
 const AUDIT_LOG_PATH = "/va-poc/audit-log";
 const REGISTER_PATH = "/va-poc/register";
@@ -16,7 +20,7 @@ function SubPage({ children }: { children: ReactNode }) {
   return (
     <>
       <p>
-        <AppLink path={AREA_PATH}>Back to the VA POC area</AppLink>
+        <AppLink path={VA_POC_PATH}>Back to the VA POC area</AppLink>
       </p>
       {children}
     </>
@@ -24,10 +28,14 @@ function SubPage({ children }: { children: ReactNode }) {
 }
 
 /**
- * The VA POC's working area (story 64): two tabs, the Quarter board of every System and the Cycle matrix, and, beneath
- * the area, the System Register and the audit log.
+ * The VA POC's working area (stories 64 and 65): two tabs, the Quarter board of every System and the Cycle matrix, and,
+ * beneath the area, a VA Submission opened from the board (to endorse it), the System Register and the audit log.
  */
 export function VaPocArea({ path, classification }: AreaProps) {
+  const endorsing = endorsedSubmissionOf(path);
+  if (endorsing) {
+    return <EndorseScreen key={endorsing} submissionId={endorsing} />;
+  }
   if (path === REGISTER_PATH) {
     return (
       <SubPage>
@@ -48,7 +56,7 @@ export function VaPocArea({ path, classification }: AreaProps) {
       <nav className="tabs" aria-label="VA POC views">
         <ul>
           <li>
-            <AppLink path={AREA_PATH} current={!onMatrix}>
+            <AppLink path={VA_POC_PATH} current={!onMatrix}>
               Quarter board
             </AppLink>
           </li>
@@ -68,7 +76,7 @@ export function VaPocArea({ path, classification }: AreaProps) {
       {onMatrix ? (
         <CycleMatrixScreen classification={classification} />
       ) : (
-        <QuarterBoardScreen classification={classification} whose="every System" />
+        <QuarterBoardScreen classification={classification} whose="every System" boardFor={ENDORSE_BOARD} />
       )}
     </>
   );

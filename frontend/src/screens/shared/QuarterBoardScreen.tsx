@@ -1,16 +1,33 @@
 import { useCallback, useState } from "react";
 import { fetchQuarterBoard, type BoardCard, type SystemState } from "../../api/dashboards.ts";
+import { AppLink } from "../../app/AppLink.tsx";
 import { ClassifiedField } from "../../components/ClassifiedField.tsx";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { useResource } from "../../hooks/useResource.ts";
 import { CycleSelector } from "./CycleSelector.tsx";
 import { HandledOutsideSection } from "./HandledOutsideSection.tsx";
-import { findingsLabel, ReviewFlags } from "./ReviewFlags.tsx";
+import { findingsLabel, ReviewFlags, type DashboardStep } from "./ReviewFlags.tsx";
 import { STATE_LABELS } from "./systemStates.ts";
 
 const QUARTERS = [1, 2, 3, 4] as const;
 
-function Column({ state, systems }: { state: SystemState; systems: BoardCard[] }) {
+/** What the board is read for: the step its conflicts are marked for, and where a started System's card leads, if anywhere. */
+export interface BoardFor {
+  step: DashboardStep;
+  linkOf?: (submissionId: string) => string;
+}
+
+/** A card's System: a link to its VA Submission when the board leads somewhere and it has one. */
+function CardTitle({ system, linkOf }: { system: BoardCard; linkOf: BoardFor["linkOf"] }) {
+  const title = (
+    <>
+      <span className="mono">{system.systemId}</span> {system.name}
+    </>
+  );
+  return linkOf && system.submissionId ? <AppLink path={linkOf(system.submissionId)}>{title}</AppLink> : title;
+}
+
+function Column({ state, systems, boardFor }: { state: SystemState; systems: BoardCard[]; boardFor: BoardFor }) {
   return (
     <section className="board__column" aria-labelledby={`board-${state}`}>
       <h3 id={`board-${state}`}>
@@ -19,8 +36,8 @@ function Column({ state, systems }: { state: SystemState; systems: BoardCard[] }
       <ul className="plain-list">
         {systems.map((system) => (
           <li key={system.id} className="board__card">
-            <span className="mono">{system.systemId}</span> {system.name}
-            <ReviewFlags overdue={system.overdue} sodConflict={system.sodConflict} />
+            <CardTitle system={system} linkOf={boardFor.linkOf} />
+            <ReviewFlags overdue={system.overdue} sodConflict={system.sodConflict} step={boardFor.step} />
             <br />
             <small className="muted">{findingsLabel(system)}</small>
           </li>
@@ -36,8 +53,17 @@ function Column({ state, systems }: { state: SystemState; systems: BoardCard[] }
  * running today is shown first; another can be chosen.
  *
  * @param whose how the subtitle names the Systems shown, such as "your Systems"
+ * @param boardFor the step the board is read for, and where a card leads
  */
-export function QuarterBoardScreen({ classification, whose }: { classification: string; whose: string }) {
+export function QuarterBoardScreen({
+  classification,
+  whose,
+  boardFor,
+}: {
+  classification: string;
+  whose: string;
+  boardFor: BoardFor;
+}) {
   const [cycle, setCycle] = useState<number | undefined>(undefined);
   const [quarter, setQuarter] = useState<number | undefined>(undefined);
   const load = useCallback(() => fetchQuarterBoard(cycle, quarter), [cycle, quarter]);
@@ -75,7 +101,7 @@ export function QuarterBoardScreen({ classification, whose }: { classification: 
       {shown ? (
         <div className="board" role="region" aria-label="Quarter board columns" tabIndex={0}>
           {shown.columns.map((column) => (
-            <Column key={column.state} state={column.state} systems={column.systems} />
+            <Column key={column.state} state={column.state} systems={column.systems} boardFor={boardFor} />
           ))}
         </div>
       ) : null}

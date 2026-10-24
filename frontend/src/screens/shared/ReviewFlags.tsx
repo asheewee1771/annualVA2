@@ -1,9 +1,20 @@
+/** The step a dashboard is read for: the Cyber Manager's review or the VA POC's endorsement. */
+export type DashboardStep = "review" | "endorse";
+
 /**
  * The flags a System carries on the Cyber Manager's inbox and the Quarter board: Overdue, and where segregation of duties
- * refuses the caller's review, because they acted at, or are assigned to, another step of its VA Submission (never set
- * on a VA POC's board until the endorsing step is recorded).
+ * refuses the caller the step the dashboard is for, because they acted at, or are assigned to, another step of its VA
+ * Submission.
  */
-export function ReviewFlags({ overdue, sodConflict }: { overdue: boolean; sodConflict: boolean }) {
+export function ReviewFlags({
+  overdue,
+  sodConflict,
+  step = "review",
+}: {
+  overdue: boolean;
+  sodConflict: boolean;
+  step?: DashboardStep;
+}) {
   return (
     <>
       {overdue ? (
@@ -16,7 +27,7 @@ export function ReviewFlags({ overdue, sodConflict }: { overdue: boolean; sodCon
         <>
           {" "}
           <span className="flag flag--warning">
-            You acted at, or are assigned to, another step: you cannot review it
+            You acted at, or are assigned to, another step: you cannot {step} it
           </span>
         </>
       ) : null}
