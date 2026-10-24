@@ -44,3 +44,11 @@ annualva:
   step-up:
     # prompt-login, or full-sign-in when SIT shows that MCC SSO ignores prompt=login (ADR 0004).
     mode: ${ANNUALVA_STEPUP_MODE:prompt-login}
+  mail:
+    # The SIT address of the app, and the template ids MCNS gives at onboarding (ticket 57). The defaults are
+    # placeholders, never the SIT values.
+    app-url: ${ANNUALVA_APP_URL:https://localhost:8443}
+    templates:
+      returned-for-rework: ${ANNUALVA_MAIL_TEMPLATE_RETURNED_FOR_REWORK:onboarding-pending-returned-for-rework}
+      overdue: ${ANNUALVA_MAIL_TEMPLATE_OVERDUE:onboarding-pending-overdue}
+      register-change: ${ANNUALVA_MAIL_TEMPLATE_REGISTER_CHANGE:onboarding-pending-register-change}

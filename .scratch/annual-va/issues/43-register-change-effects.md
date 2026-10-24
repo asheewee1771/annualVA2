@@ -17,3 +17,7 @@
 ### Note from ticket 12 (2026-10-13)
 
 The SMO inbox row's `quarter` comes from the Register's current Quarter, while its due dates come from the stored VA Submission (copied from the Quarter when it was started, ADR 0020). Once the Register can move a System to another Quarter, a Draft would show the new Quarter beside the old dates. This ticket's WILL_MOVE handling should decide which wins (re-date the Draft, or show the stored Quarter) and cover it with a Seam 1 test.
+
+### Note from ticket 37 (2026-10-25)
+
+The withdrawal notice to the SMO/Tech Lead must also be mailed (ticket 37's acceptance names withdrawn among the Register-change messages that reach the SMO by email). Adding the `NoticeAction` constant forces a choice in `MailTemplate.of` (ADR 0046): map it to `REGISTER_CHANGE` with the `change_kind` "Withdrawn", and prove with a Seam 1 test that the SMO receives that mail (`CapturingMailRelay`, `MailSeam1`).

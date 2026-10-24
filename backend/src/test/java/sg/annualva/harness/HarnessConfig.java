@@ -37,6 +37,13 @@ public class HarnessConfig {
         return new RecordedSubmissionEvents();
     }
 
+    /** The mail relay: captures every message, and can refuse an address or fail the next calls. */
+    @Bean
+    @Primary
+    CapturingMailRelay capturingMailRelay() {
+        return new CapturingMailRelay();
+    }
+
     /** What the VA Cycle closes published, as a consumer after the commit sees it. */
     @Bean
     RecordedCycleEvents recordedCycleEvents() {
