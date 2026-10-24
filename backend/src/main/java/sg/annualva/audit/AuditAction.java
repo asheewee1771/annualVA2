@@ -196,7 +196,13 @@ public enum AuditAction {
      */
     SUBMISSION_PASSED("submission-passed-to-endorsement", "database"),
     /** Someone read the returns of a VA Submission, which carry what a person wrote. About the System and the VA Submission. */
-    SUBMISSION_RETURNS_VIEWED("submission-returns-viewed", "database");
+    SUBMISSION_RETURNS_VIEWED("submission-returns-viewed", "database"),
+    /**
+     * An SMO/Tech Lead read the rework queue of their VA Submission (story 60), which carries the Cyber Manager's Dispute
+     * comments and what was proposed, so every read is audited. About the System and the VA Submission, with the number
+     * of Findings returned; never their text.
+     */
+    REWORK_QUEUE_VIEWED("rework-queue-viewed", "database");
 
     private final String ecs;
     private final String category;

@@ -37,12 +37,15 @@ public class FindingController {
     private final BulkProposals bulk;
     private final ManualFindings manual;
     private final Reviews reviews;
+    private final ReworkQueues rework;
 
-    FindingController(Findings findings, BulkProposals bulk, ManualFindings manual, Reviews reviews) {
+    FindingController(Findings findings, BulkProposals bulk, ManualFindings manual, Reviews reviews,
+            ReworkQueues rework) {
         this.findings = findings;
         this.bulk = bulk;
         this.manual = manual;
         this.reviews = reviews;
+        this.rework = rework;
     }
 
     /**
@@ -159,6 +162,20 @@ public class FindingController {
     @PreAuthorize("hasAnyRole('SMO','CYBER_MANAGER','VA_POC')")
     public ResponseEntity<List<BatchSummary>> batches(@PathVariable UUID id) {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(findings.batches(id));
+    }
+
+    /**
+     * The rework queue (stories 60 and 61): the Findings the SMO/Tech Lead still has to act on, Disputed first, then new
+     * Critical/High, then new Medium/Low/Informational, each with its current proposal and the Cyber Manager's latest
+     * Dispute, and how many each stage holds. Only the System's SMO/Tech Lead reads it (a Cyber Manager or a VA POC is
+     * refused with 403, an SMO of another System gets 404). Audited, with the count only.
+     */
+    @GetMapping("/api/submissions/{id}/rework-queue")
+    @PreAuthorize("hasRole('SMO')")
+    public ResponseEntity<ReworkQueue> reworkQueue(@PathVariable UUID id,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "" + DEFAULT_PAGE_SIZE) @Min(1) @Max(MAX_PAGE_SIZE) int size) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(rework.queue(id, page, size));
     }
 
     /** Every proposal of the Finding, the latest first: the history it keeps. Audited for every role. */
