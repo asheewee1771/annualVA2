@@ -40,8 +40,9 @@ public class RegisterSystems {
      * @param id the System's own id
      * @param systemId the System ID as the VA POC typed it
      * @param quarter 1 to 4
+     * @param smoEmail the SMO/Tech Lead the Register names for it
      */
-    public record ActiveSystem(UUID id, String systemId, String name, int quarter) {}
+    public record ActiveSystem(UUID id, String systemId, String name, int quarter, String smoEmail) {}
 
     private final RegisterStore store;
     private final AccessGuard guard;
@@ -85,7 +86,8 @@ public class RegisterSystems {
     private List<ActiveSystem> activeWhere(Predicate<UUID> include) {
         return store.systems().stream()
                 .filter(system -> !system.retired() && include.test(system.id()))
-                .map(system -> new ActiveSystem(system.id(), system.code(), system.name(), system.quarter()))
+                .map(system -> new ActiveSystem(system.id(), system.code(), system.name(), system.quarter(),
+                        system.smoEmail()))
                 .toList();
     }
 
@@ -98,7 +100,8 @@ public class RegisterSystems {
         guard.requireSystem(systemId, need);
         return store.systems().stream()
                 .filter(system -> !system.retired() && system.id().equals(systemId))
-                .map(system -> new ActiveSystem(system.id(), system.code(), system.name(), system.quarter()))
+                .map(system -> new ActiveSystem(system.id(), system.code(), system.name(), system.quarter(),
+                        system.smoEmail()))
                 .findFirst()
                 .orElseThrow(ResourceNotFoundException::new);
     }

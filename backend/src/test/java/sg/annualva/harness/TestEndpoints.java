@@ -41,6 +41,7 @@ import sg.annualva.audit.AuditLog;
 import sg.annualva.audit.AuditOutcome;
 import sg.annualva.audit.DetailKey;
 import sg.annualva.access.RoleGrantStore;
+import sg.annualva.export.ExportWorker;
 import sg.annualva.ingestion.ScanPoller;
 import sg.annualva.submission.OverdueSweep;
 import sg.annualva.web.ProblemResponses;
@@ -110,12 +111,14 @@ public class TestEndpoints {
         private final TransactionTemplate transaction;
         private final ScanPoller scanPoller;
         private final OverdueSweep overdueSweep;
+        private final ExportWorker exportWorker;
 
         public TestController(AppUserStore users, RoleGrantStore grants, AccessGuard guard, StepUp stepUp, JdbcClient jdbc,
                 Clock clock, AuditLog audit, TransactionTemplate transaction, ScanPoller scanPoller,
-                OverdueSweep overdueSweep) {
+                OverdueSweep overdueSweep, ExportWorker exportWorker) {
             this.scanPoller = scanPoller;
             this.overdueSweep = overdueSweep;
+            this.exportWorker = exportWorker;
             this.users = users;
             this.grants = grants;
             this.guard = guard;
@@ -265,6 +268,7 @@ public class TestEndpoints {
                 jdbc.sql("DELETE FROM va_submission").update();
                 jdbc.sql("DELETE FROM role_grant WHERE system_id IS NOT NULL").update();
                 jdbc.sql("DELETE FROM register_upload").update();
+                jdbc.sql("DELETE FROM export_request").update();
                 jdbc.sql("DELETE FROM va_system").update();
             });
             systems.clear();
@@ -299,6 +303,13 @@ public class TestEndpoints {
         public Map<String, String> overdue() {
             overdueSweep.sweep();
             return Map.of("ran", "overdue");
+        }
+
+        /** One pass of the export job, which {@code annualva.scheduling.enabled=false} keeps from running by itself in tests. */
+        @PostMapping("/api/test/jobs/exports")
+        public Map<String, String> exports() {
+            exportWorker.run();
+            return Map.of("ran", "exports");
         }
 
         /**

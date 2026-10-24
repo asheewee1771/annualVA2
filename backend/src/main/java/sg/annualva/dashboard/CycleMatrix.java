@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
@@ -67,13 +68,32 @@ public class CycleMatrix {
      * One System of the Cycle, in a Quarter the app runs.
      *
      * @param quarter 1 to 4
+     * @param smoEmail the SMO/Tech Lead the Register names for it
      * @param submissionId its VA Submission in the Cycle, or null while it is Not Started
      * @param overdue the Overdue flag the sweep set (ADR 0033); nothing locks
      * @param endorsedLate whether its VA Submission was endorsed after the Quarter's last day
      */
     public record SystemRow(
-            UUID id, String systemId, String name, int quarter, SystemState state, @Nullable UUID submissionId,
-            boolean overdue, boolean endorsedLate, Milestone submitted, Milestone reviewed, Milestone endorsed) {}
+            UUID id, String systemId, String name, int quarter, String smoEmail, SystemState state,
+            @Nullable UUID submissionId, boolean overdue, boolean endorsedLate, Milestone submitted, Milestone reviewed,
+            Milestone endorsed) {}
+
+    /**
+     * Which Systems of the Cycle a read covers: every one, those of one Quarter, or some of them. The strip counts only the
+     * Systems it covers, so an export of some Systems (ticket 44) counts them alone, by the same rule.
+     *
+     * @param quarter 1 to 4, or null for every Quarter
+     * @param systems the Systems' own ids, or null for every System
+     */
+    public record Scope(@Nullable Integer quarter, @Nullable Set<UUID> systems) {
+
+        /** The whole Cycle. */
+        public static final Scope ALL = new Scope(null, null);
+
+        boolean covers(DashboardSystems.Row row) {
+            return systems == null || systems.contains(row.system().id());
+        }
+    }
 
     /**
      * @param cycle the VA Cycle's year
@@ -97,21 +117,30 @@ public class CycleMatrix {
      */
     @Transactional(readOnly = true)
     public Matrix matrix(@Nullable Integer requested) {
+        return matrix(requested, Scope.ALL);
+    }
+
+    /** The same, over only the Systems the scope covers: the strip counts those alone, and only they have rows. */
+    @Transactional(readOnly = true)
+    public Matrix matrix(@Nullable Integer requested, Scope scope) {
         VaCycle cycle = calendar.running(requested);
-        DashboardSystems.Rows rows = systems.in(cycle, Need.ENDORSE);
+        DashboardSystems.Rows rows = scope.quarter() == null
+                ? systems.in(cycle, Need.ENDORSE)
+                : systems.in(cycle, Need.ENDORSE, scope.quarter());
+        List<DashboardSystems.Row> covered = rows.live().stream().filter(scope::covers).toList();
         LocalDate today = calendar.today();
         List<QuarterStrip> strip = new ArrayList<>();
         for (Quarter quarter : cycle.quarters()) {
-            strip.add(strip(quarter, today, rows.live()));
+            strip.add(strip(quarter, today, covered));
         }
-        List<SystemRow> matrixRows = rows.live().stream().map(this::row).toList();
+        List<SystemRow> matrixRows = covered.stream().map(this::row).toList();
         return new Matrix(cycle.year(), List.copyOf(strip), matrixRows, rows.handledOutside());
     }
 
     private SystemRow row(DashboardSystems.Row row) {
         Submissions.Milestones reached = row.reached();
         return new SystemRow(row.system().id(), row.system().systemId(), row.system().name(), row.system().quarter(),
-                row.state(), row.submissionId(), row.overdue(), row.endorsedLate(),
+                row.system().smoEmail(), row.state(), row.submissionId(), row.overdue(), row.endorsedLate(),
                 milestone(row, row.submitDue(), reached.submitted()),
                 milestone(row, row.reviewDue(), reached.passedToEndorsement()),
                 milestone(row, row.endorseDue(), reached.endorsed()));

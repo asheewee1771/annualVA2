@@ -45,6 +45,11 @@ public final class Arrange {
         assertThat(client.post("/api/test/jobs/overdue").status()).isEqualTo(200);
     }
 
+    /** One pass of the export job, which produces queued exports and removes expired ones (ticket 44). */
+    public void exports() {
+        assertThat(client.post("/api/test/jobs/exports").status()).isEqualTo(200);
+    }
+
     /** Makes writes moving a file to a status with this prefix fail in the database; "off" removes the fault. */
     public void reportFileFault(String prefix) {
         assertThat(client.post("/api/test/faults/report-file/" + prefix).status()).isEqualTo(200);
