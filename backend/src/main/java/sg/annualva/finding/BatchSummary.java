@@ -19,7 +19,9 @@ import java.util.UUID;
  * @param confirmed members still in the batch that the Cyber Manager confirmed
  * @param disputed members still in the batch that the Cyber Manager Disputed
  * @param changedSince members whose current proposal is no longer the batch's
+ * @param manuallyEntered members still in the batch that are Manually Entered Findings (story 52): the screen marks the
+ *     batch, so one Confirm batch never decides one unseen
  */
 public record BatchSummary(
         UUID batchId, UUID proposedBy, Instant proposedAt, ProposalView proposal, int count, int awaitingReview,
-        int confirmed, int disputed, int changedSince) {}
+        int confirmed, int disputed, int changedSince, int manuallyEntered) {}

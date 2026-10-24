@@ -236,16 +236,18 @@ class FindingStore {
     /**
      * The Bulk-set batches of a VA Submission in the order they were made, each with the proposal of its first member (every
      * member's has the same status and fields, ADR 0028 item 1) and where its members stand: still in the batch (the
-     * current proposal is the batch's) and awaiting review, confirmed or Disputed, or changed since.
+     * current proposal is the batch's) and awaiting review, confirmed or Disputed, or changed since; and how many of those
+     * still in it were entered by hand.
      */
     private static final String BATCHES =
             "SELECT b.id AS batch_id_of, b.proposed_by AS batch_by, b.proposed_at AS batch_at, " + PROPOSAL_COLUMNS + ", "
-            + "c.members, c.awaiting_review, c.confirmed, c.disputed, c.changed_since FROM bulk_batch b "
+            + "c.members, c.awaiting_review, c.confirmed, c.disputed, c.changed_since, c.manually_entered FROM bulk_batch b "
             + "JOIN LATERAL (SELECT count(*) AS members, "
             + "count(*) FILTER (WHERE f.current_proposal_id = m.id AND f.review_state = 'PENDING') AS awaiting_review, "
             + "count(*) FILTER (WHERE f.current_proposal_id = m.id AND f.review_state = 'CONFIRMED') AS confirmed, "
             + "count(*) FILTER (WHERE f.current_proposal_id = m.id AND f.review_state = 'DISPUTED') AS disputed, "
-            + "count(*) FILTER (WHERE f.current_proposal_id IS DISTINCT FROM m.id) AS changed_since "
+            + "count(*) FILTER (WHERE f.current_proposal_id IS DISTINCT FROM m.id) AS changed_since, "
+            + "count(*) FILTER (WHERE f.current_proposal_id = m.id AND f.source = 'MANUAL') AS manually_entered "
             + "FROM finding_status_proposal m JOIN finding f ON f.id = m.finding_id WHERE m.batch_id = b.id) c ON true "
             + "JOIN LATERAL (SELECT * FROM finding_status_proposal fp WHERE fp.batch_id = b.id ORDER BY fp.seq LIMIT 1) p "
             + "ON true " + REPLACED_FILE
@@ -529,7 +531,7 @@ class FindingStore {
                         rs.getObject("batch_by", UUID.class),
                         rs.getObject("batch_at", OffsetDateTime.class).toInstant(), proposal(rs), rs.getInt("members"),
                         rs.getInt("awaiting_review"), rs.getInt("confirmed"), rs.getInt("disputed"),
-                        rs.getInt("changed_since")))
+                        rs.getInt("changed_since"), rs.getInt("manually_entered")))
                 .list();
     }
 

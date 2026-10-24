@@ -49,16 +49,21 @@ abstract class BatchReviewSeam1 extends ReviewSeam1 {
         for (String cve : List.of("CVE-2027-0001", "CVE-2027-0002", "CVE-2027-0003")) {
             members.add(byIdentifier(page, cve).get("id").asString());
         }
-        var response = draft.smo().postJson(SUBMISSIONS + "/" + sub + "/findings/bulk-proposals",
-                "{\"findingIds\":" + members.stream().map(ProposalSeam1::quoted).collect(Collectors.joining(",", "[", "]"))
-                + "," + remediationPlanned(PLAN, LATER).substring(1));
-        assertThat(response.status()).as(response.body()).isEqualTo(201);
-        String batchId = ApiClient.json(response).get("batchId").asString();
+        String batchId = bulkSet(draft, members, remediationPlanned(PLAN, LATER));
         List<String> alone = new ArrayList<>(findingIds(draft.smo(), sub));
         alone.removeAll(members);
         proposeEvery(draft);
         submitted(draft.smo(), sub);
         return new Batched(draft, batchId, members.stream().sorted().toList(), alone);
+    }
+
+    /** Bulk-sets the proposal on these Findings as their SMO/Tech Lead and expects one batch (201); its id. */
+    protected static String bulkSet(Draft draft, List<String> findingIds, String proposal) {
+        var response = draft.smo().postJson(SUBMISSIONS + "/" + draft.submissionId() + "/findings/bulk-proposals",
+                "{\"findingIds\":" + findingIds.stream().map(ProposalSeam1::quoted).collect(Collectors.joining(",", "[", "]"))
+                + "," + proposal.substring(1));
+        assertThat(response.status()).as(response.body()).isEqualTo(201);
+        return ApiClient.json(response).get("batchId").asString();
     }
 
     protected static String batchesOf(String submissionId) {

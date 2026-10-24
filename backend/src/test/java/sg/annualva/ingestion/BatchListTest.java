@@ -36,6 +36,24 @@ class BatchListTest extends BatchReviewSeam1 {
         assertThat(batch.get("confirmed").asInt()).isZero();
         assertThat(batch.get("disputed").asInt()).isZero();
         assertThat(batch.get("changedSince").asInt()).isZero();
+        assertThat(batch.get("manuallyEntered").asInt()).isZero();
+    }
+
+    @Test
+    void aBatchHoldingAManuallyEnteredFindingSaysHowManySoItIsCheckedMoreClosely() {
+        Batched batched = batchInReview();
+        String sub = batched.submissionId();
+        arrange.submissionState(sub, "RETURNED_FOR_REWORK");
+
+        String second = bulkSet(batched.draft(), batched.alone(), falsePositive("Not reachable from outside."));
+
+        ApiClient cm = signedInAs(CM);
+        JsonNode list = batches(cm, sub);
+        assertThat(list).hasSize(2);
+        assertThat(list.get(1).get("batchId").asString()).as("in the order they were made").isEqualTo(second);
+        assertThat(list.get(1).get("manuallyEntered").asInt()).isEqualTo(1);
+        assertThat(list.get(0).get("manuallyEntered").asInt()).isZero();
+        assertThat(listedIds(cm, sub, "batched=false")).isEmpty();
     }
 
     @Test
