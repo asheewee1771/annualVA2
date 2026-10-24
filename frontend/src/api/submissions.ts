@@ -91,9 +91,13 @@ export function fetchDeclarationText(): Promise<DeclarationText> {
 }
 
 /**
- * POST /api/submissions/{id}/return: the Cyber Manager returns it to the SMO/Tech Lead for rework with what is Disputed
- * attached, and an optional comment (blank sends none). The server answers 409 `nothing-disputed` when nothing is
- * Disputed, and 409 `invalid-transition` once it is not In Review.
+ * POST /api/submissions/{id}/return: back to the SMO/Tech Lead for rework (blank sends no comment).
+ *
+ * - The Cyber Manager returns it from In Review with what is Disputed attached; the comment is optional. The server
+ *   answers 409 `nothing-disputed` when nothing is Disputed, and 409 `invalid-transition` once it is not In Review.
+ * - A VA POC returns it from Awaiting Endorsement; the comment is required (400 `invalid-field` without one). A step-up
+ *   action: 403 `step-up-required` without a sign-in from the last five minutes, 403 `sod-conflict` when this VA POC
+ *   acted at, or is assigned to, another step of it, and 409 `invalid-transition` once it is not Awaiting Endorsement.
  */
 export function returnForRework(id: string, comment: string): Promise<Submission> {
   return request<Submission>(
@@ -101,16 +105,6 @@ export function returnForRework(id: string, comment: string): Promise<Submission
     `/api/submissions/${encodeURIComponent(id)}/return`,
     comment.trim() === "" ? {} : { comment },
   );
-}
-
-/**
- * POST /api/submissions/{id}/return, as a VA POC: returns it to the SMO/Tech Lead from Awaiting Endorsement with a
- * comment, which is required. A step-up action: the server answers 403 `step-up-required` without a sign-in from the last
- * five minutes, 403 `sod-conflict` when this VA POC acted at, or is assigned to, another step of it, 400 `invalid-field`
- * for a missing or too long comment, and 409 `invalid-transition` once it is not Awaiting Endorsement.
- */
-export function returnFromEndorsement(id: string, comment: string): Promise<Submission> {
-  return request<Submission>("POST", `/api/submissions/${encodeURIComponent(id)}/return`, { comment });
 }
 
 /**

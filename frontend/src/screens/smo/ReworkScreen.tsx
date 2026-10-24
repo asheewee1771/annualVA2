@@ -60,11 +60,12 @@ function ReturnSummary({
   const disputed = reports.filter((report) =>
     latest.disputedReports.some((item) => item.reportType === report.reportType),
   );
+  const byVaPoc = latest.step === "ENDORSE";
   return (
     <section className="card" aria-labelledby="return-summary">
       <h3 id="return-summary">Why it came back</h3>
       <p className="muted">
-        Returned for rework by {latest.step === "ENDORSE" ? "a VA POC" : "the Cyber Manager"} on{" "}
+        Returned for rework by {byVaPoc ? "a VA POC" : "the Cyber Manager"} on{" "}
         {WHEN.format(new Date(latest.returnedAt))}.
       </p>
       {latest.comment !== null ? (
@@ -72,7 +73,7 @@ function ReturnSummary({
       ) : (
         <p className="muted">No comment on the return: each Dispute says why.</p>
       )}
-      {latest.step === "ENDORSE" ? (
+      {byVaPoc ? (
         <p className="muted">
           The VA POC challenged something the Cyber Manager confirmed; nothing is Disputed, so the queue below may be
           empty. Change what the comment asks for on{" "}
