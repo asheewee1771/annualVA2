@@ -50,6 +50,36 @@ class PassToEndorsementTest extends ReturnSeam1 {
     }
 
     @Test
+    void aPassShowsOnTheCycleMatrixAsTheReviewedMilestoneOnItsBusinessDate() {
+        Draft draft = inReview();
+        String sub = draft.submissionId();
+        ApiClient cm = signedInAs(CM);
+        confirmEverything(cm, sub);
+        assertThat(matrixRow("SYS-F1").get("reviewed").get("doneOn").isNull()).as("not before the pass").isTrue();
+        today("2027-08-20");
+        cm = signedInAs(CM);
+
+        passed(cm, sub);
+
+        JsonNode row = matrixRow("SYS-F1");
+        assertThat(row.get("state").asString()).isEqualTo(AWAITING_ENDORSEMENT);
+        assertThat(row.get("reviewed").get("doneOn").asString()).isEqualTo("2027-08-20");
+        assertThat(row.get("reviewed").get("current").asBoolean()).isFalse();
+    }
+
+    /** SYS-x's row on the VA POC's Cycle matrix for the Cycle running today. */
+    private JsonNode matrixRow(String systemId) {
+        var response = vaPoc().get("/api/dashboards/cycle-matrix");
+        assertThat(response.status()).as(response.body()).isEqualTo(200);
+        for (JsonNode system : ApiClient.json(response).get("systems")) {
+            if (system.get("systemId").asString().equals(systemId)) {
+                return system;
+            }
+        }
+        throw new AssertionError("no " + systemId + " on the matrix");
+    }
+
+    @Test
     void withAnythingUnconfirmedItIsRefusedListingWhatIsLeft() {
         Draft draft = inReview();
         String sub = draft.submissionId();

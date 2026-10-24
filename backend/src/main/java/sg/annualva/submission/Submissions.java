@@ -526,10 +526,10 @@ public class Submissions {
      */
     private Submission movedOutOfReview(ReviewTarget target, SubmissionState to, Instant now, AuditEvent success) {
         if (target.hold != Hold.EXCLUSIVE) {
-            throw new IllegalStateException("a move out of In Review holds the VA Submission exclusively (ADR 0037)");
+            throw new IllegalStateException("a move out of In Review holds the VA Submission exclusively (ADR 0038)");
         }
         UUID id = target.submissionId();
-        store.moved(id, to, calendar.dateOf(now));
+        store.moved(id, to, now, calendar.dateOf(now));
         audit.record(actor.attribute(success).onSystem(target.systemId()).onSubmission(id)
                 .with(DetailKey.STATE_FROM, SubmissionState.IN_REVIEW.name()).with(DetailKey.STATE_TO, to.name()));
         events.publishEvent(new SubmissionEvent(id, target.systemId(), SubmissionState.IN_REVIEW, to, user.id(), now));

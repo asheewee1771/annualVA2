@@ -160,9 +160,15 @@ class SubmissionStore {
             + "AND system_id = ANY(CAST(:systems AS uuid[])) "
             + "ORDER BY id FOR NO KEY UPDATE SKIP LOCKED) due WHERE s.id = due.id RETURNING s.id, s.system_id, s.state";
 
-    /** A move out of In Review takes the flag with it ({@link #OVERDUE_AFTER_MOVE}). */
+    /**
+     * A move out of In Review takes the flag with it ({@link #OVERDUE_AFTER_MOVE}). A pass to endorsement also records when
+     * the review ended ({@code passed_to_endorsement_at}, V133, the Cycle matrix's "reviewed"); a return leaves it as it
+     * was.
+     */
     private static final String MOVED =
-            "UPDATE va_submission SET state = :state, " + OVERDUE_AFTER_MOVE + " WHERE id = :id";
+            "UPDATE va_submission SET state = :state, passed_to_endorsement_at = CASE WHEN :state = '"
+            + SubmissionState.AWAITING_ENDORSEMENT.name() + "' THEN :now ELSE passed_to_endorsement_at END, "
+            + OVERDUE_AFTER_MOVE + " WHERE id = :id";
 
     private static final String INSERT_RETURN =
             "INSERT INTO submission_return (submission_id, step, comment, returned_by, returned_at) "
@@ -266,9 +272,10 @@ class SubmissionStore {
                 .param("today", today).update();
     }
 
-    /** Moves a VA Submission whose row the caller holds ({@link #lockForMove}) to the state, on this business date. */
-    void moved(UUID id, SubmissionState state, LocalDate today) {
-        jdbc.sql(MOVED).param("id", id).param("state", state.name()).param("today", today).update();
+    /** Moves a VA Submission whose row the caller holds ({@link #lockForMove}) out of In Review now, on this business date. */
+    void moved(UUID id, SubmissionState state, Instant now, LocalDate today) {
+        jdbc.sql(MOVED).param("id", id).param("state", state.name()).param("now", utc(now)).param("today", today)
+                .update();
     }
 
     /** Keeps a return of the VA Submission with what was Disputed when it was returned. */
