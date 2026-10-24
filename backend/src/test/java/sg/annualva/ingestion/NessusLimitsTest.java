@@ -83,7 +83,11 @@ class NessusLimitsTest extends NessusSeam1 {
         assertThat(total(draft, draft.smo())).isZero();
         assertThat(draft.smo().get(fileAt(draft.submissionId(), file.get("id").asString()) + "/metadata").status())
                 .isEqualTo(404);
-        String audit = otherVaPoc().get("/api/audit-entries?size=200").body();
+        // The suite shares one audit log and other tests write entries dated later, so this System's entries are read
+        // by System to be sure they are there; the newest page of the whole log is checked as well.
+        String audit = otherVaPoc().get("/api/audit-entries?size=200&system=" + draft.systemId()).body();
+        assertThat(audit).contains("FILE_REJECTED");
+        assertThat(otherVaPoc().get("/api/audit-entries?size=200").body()).doesNotContain(SENTINEL);
         String errors = draft.smo().get(findingsOf(draft.submissionId()) + "?size=0").body();
         assertThat(file.toString() + audit + errors + draft.smo().get(filesOf(draft.submissionId())).body())
                 .as("the status, the audit entries and an error body").doesNotContain(SENTINEL);

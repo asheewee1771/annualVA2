@@ -259,6 +259,10 @@ class ScanDateConfirmTest extends ScanDateSeam1 {
         assertThat(entry.get("detail").get("date_changed").asBoolean()).isFalse();
         assertThat(entry.get("detail").get("target_changed").isBoolean()).isTrue();
         assertThat(entry.get("detail").get("target_changed").asBoolean()).isTrue();
+        // The suite shares one audit log and other tests write entries dated later, so this System's entries are read
+        // by System to be sure they are there; the newest page of the whole log is checked as well.
+        assertThat(otherVaPoc().get("/api/audit-entries?size=200&system=" + draft.systemId()).body()).doesNotContain(SENTINEL)
+                .contains("FILE_METADATA_CONFIRMED");
         assertThat(otherVaPoc().get("/api/audit-entries?size=200").body()).doesNotContain(SENTINEL);
         assertThat(output.getAll()).doesNotContain(SENTINEL).contains("file-metadata-confirmed");
         assertThat(String.join("\n", bodies)).as("error bodies").doesNotContain(SENTINEL);
