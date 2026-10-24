@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review — 44-management-summary-xlsx</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall: PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">build WARN · C0 H0 M0 L3</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN · C0 H0 M4 L11</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN · C0 H0 M4 L12</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">semgrep WARN · C0 H0 M0 L2</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN · C0 H0 M1 L4</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react WARN · C0 H0 M0 L4</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN · C0 H0 M0 L11</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">impl/44-management-summary-xlsx</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report</h1>
+          <p class="text-sm text-slate-500 mt-1">Ticket 44: management summary in Excel, round 2. Diff <span class="font-mono text-xs">integration/annual-va-r1...HEAD</span> (HEAD 9ed4866, 40 files). Fix commits since round 1: <span class="font-mono text-xs">8b75423</span> (back end), <span class="font-mono text-xs">b5da731</span> (front end), <span class="font-mono text-xs">9ed4866</span> (ADR 0043 and README).</p>
+        </div>
+        <div class="rounded-md border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900 space-y-1">
+          <p class="font-semibold">Round 2: partial re-run</p>
+          <p>Approved speed-up: after a FAIL, only the failing checks plus build are re-run. <strong>Re-run this round:</strong> build, thermo-nuclear, react, springboot. <strong>Carried over unchanged from round 1</strong> (reviewed at HEAD 0e20f07): code-review, semgrep, im8. Their recorded severities and counts are kept as they were. Where the aggregator checked the current worktree and found a carried-over finding fixed by the fix commits, the description says so with a <span class="font-semibold text-emerald-700">Fixed at 9ed4866</span> note; findings without a note were not re-checked.</p>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Executive Summary</h2>
+          <p class="text-xs text-slate-500 mt-1">Overall compliance evaluation status across all active checks. Status rule: FAIL if a check has any Critical or High finding; WARN if it has only Medium or Low findings; PASS if it has none. The overall verdict is FAIL only when a check is FAIL. No check is FAIL this round, so the overall verdict is PASS. The build, react and springboot checks self-reported PASS; they are graded WARN here because they still list Low findings.</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Check</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Status</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">C / H / M / L</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Summary of gaps</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 font-medium">build <span class="text-xs text-slate-400">(re-run)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 3</td>
+              <td class="px-4 py-2">All gates green: 909 back-end tests, 0 failures; ArchUnit; JaCoCo line 97.5 % / branch 91.7 %; Prettier, <span class="font-mono text-xs">tsc -b</span>, <span class="font-mono text-xs">vite build</span>, no raw HTML, dependency-cruiser, fallow. Low: <span class="font-mono text-xs">ExportWorkerJob</span> uncovered, a few uncovered branches, one pre-existing deprecation warning.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">thermo-nuclear <span class="text-xs text-slate-400">(re-run)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 4 / 11</td>
+              <td class="px-4 py-2">Round-1 Highs H1 (half-applied <span class="font-mono text-xs">Scope</span>) and H2 (poison queued row) fixed, plus M5. Still open: parallel xlsx column lists (M1, partly fixed), triplicated attachment headers (M2), private enum-code helper (M3), no <span class="font-mono text-xs">type</span> seam (M4); five new Lows.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">code-review <span class="text-xs text-slate-400">(carried over)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 4 / 12</td>
+              <td class="px-4 py-2">All acceptance criteria met. The four Mediums (S1 download inside transaction, S2 poison row, S3 browser-zone times, P1 refused-download audits untested) are fixed at 9ed4866; severities kept as recorded.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">semgrep <span class="text-xs text-slate-400">(carried over)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 2</td>
+              <td class="px-4 py-2">No P0/P1. Two pre-existing false positives in test-only harness code.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">im8 <span class="text-xs text-slate-400">(carried over)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 4</td>
+              <td class="px-4 py-2">ac-2: download has no step-up of its own (ADR 0043 item 6 still provisional, no human decision recorded). Lows: EXPORT zone not named in ticket 51, worker outcomes not audited, validation in the service, draft cast (fixed).</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">react <span class="text-xs text-slate-400">(re-run)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 4</td>
+              <td class="px-4 py-2">Round-1 High (draft of another action removed) and both Mediums fixed. Lows: submit guard checks ticked ids rather than sent ids; stale "Ready" row after a failed download; no list loading state; another action's draft lingers.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">springboot <span class="text-xs text-slate-400">(re-run)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 11</td>
+              <td class="px-4 py-2">Round-1 High and all five Mediums fixed, with tests. Lows: untested branches, no row claim, index, rate limit, metrics, stuck-batch starvation, unlogged store read failure, SUCCESS audit before a 503, <span class="font-mono text-xs">error.type</span> shape, 503 test, stored format coupling.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-700"><strong>No Critical or High finding remains open.</strong> The four round-1 Highs are fixed:</p>
+          <ul class="list-disc pl-6 text-sm text-slate-700 space-y-1">
+            <li><span class="font-semibold">thermo-nuclear H1</span>: <span class="font-mono text-xs">CycleMatrix.Scope</span> removed; one matrix read and one counting rule (<span class="font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/CycleMatrix.java:57,115</span>, <span class="font-mono text-xs">export/ManagementSummaries.java:46</span>).</li>
+            <li><span class="font-semibold">thermo-nuclear H2 / springboot H1</span>: each queued export is read back inside its own <span class="font-mono text-xs">try</span>, and the make and expiry phases run independently (<span class="font-mono text-xs">backend/src/main/java/sg/annualva/export/ExportWorker.java:54-61</span>); proven by <span class="font-mono text-xs">anExportThatCannotBeReadBackFailsAloneAndThePassGoesOn</span>.</li>
+            <li><span class="font-semibold">react #1</span>: <span class="font-mono text-xs">takeRestoredDraft</span> clears a draft only when its intent matches (<span class="font-mono text-xs">frontend/src/api/stepUp.ts:124-129</span>).</li>
+          </ul>
+          <p class="text-sm text-slate-700">Medium items worth a decision before merge:</p>
+          <ul class="list-disc pl-6 text-sm text-slate-700 space-y-1">
+            <li><span class="font-semibold">im8 #1 (ac-2)</span>: a READY export, Confidential when it covers every System, can be downloaded for 24 h without a fresh step-up (<span class="font-mono text-xs">backend/src/main/java/sg/annualva/export/Exports.java:146</span>). ADR 0043 item 6 is still marked provisional and <span class="font-mono text-xs">docs/agents/reviewer-decisions.md</span> has no human decision on it.</li>
+            <li><span class="font-semibold">thermo-nuclear M1-M4</span>: maintainability debt ticket 45 (PDF) will multiply: no column model in <span class="font-mono text-xs">ManagementSummaryXlsx</span>, the attachment-header policy copied in three controllers, and no <span class="font-mono text-xs">type</span> seam in the worker.</li>
+          </ul>
+        </div>
+      </div>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build <span class="text-xs text-slate-400">(re-run, round 2)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M0 L3</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/export/ExportWorkerJob.java</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">0/5 lines covered. Thin <span class="font-mono text-xs">@Scheduled</span> wrapper gated by <span class="font-mono text-xs">annualva.scheduling.enabled</span>, which Seam 1 tests leave off (ADR 0012). Consistent with other scheduled jobs; no action required.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/export/{ManagementSummaryXlsx,ExportWorker,ExportStore,Exports}.java</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">A few uncovered lines and branches remain; all well above the 80 % thresholds. Informational.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/adapters/oidc/MccHttp.java</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">Pre-existing compiler warning: <span class="font-mono text-xs">RestClient.Builder.messageConverters(Consumer)</span> is deprecated for removal. Outside ticket 44's scope.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear <span class="text-xs text-slate-400">(re-run, round 2)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M4 L11</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">Fixed since round 1: H1, H2, M5. Open: M1 (partly fixed), M2, M3, M4, L1-L6 (L3 slightly worse), and new N1-N5.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/export/ManagementSummaryXlsx.java</td>
+              <td class="px-4 py-2 font-mono text-xs">32-33, 71-91, 103-107</td>
+              <td class="px-4 py-2"><strong>M1 (partly fixed).</strong> <span class="font-mono text-xs">COUNTED</span> is now derived from <span class="font-mono text-xs">SystemState</span>, but the Summary and Systems sheets are still parallel header/value/width lists, with the Endorsed Late special case written twice. Remedy: one <span class="font-mono text-xs">Column&lt;T&gt;(header, width, value)</span> list per sheet, before ticket 45 copies it again.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/export/ExportController.java</td>
+              <td class="px-4 py-2 font-mono text-xs">62-69</td>
+              <td class="px-4 py-2"><strong>M2.</strong> The attachment response (attachment, <span class="font-mono text-xs">nosniff</span>, sandbox CSP, <span class="font-mono text-xs">no-store</span>) is a security policy copied in a third controller (also <span class="font-mono text-xs">ReportFileController</span>, <span class="font-mono text-xs">SystemRegisterController</span>). Move it to one <span class="font-mono text-xs">web</span> helper.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/export/Exports.java</td>
+              <td class="px-4 py-2 font-mono text-xs">205-212</td>
+              <td class="px-4 py-2"><strong>M3.</strong> A fourth, private "parse an enum code or 400" helper. Promote it to <span class="font-mono text-xs">web</span> and reuse it, or inline it like the others.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/export/ExportStore.java, ExportWorker.java, Exports.java</td>
+              <td class="px-4 py-2 font-mono text-xs">32; 61-63; 38, 102, 114</td>
+              <td class="px-4 py-2"><strong>M4.</strong> <span class="font-mono text-xs">type</span> is parsed, stored and audited but nothing branches on it: <span class="font-mono text-xs">Queued</span> has no <span class="font-mono text-xs">type</span>, the worker switches on format only, the step-up intent is a constant. Key on <span class="font-mono text-xs">(type, format)</span> now or stop treating <span class="font-mono text-xs">type</span> as a choice.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/CycleMatrix.java</td>
+              <td class="px-4 py-2 font-mono text-xs">142-143</td>
+              <td class="px-4 py-2"><strong>N1 (new).</strong> A placeholder <span class="font-mono text-xs">QuarterStrip</span> with empty counts is built only so <span class="font-mono text-xs">recount</span> can copy its header; it briefly breaks the record's invariant. Split header from counting.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/export/ManagementSummaries.java</td>
+              <td class="px-4 py-2 font-mono text-xs">47-50, 66, 71</td>
+              <td class="px-4 py-2"><strong>N2 (new).</strong> Two-step filter of the Quarter strips through a temporary <span class="font-mono text-xs">Set&lt;Integer&gt;</span>. Name the predicate once and apply it directly.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/export/ManagementSummary.java</td>
+              <td class="px-4 py-2 font-mono text-xs">34, 50</td>
+              <td class="px-4 py-2"><strong>N3 (new).</strong> Persisted JSON is still keyed by the dashboard's <span class="font-mono text-xs">SystemState</span> names; a rename makes queued exports FAILED. Acceptable; note it in the Javadoc.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/ExportsScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">70, 182, 191-193</td>
+              <td class="px-4 py-2"><strong>N4 (new).</strong> Second copy of the "module-level draft <span class="font-mono text-xs">let</span>, reset in an effect" idiom (from <span class="font-mono text-xs">RegisterScreen.tsx:157</span>). Give it a name in <span class="font-mono text-xs">api/stepUp.ts</span>.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/ExportsScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">89, 239</td>
+              <td class="px-4 py-2"><strong>N5 (new).</strong> The Ask button's <span class="font-mono text-xs">disabled</span> check uses the unfiltered <span class="font-mono text-xs">chosen</span> while the body sends the filtered list, so <span class="font-mono text-xs">systems: []</span> can be sent and refused with 400. Derive the request once and guard on it.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/export/Exports.java</td>
+              <td class="px-4 py-2 font-mono text-xs">148, 165-166</td>
+              <td class="px-4 py-2"><strong>L3 (open, slightly worse).</strong> "READY means <span class="font-mono text-xs">file_key</span> is set" is asserted twice (<span class="font-mono text-xs">key == null</span> and <span class="font-mono text-xs">requireNonNull</span>). Return a <span class="font-mono text-xs">Granted</span> record from <span class="font-mono text-xs">grantDownload</span>.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/ExportsScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">23, 37</td>
+              <td class="px-4 py-2"><strong>L1 (open).</strong> Another copy of <span class="font-mono text-xs">UNREACHABLE</span> and <span class="font-mono text-xs">problemOf</span>; lift into <span class="font-mono text-xs">api/problem.ts</span>.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/ExportsScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">32</td>
+              <td class="px-4 py-2"><strong>L2 (open).</strong> The front end copies the classification wording; derive it from <span class="font-mono text-xs">CLASSIFICATION_LABELS</span> or say why it is repeated.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/export/ExportWorker.java</td>
+              <td class="px-4 py-2 font-mono text-xs">72-74</td>
+              <td class="px-4 py-2"><strong>L4 (open).</strong> The boolean from <span class="font-mono text-xs">store.ready(...)</span> is ignored, so <span class="font-mono text-xs">export-ready</span> is logged even on a pass that lost.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/export/ExportSeam1.java</td>
+              <td class="px-4 py-2 font-mono text-xs">24</td>
+              <td class="px-4 py-2"><strong>L5 (open).</strong> Export tests inherit <span class="font-mono text-xs">CyberManagerSeam1</span> across packages through widened visibility; compose through <span class="font-mono text-xs">harness</span> instead.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/export/ExportStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">149-156</td>
+              <td class="px-4 py-2"><strong>L6 (open).</strong> A sixth copy of the <span class="font-mono text-xs">utc</span> / <span class="font-mono text-xs">instant</span> JDBC helpers; add a shared <span class="font-mono text-xs">JdbcTimes</span>.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review <span class="text-xs text-slate-400">(carried over from round 1)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M4 L12</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">Reviewed at HEAD 0e20f07 and not re-run. Severities are as recorded in round 1 (S3 was recorded Low-Medium and is counted as Medium). Line numbers refer to the round-1 code. Every acceptance criterion was confirmed as met.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/export/Exports.java</td>
+              <td class="px-4 py-2 font-mono text-xs">139, 154</td>
+              <td class="px-4 py-2"><strong>S1.</strong> <span class="font-mono text-xs">download()</span> read the file inside its <span class="font-mono text-xs">@Transactional</span>, against ADR 0021 item 10. <span class="font-semibold text-emerald-700">Fixed at 9ed4866:</span> grant and audit run in <span class="font-mono text-xs">transaction.execute(...)</span>, <span class="font-mono text-xs">files.get</span> runs outside it (<span class="font-mono text-xs">Exports.java:147-152</span>).</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/export/ExportStore.java; ExportWorker.java</td>
+              <td class="px-4 py-2 font-mono text-xs">106; 45-47</td>
+              <td class="px-4 py-2"><strong>S2.</strong> One unreadable queued row stopped every pass, expiry included. <span class="font-semibold text-emerald-700">Fixed at 9ed4866:</span> <span class="font-mono text-xs">store.summary(queued)</span> runs inside <span class="font-mono text-xs">make</span>'s <span class="font-mono text-xs">try</span>, and both phases run through <span class="font-mono text-xs">each(...)</span> (<span class="font-mono text-xs">ExportWorker.java:54-61</span>).</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/ExportsScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">246, 254</td>
+              <td class="px-4 py-2"><strong>S3 (Low-Medium).</strong> Times shown with <span class="font-mono text-xs">toLocaleString()</span> in the browser's zone, not <span class="font-mono text-xs">Asia/Singapore</span>. <span class="font-semibold text-emerald-700">Fixed at 9ed4866:</span> a <span class="font-mono text-xs">WHEN</span> formatter with <span class="font-mono text-xs">timeZone: "Asia/Singapore"</span> (<span class="font-mono text-xs">ExportsScreen.tsx:22</span>).</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/export/Exports.java</td>
+              <td class="px-4 py-2 font-mono text-xs">144, 150</td>
+              <td class="px-4 py-2"><strong>P1 (Spec).</strong> The refused <span class="font-mono text-xs">EXPORT_DOWNLOADED</span> entries (<span class="font-mono text-xs">export-expired</span>, <span class="font-mono text-xs">export-not-ready</span>) had no test. <span class="font-semibold text-emerald-700">Fixed at 9ed4866:</span> <span class="font-mono text-xs">assertRefusedDownload</span> is called at <span class="font-mono text-xs">ExportLifecycleTest.java:46,69</span>.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/ExportsScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">71, 172, 179, 212</td>
+              <td class="px-4 py-2"><strong>S4.</strong> After a step-up refill, pressing Ask before the matrix loads sends <span class="font-mono text-xs">systems: []</span> (400). Still open at 9ed4866; re-raised as react A and thermo-nuclear N5.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/export/ExportWorker.java</td>
+              <td class="px-4 py-2 font-mono text-xs">64-66</td>
+              <td class="px-4 py-2"><strong>S5.</strong> The <span class="font-mono text-xs">store.ready(...)</span> result is ignored, so <span class="font-mono text-xs">export-ready</span> can be logged by a pass that lost. Still open (thermo-nuclear L4, springboot L2).</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/export/Exports.java</td>
+              <td class="px-4 py-2 font-mono text-xs">42, 108</td>
+              <td class="px-4 py-2"><strong>S6.</strong> <span class="font-mono text-xs">MAX_SYSTEMS = 1000</span> is not recorded in ADR 0043 or the README, and the number is repeated as a literal in the error message.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/export/ManagementSummaries.java</td>
+              <td class="px-4 py-2 font-mono text-xs">45-58</td>
+              <td class="px-4 py-2"><strong>S7.</strong> Possible Data Clumps: <span class="font-mono text-xs">(cycle, quarter, only)</span> and <span class="font-mono text-xs">CycleMatrix.Scope</span> built twice. <span class="font-semibold text-emerald-700">Fixed at 9ed4866:</span> <span class="font-mono text-xs">Scope</span> was removed with thermo-nuclear H1.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/export/Exports.java</td>
+              <td class="px-4 py-2 font-mono text-xs">184</td>
+              <td class="px-4 py-2"><strong>S8.</strong> Possible Feature Envy: <span class="font-mono text-xs">fileName(ExportStore.Export)</span> reads only the export's own fields and belongs on <span class="font-mono text-xs">Export</span>.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/export/Exports.java</td>
+              <td class="px-4 py-2 font-mono text-xs">189</td>
+              <td class="px-4 py-2"><strong>S9.</strong> Possible Mysterious Name: <span class="font-mono text-xs">code(Class, raw, field, sentence)</span>; a name like <span class="font-mono text-xs">parseCode</span> would say what it does (see thermo-nuclear M3).</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterSystems.java</td>
+              <td class="px-4 py-2 font-mono text-xs">90, 104</td>
+              <td class="px-4 py-2"><strong>S10.</strong> Pre-existing duplicated <span class="font-mono text-xs">ActiveSystem</span> mapping, edited twice to add <span class="font-mono text-xs">smoEmail</span>.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/export/ManagementSummaries.java; finding/Findings.java</td>
+              <td class="px-4 py-2 font-mono text-xs">46; 239</td>
+              <td class="px-4 py-2"><strong>S11.</strong> The summary reads with two access needs (<span class="font-mono text-xs">Need.ENDORSE</span> for the matrix, <span class="font-mono text-xs">Need.VIEW</span> for Deviation counts); equivalent for a VA POC today, but ADR 0043 item 2 implies one scope.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">166-170</td>
+              <td class="px-4 py-2"><strong>P2 (Spec).</strong> A Disputed proposal still counts as a Deviation (ADR 0043 item 4, provisional), and no test pins that provisional rule.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/export/ManagementSummaries.java</td>
+              <td class="px-4 py-2 font-mono text-xs">53, 57</td>
+              <td class="px-4 py-2"><strong>P3 (Spec).</strong> Confidential for a full explicit list is tested only with no Withdrawn System in the Quarter.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/CycleMatrix.java</td>
+              <td class="px-4 py-2 font-mono text-xs">77</td>
+              <td class="px-4 py-2"><strong>P4 (Spec, scope creep).</strong> <span class="font-mono text-xs">/api/dashboards/cycle-matrix</span> now returns <span class="font-mono text-xs">smoEmail</span>; recorded in ADR 0043 as an amendment of ADR 0037.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/export/ManagementSummaryXlsx.java</td>
+              <td class="px-4 py-2 font-mono text-xs">145-146</td>
+              <td class="px-4 py-2"><strong>P5 (Spec, harmless scope creep).</strong> The Systems sheet also has System Name, Quarter and Endorsed Late columns; no vulnerability detail.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep <span class="text-xs text-slate-400">(carried over from round 1)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M0 L2</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">Not re-run. Three passes (469 rules in all) over the 37 changed code files in the <span class="font-mono text-xs">semgrep/semgrep</span> Docker image; no P0 or P1. Manual spot-checks found constant SQL with bound parameters, string-only workbook cells (no formula injection), and attachment-only downloads with a sandbox CSP.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/harness/TestEndpoints.java</td>
+              <td class="px-4 py-2 font-mono text-xs">328</td>
+              <td class="px-4 py-2"><span class="font-mono text-xs">tainted-sql-string</span>: test-only fault endpoint concatenates a <span class="font-mono text-xs">[A-Z_]+</span>-validated prefix into DDL. Pre-existing, not changed by this branch; false positive (P2).</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/arch/ArchitectureTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">122</td>
+              <td class="px-4 py-2"><span class="font-mono text-xs">unsafe-reflection</span>: <span class="font-mono text-xs">Class.forName</span> over a hard-coded constant array in an ArchUnit test. Pre-existing; false positive (P2).</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8 <span class="text-xs text-slate-400">(carried over from round 1)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M1 L4</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">Not re-run; risk column MR. Passing controls: as-2, as-3, as-7/ac-1, as-9, as-13, dp-8, lm-15, lm-16, lm-19. Open manual checklist items: decide #1 and record it in <span class="font-mono text-xs">docs/agents/reviewer-decisions.md</span>; map the EXPORT zone in ticket 51; confirm the audit decision for worker outcomes; confirm the A-1 rule for a single Quarter; confirm scheduling is on in every deployed profile.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/export/Exports.java; ExportController.java</td>
+              <td class="px-4 py-2 font-mono text-xs">140; 58-59</td>
+              <td class="px-4 py-2"><strong>#1 ac-2.</strong> Step-up guards only the request. For 24 h a READY export (Confidential when it covers every System) can be downloaded by any session holding the requester's cookie. Fix: step-up on download, bind the download to the requesting session, or record a human decision. Still open at 9ed4866: ADR 0043 item 6 remains "Provisional" and no reviewer decision exists.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/boundary/FileStore.java; .scratch/annual-va/issues/51-real-adapters-under-dev-mcc.md</td>
+              <td class="px-4 py-2 font-mono text-xs">17; 9</td>
+              <td class="px-4 py-2"><strong>#2 encryption at rest (tracked deferral).</strong> The new <span class="font-mono text-xs">Zone.EXPORT</span> holds Confidential files; ticket 51's SSE-KMS criteria do not name it. Add an acceptance line: bucket/prefix, SSE-KMS asserted, lifecycle expiry backstop.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/export/ExportWorker.java</td>
+              <td class="px-4 py-2 font-mono text-xs">57-61, 70-79</td>
+              <td class="px-4 py-2"><strong>#3 lm-4.</strong> The job's outcomes (FAILED, file hard-deleted and EXPIRED) write no audit entry, only log lines. Add a system-actor audit entry or record a decision. Still open at 9ed4866.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/export/ExportController.java; Exports.java</td>
+              <td class="px-4 py-2 font-mono text-xs">34; 99-110</td>
+              <td class="px-4 py-2"><strong>#4 as-1 (back end).</strong> No <span class="font-mono text-xs">@Valid</span>; validation happens in the service after step-up (by design, ADR 0043 item 1). Matches project convention.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/ExportsScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">49-51</td>
+              <td class="px-4 py-2"><strong>#5 as-1 (front end).</strong> Restored step-up draft cast with <span class="font-mono text-xs">as ExportRequest</span> without a runtime check. <span class="font-semibold text-emerald-700">Fixed at 9ed4866:</span> <span class="font-mono text-xs">restoredRequest</span> checks each field (<span class="font-mono text-xs">ExportsScreen.tsx:56-64</span>).</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react <span class="text-xs text-slate-400">(re-run, round 2)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M0 L4</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">Fixed since round 1: #1 (High), #2 and #3 (Medium), #4 and #6 (Low). Round-1 #5 is partly fixed; its remainder is new finding A. The render phase stays pure, keys are stable, and report content is rendered only as text.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/ExportsScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">89, 224, 229, 239</td>
+              <td class="px-4 py-2"><strong>A (new).</strong> The submit guard checks the ticked ids, not the ids sent: after a Quarter switch, a step-up refill before the matrix loads, or a Cycle change, the request carries <span class="font-mono text-xs">systems: []</span> or the previous Cycle's ids, and the server answers 400. Derive the request once during render and disable while the matrix loads.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/api/stepUp.ts</td>
+              <td class="px-4 py-2 font-mono text-xs">124-129</td>
+              <td class="px-4 py-2"><strong>B (new).</strong> A side effect of the #1 fix: a <span class="font-mono text-xs">submission-endorse</span> draft now stays in sessionStorage after the return until the next load, sign-out or the 15-minute limit, contrary to the "nothing kept outlives its use" comment. Clear it in <span class="font-mono text-xs">useStepUp</span> or have <span class="font-mono text-xs">EndorseScreen</span> take it.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/ExportsScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">255-265</td>
+              <td class="px-4 py-2"><strong>#7 (open).</strong> A failed download (404/410) leaves the row showing "Ready" with its Download button; pass <span class="font-mono text-xs">exports.reload</span> to <span class="font-mono text-xs">ExportRow</span> and call it in the <span class="font-mono text-xs">catch</span>.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/ExportsScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">310-334</td>
+              <td class="px-4 py-2"><strong>#8 (open).</strong> No loading state for the list, and the slow-export notice is a plain <span class="font-mono text-xs">&lt;p&gt;</span> rather than <span class="font-mono text-xs">role="status"</span> as in <span class="font-mono text-xs">ScanReportsSection.tsx:41</span>.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot <span class="text-xs text-slate-400">(re-run, round 2)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M0 L11</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">All seven Spring reviews run (core, web, data, batch, security, logging, test). Fixed since round 1: H1, M1-M5 (with new tests for H1, M3 and M5), L4, L5, L6. Paths are relative to <span class="font-mono text-xs">backend/src/</span>.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">test/java/sg/annualva/export/ExportAccessTest.java; main/.../export/Exports.java; ExportWorker.java</td>
+              <td class="px-4 py-2 font-mono text-xs">50-61; 110; 72, 91-96</td>
+              <td class="px-4 py-2"><strong>L1 (partly fixed).</strong> Untested: other roles on <span class="font-mono text-xs">GET /api/exports/{id}</span> and <span class="font-mono text-xs">/download</span>; more than 1000 or <span class="font-mono text-xs">null</span> systems; a failing DB write isolated per item; racing passes.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">main/java/sg/annualva/export/ExportStore.java; ExportWorker.java</td>
+              <td class="px-4 py-2 font-mono text-xs">51-53; 72-74</td>
+              <td class="px-4 py-2"><strong>L2 (open).</strong> No claim on queued rows, and the <span class="font-mono text-xs">ready()</span> result is ignored, so a losing instance logs <span class="font-mono text-xs">export-ready</span>.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">main/resources/db/migration/V144__export_request.sql; ExportStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">43; 62-64</td>
+              <td class="px-4 py-2"><strong>L3 (open).</strong> The partial index does not serve the expiry query; add <span class="font-mono text-xs">(expires_at) WHERE status = 'READY'</span> while V144 is unreleased.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">main/java/sg/annualva/export/Exports.java</td>
+              <td class="px-4 py-2 font-mono text-xs">100-123</td>
+              <td class="px-4 py-2"><strong>L7 (open).</strong> No limit on how many exports a person can queue within a step-up window; refuse past N QUEUED or accept the risk in ADR 0043.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">main/java/sg/annualva/export/ExportWorker.java</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2"><strong>L8 (open).</strong> No metrics for queue depth, made/failed counts or pass duration.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">main/java/sg/annualva/export/ExportWorker.java</td>
+              <td class="px-4 py-2 font-mono text-xs">54-55, 66-69, 77-80</td>
+              <td class="px-4 py-2"><strong>N1 (new).</strong> Rows that fail every pass (e.g. a file the store never deletes) are listed again each time; 20 of them starve the rest of the phase and log a WARN every pass. Add a back-off or document the limit.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">main/java/sg/annualva/export/Exports.java</td>
+              <td class="px-4 py-2 font-mono text-xs">151-154</td>
+              <td class="px-4 py-2"><strong>N2 (new).</strong> A store read failure on download becomes 503 with no log line; log <span class="font-mono text-xs">export-download-failed</span> with id and <span class="font-mono text-xs">error.type</span> only.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">main/java/sg/annualva/export/Exports.java</td>
+              <td class="px-4 py-2 font-mono text-xs">147, 171-173</td>
+              <td class="px-4 py-2"><strong>N3 (new).</strong> A 503 download still leaves a SUCCESS <span class="font-mono text-xs">EXPORT_DOWNLOADED</span> entry (ADR 0021 trade-off). Document it in the Javadoc and ADR 0043 item 6, optionally add a REFUSED <span class="font-mono text-xs">storage-unavailable</span> entry.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">main/java/sg/annualva/export/ExportWorker.java</td>
+              <td class="px-4 py-2 font-mono text-xs">106</td>
+              <td class="px-4 py-2"><strong>N4 (new).</strong> <span class="font-mono text-xs">error.type</span> is the fully qualified class name; <span class="font-mono text-xs">ScanPoller</span> and <span class="font-mono text-xs">AccessAudit</span> log <span class="font-mono text-xs">getSimpleName()</span>. Pick one shape.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">test/java/sg/annualva/export/ExportLifecycleTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">115-118</td>
+              <td class="px-4 py-2"><strong>N5 (new).</strong> The 503 test asserts only the status; also assert the <span class="font-mono text-xs">storage-unavailable</span> problem type and the audit entries.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">main/java/sg/annualva/export/ManagementSummary.java; ExportStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">34, 50; 87, 116</td>
+              <td class="px-4 py-2"><strong>N6 (new, residue of M1).</strong> The stored summary still depends on the dashboard's <span class="font-mono text-xs">SystemState</span> and the app-wide <span class="font-mono text-xs">ObjectMapper</span>; a mismatch now fails one export only. No fix required.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+    </main>
+  </body>
+</html>
