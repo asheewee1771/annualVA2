@@ -4,11 +4,10 @@ import { fetchSubmission, type Submission } from "../../api/submissions.ts";
 import { AppLink } from "../../app/AppLink.tsx";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { useResource } from "../../hooks/useResource.ts";
-import { REVIEW_LABELS } from "../shared/findingStatuses.ts";
+import { JustificationSummary } from "../shared/FindingCells.tsx";
 import { reportTitle } from "../shared/scanReports.ts";
 import { STATE_LABELS } from "../shared/systemStates.ts";
 import { BatchesSection } from "./BatchesSection.tsx";
-import { LatestReview } from "./LatestReview.tsx";
 import { auditHistoryPath, CM_INBOX_PATH } from "./paths.ts";
 import { ReviewFindingsList } from "./ReviewFindingsList.tsx";
 import { ReviewForm } from "./ReviewForm.tsx";
@@ -23,31 +22,20 @@ function NotApplicableSection({ reports }: { reports: readonly ScanReportMode[] 
     <section className="card" aria-labelledby="review-not-applicable">
       <h3 id="review-not-applicable">Scan Reports marked not applicable ({notApplicable.length})</h3>
       {notApplicable.length === 0 ? <p className="muted">Every Scan Report was provided.</p> : null}
-      {notApplicable.map((report) => {
-        const latest = report.latestReview;
-        return (
-          <div key={report.reportType} className="review-item">
-            <p>
-              <strong>{reportTitle(report.reportType)}</strong>{" "}
-              <span className="flag flag--warning">Not applicable</span>
-              {report.reviewState ? <span className="muted"> · {REVIEW_LABELS[report.reviewState]}</span> : null}
-            </p>
-            <p className="finding-detail">{report.justification}</p>
-            {latest ? (
-              <LatestReview review={latest} current={latest.justificationVersion === report.justificationVersion} />
-            ) : null}
-            {reviewable ? (
-              <ReviewForm
-                idPrefix={`review-${report.reportType}`}
-                subject={`the not-applicable justification of ${reportTitle(report.reportType)}`}
-                classification={classification}
-                send={(input) => reviewScanReport(submissionId, report.reportType, report.justificationVersion, input)}
-                onReviewed={reviewed}
-              />
-            ) : null}
-          </div>
-        );
-      })}
+      {notApplicable.map((report) => (
+        <div key={report.reportType} className="review-item">
+          <JustificationSummary report={report} />
+          {reviewable ? (
+            <ReviewForm
+              idPrefix={`review-${report.reportType}`}
+              subject={`the not-applicable justification of ${reportTitle(report.reportType)}`}
+              classification={classification}
+              send={(input) => reviewScanReport(submissionId, report.reportType, report.justificationVersion, input)}
+              onReviewed={reviewed}
+            />
+          ) : null}
+        </div>
+      ))}
     </section>
   );
 }

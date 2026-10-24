@@ -8,16 +8,8 @@ import {
 } from "../../api/findings.ts";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { useResource } from "../../hooks/useResource.ts";
-import {
-  proposalDetail,
-  REVIEW_LABELS,
-  SEVERITY_LABELS,
-  severityClass,
-  statusSpec,
-} from "../shared/findingStatuses.ts";
+import { FindingCells, FindingReview } from "../shared/FindingCells.tsx";
 import { Pager } from "../shared/Pager.tsx";
-import { reportTitle } from "../shared/scanReports.ts";
-import { LatestReview } from "./LatestReview.tsx";
 import { ReviewForm } from "./ReviewForm.tsx";
 import { useReviewSession } from "./reviewSession.ts";
 
@@ -28,39 +20,11 @@ const PAGE_SIZE = 100;
 function FindingReviewRow({ finding }: { finding: Finding }) {
   const { reviewable, classification, reviewed } = useReviewSession();
   const proposal = finding.currentProposal;
-  const latest = finding.latestReview;
   return (
     <tr>
+      <FindingCells finding={finding} />
       <td>
-        <span className={severityClass(finding.severity)}>{SEVERITY_LABELS[finding.severity]}</span>
-      </td>
-      <td className="mono">
-        {finding.identifier}
-        {finding.source === "MANUAL" ? (
-          <>
-            {" "}
-            <span className="flag flag--warning">Manually Entered</span>
-          </>
-        ) : null}
-        {finding.title !== null ? <p className="muted finding-detail">{finding.title}</p> : null}
-        <p className="muted finding-detail">{finding.packageOrRule}</p>
-        <p className="muted">{reportTitle(finding.reportType)}</p>
-      </td>
-      <td>
-        {proposal ? (
-          <>
-            <strong>{statusSpec(proposal.status).label}</strong>
-            {proposal.batchId ? <span className="muted"> · Bulk-set</span> : null}
-            {proposal.proposedAs === "RESCAN" ? <span className="muted"> · Rescan</span> : null}
-            <p className="muted finding-detail">{proposalDetail(proposal)}</p>
-          </>
-        ) : (
-          <span className="flag flag--warning">No status proposed</span>
-        )}
-      </td>
-      <td>
-        {finding.reviewState ? <strong>{REVIEW_LABELS[finding.reviewState]}</strong> : null}
-        {latest ? <LatestReview review={latest} current={latest.proposalId === proposal?.id} /> : null}
+        <FindingReview finding={finding} />
         {reviewable && proposal ? (
           <ReviewForm
             idPrefix={`review-${finding.id}`}
