@@ -190,6 +190,60 @@ body {
   font-weight: 600;
 }
 
+.tabs ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.tabs a {
+  display: block;
+  padding: 8px 14px;
+  color: var(--text);
+  text-decoration: none;
+  border-bottom: 3px solid transparent;
+}
+
+.tabs a[aria-current="page"] {
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+/* The Quarter board: one column per state, scrolled sideways inside the card on a narrow screen. */
+.board {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(180px, 1fr));
+  gap: 10px;
+  overflow-x: auto;
+  margin-top: 16px;
+  padding-bottom: 6px;
+}
+
+.board__column {
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 8px;
+  min-height: 120px;
+}
+
+.board__column h3 {
+  font-size: 13px;
+  margin: 2px 4px 8px;
+  color: var(--muted);
+}
+
+.board__card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+  margin-bottom: 8px;
+}
+
 .interstitial {
   max-width: 520px;
   border: 1px solid var(--border);

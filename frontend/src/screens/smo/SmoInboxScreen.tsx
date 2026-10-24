@@ -1,20 +1,15 @@
 import { useCallback, useState } from "react";
-import { dayLabel, fetchCycles } from "../../api/cycles.ts";
-import {
-  fetchSmoInbox,
-  type HandledOutsideSystem,
-  type InboxGroup,
-  type InboxState,
-  type InboxSystem,
-  type NextAction,
-} from "../../api/dashboards.ts";
+import { dayLabel } from "../../api/cycles.ts";
+import { fetchSmoInbox, type InboxGroup, type InboxSystem, type NextAction } from "../../api/dashboards.ts";
 import { ApiError, type Problem } from "../../api/problem.ts";
 import { startSubmission } from "../../api/submissions.ts";
 import { AppLink } from "../../app/AppLink.tsx";
 import { navigate } from "../../app/router.ts";
-import { ClassifiedField } from "../../components/ClassifiedField.tsx";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { useResource } from "../../hooks/useResource.ts";
+import { CycleSelector } from "../shared/CycleSelector.tsx";
+import { HandledOutsideSection } from "../shared/HandledOutsideSection.tsx";
+import { STATE_LABELS } from "../shared/systemStates.ts";
 import { submissionPath } from "./paths.ts";
 
 const GROUPS: readonly { group: InboxGroup; title: string; empty: string }[] = [
@@ -23,18 +18,20 @@ const GROUPS: readonly { group: InboxGroup; title: string; empty: string }[] = [
   { group: "DONE", title: "Done", empty: "Nothing is done yet." },
 ];
 
-const STATE_LABELS: Readonly<Record<InboxState, string>> = {
-  NOT_STARTED: "Not Started",
-  DRAFT: "Draft",
-  IN_REVIEW: "In Review",
-  RETURNED_FOR_REWORK: "Returned for Rework",
-};
-
 const ACTION_LABELS: Readonly<Record<NextAction, string>> = {
   START_SUBMISSION: "Start the VA Submission",
   PREPARE_SUBMISSION: "Prepare and submit the VA Submission",
   AWAIT_REVIEW: "The Cyber Manager reviews it",
+  AWAIT_ENDORSEMENT: "A VA POC endorses it",
+  AWAIT_EXEMPTION_DECISION: "A VA POC decides the Exemption",
 };
+
+/** What is next and by when, as the server said; a final state has nothing next. */
+function nextLabel({ nextAction, nextActionDueOn }: InboxSystem): string {
+  if (!nextAction) return "Nothing more to do";
+  const action = ACTION_LABELS[nextAction];
+  return nextActionDueOn ? `${action} by ${dayLabel(nextActionDueOn)}` : action;
+}
 
 const UNREACHABLE: Problem = { type: "about:blank", title: "The server could not be reached", status: 0 };
 
@@ -51,7 +48,7 @@ function RowAction({
   if (system.submissionId) {
     return (
       <AppLink path={submissionPath(system.submissionId)}>
-        {system.state === "IN_REVIEW" ? "View" : "Continue"}
+        {system.nextAction === "PREPARE_SUBMISSION" ? "Continue" : "View"}
         <span className="visually-hidden"> the VA Submission for {system.systemId}</span>
       </AppLink>
     );
@@ -91,9 +88,7 @@ function InboxRow({
       </td>
       <td>Q{system.quarter}</td>
       <td>{STATE_LABELS[system.state]}</td>
-      <td>
-        {ACTION_LABELS[system.nextAction]} by {dayLabel(system.nextActionDueOn)}
-      </td>
+      <td>{nextLabel(system)}</td>
       <td>{dayLabel(system.submitDue)}</td>
       <td>{dayLabel(system.reviewDue)}</td>
       <td>{dayLabel(system.endorseDue)}</td>
@@ -156,63 +151,6 @@ function InboxGroupSection({
   );
 }
 
-function HandledOutsideSection({ systems }: { systems: HandledOutsideSystem[] }) {
-  if (systems.length === 0) return null;
-  return (
-    <section aria-labelledby="inbox-outside">
-      <h3 id="inbox-outside">Handled outside the app ({systems.length})</h3>
-      <p className="muted">These Quarters are run by the manual process. There is nothing to do here.</p>
-      <div className="table-scroll">
-        <table className="data-table">
-          <caption className="visually-hidden">Handled outside the app</caption>
-          <thead>
-            <tr>
-              <th scope="col">System</th>
-              <th scope="col">Quarter</th>
-            </tr>
-          </thead>
-          <tbody>
-            {systems.map((system) => (
-              <tr key={system.id}>
-                <td>
-                  <span className="mono">{system.systemId}</span> {system.name}
-                </td>
-                <td>Q{system.quarter}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </section>
-  );
-}
-
-/** Shown only while two VA Cycles are open at once (the older one is still taking endorsements). */
-function CycleSelector({
-  classification,
-  years,
-  selected,
-  onSelect,
-}: {
-  classification: string;
-  years: number[];
-  selected: number | undefined;
-  onSelect: (year: number) => void;
-}) {
-  if (years.length < 2) return null;
-  return (
-    <ClassifiedField label="VA Cycle" classification={classification} id="inbox-cycle">
-      <select id="inbox-cycle" value={selected ?? ""} onChange={(event) => onSelect(Number(event.target.value))}>
-        {years.map((year) => (
-          <option key={year} value={year}>
-            VA Cycle {year}
-          </option>
-        ))}
-      </select>
-    </ClassifiedField>
-  );
-}
-
 /**
  * The SMO/Tech Lead's inbox (stories 18 and 71): their Systems for the VA Cycle, grouped by what the server says each
  * needs, with the state, the three due dates and what to do next. Systems in Quarters the manual process runs are listed
@@ -222,8 +160,6 @@ export function SmoInboxScreen({ classification }: { classification: string }) {
   const [cycle, setCycle] = useState<number | undefined>(undefined);
   const load = useCallback(() => fetchSmoInbox(cycle), [cycle]);
   const inbox = useResource(load);
-  const cycles = useResource(fetchCycles);
-  const open = cycles.data?.cycles.filter((candidate) => candidate.phase !== "CLOSED").map((c) => c.year) ?? [];
   const [startingId, setStartingId] = useState<string | undefined>(undefined);
   const [startProblem, setStartProblem] = useState<Problem | undefined>(undefined);
   const { reload } = inbox;
@@ -251,8 +187,8 @@ export function SmoInboxScreen({ classification }: { classification: string }) {
         What you need to do for each of your Systems, and by when. The windows are soft: nothing locks when one passes.
       </p>
       <CycleSelector
+        id="inbox-cycle"
         classification={classification}
-        years={open}
         selected={cycle ?? inbox.data?.cycle}
         onSelect={setCycle}
       />
@@ -272,7 +208,7 @@ export function SmoInboxScreen({ classification }: { classification: string }) {
             />
           ))
         : null}
-      {inbox.data ? <HandledOutsideSection systems={inbox.data.handledOutsideApp} /> : null}
+      {inbox.data ? <HandledOutsideSection id="inbox-outside" systems={inbox.data.handledOutsideApp} /> : null}
     </div>
   );
 }

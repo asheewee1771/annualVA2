@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import type { Session } from "../api/session.ts";
 import { AuditorLanding } from "../screens/auditor/Landing.tsx";
-import { CyberManagerLanding } from "../screens/cyber-manager/Landing.tsx";
+import { CyberManagerArea } from "../screens/cyber-manager/CyberManagerArea.tsx";
 import { SmoArea } from "../screens/smo/SmoArea.tsx";
 import type { AreaProps } from "../screens/shared/AreaProps.ts";
 import { VaPocArea } from "../screens/va-poc/VaPocArea.tsx";
@@ -11,7 +11,7 @@ import { navigate, usePath } from "./router.ts";
 
 const LANDINGS: Readonly<Record<Role, (props: AreaProps) => React.JSX.Element>> = {
   VA_POC: VaPocArea,
-  CYBER_MANAGER: CyberManagerLanding,
+  CYBER_MANAGER: CyberManagerArea,
   SMO: SmoArea,
   AUDITOR: AuditorLanding,
 };

@@ -12,23 +12,17 @@ import {
   type AcceptedDeclaration,
   type DeclarationText,
   type Submission,
-  type SubmissionState,
 } from "../../api/submissions.ts";
 import { AppLink } from "../../app/AppLink.tsx";
 import { ClassifiedField } from "../../components/ClassifiedField.tsx";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { useResource, type Resource } from "../../hooks/useResource.ts";
+import { STATE_LABELS } from "../shared/systemStates.ts";
 import { EditableContext } from "./Editable.tsx";
 import { FindingsSection } from "./FindingsSection.tsx";
 import { SMO_AREA_PATH } from "./paths.ts";
 import { ScanReportsSection } from "./ScanReportsSection.tsx";
 import { SCAN_REPORTS } from "./scanReports.ts";
-
-const STATE_LABELS: Readonly<Record<SubmissionState, string>> = {
-  DRAFT: "Draft",
-  IN_REVIEW: "In Review",
-  RETURNED_FOR_REWORK: "Returned for Rework",
-};
 
 const WHEN = new Intl.DateTimeFormat("en-SG", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Singapore" });
 

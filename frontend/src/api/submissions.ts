@@ -1,7 +1,16 @@
 import { request } from "./client.ts";
 
-/** Where a VA Submission is in its life; the other states arrive with the commands that enter them. */
-export type SubmissionState = "DRAFT" | "IN_REVIEW" | "RETURNED_FOR_REWORK";
+/** Where a VA Submission is in its life: the nine states a VA Submission can be in (Not Started has none). */
+export type SubmissionState =
+  | "DRAFT"
+  | "IN_REVIEW"
+  | "RETURNED_FOR_REWORK"
+  | "AWAITING_ENDORSEMENT"
+  | "ENDORSED"
+  | "EXEMPTION_REQUESTED"
+  | "EXEMPTED"
+  | "WITHDRAWN"
+  | "NOT_ENDORSED";
 
 /** Whether the SMO/Tech Lead is still preparing it: anything else is read-only (the server refuses changes). */
 export function isEditable(state: SubmissionState): boolean {
@@ -9,7 +18,7 @@ export function isEditable(state: SubmissionState): boolean {
 }
 
 /** The steps at which a person acts on a VA Submission. */
-export type SubmissionStep = "SUBMIT";
+export type SubmissionStep = "SUBMIT" | "REVIEW";
 
 /** One person's first action at a step (segregation of duties). The person is an id, never a name or email. */
 export interface Acted {
