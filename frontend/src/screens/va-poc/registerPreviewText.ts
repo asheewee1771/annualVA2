@@ -1,4 +1,16 @@
-import type { BlockReason, SystemSnapshot } from "../../api/systemRegister.ts";
+import type { BlockReason, PreviewRow, RegisterPreview, SystemSnapshot } from "../../api/systemRegister.ts";
+
+/** A key for a preview row: its sheet row (or that the file leaves it out), its System ID and its position. */
+export function rowKey(row: PreviewRow, index: number): string {
+  return `${row.sheetRow ?? "left-out"}-${row.systemId ?? ""}-${index}`;
+}
+
+/** Every VA Submission the apply would withdraw, each of which is confirmed on its own (story 6). */
+export function withdrawals(preview: RegisterPreview): string[] {
+  return preview.rows
+    .filter((row) => row.effects.includes("WILL_WITHDRAW"))
+    .flatMap((row) => row.inFlight.map((work) => work.submissionId));
+}
 
 /** What each Blocked reason means, in the words a VA POC fixing their file needs. The server sends only the code. */
 export const REASON_TEXT: Readonly<Record<BlockReason, string>> = {

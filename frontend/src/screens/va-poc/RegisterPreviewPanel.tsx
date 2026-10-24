@@ -1,7 +1,6 @@
-import type { ReactNode } from "react";
-import type { PreviewRow, RegisterEffect, RegisterOutcome, RegisterPreview } from "../../api/systemRegister.ts";
-import { STATE_LABELS } from "../shared/systemStates.ts";
-import { REASON_TEXT, changedFields } from "./registerPreviewText.ts";
+import type { PreviewRow, RegisterOutcome, RegisterPreview } from "../../api/systemRegister.ts";
+import { Group, InFlightEffects } from "./InFlightEffects.tsx";
+import { REASON_TEXT, changedFields, rowKey, withdrawals } from "./registerPreviewText.ts";
 
 /** Business times are shown in Singapore time, whatever the browser's own zone is. */
 const WHEN = new Intl.DateTimeFormat("en-SG", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Singapore" });
@@ -9,10 +8,6 @@ const WHEN = new Intl.DateTimeFormat("en-SG", { dateStyle: "medium", timeStyle: 
 function when(instant: string): string {
   const date = new Date(instant);
   return Number.isNaN(date.getTime()) ? instant : WHEN.format(date);
-}
-
-function rowKey(row: PreviewRow, index: number): string {
-  return `${row.sheetRow ?? "left-out"}-${row.systemId ?? ""}-${index}`;
 }
 
 /** The SMO/Tech Lead's email, flagged when no sign-in has matched it yet (story 12). */
@@ -27,19 +22,6 @@ function Smo({ row, email }: { row: PreviewRow; email: string }) {
         </>
       ) : null}
     </>
-  );
-}
-
-function Group({ title, note, count, children }: { title: string; note: string; count: number; children: ReactNode }) {
-  if (count === 0) return null;
-  return (
-    <section className="preview-group" aria-label={title}>
-      <h3>
-        {title} ({count})
-      </h3>
-      <p className="muted">{note}</p>
-      <div className="table-scroll">{children}</div>
-    </section>
   );
 }
 
@@ -138,131 +120,6 @@ function RetireTable({ rows }: { rows: PreviewRow[] }) {
   );
 }
 
-/** The in-flight VA Submissions a row touches, each by its state and VA Cycle. */
-function InFlightList({ row }: { row: PreviewRow }) {
-  return (
-    <ul className="plain-list">
-      {row.inFlight.map((work) => (
-        <li key={work.submissionId}>
-          {STATE_LABELS[work.state]} (VA Cycle {work.cycle})
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-/** Why a row cannot be applied; nothing when it can. */
-function Reasons({ row }: { row: PreviewRow }) {
-  if (row.reasons.length === 0) return null;
-  return (
-    <ul className="plain-list">
-      {row.reasons.map((reason) => (
-        <li key={reason}>
-          <span className="flag flag--warning">Blocked</span> {REASON_TEXT[reason]}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-interface WithdrawTableProps {
-  rows: PreviewRow[];
-  confirmed: ReadonlySet<string>;
-  onConfirm: (submissionId: string, confirmed: boolean) => void;
-}
-
-/**
- * The Systems the file retires that have in-flight work (stories 6 and 7): each VA Submission is confirmed on its own
- * before the apply withdraws it. A row whose VA Submission has a file still being checked is blocked instead.
- */
-function WithdrawTable({ rows, confirmed, onConfirm }: WithdrawTableProps) {
-  return (
-    <table className="data-table">
-      <caption className="visually-hidden">VA Submissions that will be withdrawn</caption>
-      <thead>
-        <tr>
-          <th scope="col">System ID</th>
-          <th scope="col">System Name</th>
-          <th scope="col">SMO/Tech Lead</th>
-          <th scope="col">VA Submission</th>
-          <th scope="col">Confirm</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row, index) => (
-          <tr key={rowKey(row, index)}>
-            <td className="mono">{row.systemId}</td>
-            <td>{row.before?.name}</td>
-            <td>{row.before?.smoEmail}</td>
-            <td>
-              <InFlightList row={row} />
-            </td>
-            <td>
-              {row.reasons.length > 0 ? (
-                <Reasons row={row} />
-              ) : (
-                row.inFlight.map((work) => (
-                  <label key={work.submissionId}>
-                    <input
-                      type="checkbox"
-                      checked={confirmed.has(work.submissionId)}
-                      onChange={(event) => onConfirm(work.submissionId, event.target.checked)}
-                    />{" "}
-                    Withdraw the {STATE_LABELS[work.state]} VA Submission of {row.systemId}
-                  </label>
-                ))
-              )}
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-}
-
-/** The Systems the file would move or transfer while they have in-flight work: shown, and blocked in Release 1. */
-function InFlightChangeTable({ rows, caption }: { rows: PreviewRow[]; caption: string }) {
-  return (
-    <table className="data-table">
-      <caption className="visually-hidden">{caption}</caption>
-      <thead>
-        <tr>
-          <th scope="col">Row</th>
-          <th scope="col">System ID</th>
-          <th scope="col">What changes</th>
-          <th scope="col">VA Submission</th>
-          <th scope="col">Why it is blocked</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row, index) => (
-          <tr key={rowKey(row, index)}>
-            <td>{row.sheetRow}</td>
-            <td className="mono">{row.systemId}</td>
-            <td>
-              <ul className="plain-list">
-                {row.before && row.after
-                  ? changedFields(row.before, row.after).map((field) => (
-                      <li key={field.label}>
-                        {field.label}: {field.from} → {field.to}
-                      </li>
-                    ))
-                  : null}
-              </ul>
-            </td>
-            <td>
-              <InFlightList row={row} />
-            </td>
-            <td>
-              <Reasons row={row} />
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-}
-
 function BlockedTable({ rows }: { rows: PreviewRow[] }) {
   return (
     <table className="data-table">
@@ -305,13 +162,6 @@ function BlockedTable({ rows }: { rows: PreviewRow[] }) {
   );
 }
 
-/** Every VA Submission the apply would withdraw, each of which is confirmed on its own. */
-export function withdrawals(preview: RegisterPreview): string[] {
-  return preview.rows
-    .filter((row) => row.effects.includes("WILL_WITHDRAW"))
-    .flatMap((row) => row.inFlight.map((work) => work.submissionId));
-}
-
 interface RegisterPreviewPanelProps {
   preview: RegisterPreview;
   /** True while the apply is being sent. */
@@ -347,8 +197,8 @@ function ApplyControl({ preview, applying, confirmed, onApply }: RegisterPreview
   }
   return (
     <p className="notice-inline notice-inline--refused" role="alert">
-      {preview.counts.blocked > 0
-        ? "This preview cannot be applied while any row is blocked. Correct the file and upload it again."
+      {preview.counts.blocked + preview.counts.heldBack > 0
+        ? "This preview cannot be applied while any row is blocked. Correct the file, or wait for what holds a row back, and upload it again."
         : "This preview can no longer be applied. Upload the file again."}
     </p>
   );
@@ -362,10 +212,10 @@ function ApplyControl({ preview, applying, confirmed, onApply }: RegisterPreview
  */
 export function RegisterPreviewPanel(props: RegisterPreviewPanelProps) {
   const { preview, confirmed, onConfirm } = props;
-  const rows = (outcome: RegisterOutcome) => preview.rows.filter((row) => row.outcome === outcome);
-  const affecting = (effect: RegisterEffect) => preview.rows.filter((row) => row.effects.includes(effect));
-  // A row blocked for its effect on in-flight work is shown with that effect, below, not twice.
-  const blocked = rows("BLOCKED").filter((row) => row.effects.length === 0);
+  // The outcome groups list what the apply would do; a row its in-flight work holds back is listed under its effect.
+  const rows = (outcome: RegisterOutcome) =>
+    preview.rows.filter((row) => row.outcome === outcome && (outcome === "BLOCKED" || row.reasons.length === 0));
+  const blocked = rows("BLOCKED");
   const { counts } = preview;
   return (
     <div className="preview" aria-live="polite">
@@ -380,30 +230,7 @@ export function RegisterPreviewPanel(props: RegisterPreviewPanelProps) {
         Nothing has changed. This preview is kept until {when(preview.expiresAt)} (Singapore time) and then discarded.
       </p>
       <ApplyControl {...props} />
-      <Group
-        title="Will withdraw"
-        count={counts.willWithdraw}
-        note="Systems the file leaves out whose VA Submission is in progress. Confirm each one: it becomes Withdrawn, read-only, and leaves the counts and reminders."
-      >
-        <WithdrawTable rows={affecting("WILL_WITHDRAW")} confirmed={confirmed} onConfirm={onConfirm} />
-      </Group>
-      <Group
-        title="Will move"
-        count={counts.willMove}
-        note="Systems moved to another Quarter while their VA Submission is in progress. Blocked until Release 2."
-      >
-        <InFlightChangeTable rows={affecting("WILL_MOVE")} caption="Systems that would move with work in progress" />
-      </Group>
-      <Group
-        title="Will transfer"
-        count={counts.willTransfer}
-        note="Systems given another SMO/Tech Lead or Cyber Manager while their VA Submission is in progress. Blocked until Release 2."
-      >
-        <InFlightChangeTable
-          rows={affecting("WILL_TRANSFER")}
-          caption="Systems that would transfer with work in progress"
-        />
-      </Group>
+      <InFlightEffects preview={preview} confirmed={confirmed} onConfirm={onConfirm} />
       <Group
         title="Blocked"
         count={blocked.length}

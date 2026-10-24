@@ -63,7 +63,10 @@ export interface PreviewRow {
   /** The System ID as typed; null when the cell was empty. */
   systemId: string | null;
   outcome: RegisterOutcome;
-  /** Why the row is BLOCKED; empty for every other outcome. */
+  /**
+   * Why the row cannot be applied: for a BLOCKED row what is wrong in the file; for a RETIRE or UPDATE what its in-flight
+   * work holds it back by. Empty when nothing stands in the way.
+   */
   reasons: BlockReason[];
   /** The SMO/Tech Lead's email matches no sign-in yet. */
   unlinkedSmo: boolean;
@@ -85,6 +88,8 @@ export interface PreviewCounts {
   willWithdraw: number;
   willMove: number;
   willTransfer: number;
+  /** Rows that are not BLOCKED but that their in-flight work holds back. */
+  heldBack: number;
 }
 
 /** A Register change preview (POST /api/system-register/uploads): nothing in the Register has changed. */

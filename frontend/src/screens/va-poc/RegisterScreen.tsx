@@ -15,7 +15,8 @@ import { ClassifiedField } from "../../components/ClassifiedField.tsx";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { useResource } from "../../hooks/useResource.ts";
 import { saveFile } from "../shared/saveFile.ts";
-import { RegisterPreviewPanel, withdrawals } from "./RegisterPreviewPanel.tsx";
+import { RegisterPreviewPanel } from "./RegisterPreviewPanel.tsx";
+import { withdrawals } from "./registerPreviewText.ts";
 import { RegisterTable } from "./RegisterTable.tsx";
 
 const UNREACHABLE: Problem = { type: "about:blank", title: "The server could not be reached", status: 0 };
