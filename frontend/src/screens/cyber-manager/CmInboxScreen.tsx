@@ -1,10 +1,10 @@
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import { dayLabel } from "../../api/cycles.ts";
 import { fetchCmInbox, type CmInboxSystem, type InboxGroup } from "../../api/dashboards.ts";
 import { AppLink } from "../../app/AppLink.tsx";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { useResource } from "../../hooks/useResource.ts";
-import { CycleSelector } from "../shared/CycleSelector.tsx";
+import { useSelectedCycle } from "../../app/CycleChoice.tsx";
 import { HandledOutsideSection } from "../shared/HandledOutsideSection.tsx";
 import { findingsLabel, ReviewFlags } from "../shared/ReviewFlags.tsx";
 import { STATE_LABELS } from "../shared/systemStates.ts";
@@ -88,8 +88,8 @@ function InboxGroupSection({
  * the day the current window ends, under the heading the server decides, with how far the review of the Findings is.
  * The order, the headings and the segregation-of-duties marker are the server's answers; this only shows them.
  */
-export function CmInboxScreen({ classification }: { classification: string }) {
-  const [cycle, setCycle] = useState<number | undefined>(undefined);
+export function CmInboxScreen() {
+  const cycle = useSelectedCycle();
   const load = useCallback(() => fetchCmInbox(cycle), [cycle]);
   const inbox = useResource(load);
 
@@ -100,12 +100,6 @@ export function CmInboxScreen({ classification }: { classification: string }) {
         The VA Submissions of the Systems assigned to you, Overdue first. The windows are soft: nothing locks when one
         passes.
       </p>
-      <CycleSelector
-        id="cm-inbox-cycle"
-        classification={classification}
-        selected={cycle ?? inbox.data?.cycle}
-        onSelect={setCycle}
-      />
       {inbox.error ? <ErrorPanel problem={inbox.error.problem} /> : null}
       {inbox.loading && !inbox.data ? <p className="muted">Loading your Systems…</p> : null}
       {inbox.data

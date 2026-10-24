@@ -32,6 +32,7 @@ export interface StepUpOutcome {
 const ACTIONS: Readonly<Record<string, string>> = {
   "register-apply": "Applying the System Register",
   "submission-endorse": "Endorsing a VA Submission",
+  "cycle-close": "Closing a VA Cycle",
 };
 
 export function describeAction(intent: string): string {

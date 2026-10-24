@@ -4,7 +4,7 @@ import { AppLink } from "../../app/AppLink.tsx";
 import { ClassifiedField } from "../../components/ClassifiedField.tsx";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { useResource } from "../../hooks/useResource.ts";
-import { CycleSelector } from "./CycleSelector.tsx";
+import { useSelectedCycle } from "../../app/CycleChoice.tsx";
 import { HandledOutsideSection } from "./HandledOutsideSection.tsx";
 import { findingsLabel, ReviewFlags, type DashboardStep } from "./ReviewFlags.tsx";
 import { STATE_LABELS } from "./systemStates.ts";
@@ -64,7 +64,7 @@ export function QuarterBoardScreen({
   whose: string;
   boardFor: BoardFor;
 }) {
-  const [cycle, setCycle] = useState<number | undefined>(undefined);
+  const cycle = useSelectedCycle();
   const [quarter, setQuarter] = useState<number | undefined>(undefined);
   const load = useCallback(() => fetchQuarterBoard(cycle, quarter), [cycle, quarter]);
   const board = useResource(load);
@@ -77,12 +77,6 @@ export function QuarterBoardScreen({
         {shown ? `Q${shown.quarter} of VA Cycle ${shown.cycle}: ` : ""}
         {whose} in one column per state.
       </p>
-      <CycleSelector
-        id="board-cycle"
-        classification={classification}
-        selected={cycle ?? shown?.cycle}
-        onSelect={setCycle}
-      />
       <ClassifiedField label="Quarter" classification={classification} id="board-quarter">
         <select
           id="board-quarter"

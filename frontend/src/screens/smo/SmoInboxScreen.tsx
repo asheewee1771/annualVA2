@@ -7,7 +7,7 @@ import { AppLink } from "../../app/AppLink.tsx";
 import { navigate } from "../../app/router.ts";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { useResource } from "../../hooks/useResource.ts";
-import { CycleSelector } from "../shared/CycleSelector.tsx";
+import { useSelectedCycle } from "../../app/CycleChoice.tsx";
 import { HandledOutsideSection } from "../shared/HandledOutsideSection.tsx";
 import { STATE_LABELS } from "../shared/systemStates.ts";
 import { reworkPath, submissionPath } from "./paths.ts";
@@ -26,8 +26,12 @@ const ACTION_LABELS: Readonly<Record<NextAction, string>> = {
   AWAIT_EXEMPTION_DECISION: "A VA POC decides the Exemption",
 };
 
-/** What is next and by when, as the server said; a final state has nothing next. */
-function nextLabel({ nextAction, nextActionDueOn }: InboxSystem): string {
+/**
+ * What is next and by when, as the server said; a final state has nothing next. Not Endorsed is listed under Done, as
+ * nothing more can be done once its VA Cycle has closed, but says it failed rather than "nothing more to do" (ADR 0044).
+ */
+function nextLabel({ state, nextAction, nextActionDueOn }: InboxSystem): string {
+  if (state === "NOT_ENDORSED") return "Not endorsed: the VA Cycle closed before it was endorsed";
   if (!nextAction) return "Nothing more to do";
   const action = ACTION_LABELS[nextAction];
   return nextActionDueOn ? `${action} by ${dayLabel(nextActionDueOn)}` : action;
@@ -84,6 +88,12 @@ function InboxRow({
           <>
             {" "}
             <span className="flag flag--danger">Overdue</span>
+          </>
+        ) : null}
+        {system.state === "NOT_ENDORSED" ? (
+          <>
+            {" "}
+            <span className="flag flag--danger">Not Endorsed</span>
           </>
         ) : null}
       </td>
@@ -157,8 +167,8 @@ function InboxGroupSection({
  * needs, with the state, the three due dates and what to do next. Systems in Quarters the manual process runs are listed
  * apart. Which heading a System is under and what is next are the server's answers; this only shows them.
  */
-export function SmoInboxScreen({ classification }: { classification: string }) {
-  const [cycle, setCycle] = useState<number | undefined>(undefined);
+export function SmoInboxScreen() {
+  const cycle = useSelectedCycle();
   const load = useCallback(() => fetchSmoInbox(cycle), [cycle]);
   const inbox = useResource(load);
   const [startingId, setStartingId] = useState<string | undefined>(undefined);
@@ -187,12 +197,6 @@ export function SmoInboxScreen({ classification }: { classification: string }) {
       <p className="muted">
         What you need to do for each of your Systems, and by when. The windows are soft: nothing locks when one passes.
       </p>
-      <CycleSelector
-        id="inbox-cycle"
-        classification={classification}
-        selected={cycle ?? inbox.data?.cycle}
-        onSelect={setCycle}
-      />
       {startProblem ? <ErrorPanel problem={startProblem} /> : null}
       {inbox.error ? <ErrorPanel problem={inbox.error.problem} /> : null}
       {inbox.loading && !inbox.data ? <p className="muted">Loading your Systems…</p> : null}

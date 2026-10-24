@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -23,13 +24,17 @@ import sg.annualva.cycle.Quarter;
 @Repository
 class SubmissionStore {
 
-    /** Where a VA Submission is: its System and its state as text, so a state no constant names yet can still be read. */
-    record Located(UUID systemId, String state) {}
+    /**
+     * Where a VA Submission is: its System, its state as text, so a state no constant names yet can still be read, and its
+     * VA Cycle's year.
+     */
+    record Located(UUID systemId, String state, int cycleYear) {}
 
     /** What a VA Submission is as the table holds it. */
     record Row(
             UUID id, UUID systemId, int cycleYear, int quarter, SubmissionState state, boolean overdue,
-            boolean endorsedLate, LocalDate submitDue, LocalDate reviewDue, LocalDate endorseDue, Instant startedAt,
+            boolean endorsedLate, LocalDate submitDue, LocalDate reviewDue, LocalDate endorseDue,
+            @Nullable Instant startedAt,
             @Nullable Instant submittedAt, @Nullable Instant overdueSince, @Nullable LocalDate dueOn,
             @Nullable Instant passedToEndorsementAt, @Nullable Instant endorsedAt) {}
 
@@ -38,6 +43,12 @@ class SubmissionStore {
      * the state it was in as the table holds it and the last day of the window that passed (the one rule, V20).
      */
     record Flagged(@Nullable UUID id, UUID systemId, String state, @Nullable LocalDate dueOn) {}
+
+    /**
+     * What a Cycle's close has just made Not Endorsed: a VA Submission, with the state it was in as the table held it, or a
+     * System that had none ({@code from} null), now with a Not Endorsed row of its own ({@code id}).
+     */
+    record NotEndorsed(UUID id, UUID systemId, @Nullable String from) {}
 
     /** How a System with no VA Submission is named to the Overdue rule and in an audit entry. */
     static final String NOT_STARTED = "NOT_STARTED";
@@ -134,7 +145,40 @@ class SubmissionStore {
     private static final String IN_CYCLE =
             COLUMNS + "WHERE cycle_year = :cycle AND system_id = ANY(CAST(:systems AS uuid[]))";
 
-    private static final String LOCATE = "SELECT system_id, state FROM va_submission WHERE id = :id";
+    private static final String LOCATE = "SELECT system_id, state, cycle_year FROM va_submission WHERE id = :id";
+
+    /**
+     * A start holds its VA Cycle shared, and a close exclusively, until the transaction ends (ADR 0044): so no VA
+     * Submission is started in a Cycle a close is under way in, and a close sees every start that came before it. A
+     * transaction-scoped advisory lock in a namespace of its own, keyed by the Cycle's year, because the Cycle may have no
+     * row yet when a VA Submission is started before its Q1.
+     */
+    private static final String LOCK_CYCLE_SHARED =
+            "SELECT pg_advisory_xact_lock_shared(hashtext('annualva.cycle'), :cycle)";
+
+    private static final String LOCK_CYCLE = "SELECT pg_advisory_xact_lock(hashtext('annualva.cycle'), :cycle)";
+
+    /**
+     * A Cycle's close: every VA Submission of the Cycle in a Quarter the app runs, of the active Systems given, that is
+     * in none of the final states, becomes Not Endorsed, and the flag with it ({@link #OVERDUE_AFTER_MOVE}: a final state
+     * waits on no window). The rows are held in id order as a move holds them, so the close waits for a command in
+     * progress, and a VA Submission that command endorsed meanwhile is read again and left alone.
+     */
+    private static final String NOT_ENDORSE_UNFINISHED =
+            "UPDATE va_submission s SET state = :state, " + OVERDUE_AFTER_MOVE + " FROM (SELECT id, state FROM va_submission "
+            + "WHERE cycle_year = :cycle AND quarter >= :firstLive AND state = ANY(CAST(:unfinished AS text[])) "
+            + "AND system_id = ANY(CAST(:systems AS uuid[])) ORDER BY id FOR NO KEY UPDATE) due WHERE s.id = due.id "
+            + "RETURNING s.id, s.system_id, due.state AS state_from";
+
+    /**
+     * A Cycle's close: each of these Systems of one Quarter that has no VA Submission in the Cycle (Not Started) gets one,
+     * Not Endorsed, with the Quarter's windows, that nobody started (V141).
+     */
+    private static final String NOT_ENDORSE_NOT_STARTED =
+            "INSERT INTO va_submission (system_id, cycle_year, quarter, state, submit_due, review_due, endorse_due) "
+            + "SELECT candidate, :cycle, :quarter, :state, :submitDue, :reviewDue, :endorseDue "
+            + "FROM unnest(CAST(:systems AS uuid[])) AS candidate ORDER BY candidate "
+            + "ON CONFLICT (system_id, cycle_year) DO NOTHING RETURNING id, system_id";
 
     /**
      * A write to what the SMO/Tech Lead prepares holds the VA Submission's row shared until it commits, so a submit (which
@@ -491,9 +535,61 @@ class SubmissionStore {
                 .optional();
     }
 
+    /** Holds the VA Cycle against a close until the transaction ends, for a start. */
+    void holdCycle(int cycleYear) {
+        jdbc.sql(LOCK_CYCLE_SHARED).param("cycle", cycleYear).query().singleRow();
+    }
+
+    /** Holds the VA Cycle against every start and every other close until the transaction ends, for a close. */
+    void lockCycleForClose(int cycleYear) {
+        jdbc.sql(LOCK_CYCLE).param("cycle", cycleYear).query().singleRow();
+    }
+
+    /**
+     * Makes Not Endorsed every VA Submission of the Cycle, from its first live Quarter, of these active Systems, that is not
+     * in a final state; those it moved, with the state each was in.
+     */
+    List<NotEndorsed> notEndorseUnfinished(int cycleYear, int firstLiveQuarter, Collection<UUID> activeSystems,
+            LocalDate today) {
+        if (activeSystems.isEmpty()) {
+            return List.of();
+        }
+        String[] unfinished = Arrays.stream(SubmissionState.values()).filter(state -> !state.isFinal())
+                .map(SubmissionState::name).toArray(String[]::new);
+        return jdbc.sql(NOT_ENDORSE_UNFINISHED)
+                .param("state", SubmissionState.NOT_ENDORSED.name())
+                .param("cycle", cycleYear)
+                .param("firstLive", firstLiveQuarter)
+                .param("unfinished", unfinished)
+                .param("systems", ids(activeSystems))
+                .param("today", today)
+                .query((rs, row) -> new NotEndorsed(rs.getObject("id", UUID.class), rs.getObject("system_id", UUID.class),
+                        rs.getString("state_from")))
+                .list();
+    }
+
+    /** Gives each of these Systems of the Quarter with no VA Submission in its Cycle a Not Endorsed one; those it made. */
+    List<NotEndorsed> notEndorseNotStarted(Quarter quarter, Collection<UUID> systemIds) {
+        if (systemIds.isEmpty()) {
+            return List.of();
+        }
+        return jdbc.sql(NOT_ENDORSE_NOT_STARTED)
+                .param("cycle", quarter.cycle())
+                .param("quarter", quarter.number())
+                .param("state", SubmissionState.NOT_ENDORSED.name())
+                .param("submitDue", quarter.submitDue())
+                .param("reviewDue", quarter.reviewDue())
+                .param("endorseDue", quarter.endorseDue())
+                .param("systems", ids(systemIds))
+                .query((rs, row) -> new NotEndorsed(rs.getObject("id", UUID.class), rs.getObject("system_id", UUID.class),
+                        null))
+                .list();
+    }
+
     private Optional<Located> located(String sql, UUID id) {
         return jdbc.sql(sql).param("id", id)
-                .query((rs, row) -> new Located(rs.getObject("system_id", UUID.class), rs.getString("state")))
+                .query((rs, row) -> new Located(rs.getObject("system_id", UUID.class), rs.getString("state"),
+                        rs.getInt("cycle_year")))
                 .optional();
     }
 
@@ -502,7 +598,7 @@ class SubmissionStore {
                 rs.getInt("quarter"), SubmissionState.valueOf(rs.getString("state")), rs.getBoolean("overdue"),
                 rs.getBoolean("endorsed_late"), rs.getObject("submit_due", LocalDate.class),
                 rs.getObject("review_due", LocalDate.class), rs.getObject("endorse_due", LocalDate.class),
-                instant(rs, "started_at"), nullableInstant(rs, "submitted_at"), nullableInstant(rs, "overdue_since"),
+                nullableInstant(rs, "started_at"), nullableInstant(rs, "submitted_at"), nullableInstant(rs, "overdue_since"),
                 rs.getObject("due_on", LocalDate.class), nullableInstant(rs, "passed_to_endorsement_at"),
                 nullableInstant(rs, "endorsed_at"));
     }

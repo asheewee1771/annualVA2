@@ -42,6 +42,7 @@ import sg.annualva.audit.AuditOutcome;
 import sg.annualva.audit.DetailKey;
 import sg.annualva.access.RoleGrantStore;
 import sg.annualva.ingestion.ScanPoller;
+import sg.annualva.submission.CycleLifecycle;
 import sg.annualva.submission.OverdueSweep;
 import sg.annualva.web.ProblemResponses;
 import sg.annualva.web.ResourceNotFoundException;
@@ -110,10 +111,12 @@ public class TestEndpoints {
         private final TransactionTemplate transaction;
         private final ScanPoller scanPoller;
         private final OverdueSweep overdueSweep;
+        private final CycleLifecycle cycleLifecycle;
 
         public TestController(AppUserStore users, RoleGrantStore grants, AccessGuard guard, StepUp stepUp, JdbcClient jdbc,
                 Clock clock, AuditLog audit, TransactionTemplate transaction, ScanPoller scanPoller,
-                OverdueSweep overdueSweep) {
+                OverdueSweep overdueSweep, CycleLifecycle cycleLifecycle) {
+            this.cycleLifecycle = cycleLifecycle;
             this.scanPoller = scanPoller;
             this.overdueSweep = overdueSweep;
             this.users = users;
@@ -265,6 +268,10 @@ public class TestEndpoints {
                 }
                 jdbc.sql("DELETE FROM submission_participation").update();
                 jdbc.sql("DELETE FROM not_started_overdue").update();
+                // The VA Cycle lifecycle's records (V141): what the opening kept of the Register, and the opens and closes.
+                jdbc.sql("DELETE FROM cycle_register_system").update();
+                jdbc.sql("DELETE FROM cycle_register").update();
+                jdbc.sql("DELETE FROM va_cycle").update();
                 jdbc.sql("DELETE FROM va_submission").update();
                 jdbc.sql("DELETE FROM role_grant WHERE system_id IS NOT NULL").update();
                 jdbc.sql("DELETE FROM register_upload").update();
@@ -302,6 +309,13 @@ public class TestEndpoints {
         public Map<String, String> overdue() {
             overdueSweep.sweep();
             return Map.of("ran", "overdue");
+        }
+
+        /** One pass of the VA Cycle lifecycle job, which {@code annualva.scheduling.enabled=false} keeps from running by itself in tests. */
+        @PostMapping("/api/test/jobs/cycle-lifecycle")
+        public Map<String, String> cycleLifecycle() {
+            cycleLifecycle.run();
+            return Map.of("ran", "cycle-lifecycle");
         }
 
         /**
