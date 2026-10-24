@@ -10,7 +10,7 @@ import { useResource } from "../../hooks/useResource.ts";
 import { CycleSelector } from "../shared/CycleSelector.tsx";
 import { HandledOutsideSection } from "../shared/HandledOutsideSection.tsx";
 import { STATE_LABELS } from "../shared/systemStates.ts";
-import { submissionPath } from "./paths.ts";
+import { reworkPath, submissionPath } from "./paths.ts";
 
 const GROUPS: readonly { group: InboxGroup; title: string; empty: string }[] = [
   { group: "NEEDS_YOUR_ACTION", title: "Needs your action", empty: "Nothing needs your action." },
@@ -46,8 +46,9 @@ function RowAction({
   onStart: (system: InboxSystem) => void;
 }) {
   if (system.submissionId) {
+    const rework = system.state === "RETURNED_FOR_REWORK";
     return (
-      <AppLink path={submissionPath(system.submissionId)}>
+      <AppLink path={rework ? reworkPath(system.submissionId) : submissionPath(system.submissionId)}>
         {system.nextAction === "PREPARE_SUBMISSION" ? "Continue" : "View"}
         <span className="visually-hidden"> the VA Submission for {system.systemId}</span>
       </AppLink>
