@@ -1,4 +1,4 @@
--- A VA POC endorses a VA Submission Awaiting Endorsement (ticket 34, stories 65, 67 and 70, ADR 0040).
+-- A VA POC endorses a VA Submission Awaiting Endorsement (ticket 34, stories 65, 67 and 70, ADR 0041).
 --
 -- submission_participation learns the endorsing step, ENDORSE: a VA POC who endorses (and, with tickets 35 and 40, who
 -- returns or decides an Exemption) on a VA Submission. A VA POC counts at it only once they act; no Register assignment

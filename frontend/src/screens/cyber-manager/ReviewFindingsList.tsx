@@ -24,22 +24,24 @@ function FindingReviewCell({ finding, session }: { finding: Finding; session: Re
   );
 }
 
-/** The list narrowed to a batch's members still in it, or, with no batch, to the Findings in no batch. */
-function filterOf(batchId: string | null): FindingFilter {
-  return batchId === null ? { batched: false } : { batchId };
-}
+/** The Findings proposed one by one: those whose current proposal was made in no batch (or that have none). */
+export const NOT_IN_A_BATCH: FindingFilter = { batched: false };
+
+/** The Findings whose proposal changed since their last review, in a batch or not (story 56). */
+export const CHANGED_SINCE_LAST_REVIEW: FindingFilter = { changedSinceLastReview: true };
 
 /**
- * A page at a time of Findings to review, the most severe first, each with its own Confirm and Dispute: the members still
- * in one Bulk-set batch, or, with no batch, every Finding whose current proposal was made alone (or that has none). It
- * is read again on every refresh of the review screen.
+ * A page at a time of Findings to review, the most severe first, each with its own Confirm and Dispute, narrowed by the
+ * server to the filter: a batch's members still in it, the Findings not in a batch, or those changed since their last
+ * review. It is read again on every refresh of the review screen.
  */
 export function ReviewFindingsList({
-  batchId,
+  filter,
   heading,
   caption,
 }: {
-  batchId: string | null;
+  /** What the list is narrowed to; kept the same object between renders, so the list is read only when it changes. */
+  filter: FindingFilter;
   /** The heading, followed by how many Findings there are. */
   heading: string;
   caption: string;
@@ -47,8 +49,8 @@ export function ReviewFindingsList({
   const session = useReviewSession();
   const { submissionId } = session;
   const load = useCallback(
-    (page: number) => fetchFindings(submissionId, filterOf(batchId), page, FINDINGS_PAGE_SIZE),
-    [submissionId, batchId],
+    (page: number) => fetchFindings(submissionId, filter, page, FINDINGS_PAGE_SIZE),
+    [submissionId, filter],
   );
   return (
     <FindingsList

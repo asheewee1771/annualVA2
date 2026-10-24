@@ -115,6 +115,15 @@ abstract class ReviewSeam1 extends SubmitSeam1 {
         return ids;
     }
 
+    /** The ids of the Findings on a page of the list narrowed by this query (such as {@code batchId=...}). */
+    protected static List<String> listedIds(ApiClient client, String submissionId, String query) {
+        var response = client.get(SUBMISSIONS + "/" + submissionId + "/findings?" + query);
+        assertThat(response.status()).as(response.body()).isEqualTo(200);
+        List<String> ids = new ArrayList<>();
+        ApiClient.json(response).get("items").forEach(item -> ids.add(item.get("id").asString()));
+        return ids;
+    }
+
     /** The answer is a 403 {@code sod-conflict} problem. */
     protected static void assertSodConflict(ApiClient.Response response) {
         assertThat(response.status()).as(response.body()).isEqualTo(403);

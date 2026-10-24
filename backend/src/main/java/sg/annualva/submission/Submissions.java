@@ -164,7 +164,7 @@ public class Submissions {
 
     /**
      * What a step command checks beyond ownership and segregation of duties: the step it acts at, the one state it acts
-     * from, and the fixed reason and sentence of a refusal in any other state (ADR 0035 item 2, ADR 0040 item 1). The
+     * from, and the fixed reason and sentence of a refusal in any other state (ADR 0035 item 2, ADR 0041 item 1). The
      * access guard's need is the step's own.
      */
     private record Gate(SubmissionStep step, SubmissionState from, String refusedReason, String refusedSentence) {}
@@ -555,7 +555,7 @@ public class Submissions {
     }
 
     /**
-     * A step command's checks, in order (ADR 0035 item 2, ADR 0040 item 1): ownership (the step's need over the System;
+     * A step command's checks, in order (ADR 0035 item 2, ADR 0041 item 1): ownership (the step's need over the System;
      * any other is "not found", ADR 0013); then, with the VA Submission's row held as {@code hold} says until the caller's
      * transaction ends, segregation of duties (403 {@code sod-conflict}) and the gate's state (409
      * {@code invalid-transition}). Each refusal is audited in an entry of its own, as {@code refusedAs} about the System
