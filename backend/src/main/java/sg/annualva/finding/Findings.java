@@ -278,6 +278,20 @@ public class Findings {
         return proposals;
     }
 
+    /**
+     * The Bulk-set batches of a VA Submission with where their members stand (story 51), for anyone who may see its System.
+     * Each carries what the SMO/Tech Lead wrote, so the read is audited for every role, with the count only. A VA
+     * Submission the caller may not see is "not found", the same as one that does not exist.
+     */
+    @Transactional
+    public List<BatchSummary> batches(UUID submissionId) {
+        UUID systemId = submissions.systemOf(submissionId);
+        List<BatchSummary> batches = store.batches(submissionId);
+        audit.record(actor.attribute(AuditEvent.of(AuditAction.BATCHES_VIEWED, AuditOutcome.SUCCESS))
+                .onSystem(systemId).onSubmission(submissionId).with(DetailKey.COUNT, batches.size()));
+        return batches;
+    }
+
     /** The lower-case hex SHA-256 of an identity key: what a VA Submission keys its Findings on. */
     static String sha256(String text) {
         try {

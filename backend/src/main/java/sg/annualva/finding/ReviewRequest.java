@@ -8,9 +8,10 @@ import org.jspecify.annotations.Nullable;
  * @param decision CONFIRMED or DISPUTED
  * @param comment why: required to Dispute, optional to confirm
  * @param proposalId for a Finding, the id of the proposal reviewed, which must still be its current one; not used for a
- *     not-applicable justification
+ *     not-applicable justification or a Bulk-set batch
  * @param justificationVersion for a not-applicable justification, the version of it the screen showed (a whole number,
  *     the Scan Report's {@code justificationVersion}), which must still be the current one; not used for a Finding
+ *     or a Bulk-set batch
  */
 public record ReviewRequest(
         @Nullable String decision, @Nullable String comment, @Nullable String proposalId,

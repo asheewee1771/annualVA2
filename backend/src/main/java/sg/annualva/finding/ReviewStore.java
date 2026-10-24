@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -17,15 +18,28 @@ import sg.annualva.submission.ReviewProgress;
 import sg.annualva.submission.Submissions;
 
 /**
- * The reviews of Findings' proposals and of not-applicable justifications (ticket 28). Constant SQL, named parameters
- * (as-2). Every write takes a {@link Submissions.ReviewTarget}, so no review is written without the VA Submission held In
- * Review and segregation of duties checked.
+ * The reviews of Findings' proposals and of not-applicable justifications (ticket 28), one at a time or a Bulk-set batch at
+ * once (ticket 29). Constant SQL, named parameters (as-2). Every write takes a {@link Submissions.ReviewTarget}, so no
+ * review is written without the VA Submission held In Review and segregation of duties checked.
  */
 @Repository
 class ReviewStore {
 
     /** A Finding of the VA Submission, its row held: its current proposal, or null when it has none. */
     record LockedFinding(@Nullable UUID currentProposal) {}
+
+    /**
+     * A member of a Bulk-set batch, its Finding's row held.
+     *
+     * @param batchProposal the proposal the batch made for it
+     * @param currentProposal its current proposal; the batch's only while nothing changed it since
+     * @param reviewState the review of its current proposal; null when it has none
+     */
+    record LockedMember(UUID findingId, UUID batchProposal, @Nullable UUID currentProposal,
+            @Nullable ReviewState reviewState) {}
+
+    /** A Finding and the proposal of it that a review decides. */
+    record Reviewed(UUID findingId, UUID proposalId) {}
 
     /** A Scan Report of the VA Submission, its row held: its mode and the version of its justification. */
     record LockedSlot(ReportMode mode, int justificationVersion) {}
@@ -38,16 +52,35 @@ class ReviewStore {
     private static final String LOCK_FINDING =
             "SELECT current_proposal_id FROM finding WHERE id = :id AND submission_id = :submission FOR UPDATE";
 
-    private static final String INSERT_FINDING_REVIEW =
-            "INSERT INTO finding_review (finding_id, proposal_id, decision, comment, reviewed_by, reviewed_at) "
-            + "VALUES (:finding, :proposal, :decision, CAST(:comment AS text), :by, :now) RETURNING id";
+    /**
+     * The members of a Bulk-set batch, each Finding's row held until the transaction ends. The rows are locked in id order,
+     * as a proposal and a Bulk-set lock them (ADR 0028 item 4), so two reviews over the same Findings wait for each other
+     * instead of deadlocking.
+     */
+    private static final String LOCK_BATCH =
+            "SELECT f.id, m.id AS batch_proposal, f.current_proposal_id, f.review_state FROM finding_status_proposal m "
+            + "JOIN finding f ON f.id = m.finding_id WHERE m.batch_id = :batch AND f.submission_id = :submission "
+            + "ORDER BY f.id FOR UPDATE OF f";
+
+    private static final String INSERT_BATCH_REVIEW =
+            "INSERT INTO batch_review (batch_id, reviewed_by, reviewed_at) VALUES (:batch, :by, :now) RETURNING id";
 
     /**
-     * The Finding takes the decision. {@link Reviews} has checked, with the Finding held, that the proposal reviewed is its
+     * One review per Finding, all with the same decision and comment, and the same batch review (none for a review of one
+     * Finding). The casts give each NULL its column type.
+     */
+    private static final String INSERT_FINDING_REVIEWS =
+            "INSERT INTO finding_review (finding_id, proposal_id, decision, comment, batch_review_id, reviewed_by, "
+            + "reviewed_at) SELECT u.finding, u.proposal, :decision, CAST(:comment AS text), CAST(:batchReview AS uuid), "
+            + ":by, :now FROM unnest(CAST(:findings AS uuid[]), CAST(:proposals AS uuid[])) WITH ORDINALITY "
+            + "AS u(finding, proposal, n) ORDER BY u.n RETURNING id, finding_id";
+
+    /**
+     * The Findings take the decision. {@link Reviews} has checked, with each Finding held, that the proposal reviewed is its
      * current one: that check owns the rule, and a new proposal puts the state back to PENDING (V14).
      */
-    private static final String SET_FINDING_STATE =
-            "UPDATE finding SET review_state = :decision WHERE id = :finding";
+    private static final String SET_FINDING_STATES =
+            "UPDATE finding SET review_state = :decision WHERE id = ANY(CAST(:findings AS uuid[]))";
 
     /** The Scan Report's row, held until the transaction ends, as a mode change holds it (ADR 0030 item 6). */
     private static final String LOCK_SLOT =
@@ -99,21 +132,48 @@ class ReviewStore {
                 .optional();
     }
 
-    /** Keeps a review of the Finding's current proposal, held by {@link #lockFinding}, and gives the Finding its state. */
-    ReviewView reviewFinding(Submissions.ReviewTarget target, UUID findingId, ReviewFields.Parsed fields, UUID by,
-            Instant now) {
-        UUID proposal = fields.proposalId();
-        UUID id = jdbc.sql(INSERT_FINDING_REVIEW)
-                .param("finding", findingId)
-                .param("proposal", proposal)
+    /** Holds every member of the batch, in id order; none when the batch is not of this VA Submission. */
+    List<LockedMember> lockBatch(Submissions.ReviewTarget target, UUID batchId) {
+        return jdbc.sql(LOCK_BATCH).param("batch", batchId).param("submission", target.submissionId())
+                .query((rs, row) -> new LockedMember(rs.getObject("id", UUID.class),
+                        rs.getObject("batch_proposal", UUID.class), rs.getObject("current_proposal_id", UUID.class),
+                        FindingStore.reviewStateOf(rs.getString("review_state"))))
+                .list();
+    }
+
+    /** A new review of the batch: who and when; what it decided is on the reviews of its Findings. */
+    UUID newBatchReview(Submissions.ReviewTarget target, UUID batchId, UUID by, Instant now) {
+        return jdbc.sql(INSERT_BATCH_REVIEW).param("batch", batchId).param("by", by)
+                .param("now", now.atOffset(ZoneOffset.UTC)).query(UUID.class).single();
+    }
+
+    /**
+     * Keeps a review of each Finding's current proposal, held by {@link #lockFinding} or {@link #lockBatch}, and gives each
+     * Finding its state: the one write path for a review of one Finding and of a batch.
+     *
+     * @param batchReview the batch review they are made in; null for a review of one Finding
+     * @return the reviews, in the order of the Findings
+     */
+    List<ReviewView> reviewFindings(Submissions.ReviewTarget target, List<Reviewed> reviewed,
+            ReviewFields.Parsed fields, @Nullable UUID batchReview, UUID by, Instant now) {
+        Map<UUID, UUID> byFinding = new HashMap<>();
+        jdbc.sql(INSERT_FINDING_REVIEWS)
+                .param("findings", FindingStore.ids(reviewed.stream().map(Reviewed::findingId).toList()))
+                .param("proposals", FindingStore.ids(reviewed.stream().map(Reviewed::proposalId).toList()))
                 .param("decision", fields.decision().name())
                 .param("comment", fields.comment())
+                .param("batchReview", batchReview)
                 .param("by", by)
                 .param("now", now.atOffset(ZoneOffset.UTC))
-                .query(UUID.class)
-                .single();
-        jdbc.sql(SET_FINDING_STATE).param("decision", fields.decision().name()).param("finding", findingId).update();
-        return new ReviewView(id, fields.decision(), fields.comment(), proposal, null, null, by, now);
+                .query((rs, row) -> Map.entry(rs.getObject("finding_id", UUID.class), rs.getObject("id", UUID.class)))
+                .list()
+                .forEach(kept -> byFinding.put(kept.getKey(), kept.getValue()));
+        jdbc.sql(SET_FINDING_STATES).param("decision", fields.decision().name())
+                .param("findings", FindingStore.ids(reviewed.stream().map(Reviewed::findingId).toList())).update();
+        return reviewed.stream()
+                .map(each -> new ReviewView(byFinding.get(each.findingId()), fields.decision(), fields.comment(),
+                        each.proposalId(), null, null, by, now))
+                .toList();
     }
 
     /** The mode of a Scan Report that has a row, held until the transaction ends; nothing for one never written (uploaded). */

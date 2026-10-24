@@ -6,28 +6,18 @@ import { ClassifiedField } from "../../components/ClassifiedField.tsx";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { useResource } from "../../hooks/useResource.ts";
 import { ReasonList } from "../shared/ReasonList.tsx";
+import { useReviewSession } from "./reviewSession.ts";
 
 const UNREACHABLE: Problem = { type: "about:blank", title: "The server could not be reached", status: 0 };
 
 /**
- * The "Finish the review" panel of a VA Submission In Review. It is rendered only In Review, so the readiness read (an
- * audited read for a Cyber Manager) happens only then, and again after each review the screen counts in `reviews`.
+ * The "Finish the review" panel of a VA Submission In Review. The screen renders it only In Review, so the readiness read
+ * (an audited read for a Cyber Manager) happens only then, and again with the screen's refresh after each review.
  */
-export function FinishReview({
-  submissionId,
-  reviews,
-  classification,
-  onMoved,
-}: {
-  submissionId: string;
-  /** How many reviews the screen has made: each one reads where the review stands again. */
-  reviews: number;
-  classification: string;
-  onMoved: () => void;
-}) {
-  // `reviews` is in the dependencies on purpose: a new count is a new read.
-  const load = useCallback(() => fetchReadiness(submissionId), [submissionId, reviews]);
-  const readiness = useResource(load);
+export function FinishReview() {
+  const { submissionId, classification, refreshKey, reviewed } = useReviewSession();
+  const load = useCallback(() => fetchReadiness(submissionId), [submissionId]);
+  const readiness = useResource(load, refreshKey);
   if (readiness.error) return <ErrorPanel problem={readiness.error.problem} />;
   if (!readiness.data) return <p className="muted">Loading where the review stands…</p>;
   return (
@@ -35,7 +25,7 @@ export function FinishReview({
       submissionId={submissionId}
       outcome={readiness.data.review}
       classification={classification}
-      onMoved={onMoved}
+      onMoved={reviewed}
     />
   );
 }

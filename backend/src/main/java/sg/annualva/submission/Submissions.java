@@ -513,7 +513,7 @@ public class Submissions {
      */
     private Submission movedOutOfReview(ReviewTarget target, SubmissionState to, Instant now, AuditEvent success) {
         if (target.hold != Hold.EXCLUSIVE) {
-            throw new IllegalStateException("a move out of In Review holds the VA Submission exclusively (ADR 0036)");
+            throw new IllegalStateException("a move out of In Review holds the VA Submission exclusively (ADR 0037)");
         }
         UUID id = target.submissionId();
         store.moved(id, to, calendar.dateOf(now));

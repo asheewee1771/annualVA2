@@ -130,6 +130,12 @@ public enum AuditAction {
      */
     BATCH_PROPOSED("batch-proposed", "database"),
     /**
+     * Someone who may see the System listed the Bulk-set batches of a VA Submission (story 51). Each carries what the
+     * SMO/Tech Lead wrote, so the read is audited for every role. About the System and the VA Submission, with the number of
+     * batches; never their text.
+     */
+    BATCHES_VIEWED("batches-viewed", "database"),
+    /**
      * A Cyber Manager or VA POC read the progress counts of a VA Submission (story 38), as a read of the VA Submission is
      * recorded. The System's own SMO/Tech Lead reading them is not. About the System and the VA Submission; no detail.
      */
@@ -169,6 +175,14 @@ public enum AuditAction {
      * the VA Submission; never the comment or the justification.
      */
     REPORT_REVIEWED("report-reviewed", "database"),
+    /**
+     * A Cyber Manager confirmed or Disputed a Bulk-set batch as a whole (story 51; SUCCESS, with the {@code batch_id}, the
+     * {@code count} of Findings it decided and the {@code decision}; each of them is also a {@code FINDING_REVIEWED} entry
+     * with the {@code batch_id}), or was refused because segregation of duties does not allow them to review this VA
+     * Submission, it is not In Review, or no member awaited review (REFUSED, with the {@code batch_id} and a fixed reason).
+     * About the System and the VA Submission; never the comment.
+     */
+    BATCH_REVIEWED("batch-reviewed", "database"),
     /**
      * A Cyber Manager returned a VA Submission In Review for rework (SUCCESS, with {@code state_from}, {@code state_to} and
      * the {@code count} of Disputed items attached), or was refused: segregation of duties, it is not In Review, or nothing
