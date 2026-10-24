@@ -152,6 +152,10 @@ export interface FindingFilter {
   reviewState?: ReviewState;
   /** No proposal yet, or a Disputed one: what the SMO/Tech Lead still has to act on. */
   needsAttention?: boolean;
+  /** Only the members whose current proposal was made in this Bulk-set batch. */
+  batchId?: string;
+  /** Only the Findings whose current proposal was made in a batch (true), or only the others (false). */
+  batched?: boolean;
 }
 
 /** The most a page of the list may hold: the server's limit. */
@@ -162,6 +166,8 @@ function findingsPath(submissionId: string, filter: FindingFilter, page: number,
   if (filter.severity && filter.severity.length > 0) query.set("severity", filter.severity.join(","));
   if (filter.reviewState) query.set("reviewState", filter.reviewState);
   if (filter.needsAttention) query.set("needsAttention", "true");
+  if (filter.batchId) query.set("batchId", filter.batchId);
+  if (filter.batched !== undefined) query.set("batched", String(filter.batched));
   return `/api/submissions/${encodeURIComponent(submissionId)}/findings?${query.toString()}`;
 }
 
@@ -223,6 +229,58 @@ export function proposeInBulk(
     findingIds,
     ...input,
   });
+}
+
+/**
+ * A Bulk-set batch as the review screen lists it: what was proposed and where its members stand. A member is still in the
+ * batch while its current proposal is the batch's; one proposed again since is reviewed on its own.
+ */
+export interface BatchSummary {
+  batchId: string;
+  /** A user id, never a name or email. */
+  proposedBy: string;
+  /** An instant (UTC). */
+  proposedAt: string;
+  /** What every member was proposed (the first member's proposal; the status and fields are the same on each). */
+  proposal: Proposal;
+  /** How many Findings the batch was applied to. */
+  count: number;
+  /** Members still in the batch awaiting review: what Confirm batch or Dispute batch decides. */
+  awaitingReview: number;
+  confirmed: number;
+  disputed: number;
+  /** Members proposed again since, reviewed one by one. */
+  changedSince: number;
+  /** Members still in the batch that were entered by hand: the batch is marked for closer review. */
+  manuallyEntered: number;
+}
+
+/** GET /api/submissions/{id}/batches: the Bulk-set batches of the VA Submission, in the order they were made. */
+export function fetchBatches(submissionId: string): Promise<BatchSummary[]> {
+  return request<BatchSummary[]>("GET", `/api/submissions/${encodeURIComponent(submissionId)}/batches`);
+}
+
+/** Why a batch review left a member out: it was proposed again (or withdrawn by a rescan), or already reviewed. */
+export type LeftOutReason = "PROPOSAL_CHANGED" | "REVIEWED";
+
+/** One review of a Bulk-set batch: the Findings it decided and the members it left out, each with why. */
+export interface BatchReview {
+  id: string;
+  batchId: string;
+  decision: ReviewDecision;
+  comment: string | null;
+  reviewedBy: string;
+  reviewedAt: string;
+  reviewed: string[];
+  leftOut: { findingId: string; reason: LeftOutReason }[];
+}
+
+/**
+ * POST /api/batches/{id}/reviews: the Cyber Manager confirms or Disputes, with one comment, every member of the batch
+ * still awaiting review; members changed since are left out and named in the answer.
+ */
+export function reviewBatch(batchId: string, input: ReviewInput): Promise<BatchReview> {
+  return request<BatchReview>("POST", `/api/batches/${encodeURIComponent(batchId)}/reviews`, input);
 }
 
 /** A report file as the readiness check names it: the name the person gave it is text, never markup. */
