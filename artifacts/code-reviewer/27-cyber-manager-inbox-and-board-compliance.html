@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review &#8212; 27-cyber-manager-inbox-and-board</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall: PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">build: WARN &#183; C0 H0 M0 L1</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear: WARN &#183; C0 H0 M3 L7</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review: WARN &#183; C0 H0 M1 L11</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">semgrep: WARN &#183; C0 H0 M0 L2 (round 1)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">im8: PASS &#183; C0 H0 M0 L0 (round 1)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react: WARN &#183; C0 H0 M1 L5 (round 1)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot: WARN &#183; C0 H0 M0 L16</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">main</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report</h1>
+          <p class="text-sm text-slate-600 mt-1">Ticket 27: Cyber Manager inbox and Quarter board (stories 48 and 49). Round 2, after the correction pass. Scope: the uncommitted working tree on <span class="font-mono text-xs">main</span> at 4fa0d24.</p>
+        </div>
+        <div class="rounded-md border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900 space-y-1">
+          <p class="font-semibold">Fast mode (user-approved)</p>
+          <p>Rerun this round: <span class="font-mono text-xs">build</span>, <span class="font-mono text-xs">thermo-nuclear</span>, <span class="font-mono text-xs">code-review</span> and <span class="font-mono text-xs">springboot</span>. The correction rewrote the back-end reader and changed a due date, so code-review and springboot were rerun as well as the failing check and build.</p>
+          <p>Carried over unchanged from round 1: <span class="font-mono text-xs">semgrep</span>, <span class="font-mono text-xs">im8</span> and <span class="font-mono text-xs">react</span>. Their artifacts describe the round-1 code and still name files the correction removed (for example <span class="font-mono text-xs">ReviewedSystems.java</span>, now <span class="font-mono text-xs">DashboardSystems.java</span>).</p>
+          <p>Semgrep's pre-existing test-only High in <span class="font-mono text-xs">TestEndpoints.java</span> is not counted, as in earlier tickets. It does not appear in this round's semgrep artifact.</p>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Executive Summary</h2>
+          <p class="text-xs text-slate-500 mt-1">Overall compliance evaluation status across all seven active checks. Overall: PASS. No check has a Critical or High finding. Both round-1 thermo-nuclear Highs are resolved.</p>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left border border-slate-100">
+            <thead>
+              <tr>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Check</th>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Status</th>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">C / H / M / L</th>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Summary</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr>
+                <td class="px-4 py-2 font-medium">build</td>
+                <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+                <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 1</td>
+                <td class="px-4 py-2">All blocking gates pass. Back end: 799 tests, 0 failures, JaCoCo line 97.28 %, branch 91.19 % (fingerprint-matched log reused). Front end: <span class="font-mono text-xs">npm run check</span> exit 0. Advisory: fallow audit clone groups between the two inbox screens.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 font-medium">thermo-nuclear</td>
+                <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+                <td class="px-4 py-2 font-mono text-xs">0 / 0 / 3 / 7</td>
+                <td class="px-4 py-2">Both round-1 Highs resolved: one window rule in SQL, one shared reader (<span class="font-mono text-xs">DashboardSystems</span>). Open: Not Started still assembled in the reader, dashboard records re-flatten shared columns, front-end inbox duplication.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 font-medium">code-review</td>
+                <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+                <td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 11</td>
+                <td class="px-4 py-2">No hard standards violations. Returned for Rework dated on <span class="font-mono text-xs">review_due</span> is consistent with spec.md:193 and :462. Worst: no Seam 1 test proves "Overdue first" ordering in the CM inbox.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 font-medium">semgrep <span class="text-xs text-slate-500">(round 1)</span></td>
+                <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+                <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 2</td>
+                <td class="px-4 py-2">No findings in ticket-27 code. Two pre-existing Low (P2) likely false positives outside the change.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 font-medium">im8 <span class="text-xs text-slate-500">(round 1)</span></td>
+                <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+                <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 0</td>
+                <td class="px-4 py-2">Role checks, scope filtering, parameterised SQL, no report content, unaudited count-only reads per recorded decisions. One informational note (N-1).</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 font-medium">react <span class="text-xs text-slate-500">(round 1)</span></td>
+                <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+                <td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 5</td>
+                <td class="px-4 py-2">Keys, purity, effects sound. Worst: stale Cycle/Quarter data stays on screen while loading and after a failed load.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 font-medium">springboot</td>
+                <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+                <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 16</td>
+                <td class="px-4 py-2">Round-1 Medium (C1) fixed: <span class="font-mono text-xs">SystemState.of</span> and <span class="font-mono text-xs">isFinal</span> are exhaustive switches. No N+1, correct read-only transactions. Low hardening and test gaps only. (The artifact's summary says 15 Low; its findings table lists 16.)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-600">No Critical or High findings in any check. Nothing blocks. The Medium follow-ups worth scheduling:</p>
+          <ul class="list-disc pl-5 text-sm space-y-1">
+            <li><span class="text-amber-600">Medium</span> (code-review P1): "Overdue first" ordering is implemented but unproven; removing the Overdue comparator leaves tests green. <span class="font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/CmInbox.java:47</span>, <span class="font-mono text-xs">backend/src/test/java/sg/annualva/dashboard/CmInboxTest.java:49-69</span></li>
+            <li><span class="text-amber-600">Medium</span> (thermo-nuclear 1): the reader still builds Not Started from three <span class="font-mono text-xs">Submissions</span> calls plus a SQL round trip per Quarter. <span class="font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/DashboardSystems.java:72-90</span></li>
+            <li><span class="text-amber-600">Medium</span> (thermo-nuclear 2): each dashboard record re-flattens the shared System columns; <span class="font-mono text-xs">nextActionDueOn</span> and <span class="font-mono text-xs">dueOn</span> name the same value. <span class="font-mono text-xs">SmoInbox.java:50-53</span>, <span class="font-mono text-xs">CmInbox.java:39-42</span>, <span class="font-mono text-xs">frontend/src/api/dashboards.ts</span></li>
+            <li><span class="text-amber-600">Medium</span> (thermo-nuclear 3, carried): front end duplicates the grouped inbox table and cycle-scoped loading. <span class="font-mono text-xs">frontend/src/screens/cyber-manager/CmInboxScreen.tsx</span>, <span class="font-mono text-xs">frontend/src/screens/smo/SmoInboxScreen.tsx</span></li>
+            <li><span class="text-amber-600">Medium</span> (react 1, round 1): stale Cycle/Quarter data stays rendered while loading and after a failed load. <span class="font-mono text-xs">QuarterBoardScreen.tsx</span>, <span class="font-mono text-xs">CmInboxScreen.tsx</span>, <span class="font-mono text-xs">SmoInboxScreen.tsx</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build <span class="text-xs text-slate-500">(rerun)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-t border-slate-100">
+            <thead>
+              <tr>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 align-top">
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/CmInboxScreen.tsx</td>
+                <td class="px-4 py-2 font-mono text-xs">41-61, 98-107</td>
+                <td class="px-4 py-2">fallow audit clone groups r6 and r5: the inbox group section repeats <span class="font-mono text-xs">SmoInboxScreen.tsx:115-135</span> and <span class="font-mono text-xs">:196-205</span>. Advisory; suggests a shared group-section component.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-400">Info</td>
+                <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/** (tables)</td>
+                <td class="px-4 py-2 font-mono text-xs">-</td>
+                <td class="px-4 py-2">table-scroll/data-table boilerplate repeats across several screens (clone groups r1-r4, r7-r9); pattern predates this change.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-400">Info</td>
+                <td class="px-4 py-2 font-mono text-xs">frontend/src/styles.css</td>
+                <td class="px-4 py-2 font-mono text-xs">304</td>
+                <td class="px-4 py-2">css-duplicate-block already in HEAD; reported "since main" only because added lines shifted line numbers.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-400">Info</td>
+                <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/QuarterBoardScreen.tsx</td>
+                <td class="px-4 py-2 font-mono text-xs">-</td>
+                <td class="px-4 py-2">fallow health lists it as a churn/risk hotspot (file health 84.6); advisory only.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-400">Info</td>
+                <td class="px-4 py-2 font-mono text-xs">MccHttp.java</td>
+                <td class="px-4 py-2 font-mono text-xs">51</td>
+                <td class="px-4 py-2">Deprecated-for-removal compiler warning, outside this change.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear <span class="text-xs text-slate-500">(rerun)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">Round-1 High 1 (separate state-to-window mapping in <span class="font-mono text-xs">SmoInbox</span>) and High 2 (<span class="font-mono text-xs">ReviewedSystems.in</span> copying <span class="font-mono text-xs">SmoInbox.inbox</span>) are both resolved.</p>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-t border-slate-100">
+            <thead>
+              <tr>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 align-top">
+              <tr>
+                <td class="px-4 py-2 text-amber-600">Medium</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/DashboardSystems.java</td>
+                <td class="px-4 py-2 font-mono text-xs">72-90</td>
+                <td class="px-4 py-2">The reader assembles Not Started itself from three <span class="font-mono text-xs">Submissions</span> calls plus a SQL round trip per Quarter memoised in a HashMap; <span class="font-mono text-xs">notStartedDueOn</span> is needlessly @Nullable. Suggest one status read-model method in <span class="font-mono text-xs">Submissions</span>.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-amber-600">Medium</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/SmoInbox.java, CmInbox.java, QuarterBoard.java; frontend/src/api/dashboards.ts</td>
+                <td class="px-4 py-2 font-mono text-xs">50-53; 39-42; 35-37</td>
+                <td class="px-4 py-2">Each dashboard record re-flattens the shared System columns; one value has two names (<span class="font-mono text-xs">nextActionDueOn</span> / <span class="font-mono text-xs">dueOn</span>). Suggest one shared record composed with @JsonUnwrapped.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-amber-600">Medium</td>
+                <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/CmInboxScreen.tsx; frontend/src/screens/smo/SmoInboxScreen.tsx; QuarterBoardScreen.tsx</td>
+                <td class="px-4 py-2 font-mono text-xs">11-15, 32-73, 81-97</td>
+                <td class="px-4 py-2">Carried from round 1: grouped inbox table and cycle-scoped loading duplicated. Extract a shared table and a <span class="font-mono text-xs">useCycleResource</span> hook, or record a deferral decision.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/SmoInbox.java</td>
+                <td class="px-4 py-2 font-mono text-xs">89-108</td>
+                <td class="px-4 py-2">Re-lists the final states and derives Done from a null NextAction instead of <span class="font-mono text-xs">SystemState.isFinal()</span>.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/ReviewMarkers.java</td>
+                <td class="px-4 py-2 font-mono text-xs">39-54</td>
+                <td class="px-4 py-2">Two-step API with two meanings of <span class="font-mono text-xs">of</span>; the map round-trip is repeated in both callers.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/DashboardSystems.java</td>
+                <td class="px-4 py-2 font-mono text-xs">54-69</td>
+                <td class="px-4 py-2">Two overloads become a nullable "only this Quarter" mode; @Transactional repeats the callers'.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">frontend/src/styles.css</td>
+                <td class="px-4 py-2 font-mono text-xs">219</td>
+                <td class="px-4 py-2">Board grid hard-codes 10 columns; use grid-auto-flow: column.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/CmInbox.java</td>
+                <td class="px-4 py-2 font-mono text-xs">41</td>
+                <td class="px-4 py-2">Carried: returns submitDue, reviewDue and endorseDue, which the screen never renders.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingStore.java</td>
+                <td class="px-4 py-2 font-mono text-xs">120-124, 309-322</td>
+                <td class="px-4 py-2">Carried: <span class="font-mono text-xs">ReviewTally</span> exists only so the scope filter runs in Java after the query.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/dashboard/CyberManagerSeam1.java</td>
+                <td class="px-4 py-2 font-mono text-xs">29-40</td>
+                <td class="px-4 py-2">Carried: test base re-implements helpers that <span class="font-mono text-xs">InboxSeam1</span> already has.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review <span class="text-xs text-slate-500">(rerun)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">Standards: 8 Low. Spec: 1 Medium, 3 Low. The deliberate change dating Returned for Rework on <span class="font-mono text-xs">review_due</span> was checked and is consistent with the spec.</p>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-t border-slate-100">
+            <thead>
+              <tr>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 align-top">
+              <tr>
+                <td class="px-4 py-2 text-amber-600">Medium</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/CmInbox.java; backend/src/test/java/sg/annualva/dashboard/CmInboxTest.java</td>
+                <td class="px-4 py-2 font-mono text-xs">47; 49-69</td>
+                <td class="px-4 py-2">P1: "Overdue first, then by due date" is implemented but not proven: the Overdue items also have the earliest dueOn, so removing the Overdue comparator keeps tests green. Add a case with an Overdue item due later than a non-Overdue one.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/SmoInbox.java</td>
+                <td class="px-4 py-2 font-mono text-xs">197-205</td>
+                <td class="px-4 py-2">S1: <span class="font-mono text-xs">nextAction</span> re-lists final states instead of <span class="font-mono text-xs">SystemState.isFinal()</span> (ADR 0034 item 1).</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/BulkProposalTest.java; FindingProposalTest.java</td>
+                <td class="px-4 py-2 font-mono text-xs">418-420; 242-244</td>
+                <td class="px-4 py-2">S2: audit sentinel checks now filter by System; a leak into an audit entry with no System would no longer be caught.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/CmInbox.java; QuarterBoard.java</td>
+                <td class="px-4 py-2 font-mono text-xs">67-82; 64-84</td>
+                <td class="px-4 py-2">S3: same markers pipeline and row mapping repeated; the two-step markers API forces it.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/DashboardSystems.java; Submissions.java</td>
+                <td class="px-4 py-2 font-mono text-xs">36-38; 482-485</td>
+                <td class="px-4 py-2">S4: data clumps (id, systemId, name, quarter; the three window dates plus dueOn).</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/CmInbox.java; frontend/src/screens/cyber-manager/ReviewFlags.tsx</td>
+                <td class="px-4 py-2 font-mono text-xs">42; 2</td>
+                <td class="px-4 py-2">S5: <span class="font-mono text-xs">sodConflict</span> and <span class="font-mono text-xs">CmInbox</span> abbreviate glossary terms (precedent: SmoInbox).</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/CmInbox.java; QuarterBoard.java</td>
+                <td class="px-4 py-2 font-mono text-xs">79; 82</td>
+                <td class="px-4 py-2">S6: message chains (<span class="font-mono text-xs">row.system().id()</span>) repeated across read models.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">.scratch/annual-va/issues/27-cyber-manager-inbox-and-board.md</td>
+                <td class="px-4 py-2 font-mono text-xs">23-24</td>
+                <td class="px-4 py-2">S7: reviewer log cites <span class="font-mono text-xs">ReviewedSystems.in</span> and <span class="font-mono text-xs">SmoInbox.started</span>, which no longer exist.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">frontend/src/styles.css</td>
+                <td class="px-4 py-2 font-mono text-xs">-</td>
+                <td class="px-4 py-2">S8: <span class="font-mono text-xs">.board</span> hard-codes the column count the server owns.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/DashboardSystems.java; QuarterBoardTest.java</td>
+                <td class="px-4 py-2 font-mono text-xs">72</td>
+                <td class="px-4 py-2">P2: reads only active Systems, so the Withdrawn column cannot fill in production; the test arranges an impossible state; ticket 43 has no hand-off note.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/dashboard/CmInboxAccessTest.java</td>
+                <td class="px-4 py-2 font-mono text-xs">59-60</td>
+                <td class="px-4 py-2">P3: <span class="font-mono text-xs">?cycle=</span> on the CM inbox is tested only for errors, not for selecting a valid Cycle.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/BulkProposalTest.java; FindingProposalTest.java</td>
+                <td class="px-4 py-2 font-mono text-xs">-</td>
+                <td class="px-4 py-2">P4: the flaky-test fix is unrelated to stories 48/49 and belongs in its own commit.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep <span class="text-xs text-slate-500">(carried over from round 1)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">Rulesets p/security-audit and p/default, whole repository plus changed test files. No findings in ticket-27 code. The pre-existing test-only High in <span class="font-mono text-xs">TestEndpoints.java</span> is not counted, as in earlier tickets.</p>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-t border-slate-100">
+            <thead>
+              <tr>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 align-top">
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">scripts/mock-mockpass-assertions.js</td>
+                <td class="px-4 py-2 font-mono text-xs">11</td>
+                <td class="px-4 py-2">F1 (pre-existing, P2): possible path traversal in path.resolve; dev-only fixture called with fixed paths. Likely false positive.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/arch/ArchitectureTest.java</td>
+                <td class="px-4 py-2 font-mono text-xs">118</td>
+                <td class="px-4 py-2">F2 (pre-existing, P2): reflection on a class-name string from a hard-coded test array. False positive; line unchanged by this ticket.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8 <span class="text-xs text-slate-500">(carried over from round 1)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">as-1, as-2, as-3, as-7/ac-1, as-13, lm-4, lm-19, dp-8 pass. Deferrals (as-12 ticket 51, lm-16/pm-6 ticket 52, retention ticket 49) unchanged. Informational N-1: the <span class="font-mono text-xs">quarter=5</span> 400 body is not asserted to omit the value. Manual items: ticket 28 must enforce segregation of duties on the same participation rule; re-check scope when ticket 33 opens the board to VA POC.</p>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-t border-slate-100">
+            <thead>
+              <tr>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react <span class="text-xs text-slate-500">(carried over from round 1)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-t border-slate-100">
+            <thead>
+              <tr>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 align-top">
+              <tr>
+                <td class="px-4 py-2 text-amber-600">Medium</td>
+                <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/QuarterBoardScreen.tsx; CmInboxScreen.tsx; frontend/src/screens/smo/SmoInboxScreen.tsx</td>
+                <td class="px-4 py-2 font-mono text-xs">38-78; 81-111; 160-211</td>
+                <td class="px-4 py-2">Changing the Cycle or Quarter keeps showing the previous answer with no loading cue, and keeps it beside the error if the new load fails. Compare the answer with the request in each screen.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">QuarterBoardScreen.tsx; frontend/src/screens/shared/CycleSelector.tsx</td>
+                <td class="px-4 py-2 font-mono text-xs">57-67; 22</td>
+                <td class="px-4 py-2">Controlled select with a value matching no option; the first option looks selected and cannot be chosen.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/CyberManagerArea.tsx; CycleSelector.tsx</td>
+                <td class="px-4 py-2 font-mono text-xs">28-32; 17</td>
+                <td class="px-4 py-2">Tab switch remounts each screen, drops the chosen VA Cycle and refetches /api/cycles.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">frontend/src/styles.css</td>
+                <td class="px-4 py-2 font-mono text-xs">.board</td>
+                <td class="px-4 py-2">Board grid hard-codes 10 columns, coupled to the server's state count.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/CyberManagerArea.tsx</td>
+                <td class="px-4 py-2 font-mono text-xs">11</td>
+                <td class="px-4 py-2">Any unknown /cyber-manager/... path silently renders the inbox with the Inbox tab marked current.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SmoInboxScreen.tsx</td>
+                <td class="px-4 py-2 font-mono text-xs">51</td>
+                <td class="px-4 py-2">"Continue" vs "View" keyed on nextAction instead of the existing isEditable(state) rule.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot <span class="text-xs text-slate-500">(rerun)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">Seven skills applied (core, web, data, batch, security, logging, test). Round-1 C1 (Medium), C2 and D2 fixed. Role checks, scope, validation, transactions and query efficiency verified. Batch and logging: no findings.</p>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-t border-slate-100">
+            <thead>
+              <tr>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+                <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 align-top">
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td>
+                <td class="px-4 py-2 font-mono text-xs">401-404</td>
+                <td class="px-4 py-2">C3 (carried): stale Javadoc on <span class="font-mono text-xs">editable</span> about unnamed states.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionStep.java; SubmissionStore.java</td>
+                <td class="px-4 py-2 font-mono text-xs">-</td>
+                <td class="px-4 py-2">C4 (carried): no DECIDE constant though the CHECK allows it; the first DECIDE row would make VA Submission reads fail with 500.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/SmoInbox.java; SystemState.java; db/migration/V20__overdue.sql</td>
+                <td class="px-4 py-2 font-mono text-xs">84-108; 36-42; 11-20</td>
+                <td class="px-4 py-2">C5: final states encoded in three places; the SQL CASE has no ELSE, so a future state would silently get dueOn = null.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/QuarterBoard.java</td>
+                <td class="px-4 py-2 font-mono text-xs">63-67</td>
+                <td class="px-4 py-2">W1 (carried): service accepts any quarter; only the controller enforces 1 to 4.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/web/ApiExceptionHandler.java</td>
+                <td class="px-4 py-2 font-mono text-xs">-</td>
+                <td class="px-4 py-2">W2 (carried): validation 400 uses the default about:blank problem type, not the app's typed problem.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/QuarterBoard.java</td>
+                <td class="px-4 py-2 font-mono text-xs">65-66</td>
+                <td class="px-4 py-2">W3: the clock is read twice per request; a request straddling midnight could mix days.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterSystems.java</td>
+                <td class="px-4 py-2 font-mono text-xs">69-90</td>
+                <td class="px-4 py-2">D1 (carried): the whole Register is loaded and filtered in Java on every dashboard load.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingStore.java</td>
+                <td class="px-4 py-2 font-mono text-xs">119-123</td>
+                <td class="px-4 py-2">D3 (carried): REVIEW_COUNTS groups by the denormalized finding.system_id; a mismatch would throw in toUnmodifiableMap.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/DashboardSystems.java</td>
+                <td class="px-4 py-2 font-mono text-xs">74-86</td>
+                <td class="px-4 py-2">D4: per-Quarter notStartedDueOn query; computeIfAbsent does not cache null, so a null result would become N+1.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingStore.java</td>
+                <td class="px-4 py-2 font-mono text-xs">119-123</td>
+                <td class="px-4 py-2">D5: awaitingReview omits pending Not Applicable justifications; confirm intent with ticket 28.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/CmInbox.java; QuarterBoard.java; SmoInbox.java</td>
+                <td class="px-4 py-2 font-mono text-xs">66; 63; 145</td>
+                <td class="px-4 py-2">D6: READ COMMITTED gives each read its own snapshot; optional REPEATABLE_READ for one snapshot per response.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/cycle/VaCycle.java</td>
+                <td class="px-4 py-2 font-mono text-xs">40-45</td>
+                <td class="px-4 py-2">D7: the null firstLiveQuarter branch of quarterShownOn is never reached through the API.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/dashboard/CmInboxTest.java; SmoInboxStartedTest.java</td>
+                <td class="px-4 py-2 font-mono text-xs">107-132; 105-130</td>
+                <td class="px-4 py-2">T1: Done is shown only for ENDORSED through the API; EXEMPTED and NOT_ENDORSED mutants would survive.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/dashboard/QuarterBoardTest.java</td>
+                <td class="px-4 py-2 font-mono text-xs">36-75</td>
+                <td class="px-4 py-2">T2 (carried): EXEMPTION_REQUESTED and NOT_ENDORSED columns never populated; SystemState.java:32 uncovered.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/dashboard/CmInboxAccessTest.java; QuarterBoardTest.java; CmInboxTest.java</td>
+                <td class="px-4 py-2 font-mono text-xs">51; 115, 146-152, 172; 161-164</td>
+                <td class="px-4 py-2">T3: weak assertions (isIn(403, 405); numeric quarter bodies unchecked; assertions inside loops).</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/Findings.java; Submissions.java</td>
+                <td class="px-4 py-2 font-mono text-xs">222-236; 360-389</td>
+                <td class="px-4 py-2">T4 (carried): defence-in-depth scope filters unreachable through the API, so untested.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </main>
+  </body>
+</html>
