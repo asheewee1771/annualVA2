@@ -117,6 +117,48 @@ class ReReviewTest extends ReturnSeam1 {
     }
 
     @Test
+    void aFindingConfirmedInABatchReviewAndProposedAgainIsChanged() {
+        Draft draft = readyDraft();
+        String sub = draft.submissionId();
+        List<String> ids = findingIds(draft.smo(), sub);
+        String batchId = BatchReviewSeam1.bulkSet(draft, ids, falsePositive("Not reachable in this System."));
+        submitted(draft.smo(), sub);
+        ApiClient cm = signedInAs(CM);
+        BatchReviewSeam1.batchReviewed(cm, batchId, CONFIRMED, null);
+        reportReviewed(cm, sub, BURP_SUITE, DISPUTED, "It has a web console.");
+        returned(cm, sub, null);
+
+        proposed(draft.smo(), ids.get(0), remediated("Upgraded to 2.0."));
+        submitted(draft.smo(), sub);
+
+        assertThat(listedIds(cm, sub, CHANGED)).as("a batch review is a review of each member")
+                .containsExactly(ids.get(0));
+        assertThat(findingById(cm, sub, ids.get(1)).get("reviewState").asString()).isEqualTo(CONFIRMED);
+    }
+
+    @Test
+    void aFindingWhoseProposalARescanTookAwayDuringReworkIsChanged() {
+        Draft draft = inReview();
+        String sub = draft.submissionId();
+        ApiClient cm = signedInAs(CM);
+        String alpha = findingId(draft, "CVE-2027-0001");
+        reviewed(cm, sub, alpha, CONFIRMED, null);
+        reviewed(cm, sub, findingId(draft, "SC-PWD-1"), DISPUTED, "Show the policy.");
+        returned(cm, sub, null);
+        String project = "{\"name\":\"throwaway-project\",\"reportDate\":\"" + SCANNED + "\"}";
+        String scanned = findingById(cm, sub, alpha).get("sourceFiles").get(0).get("id").asString();
+
+        replacedAndSettled(draft, scanned, "rescan.json",
+                jsonReportOf(project, dependency(PKG_B, "/app/bravo.js", "CVE-2027-0002", "7.5")));
+        assertThat(listedIds(cm, sub, CHANGED)).as("the rescan proposed Remediated").containsExactly(alpha);
+        settledDc(draft, "again.json", jsonReportOf(project, dependency(PKG_A, "/lib/alpha.js", "CVE-2027-0001", "9.8")));
+
+        assertThat(findingById(cm, sub, alpha).get("currentProposal").isNull()).as("reported again").isTrue();
+        assertThat(listedIds(cm, sub, CHANGED)).as("left with no proposal").containsExactly(alpha);
+        assertThat(listedIds(cm, sub, UNCHANGED)).doesNotContain(alpha);
+    }
+
+    @Test
     void theFilterTakesOnlyTrueOrFalse() {
         Draft draft = inReview();
 
