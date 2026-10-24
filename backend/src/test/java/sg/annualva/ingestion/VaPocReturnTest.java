@@ -33,10 +33,9 @@ class VaPocReturnTest extends NotificationSeam1 {
         assertThat(submission(draft.smo(), sub).get("state").asString()).isEqualTo(RETURNED_FOR_REWORK);
         assertThat(actedAt(answered, "ENDORSE")).containsExactly(userId(poc));
         ApiClient cm = signedInAs(CM);
-        for (String finding : findingIds(cm, sub)) {
-            assertThat(findingById(cm, sub, finding).get("reviewState").asString()).as("confirmed stays confirmed")
-                    .isEqualTo(CONFIRMED);
-        }
+        List<String> reviewStates = findingIds(cm, sub).stream()
+                .map(finding -> findingById(cm, sub, finding).get("reviewState").asString()).toList();
+        assertThat(reviewStates).as("confirmed stays confirmed").isNotEmpty().containsOnly(CONFIRMED);
 
         JsonNode kept = returns(draft.smo(), sub).get(0);
         assertThat(kept.get("step").asString()).isEqualTo("ENDORSE");
@@ -59,6 +58,7 @@ class VaPocReturnTest extends NotificationSeam1 {
         assertThat(audited.get(0).get("submissionId").asString()).isEqualTo(sub);
         assertThat(audited.get(0).get("detail").get("state_from").asString()).isEqualTo(AWAITING_ENDORSEMENT);
         assertThat(audited.get(0).get("detail").get("state_to").asString()).isEqualTo(RETURNED_FOR_REWORK);
+        assertThat(audited.get(0).get("detail").get("count").asInt()).as("nothing attached").isZero();
         assertThat(audited.get(0).toString()).as("the comment is data, never audited").doesNotContain("Remediated CVE");
     }
 
@@ -81,7 +81,8 @@ class VaPocReturnTest extends NotificationSeam1 {
         assertThat(smo.toString()).as("a notification carries no comment").doesNotContain("Remediated CVE");
         JsonNode cm = only(signedInAs(CM), "VA_POC_RETURNED");
         assertThat(cm.get("message").asString()).isEqualTo(
-                "A VA POC returned the VA Submission you passed: re-review what changes once it is submitted again.");
+                "A VA POC returned the VA Submission from endorsement: re-review what changes once it is submitted "
+                + "again.");
         assertThat(cm.get("link").asString()).isEqualTo("/cyber-manager/submissions/" + sub);
         assertThat(cm.toString()).doesNotContain("Remediated CVE");
         assertThat(cm.get("createdAt").asString()).isEqualTo(clock.instant().toString());
@@ -158,7 +159,12 @@ class VaPocReturnTest extends NotificationSeam1 {
         ApiClient cm = signedInAs(CM);
         confirmEverything(cm, sub);
         passed(cm, sub);
+        events.reset();
+        int entriesBefore = entries("SUBMISSION_RETURNED", draft.systemId()).size();
         assertThat(returnForRework(draft.smo(), sub, "Mine.").status()).as("not a VA POC").isEqualTo(403);
+        assertThat(submission(poc, sub).get("state").asString()).isEqualTo(AWAITING_ENDORSEMENT);
+        assertThat(events.published()).isEmpty();
+        assertThat(entries("SUBMISSION_RETURNED", draft.systemId())).hasSize(entriesBefore);
         assertConflict(returnForRework(cm, sub, "Mine."), "invalid-transition");
         assertThat(entries("SUBMISSION_RETURNED", draft.systemId()).get(0).get("detail").get("reason").asString())
                 .as("the Cyber Manager returns only In Review").isEqualTo("state-not-reviewable");
@@ -174,9 +180,10 @@ class VaPocReturnTest extends NotificationSeam1 {
         Draft draft = inReview();
         String sub = draft.submissionId();
         registeredWith(SMO_A, POC_ONE);
-        ApiClient reviewer = vaPoc();
-        confirmEverything(reviewer, sub);
-        passed(reviewer, sub);
+        ApiClient pocAsCyberManager = vaPoc();
+        confirmEverything(pocAsCyberManager, sub);
+        passed(pocAsCyberManager, sub);
+        assertNotFound(returnForRework(pocAsCyberManager, UUID.randomUUID().toString(), "Nothing here."));
 
         assertSodConflict(returnForRework(vaPoc(), sub, "My own review."));
 
@@ -191,12 +198,12 @@ class VaPocReturnTest extends NotificationSeam1 {
         Draft draft = inReview();
         String sub = draft.submissionId();
         registeredWith(SMO_A, POC_ONE);
-        ApiClient reviewer = vaPoc();
-        reviewed(reviewer, sub, findingIds(reviewer, sub).getFirst(), DISPUTED, "Show the fix.");
+        ApiClient pocAsCyberManager = vaPoc();
+        reviewed(pocAsCyberManager, sub, findingIds(pocAsCyberManager, sub).getFirst(), DISPUTED, "Show the fix.");
 
-        returned(reviewer, sub, null);
+        returned(pocAsCyberManager, sub, null);
 
-        JsonNode kept = returns(reviewer, sub).get(0);
+        JsonNode kept = returns(pocAsCyberManager, sub).get(0);
         assertThat(kept.get("step").asString()).as("at the reviewing step: no comment needed").isEqualTo("REVIEW");
         assertThat(kept.get("disputedFindings")).hasSize(1);
     }
@@ -221,10 +228,10 @@ class VaPocReturnTest extends NotificationSeam1 {
         submitted(draft.smo(), sub);
 
         registeredWith(SMO_A, POC_ONE);
-        ApiClient reviewer = vaPoc();
-        String finding = findingIds(reviewer, sub).getFirst();
-        assertSodConflict(reviewFinding(reviewer, finding, review(CONFIRMED, null, currentProposalId(reviewer, sub,
-                finding))));
+        ApiClient pocAsCyberManager = vaPoc();
+        String finding = findingIds(pocAsCyberManager, sub).getFirst();
+        String proposal = currentProposalId(pocAsCyberManager, sub, finding);
+        assertSodConflict(reviewFinding(pocAsCyberManager, finding, review(CONFIRMED, null, proposal)));
         registeredWith(SMO_A, CM);
         passed(signedInAs(CM), sub);
 

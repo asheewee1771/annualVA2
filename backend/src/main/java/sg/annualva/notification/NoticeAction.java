@@ -34,8 +34,12 @@ public enum NoticeAction {
      * points at the VA POC's comment, which the notification never carries.
      */
     VA_POC_REWORK("A VA POC returned the VA Submission: read their comment, rework it and submit it again."),
-    /** To the Cyber Manager, once a VA POC returned a VA Submission they passed to endorsement (ticket 35). */
-    VA_POC_RETURNED("A VA POC returned the VA Submission you passed: re-review what changes once it is submitted again.");
+    /**
+     * To the System's Cyber Manager, once a VA POC returned its VA Submission from Awaiting Endorsement (ticket 35): the
+     * resubmission comes back to them, whoever passed it.
+     */
+    VA_POC_RETURNED("A VA POC returned the VA Submission from endorsement: re-review what changes once it is submitted "
+            + "again.");
 
     private final String message;
 

@@ -152,12 +152,13 @@ class WorkflowNotices {
      */
     private void returned(SubmissionEvent event) {
         UUID id = event.submissionId();
-        if (event.from() != SubmissionState.AWAITING_ENDORSEMENT) {
-            notifications.toSmo(notice(event, NoticeAction.REWORK, Links.rework(id)));
-            return;
+        switch (event.from()) {
+            case AWAITING_ENDORSEMENT -> {
+                notifications.toSmo(notice(event, NoticeAction.VA_POC_REWORK, Links.rework(id)));
+                notifications.toCyberManager(notice(event, NoticeAction.VA_POC_RETURNED, Links.review(id)));
+            }
+            default -> notifications.toSmo(notice(event, NoticeAction.REWORK, Links.rework(id)));
         }
-        notifications.toSmo(notice(event, NoticeAction.VA_POC_REWORK, Links.rework(id)));
-        notifications.toCyberManager(notice(event, NoticeAction.VA_POC_RETURNED, Links.review(id)));
     }
 
     private static Notice notice(SubmissionEvent event, NoticeAction action, String link) {

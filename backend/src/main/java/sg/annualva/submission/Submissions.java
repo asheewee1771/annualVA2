@@ -511,7 +511,7 @@ public class Submissions {
      */
     private Submission returnFromReview(UUID id, ReturnRequest request) {
         AtStep target = atStep(id, REVIEWING, refusedReturn(), Hold.EXCLUSIVE);
-        String comment = returnComment(request.comment());
+        String comment = returnComment(request.comment(), false);
         if (!progress.outcome(id).returnable()) {
             audit.recordIndependently(target.refused().with(DetailKey.REASON, "nothing-disputed"));
             throw new RejectedRequestException(HttpStatus.CONFLICT, "nothing-disputed",
@@ -534,11 +534,7 @@ public class Submissions {
     private Submission returnFromEndorsement(UUID id, ReturnRequest request) {
         stepUp.require(RETURN_INTENT);
         AtStep target = atStep(id, ENDORSING, refusedReturn(), Hold.EXCLUSIVE);
-        String comment = returnComment(request.comment());
-        if (comment == null) {
-            throw RejectedRequestException.invalidField("comment",
-                    "The field 'comment' is required: say what the SMO/Tech Lead should rework.");
-        }
+        String comment = returnComment(request.comment(), true);
         return returned(target, comment, ReviewProgress.Disputed.NONE);
     }
 
@@ -687,11 +683,15 @@ public class Submissions {
 
     /**
      * The comment of a return, cleaned and bounded as every long text a person types (ADR 0027 item 5, IM8 as-1); null
-     * when none was given or nothing is left once cleaned.
+     * when none was given or nothing is left once cleaned, which a {@code required} comment (a VA POC's) refuses.
      */
-    private static @Nullable String returnComment(@Nullable String raw) {
+    private static @Nullable String returnComment(@Nullable String raw, boolean required) {
         String cleaned = raw == null ? "" : ReportText.cleanLongText(raw);
         if (cleaned.isEmpty()) {
+            if (required) {
+                throw RejectedRequestException.invalidField("comment",
+                        "The field 'comment' is required: say what the SMO/Tech Lead should rework.");
+            }
             return null;
         }
         if (!ReportText.fits(cleaned, ReportText.MAX_LONG_TEXT)) {
