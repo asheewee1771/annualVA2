@@ -77,17 +77,24 @@ class FindingStore {
     /** The file a rescan proposal names as the one it replaced, for its name. */
     private static final String REPLACED_FILE = "LEFT JOIN report_file rp ON rp.id = p.replaced_file_id ";
 
+    /** The Finding's current proposal as {@code p}, for the page, the count and their filters; none when it has none. */
+    private static final String CURRENT_PROPOSAL =
+            "LEFT JOIN finding_status_proposal p ON p.id = f.current_proposal_id ";
+
     /**
-     * What the list is narrowed to, the same for the page and the count (it reads the Finding only). Each part that is not given matches everything:
-     * the Scan Report (no value), the severities (all five are passed), the review state (no value) and "needs
-     * attention" (false), which is a Finding with no proposal yet or a Disputed one.
+     * What the list is narrowed to, the same for the page and the count (it reads the Finding and its current proposal,
+     * {@link #CURRENT_PROPOSAL}, only). Each part that is not given matches everything: the Scan Report (no value), the severities (all five are
+     * passed), the review state (no value), "needs attention" (false), which is a Finding with no proposal yet or a
+     * Disputed one, the batch (no value) and whether the current proposal was made in a batch at all (no value).
      */
     private static final String FILTERED =
             "WHERE f.submission_id = :submission "
             + "AND (CAST(:type AS text) IS NULL OR f.report_type = :type) "
             + "AND f.severity = ANY(CAST(:severities AS text[])) "
             + "AND (CAST(:review AS text) IS NULL OR f.review_state = :review) "
-            + "AND (NOT :attention OR f.current_proposal_id IS NULL OR f.review_state = 'DISPUTED') ";
+            + "AND (NOT :attention OR f.current_proposal_id IS NULL OR f.review_state = 'DISPUTED') "
+            + "AND (CAST(:batch AS uuid) IS NULL OR p.batch_id = CAST(:batch AS uuid)) "
+            + "AND (CAST(:batched AS boolean) IS NULL OR (p.batch_id IS NOT NULL) = CAST(:batched AS boolean)) ";
 
     /**
      * The Finding's latest review, of whichever proposal it was (ticket 28): it says what the Cyber Manager last decided and
@@ -110,13 +117,13 @@ class FindingStore {
             + "(SELECT count(*) FROM finding_occurrence o WHERE o.finding_id = f.id) AS occurrences, "
             + "f.review_state, f.source, f.title, r.proposal_id AS review_proposal_id, " + ReviewStore.REVIEW_COLUMNS + ", "
             + PROPOSAL_COLUMNS
-            + "FROM finding f LEFT JOIN finding_status_proposal p ON p.id = f.current_proposal_id " + REPLACED_FILE
+            + "FROM finding f " + CURRENT_PROPOSAL + REPLACED_FILE
             + LATEST_REVIEW
             + FILTERED
             + "ORDER BY array_position(" + SEVERITY_ORDER + ", f.severity), f.identifier, f.package_or_rule, f.seq "
             + "LIMIT :limit OFFSET :offset";
 
-    private static final String COUNT = "SELECT count(*) FROM finding f " + FILTERED;
+    private static final String COUNT = "SELECT count(*) FROM finding f " + CURRENT_PROPOSAL + FILTERED;
 
     /** The progress counts of one VA Submission; Carried Over and Target Date Missed have no column before Release 2. */
     private static final String READINESS =
@@ -133,6 +140,8 @@ class FindingStore {
             + "WHERE f.submission_id = ANY(CAST(:submissions AS uuid[])) GROUP BY f.submission_id, f.system_id";
 
     private static final String LOCATE = "SELECT f.submission_id, f.system_id FROM finding f WHERE f.id = :id";
+
+    private static final String BATCH_SUBMISSION = "SELECT b.submission_id FROM bulk_batch b WHERE b.id = :id";
 
     /**
      * The named Findings that belong to the VA Submission, each row held until the transaction ends. The rows are locked
@@ -223,6 +232,26 @@ class FindingStore {
     private static final String IS_READY_EVIDENCE =
             "SELECT count(*) FROM report_file WHERE id = :file AND submission_id = :submission AND kind = 'EVIDENCE' "
             + "AND pipeline_status = 'READY'";
+
+    /**
+     * The Bulk-set batches of a VA Submission in the order they were made, each with the proposal of its first member (every
+     * member's has the same status and fields, ADR 0028 item 1) and where its members stand: still in the batch (the
+     * current proposal is the batch's) and awaiting review, confirmed or Disputed, or changed since; and how many of those
+     * still in it were entered by hand.
+     */
+    private static final String BATCHES =
+            "SELECT b.id AS batch_id_of, b.proposed_by AS batch_by, b.proposed_at AS batch_at, " + PROPOSAL_COLUMNS + ", "
+            + "c.members, c.awaiting_review, c.confirmed, c.disputed, c.changed_since, c.manually_entered FROM bulk_batch b "
+            + "JOIN LATERAL (SELECT count(*) AS members, "
+            + "count(*) FILTER (WHERE f.current_proposal_id = m.id AND f.review_state = 'PENDING') AS awaiting_review, "
+            + "count(*) FILTER (WHERE f.current_proposal_id = m.id AND f.review_state = 'CONFIRMED') AS confirmed, "
+            + "count(*) FILTER (WHERE f.current_proposal_id = m.id AND f.review_state = 'DISPUTED') AS disputed, "
+            + "count(*) FILTER (WHERE f.current_proposal_id IS DISTINCT FROM m.id) AS changed_since, "
+            + "count(*) FILTER (WHERE f.current_proposal_id = m.id AND f.source = 'MANUAL') AS manually_entered "
+            + "FROM finding_status_proposal m JOIN finding f ON f.id = m.finding_id WHERE m.batch_id = b.id) c ON true "
+            + "JOIN LATERAL (SELECT * FROM finding_status_proposal fp WHERE fp.batch_id = b.id ORDER BY fp.seq LIMIT 1) p "
+            + "ON true " + REPLACED_FILE
+            + "WHERE b.submission_id = :submission ORDER BY b.seq";
 
     private static final String PROPOSALS =
             "SELECT " + PROPOSAL_COLUMNS + "FROM finding_status_proposal p " + REPLACED_FILE
@@ -339,7 +368,9 @@ class FindingStore {
                 .param("type", filter.reportType() == null ? null : filter.reportType().name())
                 .param("severities", severities.stream().map(Severity::name).toArray(String[]::new))
                 .param("review", filter.reviewState() == null ? null : filter.reviewState().name())
-                .param("attention", filter.needsAttention());
+                .param("attention", filter.needsAttention())
+                .param("batch", filter.batchId())
+                .param("batched", filter.batched());
     }
 
     private static ProposalView proposal(ResultSet rs) throws SQLException {
@@ -357,7 +388,7 @@ class FindingStore {
         return id == null ? null : new ProposalView.ReplacedFile(id, rs.getString("replaced_file_name"));
     }
 
-    private static @Nullable ReviewState reviewStateOf(@Nullable String name) {
+    static @Nullable ReviewState reviewStateOf(@Nullable String name) {
         return name == null ? null : ReviewState.valueOf(name);
     }
 
@@ -368,6 +399,11 @@ class FindingStore {
     /** Where the Finding is, or nothing for one that does not exist. */
     Optional<Located> locate(UUID findingId) {
         return jdbc.sql(LOCATE).param("id", findingId).query(FindingStore::located).optional();
+    }
+
+    /** The VA Submission a Bulk-set batch belongs to, or nothing for one that does not exist. */
+    Optional<UUID> batchSubmission(UUID batchId) {
+        return jdbc.sql(BATCH_SUBMISSION).param("id", batchId).query(UUID.class).optional();
     }
 
     /** Locks the named Findings of the VA Submission and answers how many of them there are. */
@@ -472,7 +508,8 @@ class FindingStore {
         return jdbc.sql(UNREPORTED).param("ids", ids(findingIds)).query(UUID.class).list();
     }
 
-    private static String[] ids(List<UUID> ids) {
+    /** The ids as an array parameter. */
+    static String[] ids(List<UUID> ids) {
         return ids.stream().map(UUID::toString).toArray(String[]::new);
     }
 
@@ -485,6 +522,17 @@ class FindingStore {
     /** Every proposal of the Finding, the latest first. */
     List<ProposalView> proposals(UUID findingId) {
         return jdbc.sql(PROPOSALS).param("finding", findingId).query((rs, row) -> proposal(rs)).list();
+    }
+
+    /** The Bulk-set batches of the VA Submission, in the order they were made. */
+    List<BatchSummary> batches(UUID submissionId) {
+        return jdbc.sql(BATCHES).param("submission", submissionId)
+                .query((rs, row) -> new BatchSummary(rs.getObject("batch_id_of", UUID.class),
+                        rs.getObject("batch_by", UUID.class),
+                        rs.getObject("batch_at", OffsetDateTime.class).toInstant(), proposal(rs), rs.getInt("members"),
+                        rs.getInt("awaiting_review"), rs.getInt("confirmed"), rs.getInt("disputed"),
+                        rs.getInt("changed_since"), rs.getInt("manually_entered")))
+                .list();
     }
 
     /** The files each Finding was read from, by Finding. */

@@ -9,8 +9,8 @@ import sg.annualva.web.RejectedRequestException;
 
 /**
  * Reads the body of a review (story 50) in a fixed order, {@code decision}, {@code comment}, then what the review is of
- * ({@code proposalId} for a Finding, {@code justificationVersion} for a not-applicable justification; the other is refused
- * when given), and answers the first wrong field with a 400 {@code invalid-field} that names it and echoes nothing typed
+ * ({@code proposalId} for a Finding, {@code justificationVersion} for a not-applicable justification, neither for a
+ * Bulk-set batch; one not used is refused when given), and answers the first wrong field with a 400 {@code invalid-field} that names it and echoes nothing typed
  * (as-13). The comment is cleaned and bounded by the rule every long text a person types follows (ADR 0027 item 5, IM8
  * as-1).
  */
@@ -76,6 +76,24 @@ final class ReviewFields {
                     "The field 'justificationVersion' must be the version of the justification reviewed.");
         }
         return new Parsed(decision, comment, null, Integer.valueOf(raw));
+    }
+
+    /**
+     * A review of a Bulk-set batch (story 51): the decision and one comment for every member it decides. A batch's
+     * proposals never change, so there is nothing to name; a proposal or a version is refused.
+     */
+    static Parsed ofBatch(ReviewRequest request) {
+        ReviewDecision decision = decision(request.decision());
+        String comment = comment(decision, request.comment());
+        if (request.proposalId() != null) {
+            throw RejectedRequestException.invalidField(PROPOSAL_ID,
+                    "The field 'proposalId' is not used to review a batch.");
+        }
+        if (request.justificationVersion() != null) {
+            throw RejectedRequestException.invalidField(JUSTIFICATION_VERSION,
+                    "The field 'justificationVersion' is not used to review a batch.");
+        }
+        return new Parsed(decision, comment, null, null);
     }
 
     private static ReviewDecision decision(@Nullable String raw) {

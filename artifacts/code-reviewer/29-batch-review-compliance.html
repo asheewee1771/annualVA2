@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review — 29-batch-review</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall: PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">build WARN · C0 H0 M0 L3</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN · C0 H0 M2 L7 (1 fixed)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN · C0 H0 M1 L22 (1 fixed)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">semgrep WARN · C0 H0 M0 L2</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN · C0 H0 M2 L3</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react WARN · C0 H0 M0 L6 (3 fixed)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN · C0 H0 M1 L9</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">impl/29-batch-review</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report</h1>
+          <p class="text-sm text-slate-500 mt-1">Ticket 29, Bulk-set batch review. Diff <span class="font-mono text-xs">integration/annual-va-r1...HEAD</span> (commits 2629c57, 106fb75, dca3247, 1222bc1, f1f385e, 1bf7217, 199542d; 25 files). Counts in the badges and the table are open findings; findings fixed after the first run are kept in their check's table and marked "Fixed".</p>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Executive Summary</h2>
+          <p class="text-xs text-slate-500 mt-1">Overall compliance evaluation status across all active checks. Overall PASS: no check has a Critical or High finding. The earlier thermo-nuclear High (per-batch fetch fan-out) was fixed in f1f385e and confirmed by the thermo-nuclear re-run. Every check still has Medium or Low findings, so each check is WARN.</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Check</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Status</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">C / H / M / L</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Summary of gaps</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">build</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 3</td>
+              <td class="px-4 py-2">Final run on the branch head: <span class="font-mono text-xs">./mvnw -B -ntp clean verify</span> BUILD SUCCESS, 840 tests, 0 failures, all JaCoCo coverage checks met (97.44 % line / 91.38 % branch); front end <span class="font-mono text-xs">npm run check</span> exit 0, fallow "0 above threshold". Lows are informational (uncovered branches, fallow health hints, a pre-existing deprecation).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">thermo-nuclear</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 2 / 7</td>
+              <td class="px-4 py-2">Re-run: earlier High fixed. Open: "still in the batch" rule written in SQL and Java (M1, narrowed by a UNIQUE constraint), nullable three-shape <span class="font-mono text-xs">Parsed</span> (M3). M2 (<span class="font-mono text-xs">CURRENT_BATCH</span> subquery) fixed in 199542d.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">code-review</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 22</td>
+              <td class="px-4 py-2">Standards: V129 migration numbering with Flyway <span class="font-mono text-xs">outOfOrder=false</span>. Spec P1 (Manually Entered members not flagged at batch level) fixed in 1222bc1 and f1f385e. Core acceptance criteria met.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">semgrep</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 2</td>
+              <td class="px-4 py-2">No security findings in production code. Raw bidi / zero-width characters in a test literal; one pre-existing false positive in the test harness.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">im8</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 2 / 3</td>
+              <td class="px-4 py-2">ac-1: batch review does not refuse the batch's own proposer (carried over, amplified). as-1: no <span class="font-mono text-xs">@Valid</span> on the batch review body (service-layer validation is complete).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">react</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 6</td>
+              <td class="px-4 py-2">All three Mediums (loading text beside an error, pager missing on an emptied page, re-fetch fan-out) fixed in f1f385e and 1222bc1. Lows remain.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">springboot</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 9</td>
+              <td class="px-4 py-2">Locking contract (concurrent batch / single review) untested. Security and logging sub-reviews clean.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-700">None open. The earlier High (thermo-nuclear #1: one fetch per batch and a refetch of everything through a prop-drilled <span class="font-mono text-xs">version</span> counter) was fixed in f1f385e: <span class="font-mono text-xs">ReviewSessionContext</span> replaces the prop drilling, <span class="font-mono text-xs">useResource</span> takes an explicit <span class="font-mono text-xs">refreshKey</span>, and batch members load only when the batch is opened. The thermo-nuclear re-run confirmed the fix.</p>
+          <p class="text-xs text-slate-500">Notable open Mediums: im8 M-1 (segregation of duties for the batch proposer), code-review S1 (migration numbering), springboot (locking contract untested), thermo-nuclear M1 and M3. Earlier first-run Lows about the same replaced code (code-review S8, S13, S14; react <span class="font-mono text-xs">version</span> dep; springboot <span class="font-mono text-xs">CURRENT_BATCH</span>) were not re-run and are left as reported.</p>
+        </div>
+      </div>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M0 L3</span>
+        </summary>
+        <div class="px-5 pb-4 text-sm text-slate-700 space-y-1">
+          <p>Final run on the branch head (199542d). Back end: <span class="font-mono text-xs">./mvnw -B -ntp clean verify</span> BUILD SUCCESS, 840 tests, 0 failures, 0 errors, all JaCoCo coverage checks met (97.44 % line / 91.38 % branch), ArchUnit green. Log: <span class="font-mono text-xs">C:/Users/asheewee/AppData/Local/Temp/claude/D--projects-annualVA2/e9cd03e9-e84b-4379-815d-e96b7bb41ec5/scratchpad/t29/verify2.log</span>.</p>
+          <p>Front end: <span class="font-mono text-xs">npm run check</span> exit 0 (Prettier, <span class="font-mono text-xs">tsc -b</span>, <span class="font-mono text-xs">vite build</span>, no raw HTML, dependency-cruiser, fallow), fallow "0 above threshold", maintainability 91.9. Log: <span class="font-mono text-xs">C:/Users/asheewee/AppData/Local/Temp/claude/D--projects-annualVA2/e9cd03e9-e84b-4379-815d-e96b7bb41ec5/scratchpad/t29/fe4.log</span>.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+          </tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/Reviews.java, Findings.java</td><td class="px-4 py-2">—</td><td class="px-4 py-2">Uncovered branches and lines in changed classes (Reviews 17/18 branches; Findings 94/97 lines, 13/14 branches). Unchanged on the final run. Gates still pass; check whether the misses are in the new batch paths.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewFindingsList.tsx, ReviewForm.tsx</td><td class="px-4 py-2">—</td><td class="px-4 py-2">fallow health on the final run: ReviewFindingsList (170 LOC, down from 222) CRAP risk 132; ReviewForm is still 79 lines ("very high" unit size). Below gate threshold; informational.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/adapters/oidc/MccHttp.java</td><td class="px-4 py-2">51</td><td class="px-4 py-2">Deprecated <span class="font-mono text-xs">RestClient.Builder.messageConverters(...)</span> (marked for removal). Pre-existing; file not in the diff. Still reported on the final run.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M2 L7 (1 fixed)</span>
+        </summary>
+        <div class="px-5 pb-4 text-sm text-slate-700 space-y-2">
+          <p>Second pass (re-run on 2629c57..1bf7217). The first-run High (one fetch per batch plus a refetch of everything through a prop-drilled <span class="font-mono text-xs">version</span> counter) is <strong>fixed</strong>: <span class="font-mono text-xs">ReviewSessionContext</span> (<span class="font-mono text-xs">frontend/src/screens/cyber-manager/reviewSession.ts</span>) replaces the prop drilling, <span class="font-mono text-xs">useResource(load, refreshKey)</span> makes the refresh explicit, and <span class="font-mono text-xs">BatchMembers</span> mounts a batch's list only while it is open, so opening the screen costs 4 requests whatever the number of batches. No file passes 1,000 lines. No Critical or High findings remain.</p>
+          <p>After this re-run: <strong>M2 was fixed</strong> in commit "refactor(backend): filter by the current proposal's batch through one join" (199542d). The list's batch filters now read the current proposal through one LEFT JOIN shared by the page and the count, and <span class="font-mono text-xs">CURRENT_BATCH</span> is gone. <strong>M1 was narrowed</strong> by a <span class="font-mono text-xs">UNIQUE (batch_id, finding_id)</span> constraint on <span class="font-mono text-xs">finding_status_proposal</span> in V129, so the batch review's and the list's "still in the batch" rules agree by constraint. The classification is still written once in SQL and once in Java, so M1 stays open at Medium.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+          </tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingStore.java (with Reviews.java:115-120)</td><td class="px-4 py-2">81, 246-250</td><td class="px-4 py-2">M1: "still in the batch" defined three times in two ways (<span class="font-mono text-xs">CURRENT_BATCH</span>, the <span class="font-mono text-xs">BATCHES</span> <span class="font-mono text-xs">FILTER</span> clauses, and Java <span class="font-mono text-xs">batchProposal().equals(currentProposal())</span>); the awaiting / confirmed / disputed / left-out classification is written in SQL and again in Java. Remedy: one membership predicate on the current proposal's <span class="font-mono text-xs">batch_id</span>; move per-member classification onto <span class="font-mono text-xs">ReviewStore.LockedMember</span> or into <span class="font-mono text-xs">LOCK_BATCH</span>. <em>Narrowed after the re-run:</em> <span class="font-mono text-xs">CURRENT_BATCH</span> is gone (199542d) and V129 adds <span class="font-mono text-xs">UNIQUE (batch_id, finding_id)</span>, so the two "still in the batch" rules agree by constraint; the SQL / Java classification split remains.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/ReviewFields.java (with Reviews.java:84, ReviewStore.java:141-142)</td><td class="px-4 py-2">37-38, 85-95</td><td class="px-4 py-2">M3: <span class="font-mono text-xs">Parsed(decision, comment, @Nullable proposalId, @Nullable justificationVersion)</span> now has three valid shapes; <span class="font-mono text-xs">reviewFinding</span> needs <span class="font-mono text-xs">requireNonNull</span>, and <span class="font-mono text-xs">reviewFindings</span> takes a whole <span class="font-mono text-xs">Parsed</span> whose <span class="font-mono text-xs">proposalId</span> can disagree with <span class="font-mono text-xs">Reviewed.proposalId</span>. Remedy: split out <span class="font-mono text-xs">Verdict(decision, comment)</span>.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-400 line-through">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingStore.java</td><td class="px-4 py-2">80-82, 96-97, 120, 126</td><td class="px-4 py-2"><strong>Fixed in 199542d.</strong> M2: <span class="font-mono text-xs">CURRENT_BATCH</span> was a correlated subquery repeating a join <span class="font-mono text-xs">PAGE</span> already has, run twice per row. The page and the count now share one LEFT JOIN on the current proposal and <span class="font-mono text-xs">CURRENT_BATCH</span> is deleted.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingFilter.java (with FindingController.java:91-92, api/findings.ts:155-158)</td><td class="px-4 py-2">21</td><td class="px-4 py-2">L1: two overlapping batch filters, one a tri-state <span class="font-mono text-xs">Boolean</span>; <span class="font-mono text-xs">batchId=X&amp;batched=false</span> is accepted and always empty. Use one <span class="font-mono text-xs">batch=&lt;uuid&gt;|none</span> parameter, or reject the contradictory pair with a 400.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewForm.tsx (with BatchesSection.tsx:56-66, 92)</td><td class="px-4 py-2">28</td><td class="px-4 py-2">L2: <span class="font-mono text-xs">send</span> widened to <span class="font-mono text-xs">Promise&lt;unknown&gt;</span> and used to capture <span class="font-mono text-xs">lastReview</span>, which is never cleared and can outlive the counts it describes. Type it <span class="font-mono text-xs">Promise&lt;void&gt;</span> or generic; clear <span class="font-mono text-xs">lastReview</span> when the batch changes.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewFindingsList.tsx</td><td class="px-4 py-2">103-105, 144</td><td class="px-4 py-2">L3: <span class="font-mono text-xs">batchId: string | null</span> used as a mode switch ("in no batch"). Take a stable <span class="font-mono text-xs">filter: FindingFilter</span> prop and delete <span class="font-mono text-xs">filterOf</span>.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingStore.java (used from ReviewStore.java ~145, 156)</td><td class="px-4 py-2">391, 512</td><td class="px-4 py-2">L4: <span class="font-mono text-xs">ids(...)</span> and <span class="font-mono text-xs">reviewStateOf(...)</span> widened to package-private only for <span class="font-mono text-xs">ReviewStore</span>; ids computed twice in <span class="font-mono text-xs">reviewFindings</span>. Move to a shared package-private SQL helper.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewScreen.tsx (with ReviewFindingsList.tsx:111-115)</td><td class="px-4 py-2">103-107</td><td class="px-4 py-2">L5: unbatched section has two headings and the <span class="font-mono text-xs">&lt;h3&gt;</span> wording ("proposed one by one") is wrong; the list's heading is a <span class="font-mono text-xs">&lt;p&gt;&lt;strong&gt;</span>. Use one heading, "Findings not in a batch".</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewForm.tsx</td><td class="px-4 py-2">22, 31, 79, 88</td><td class="px-4 py-2">L6: <span class="font-mono text-xs">actionSuffix</span> string prop must start with a leading space. Pass a noun or the two labels.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/ReviewFields.java, frontend/src/screens/cyber-manager/ReviewForm.tsx</td><td class="px-4 py-2">13; 7</td><td class="px-4 py-2">L7: comment lines exceed the 120-character width; Prettier does not rewrap comments. Rewrap them.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review (Standards + Spec)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M1 L22 (1 fixed)</span>
+        </summary>
+        <div class="px-5 pb-4 text-sm text-slate-700">
+          <p>P1 (Manually Entered members not flagged at batch level) was fixed in commits 1222bc1 and f1f385e: <span class="font-mono text-xs">BatchSummary</span> now carries <span class="font-mono text-xs">manuallyEntered</span> and the batch shows a flag, with a Seam 1 test. S1 (migration numbering) remains the open Medium. This check was not re-run.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+          </tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V129__batch_review.sql</td><td class="px-4 py-2">1</td><td class="px-4 py-2">S1: migrations jump V21 to V129 (sibling uses V133) with Flyway <span class="font-mono text-xs">outOfOrder=false</span>; the "100 + ticket" scheme is undocumented and can break persistent databases. Document it and enable out-of-order, or renumber at merge.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-400 line-through">Medium</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/BatchesSection.tsx</td><td class="px-4 py-2">60-77</td><td class="px-4 py-2"><strong>Fixed in 1222bc1 and f1f385e:</strong> <span class="font-mono text-xs">BatchSummary</span> now carries <span class="font-mono text-xs">manuallyEntered</span>, the batch shows a Manually Entered flag, and a Seam 1 test covers it. P1: Manually Entered members are not flagged at batch level; one Confirm batch can confirm a flagged member on an unseen page. Add a manual count to <span class="font-mono text-xs">BatchSummary</span> and show it beside the batch actions.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">docs/adr/0036-a-batch-review-is-one-step-and-an-ordinary-review-of-each-member-still-awaiting-it.md</td><td class="px-4 py-2">27</td><td class="px-4 py-2">S2: amended ADRs 0035 and 0028 lack the "Amended by ADR 0036" back-reference.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">.scratch/annual-va/issues/49-retention-and-disposal.md</td><td class="px-4 py-2">12</td><td class="px-4 py-2">S3: ticket 49 deletion order not updated for append-only <span class="font-mono text-xs">batch_review</span>.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">commits 2629c57, 106fb75</td><td class="px-4 py-2">—</td><td class="px-4 py-2">S4: behaviour-preserving refactors folded into <span class="font-mono text-xs">feat:</span> commits.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewScreen.tsx</td><td class="px-4 py-2">130</td><td class="px-4 py-2">S5: heading "Findings proposed one by one" also covers Findings with no proposal.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/BatchesSection.tsx</td><td class="px-4 py-2">22</td><td class="px-4 py-2">S6: left-out wording inaccurate for members decided by an earlier batch review; "1 Findings".</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewFindingsList.tsx</td><td class="px-4 py-2">191</td><td class="px-4 py-2">S7: page never reset when a batch shrinks below the current page.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewScreen.tsx</td><td class="px-4 py-2">101</td><td class="px-4 py-2">S8: one click causes N+2 audited reads.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/ReviewStore.java (FindingStore.java:389, 510)</td><td class="px-4 py-2">124, 145, 146, 156</td><td class="px-4 py-2">S9: possible Feature Envy on widened FindingStore helpers.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingFilter.java (FindingController.java:92)</td><td class="px-4 py-2">21</td><td class="px-4 py-2">S10: possible Primitive Obsession: tri-state <span class="font-mono text-xs">Boolean batched</span>.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/BatchesSection.tsx, ReviewFindingsList.tsx</td><td class="px-4 py-2">—</td><td class="px-4 py-2">S11: possible Data Clumps (<span class="font-mono text-xs">reviewable</span>, <span class="font-mono text-xs">classification</span>, <span class="font-mono text-xs">version</span>, <span class="font-mono text-xs">onReviewed</span>).</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingStore.java</td><td class="px-4 py-2">242</td><td class="px-4 py-2">S12: possible Mysterious Name (<span class="font-mono text-xs">batch_id_of</span>, <span class="font-mono text-xs">batch_by</span>, <span class="font-mono text-xs">batch_at</span>).</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingStore.java</td><td class="px-4 py-2">96-97</td><td class="px-4 py-2">S13: possible Duplicated Code: <span class="font-mono text-xs">CURRENT_BATCH</span> subquery twice.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/BatchesSection.tsx (ReviewFindingsList.tsx:195)</td><td class="px-4 py-2">111</td><td class="px-4 py-2">S14: implicit refetch trigger through an unused <span class="font-mono text-xs">useCallback</span> dep.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewForm.tsx</td><td class="px-4 py-2">28</td><td class="px-4 py-2">S15: <span class="font-mono text-xs">send</span> type weakened to <span class="font-mono text-xs">Promise&lt;unknown&gt;</span>.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/BatchReviewTest.java</td><td class="px-4 py-2">137</td><td class="px-4 py-2">P2: rescan case of <span class="font-mono text-xs">PROPOSAL_CHANGED</span> (current proposal NULL) untested.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/Reviews.java</td><td class="px-4 py-2">114</td><td class="px-4 py-2">P3: concurrency claim of ADR 0036 item 2 untested.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingController.java</td><td class="px-4 py-2">136</td><td class="px-4 py-2">P4: no bulk confirm/Dispute over a list of ids (spec §API); narrowing looks intended, confirm with PO.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingController.java (FindingStore.java:244-245)</td><td class="px-4 py-2">91-92</td><td class="px-4 py-2">P5: scope creep, acceptable: <span class="font-mono text-xs">batchId</span> / <span class="font-mono text-xs">batched</span> filters (recorded in ADR 0036 item 6).</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/Findings.java</td><td class="px-4 py-2">286-293</td><td class="px-4 py-2">P6: scope creep: <span class="font-mono text-xs">BATCHES_VIEWED</span> audit entry, multiplied by reloads.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">docs/adr/0036-a-batch-review-is-one-step-and-an-ordinary-review-of-each-member-still-awaiting-it.md</td><td class="px-4 py-2">25</td><td class="px-4 py-2">P7: item 4 marked provisional though reviewer-decisions.md (2026-10-17) already settles it; cite the decision.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/BatchesSection.tsx</td><td class="px-4 py-2">48, 78</td><td class="px-4 py-2">P8: left-out note goes stale and lists counts only.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/BatchSummary.java</td><td class="px-4 py-2">23-25</td><td class="px-4 py-2">P9: no single batch review status; acceptable if counts are meant as the status.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M0 L2</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+          </tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/BatchReviewTest.java</td><td class="px-4 py-2">105-106</td><td class="px-4 py-2">Raw RIGHT-TO-LEFT OVERRIDE and zero-width space characters in test literals (deliberate input). Trojan Source review hazard; write them as Java unicode escapes.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/harness/TestEndpoints.java</td><td class="px-4 py-2">315</td><td class="px-4 py-2">Tainted SQL string rule on a test-only harness; value allow-listed by <span class="font-mono text-xs">[A-Z_]+</span>. Pre-existing false positive; document only.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M2 L3</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+          </tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/Reviews.java (Submissions.java:350, 371)</td><td class="px-4 py-2">106</td><td class="px-4 py-2">M-1 (ac-1): <span class="font-mono text-xs">reviewBatch</span> never compares the caller with <span class="font-mono text-xs">bulk_batch.proposed_by</span>; a reassigned proposer can confirm their own batch of up to 1000 Findings. Carried over from ticket 28, amplified. Refuse the proposal author, record SUBMIT participation on edits, or record a decision.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingController.java (ReviewRequest.java:16, ReviewFields.java:85)</td><td class="px-4 py-2">71</td><td class="px-4 py-2">M-2 (as-1): batch review body bound without <span class="font-mono text-xs">@Valid</span>; validation is complete in <span class="font-mono text-xs">ReviewFields.ofBatch</span>. Record a decision or add annotations.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/api/findings.ts (ReviewForm.tsx:28, BatchesSection.tsx:78)</td><td class="px-4 py-2">257, 280</td><td class="px-4 py-2">L-1 (as-1 FE): responses trusted by type assertion only; app-wide pattern.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/BatchesSection.tsx (ReviewScreen.tsx:92)</td><td class="px-4 py-2">68</td><td class="px-4 py-2">L-2 (ac-1 FE): batch controls shown to a conflicted Cyber Manager; server refuses with 403. UX only.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingController.java</td><td class="px-4 py-2">71</td><td class="px-4 py-2">L-3 (as-1): no JSON body size cap below the 52MB multipart limit. Carried over.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M0 L6 (3 fixed)</span>
+        </summary>
+        <div class="px-5 pb-4 text-sm text-slate-700">
+          <p>react #1 (loading text beside an error), #2 (pager missing on an emptied page) and #3 (re-fetch fan-out) were fixed in commits f1f385e and 1222bc1. The Lows remain as first reported; this check was not re-run.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+          </tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-400 line-through">Medium</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewFindingsList.tsx</td><td class="px-4 py-2">214-218</td><td class="px-4 py-2"><strong>Fixed (f1f385e, 1222bc1).</strong> #1: Loading branch keyed on <span class="font-mono text-xs">!result</span>; after a failed first load the error and "Loading the Findings…" both show forever. Key it on <span class="font-mono text-xs">findings.loading &amp;&amp; !result</span>.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-400 line-through">Medium</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewFindingsList.tsx</td><td class="px-4 py-2">149, 191</td><td class="px-4 py-2"><strong>Fixed (f1f385e, 1222bc1).</strong> #2: Page out of range has no way out: <span class="font-mono text-xs">page</span> is never clamped and the Pager is not rendered on an empty page. Render the Pager on <span class="font-mono text-xs">total</span> or step back.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-400 line-through">Medium</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewScreen.tsx (BatchesSection.tsx:111, ReviewFindingsList.tsx:192-196)</td><td class="px-4 py-2">97-102</td><td class="px-4 py-2"><strong>Fixed (f1f385e, 1222bc1).</strong> #3: Every review re-fetches everything (3 + N requests). Reload only the affected batch and summary, or lazily expand member lists.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/BatchesSection.tsx (ReviewFindingsList.tsx:192-196)</td><td class="px-4 py-2">110-111</td><td class="px-4 py-2"><span class="font-mono text-xs">version</span> is an unused <span class="font-mono text-xs">useCallback</span> dep used as a cache-buster.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/BatchesSection.tsx</td><td class="px-4 py-2">48, 78</td><td class="px-4 py-2"><span class="font-mono text-xs">lastReview</span> never resets.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/BatchesSection.tsx</td><td class="px-4 py-2">20</td><td class="px-4 py-2"><span class="font-mono text-xs">role="status"</span> mounted with its text; many screen readers will not announce it.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewFindingsList.tsx (BatchesSection.tsx:116)</td><td class="px-4 py-2">203</td><td class="px-4 py-2">Counts read "(0)" while loading or after a failed load; BatchesSection has no loading indicator.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewFindingsList.tsx</td><td class="px-4 py-2">200-205</td><td class="px-4 py-2">List heading is <span class="font-mono text-xs">&lt;p&gt;&lt;strong&gt;</span>, not a heading element.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/BatchesSection.tsx</td><td class="px-4 py-2">50-57</td><td class="px-4 py-2"><span class="font-mono text-xs">useCallback</span> on <span class="font-mono text-xs">send</span> buys nothing.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M1 L9</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+            <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+          </tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/BatchReviewTest.java</td><td class="px-4 py-2">26</td><td class="px-4 py-2">spring-test: locking contract (concurrent batch reviews, batch vs single review or re-proposal) not exercised. Add a parallel Seam 1 test asserting one decision per member and a 409 / <span class="font-mono text-xs">leftOut</span> for the loser.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/BatchReviewTest.java</td><td class="px-4 py-2">137</td><td class="px-4 py-2">spring-test: <span class="font-mono text-xs">PROPOSAL_CHANGED</span> with NULL current proposal (rescan) and <span class="font-mono text-xs">changedSince</span> NULL case untested.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/BatchListTest.java</td><td class="px-4 py-2">42</td><td class="px-4 py-2">spring-test: no edge tests for malformed <span class="font-mono text-xs">batchId</span>/<span class="font-mono text-xs">batched</span>, contradictory filters, or empty batch list.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/BatchListTest.java</td><td class="px-4 py-2">75</td><td class="px-4 py-2">spring-test: visibility test covers only a Cyber Manager of another System.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingController.java</td><td class="px-4 py-2">160</td><td class="px-4 py-2">spring-web: <span class="font-mono text-xs">GET /api/submissions/{id}/batches</span> returns an unpaged, uncapped array.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingController.java</td><td class="px-4 py-2">69</td><td class="px-4 py-2">spring-web: 201 Created with no <span class="font-mono text-xs">Location</span>; matches existing endpoint, belongs in a cross-cutting decision.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingStore.java</td><td class="px-4 py-2">96</td><td class="px-4 py-2">spring-data: <span class="font-mono text-xs">CURRENT_BATCH</span> subquery inlined twice; use a LEFT JOIN.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V129__batch_review.sql</td><td class="px-4 py-2">29</td><td class="px-4 py-2">spring-data: nothing in the database ties <span class="font-mono text-xs">finding_review.batch_review_id</span> to the proposal's batch; state the invariant in the migration comment.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingStore.java</td><td class="px-4 py-2">510</td><td class="px-4 py-2">spring-core: static helpers widened for cross-repository use; move to a package-private utility.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/Reviews.java</td><td class="px-4 py-2">137</td><td class="px-4 py-2">spring-batch: per-member <span class="font-mono text-xs">FINDING_REVIEWED</span> audit inserts one at a time (up to 1000) while locks are held; consider a batched audit insert.</td></tr>
+          </tbody>
+        </table>
+      </details>
+    </main>
+  </body>
+</html>
