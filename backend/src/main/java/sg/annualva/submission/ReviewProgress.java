@@ -38,6 +38,9 @@ public interface ReviewProgress {
      */
     record Disputed(List<DisputedFinding> findings, List<DisputedReport> reports) {
 
+        /** Nothing Disputed: what a VA POC's return attaches, as nothing is Disputed Awaiting Endorsement. */
+        static final Disputed NONE = new Disputed(List.of(), List.of());
+
         public Disputed {
             findings = List.copyOf(findings);
             reports = List.copyOf(reports);

@@ -26,8 +26,9 @@ import sg.annualva.submission.Submissions;
  *
  * <ul>
  *   <li>submitted for review: the System's Cyber Manager;
- *   <li>Returned for Rework (by the Cyber Manager, or a VA POC with ticket 35): the SMO/Tech Lead, whose action names what
- *       is Disputed;
+ *   <li>Returned for Rework by the Cyber Manager: the SMO/Tech Lead, whose action names what is Disputed; by a VA POC
+ *       (ticket 35): the SMO/Tech Lead, pointed at the VA POC's comment, and the Cyber Manager, whom the resubmission
+ *       comes back to;
  *   <li>passed to endorsement: both VA POCs, as a pair; a VA POC's endorsement or return clears it for both;
  *   <li>Overdue: the person whose step it is (the SMO/Tech Lead while it is Not Started, a Draft or Returned for Rework,
  *       the Cyber Manager In Review, both VA POCs Awaiting Endorsement);
@@ -64,7 +65,7 @@ class WorkflowNotices {
         }
         switch (event.to()) {
             case IN_REVIEW -> notifications.toCyberManager(notice(event, NoticeAction.REVIEW, Links.review(id)));
-            case RETURNED_FOR_REWORK -> notifications.toSmo(notice(event, NoticeAction.REWORK, Links.rework(id)));
+            case RETURNED_FOR_REWORK -> returned(event);
             case AWAITING_ENDORSEMENT -> notifications.toVaPocs(notice(event, NoticeAction.ENDORSE, Links.endorse(id)),
                     Awaits.ENDORSEMENT);
             // Endorsed is an FYI for the weekly digest (story 93, Release 2); the other states arrive with their tickets.
@@ -143,6 +144,22 @@ class WorkflowNotices {
         }
         return new Notice(system.id(), started.id(), started.state().name(), NoticeAction.SYSTEM_MOVED, started.dueOn(),
                 Links.prepare(started.id()), event.at());
+    }
+
+    /**
+     * A return for rework: the Cyber Manager's (from In Review) tells the SMO/Tech Lead to rework what is Disputed; a VA
+     * POC's (from Awaiting Endorsement, ticket 35) tells the SMO/Tech Lead to read the VA POC's comment, and the Cyber
+     * Manager that the resubmission comes back to them.
+     */
+    private void returned(SubmissionEvent event) {
+        UUID id = event.submissionId();
+        switch (event.from()) {
+            case AWAITING_ENDORSEMENT -> {
+                notifications.toSmo(notice(event, NoticeAction.VA_POC_REWORK, Links.rework(id)));
+                notifications.toCyberManager(notice(event, NoticeAction.VA_POC_RETURNED, Links.review(id)));
+            }
+            default -> notifications.toSmo(notice(event, NoticeAction.REWORK, Links.rework(id)));
+        }
     }
 
     private static Notice notice(SubmissionEvent event, NoticeAction action, String link) {

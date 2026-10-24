@@ -184,9 +184,10 @@ public enum AuditAction {
      */
     BATCH_REVIEWED("batch-reviewed", "database"),
     /**
-     * A Cyber Manager returned a VA Submission In Review for rework (SUCCESS, with {@code state_from}, {@code state_to} and
-     * the {@code count} of Disputed items attached), or was refused: segregation of duties, it is not In Review, or nothing
-     * is Disputed (REFUSED, with a fixed reason). About the System and the VA Submission; never the comment.
+     * A Cyber Manager returned a VA Submission In Review for rework, or a VA POC one Awaiting Endorsement (ticket 35)
+     * (SUCCESS, with {@code state_from}, {@code state_to} and the {@code count} of Disputed items attached, 0 for a VA
+     * POC's), or was refused: segregation of duties, the state, the closed Cycle, or nothing is Disputed (REFUSED, with a
+     * fixed reason). About the System and the VA Submission; never the comment.
      */
     SUBMISSION_RETURNED("submission-returned", "database"),
     /**

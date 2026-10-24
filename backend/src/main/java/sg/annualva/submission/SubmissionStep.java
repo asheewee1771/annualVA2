@@ -15,7 +15,7 @@ public enum SubmissionStep {
     SUBMIT(Need.SUBMIT, true),
     /** Confirming or Disputing Findings, returning and passing to endorsement: the Cyber Manager (ticket 28). */
     REVIEW(Need.REVIEW, true),
-    /** Endorsing (ticket 34), and later a VA POC's return and Exemption decisions: a VA POC, by acting only. */
+    /** Endorsing and returning (tickets 34 and 35), and later Exemption decisions: a VA POC, by acting only. */
     ENDORSE(Need.ENDORSE, false);
 
     private final Need need;

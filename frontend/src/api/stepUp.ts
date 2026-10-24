@@ -33,6 +33,7 @@ const ACTIONS: Readonly<Record<string, string>> = {
   "register-apply": "Applying the System Register",
   "submission-endorse": "Endorsing a VA Submission",
   "cycle-close": "Closing a VA Cycle",
+  "submission-return": "Returning a VA Submission for rework",
   "export-mgmt-summary": "Asking for the management summary",
 };
 

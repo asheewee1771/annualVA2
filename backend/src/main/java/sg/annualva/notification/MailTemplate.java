@@ -9,7 +9,7 @@ import org.jspecify.annotations.Nullable;
  * {@code mail_outbox_template_check} and to the configuration of every profile.
  */
 enum MailTemplate {
-    /** Returned for Rework, with what is Disputed (ADR 0043 item 6). */
+    /** Returned for Rework, by the Cyber Manager with what is Disputed (ADR 0043 item 6) or by a VA POC (ADR 0047). */
     RETURNED_FOR_REWORK,
     /** A window passed: the person whose step it is. */
     OVERDUE,
@@ -28,11 +28,12 @@ enum MailTemplate {
      * required messages are the spec's (Notifications): deadline reminders (ticket 38), Overdue, Return for Rework and
      * Disputed, and Register changes. A submit and a pass to endorsement are in-app only (provisional, ADR 0046 item 2):
      * the reminders mail the Cyber Manager and the VA POCs before their windows end. So is the Cycle close's Not Endorsed
-     * (ticket 41): the spec names it neither a required message nor an FYI.
+     * (ticket 41): the spec names it neither a required message nor an FYI. A VA POC's return (ticket 35, ADR 0047) is a
+     * Return for Rework for both people it tells: the SMO/Tech Lead who reworks it and the Cyber Manager it comes back to.
      */
     static Optional<Mailing> of(NoticeAction action) {
         return switch (action) {
-            case REWORK -> mailed(RETURNED_FOR_REWORK, null);
+            case REWORK, VA_POC_REWORK, VA_POC_RETURNED -> mailed(RETURNED_FOR_REWORK, null);
             case SUBMIT_OVERDUE, REVIEW_OVERDUE, ENDORSE_OVERDUE -> mailed(OVERDUE, null);
             case SYSTEM_MOVED -> mailed(REGISTER_CHANGE, "Moved to another Quarter");
             case SYSTEM_TRANSFERRED_TO_YOU -> mailed(REGISTER_CHANGE, "Transferred to you");

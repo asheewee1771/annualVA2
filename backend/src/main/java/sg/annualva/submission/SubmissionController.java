@@ -59,12 +59,14 @@ public class SubmissionController {
     }
 
     /**
-     * Returns the VA Submission In Review for rework, with what is Disputed attached: 200 with it Returned for Rework.
+     * Returns the VA Submission for rework: 200 with it Returned for Rework. The Cyber Manager returns it from In Review
+     * with what is Disputed attached; a VA POC returns it from Awaiting Endorsement with a comment, a step-up action
+     * refused with {@code step-up-required} unless they signed in again within five minutes.
      *
-     * @param request an optional comment; {@code {}} gives none
+     * @param request the comment: optional for the Cyber Manager ({@code {}} gives none), required for a VA POC
      */
     @PostMapping("/api/submissions/{id}/return")
-    @PreAuthorize("hasRole('CYBER_MANAGER')")
+    @PreAuthorize("hasAnyRole('CYBER_MANAGER','VA_POC')")
     public ResponseEntity<Submissions.Submission> returnForRework(@PathVariable UUID id,
             @RequestBody Submissions.ReturnRequest request) {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(submissions.returnForRework(id, request));
