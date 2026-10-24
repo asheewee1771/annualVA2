@@ -9,6 +9,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import sg.annualva.boundary.FileStore;
 import sg.annualva.harness.ApiClient;
+import sg.annualva.harness.Samples;
 import tools.jackson.databind.JsonNode;
 
 /**
@@ -25,17 +26,26 @@ class DisposalCycleTest extends DisposalSeam1 {
             "batch_review", "report_review", "submission_return", "submission_return_item", "declaration",
             "notification", "mail_outbox", "not_started_overdue", "cycle_register_system", "register_upload");
 
-    private static final List<String> EMPTIED = List.of("va_submission", "report_file", "report_file_stage", "report_slot",
-            "finding", "finding_occurrence", "finding_status_proposal", "bulk_batch", "finding_review", "batch_review",
-            "report_review", "submission_return", "submission_return_item", "declaration", "submission_participation",
-            "notification", "mail_outbox", "not_started_overdue", "cycle_register", "cycle_register_system",
-            "register_upload");
+    /**
+     * The tables a Cycle's disposal keeps: the people, the Systems still in the Register and their grants, the Cycles'
+     * open and close records, the Declaration wordings, the audit log from the cutoff on, the disposal lists, and the
+     * framework's own. Every other table holds nothing once the test's Cycle is disposed of.
+     */
+    private static final Set<String> KEPT = Set.of("app_user", "va_system", "role_grant", "va_cycle", "declaration_text",
+            "audit_entry", "disposal_list", "disposal_item", "flyway_schema_history", "spring_session",
+            "spring_session_attributes");
 
     /** Two Findings read from a file, so a batch, a rescan and a return can be made of them. */
-    private static byte[] twoFindings(String alphaPath) {
+    private static byte[] twoFindings() {
         return jsonReportOf("{\"name\":\"throwaway-project\",\"reportDate\":\"" + SCANNED + "\"}",
-                dependency(PKG_A, alphaPath, "CVE-2027-0001", "9.8"),
+                dependency(PKG_A, "/app/alpha.js", "CVE-2027-0001", "9.8"),
                 dependency(PKG_B, "/app/bravo.js", "CVE-2027-0002", "7.5"));
+    }
+
+    /** The rescan: alpha at a new path, and bravo gone, so the rescan proposes bravo Remediated naming the first file. */
+    private static byte[] rescanWithoutBravo() {
+        return jsonReportOf("{\"name\":\"throwaway-project\",\"reportDate\":\"" + SCANNED + "\"}",
+                dependency(PKG_A, "/srv/alpha.js", "CVE-2027-0001", "9.8"));
     }
 
     @Test
@@ -45,8 +55,11 @@ class DisposalCycleTest extends DisposalSeam1 {
         String f1 = draft.systemId();
         String f2 = idOf("SYS-F2");
         ApiClient smo = draft.smo();
-        String first = parsedDc(draft, "first.json", twoFindings("/app/alpha.js"));
-        String rescan = replacedAndSettled(draft, first, "rescan.json", twoFindings("/srv/alpha.js")).get("id").asString();
+        String first = parsedDc(draft, "first.json", twoFindings());
+        String rescan = replacedAndSettled(draft, first, "rescan.json", rescanWithoutBravo()).get("id").asString();
+        assertThat(state(draft).get("dc|CVE-2027-0002|" + PKG_B)).as("a RESCAN proposal names the first file")
+                .endsWith("/REMEDIATED");
+        String memo = settledEvidence(draft, DEPENDENCY_CHECK, "memo.pdf", Samples.pdf()).get("id").asString();
         modeSet(smo, sub, SECURE_CONFIGURATION, mode(MANUAL, "The scanner exports PDF only."));
         entered(smo, sub, manualFinding(SECURE_CONFIGURATION, "Password policy too weak", "SC-PWD-1",
                 "password-min-length", "HIGH"));
@@ -56,7 +69,7 @@ class DisposalCycleTest extends DisposalSeam1 {
         String bravo = byIdentifier(page, "CVE-2027-0002").get("id").asString();
         String manual = byIdentifier(page, "SC-PWD-1").get("id").asString();
         String batch = BatchReviewSeam1.bulkSet(draft, List.of(alpha, bravo), remediationPlanned("Upgrade both.", LATER));
-        proposeEvery(draft);
+        proposed(smo, manual, riskAcceptedWithMemo("No fix this year.", "A. Tan", "Head of Ops", memo));
         submitted(smo, sub);
         ApiClient cm = signedInAs(CM);
         BatchReviewSeam1.batchReviewed(cm, batch, DISPUTED, "The plan has no owner.");
@@ -84,8 +97,13 @@ class DisposalCycleTest extends DisposalSeam1 {
 
         today("2031-02-14");
         retention();
-        assertThat(items(listIn(vaPoc(), "DRAFT"))).as("the last day the Cycle is kept: only the superseded file is due")
+        JsonNode early = listIn(vaPoc(), "DRAFT");
+        assertThat(items(early)).as("the last day the Cycle is kept: only the superseded file is due")
                 .containsExactly("SUPERSEDED_FILE " + first + " SUPERSEDED_AFTER_ENDORSEMENT");
+        approved(vaPoc(), early.get("id").asString());
+        retention();
+        assertThat(fileStore.keys(FileStore.Zone.CLEAN)).as("its content went early").doesNotContain(first)
+                .contains(rescan, memo);
 
         today("2031-02-15");
         retention();
@@ -95,6 +113,7 @@ class DisposalCycleTest extends DisposalSeam1 {
                 "SUBMISSION " + sub + " CYCLE_RETENTION_ENDED",
                 "FILE " + first + " CYCLE_RETENTION_ENDED",
                 "FILE " + rescan + " CYCLE_RETENTION_ENDED",
+                "FILE " + memo + " CYCLE_RETENTION_ENDED",
                 "CYCLE - CYCLE_RETENTION_ENDED",
                 "SYSTEM " + f2 + " SYSTEM_RETIRED",
                 "AUDIT_RANGE - CYCLE_RETENTION_ENDED");
@@ -103,16 +122,20 @@ class DisposalCycleTest extends DisposalSeam1 {
         assertThat(submissionItem.get("systemName").asString()).isEqualTo("File one");
         assertThat(submissionItem.get("cycle").asInt()).isEqualTo(2027);
         assertThat(kindOf(draftList, "AUDIT_RANGE").get("entries").asLong()).isPositive();
-        assertThat(fileStore.keys(FileStore.Zone.CLEAN)).contains(first, rescan);
         Set<String> tombstonesBefore = auditIds("DISPOSAL_EXECUTED");
         approved(vaPoc(), draftList.get("id").asString());
 
         retention();
 
-        assertThat(listIn(vaPoc(), "EXECUTED").get("id").asString()).isEqualTo(draftList.get("id").asString());
-        assertThat(fileStore.keys(FileStore.Zone.CLEAN)).as("the content went first").doesNotContain(first, rescan);
+        assertThat(disposalLists(vaPoc()).get(0).get("id").asString()).isEqualTo(draftList.get("id").asString());
+        assertThat(disposalLists(vaPoc()).get(0).get("status").asString()).isEqualTo("EXECUTED");
+        assertThat(fileStore.keys(FileStore.Zone.CLEAN)).as("the content went first").doesNotContain(rescan, memo);
         JsonNode after = arrange.rows();
-        assertThat(EMPTIED).allSatisfy(table -> assertThat(after.get(table).asLong()).as(table).isZero());
+        after.propertyNames().forEach(table -> {
+            if (!KEPT.contains(table)) {
+                assertThat(after.get(table).asLong()).as(table).isZero();
+            }
+        });
         assertThat(after.get("va_system").asLong()).as("SYS-F1 is still in the Register").isEqualTo(1);
         ApiClient reader = vaPoc();
         assertThat(read(reader, sub).status()).isEqualTo(404);
@@ -127,7 +150,7 @@ class DisposalCycleTest extends DisposalSeam1 {
         JsonNode detail = tombstones.getFirst().get("detail");
         assertThat(detail.get("disposal_list_id").asString()).isEqualTo(draftList.get("id").asString());
         assertThat(detail.get("submissions").asInt()).isEqualTo(1);
-        assertThat(detail.get("files").asInt()).isEqualTo(2);
+        assertThat(detail.get("files").asInt()).isEqualTo(3);
         assertThat(detail.get("systems").asInt()).isEqualTo(1);
         assertThat(detail.get("superseded_files").asInt()).isZero();
         assertThat(detail.get("exports").asInt()).isZero();

@@ -1,15 +1,11 @@
 package sg.annualva.retention;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.HexFormat;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
@@ -32,9 +28,6 @@ import sg.annualva.register.RegisterSystems;
  */
 @Service
 public class DisposalPlanner {
-
-    /** How long a failed export's row is kept: the 24 hours a made one is. */
-    private static final Duration EXPORT_KEPT_FOR = Duration.ofHours(24);
 
     private final DisposalStore store;
     private final CycleCalendar calendar;
@@ -61,17 +54,17 @@ public class DisposalPlanner {
         Instant now = clock.instant();
         LocalDate today = calendar.dateOf(now);
         Due due = due(now, today);
-        String fingerprint = fingerprint(due.cutoff(), due.items());
         if (open.isPresent()) {
-            if (open.get().fingerprint().equals(fingerprint)) {
+            DisposalStore.ListRow waiting = open.get();
+            if (Objects.equals(waiting.cutoff(), due.cutoff()) && store.items(waiting.id()).equals(due.items())) {
                 return;
             }
-            store.supersede(open.get().id());
+            store.supersede(waiting.id());
         }
         if (due.items().isEmpty()) {
             return;
         }
-        UUID id = store.insert(today, now, due.cutoff(), fingerprint, due.items());
+        UUID id = store.insert(today, now, due.cutoff(), due.items());
         audit.record(AuditEvent.of(AuditAction.DISPOSAL_LISTED, AuditOutcome.SUCCESS)
                 .with(DetailKey.DISPOSAL_LIST_ID, id).with(DetailKey.COUNT, due.items().size()));
     }
@@ -95,7 +88,7 @@ public class DisposalPlanner {
         store.supersededDue().stream().filter(file -> !cycles.contains(file.cycle())).forEach(file -> items.add(
                 new DisposalItem(ItemKind.SUPERSEDED_FILE, file.id(), file.systemId(), file.cycle(),
                         DisposalReason.SUPERSEDED_AFTER_ENDORSEMENT, null)));
-        store.expiredExports(now.minus(EXPORT_KEPT_FOR)).forEach(export -> items.add(
+        store.expiredExports().forEach(export -> items.add(
                 new DisposalItem(ItemKind.EXPORT, export, null, null, DisposalReason.EXPORT_EXPIRED, null)));
         long entries = cutoff == null ? 0 : store.auditBefore(cutoff);
         if (entries > 0) {
@@ -146,19 +139,5 @@ public class DisposalPlanner {
      */
     private LocalDate nextCycleStart(int year) {
         return calendar.cycle(year + 1).orElseThrow().startsOn();
-    }
-
-    /** A digest of what a list holds, in its order. */
-    private static String fingerprint(@Nullable Instant cutoff, List<DisposalItem> items) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            digest.update(String.valueOf(cutoff).getBytes(StandardCharsets.UTF_8));
-            for (DisposalItem item : items) {
-                digest.update(("\n" + item.line()).getBytes(StandardCharsets.UTF_8));
-            }
-            return HexFormat.of().formatHex(digest.digest());
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 is part of every Java platform", e);
-        }
     }
 }

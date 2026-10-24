@@ -402,24 +402,18 @@ public class TestEndpoints {
             return Map.of("ran", "retention");
         }
 
-        /** The tables a disposal removes rows from, in the order the rows test reports them. */
-        private static final List<String> DISPOSED_TABLES = List.of("va_submission", "report_file", "report_file_stage",
-                "report_slot", "finding", "finding_occurrence", "finding_status_proposal", "bulk_batch", "finding_review",
-                "batch_review", "report_review", "submission_return", "submission_return_item", "declaration",
-                "submission_participation", "notification", "mail_outbox", "not_started_overdue", "cycle_register",
-                "cycle_register_system", "register_upload", "role_grant", "va_system", "export_request");
-
         /**
-         * Observation of what a disposal leaves in the database: how many rows each table holds. The suite resets these
-         * tables before every test, so a test that disposes of everything it made expects the counts it can name. There is
-         * no read of the append-only history tables (the proposals, batches, reviews and returns) once their VA
-         * Submission is gone, so only the tables themselves can show that they are empty.
+         * Observation of what a disposal leaves in the database: how many rows every table of the schema holds, by name.
+         * The suite resets the domain tables before every test, so a test that disposes of everything it made expects the
+         * counts it can name. There is no read of the append-only history tables (the proposals, batches, reviews and
+         * returns) once their VA Submission is gone, so only the tables themselves can show that they are empty.
          */
         @GetMapping("/api/test/rows")
         public Map<String, Long> rows() {
-            Map<String, Long> rows = new java.util.LinkedHashMap<>();
-            for (String table : DISPOSED_TABLES) {
-                rows.put(table, jdbc.sql("SELECT count(*) FROM " + table).query(Long.class).single());
+            Map<String, Long> rows = new java.util.TreeMap<>();
+            for (String table : jdbc.sql("SELECT table_name FROM information_schema.tables WHERE table_schema = "
+                    + "current_schema() AND table_type = 'BASE TABLE'").query(String.class).list()) {
+                rows.put(table, jdbc.sql("SELECT count(*) FROM \"" + table + "\"").query(Long.class).single());
             }
             return rows;
         }

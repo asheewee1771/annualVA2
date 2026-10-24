@@ -12,7 +12,6 @@
 --   cutoff        the instant before which the records of the Cycles it disposes of were written: the start of the
 --                 VA Cycle after the newest of them. Audit entries, Register previews and notifications about no VA
 --                 Submission written before it are disposed of; null when the list disposes of no Cycle
---   fingerprint   a digest of the items, so that a pass that finds the same records keeps the DRAFT it wrote
 --   approved_by, approved_at, executed_at
 --                 who approved it and when, and when it was executed (UTC)
 -- disposal_item: one record, or one group of records, the list disposes of, with why. Ids and codes only: the targets
@@ -34,15 +33,13 @@ CREATE TABLE disposal_list (
     computed_on  date        NOT NULL,
     created_at   timestamptz NOT NULL,
     cutoff       timestamptz,
-    fingerprint  text        NOT NULL,
     approved_by  uuid        REFERENCES app_user (id),
     approved_at  timestamptz,
     executed_at  timestamptz,
     CONSTRAINT disposal_list_status_check CHECK (status IN ('DRAFT', 'SUPERSEDED', 'APPROVED', 'EXECUTED')),
     CONSTRAINT disposal_list_approved_check
         CHECK ((status IN ('APPROVED', 'EXECUTED')) = (approved_by IS NOT NULL AND approved_at IS NOT NULL)),
-    CONSTRAINT disposal_list_executed_check CHECK ((status = 'EXECUTED') = (executed_at IS NOT NULL)),
-    CONSTRAINT disposal_list_fingerprint_check CHECK (fingerprint ~ '^[0-9a-f]{64}$')
+    CONSTRAINT disposal_list_executed_check CHECK ((status = 'EXECUTED') = (executed_at IS NOT NULL))
 );
 
 CREATE UNIQUE INDEX disposal_list_one_open_idx ON disposal_list ((true)) WHERE status IN ('DRAFT', 'APPROVED');

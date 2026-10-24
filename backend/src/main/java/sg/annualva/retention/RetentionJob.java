@@ -1,5 +1,7 @@
 package sg.annualva.retention;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -12,6 +14,8 @@ import org.springframework.stereotype.Component;
 @Component
 @ConditionalOnProperty(name = "annualva.scheduling.enabled", havingValue = "true")
 class RetentionJob {
+
+    private static final Logger log = LoggerFactory.getLogger(RetentionJob.class);
 
     private final DisposalExecutor executor;
     private final DisposalPlanner planner;
@@ -27,9 +31,16 @@ class RetentionJob {
         executor.execute();
     }
 
-    @Scheduled(cron = "${annualva.retention.list-cron:0 30 2 * * *}", zone = "Asia/Singapore")
+    @Scheduled(cron = "${annualva.retention.list-cron:0 30 2 * * *}", zone = "${annualva.time-zone}")
     void list() {
         executor.execute();
-        planner.plan();
+        try {
+            planner.plan();
+        } catch (RuntimeException e) {
+            // The type only: a database message could quote a key (lm-19). The next day's pass lists again.
+            log.atWarn().setMessage("The retention job could not list what is due")
+                    .addKeyValue("event.action", "disposal-list-failed")
+                    .addKeyValue("error.type", e.getClass().getName()).log();
+        }
     }
 }

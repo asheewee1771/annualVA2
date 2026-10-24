@@ -13,10 +13,4 @@ import org.jspecify.annotations.Nullable;
  */
 record DisposalItem(
         ItemKind kind, @Nullable UUID targetId, @Nullable UUID systemId, @Nullable Integer cycle, DisposalReason reason,
-        @Nullable Long entries) {
-
-    /** The item as one line, for the list's fingerprint. */
-    String line() {
-        return kind + "|" + targetId + "|" + systemId + "|" + cycle + "|" + reason + "|" + entries;
-    }
-}
+        @Nullable Long entries) {}

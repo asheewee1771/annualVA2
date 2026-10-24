@@ -1,5 +1,6 @@
 package sg.annualva.ingestion;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -21,8 +22,13 @@ import org.springframework.transaction.support.TransactionTemplate;
  */
 class DisposalGuardTest extends DisposalSeam1 {
 
-    private static final List<String> HISTORY = List.of("finding_status_proposal", "bulk_batch", "finding_review",
-            "batch_review", "report_review", "submission_return", "submission_return_item", "declaration", "audit_entry");
+    /** Every table guarded by an append-only trigger, read from the schema so a new one is covered by default. */
+    private List<String> appendOnlyTables() {
+        List<String> tables = application.sql("SELECT DISTINCT event_object_table FROM information_schema.triggers "
+                + "WHERE trigger_name LIKE '%append_only' ORDER BY 1").query(String.class).list();
+        assertThat(tables).contains("audit_entry", "finding_status_proposal", "bulk_batch", "declaration_text");
+        return tables;
+    }
 
     @Autowired
     private JdbcClient application;
@@ -52,7 +58,7 @@ class DisposalGuardTest extends DisposalSeam1 {
     void namingAListThatNobodyApprovedOpensNothing() {
         String draft = draftList();
 
-        for (String table : HISTORY) {
+        for (String table : appendOnlyTables()) {
             assertThatThrownBy(() -> asDisposal(draft, "DELETE FROM " + table + " WHERE false"))
                     .as(table).isInstanceOf(DataAccessException.class).hasMessageContaining("append-only");
             assertThatThrownBy(() -> asDisposal(UUID.randomUUID().toString(), "DELETE FROM " + table + " WHERE false"))
