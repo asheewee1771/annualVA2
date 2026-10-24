@@ -63,7 +63,11 @@ public enum DetailKey {
     /** Whether an endorsement came after the Quarter's last day (ticket 34): a flag, never a date. */
     ENDORSED_LATE,
     /** The VA Cycle an entry is about (ticket 41): its year, never a date. */
-    CYCLE;
+    CYCLE,
+    /** The Exemption an entry is about (ticket 40): its id, never its evidence. */
+    EXEMPTION_ID,
+    /** What an Exemption rests on (ticket 40): {@code PRIOR_VA} or {@code SCHEDULED_VA}, never the date. */
+    BASIS;
 
     /** The key as stored: lower-case with underscores. */
     String json() {

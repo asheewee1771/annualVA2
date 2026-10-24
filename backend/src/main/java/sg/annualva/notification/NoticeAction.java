@@ -28,7 +28,13 @@ public enum NoticeAction {
      * To the SMO/Tech Lead, once the VA Cycle closed with the System neither Endorsed nor Exempted (ticket 41): its VA
      * Submission, or the one the close made for a System that had none, is Not Endorsed.
      */
-    NOT_ENDORSED("The VA Cycle closed before this System's VA Submission was endorsed: it is Not Endorsed.");
+    NOT_ENDORSED("The VA Cycle closed before this System's VA Submission was endorsed: it is Not Endorsed."),
+    /** To both VA POCs, once an SMO/Tech Lead requests an Exemption (ticket 40); either one's decision clears it. */
+    DECIDE_EXEMPTION("Approve or reject the Exemption request."),
+    /** To the SMO/Tech Lead, once a VA POC approves their Exemption. */
+    EXEMPTION_APPROVED("A VA POC approved the Exemption: this System is Exempted."),
+    /** To the SMO/Tech Lead, once a VA POC rejects their Exemption and the VA Submission is back where it was. */
+    EXEMPTION_REJECTED("A VA POC rejected the Exemption: the VA Submission is back where it was before the request.");
 
     private final String message;
 

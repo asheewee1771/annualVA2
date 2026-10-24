@@ -81,12 +81,21 @@ class SubmissionStore {
      * Every transition's UPDATE sets this, and nothing else touches {@code overdue_since}. An {@code UPDATE} reads the
      * row's old values, so the new state is the parameter.
      */
-    static final String OVERDUE_AFTER_MOVE =
-            "overdue_since = CASE WHEN " + windowPassed("CAST(:state AS text)") + " THEN overdue_since END";
+    static final String OVERDUE_AFTER_MOVE = overdueAfterMove("overdue_since");
 
     /**
-     * One VA Submission per System and Cycle: a second start, even a concurrent one, inserts nothing. Starting is the move
-     * from Not Started: the flag the sweep set on the System, and when, goes with it if its window has passed (ADR 0033).
+     * The same rule for a move that puts back the flag's time from before (a rejected Exemption, ADR 0046): {@code since}
+     * is kept only if the window the new state waits on has passed.
+     */
+    private static String overdueAfterMove(String since) {
+        return "overdue_since = CASE WHEN " + windowPassed("CAST(:state AS text)") + " THEN " + since + " END";
+    }
+
+    /**
+     * One VA Submission per System and Cycle: a second start, even a concurrent one, inserts nothing, unless the row there
+     * is Not Started (a rejected Exemption request created it, ADR 0046), which the start takes with the windows it has.
+     * Starting is the move from Not Started: the flag the sweep set on the System, or on that row, and when, goes with it
+     * if its window has passed (ADR 0033).
      */
     private static final String INSERT =
             "INSERT INTO va_submission (system_id, cycle_year, quarter, state, submit_due, review_due, endorse_due, "
@@ -95,7 +104,11 @@ class SubmissionStore {
             + windowPassed("CAST(:state AS text)", "CAST(:submitDue AS date)", "CAST(:reviewDue AS date)",
                     "CAST(:endorseDue AS date)")
             + " THEN (SELECT overdue_since FROM not_started_overdue WHERE system_id = :system AND cycle_year = :cycle) "
-            + "END) ON CONFLICT (system_id, cycle_year) DO NOTHING RETURNING id";
+            + "END) ON CONFLICT (system_id, cycle_year) DO UPDATE SET state = EXCLUDED.state, "
+            + "started_at = EXCLUDED.started_at, started_by = EXCLUDED.started_by, overdue_since = CASE WHEN "
+            + windowPassed("EXCLUDED.state", "va_submission.submit_due", "va_submission.review_due",
+                    "va_submission.endorse_due")
+            + " THEN va_submission.overdue_since END WHERE va_submission.state = '" + NOT_STARTED + "' RETURNING id";
 
     /**
      * Flags the Systems among these that have no VA Submission in the Cycle and are not flagged yet, once the Quarter's
@@ -217,6 +230,13 @@ class SubmissionStore {
      * A move that reaches no milestone (a return for rework): the state, and the flag with it ({@link #OVERDUE_AFTER_MOVE}).
      */
     private static final String MOVED = "UPDATE va_submission SET state = :state, " + OVERDUE_AFTER_MOVE + " WHERE id = :id";
+
+    /**
+     * A rejected Exemption (ADR 0046): the state the request froze, and the flag's time from then if the window that
+     * state waits on has still passed; otherwise the flag stays clear until the sweep sets it.
+     */
+    private static final String RESTORED = "UPDATE va_submission SET state = :state, "
+            + overdueAfterMove("CAST(:overdueSince AS timestamptz)") + " WHERE id = :id";
 
     /**
      * A pass to endorsement: Awaiting Endorsement, the flag with it, and when the review ended
@@ -346,6 +366,15 @@ class SubmissionStore {
     /** Moves a VA Submission whose row the caller holds ({@link #lockForMove}) to a state with no milestone of its own. */
     void moved(UUID id, SubmissionState state, LocalDate today) {
         jdbc.sql(MOVED).param("id", id).param("state", state.name()).param("today", today).update();
+    }
+
+    /**
+     * Puts a VA Submission whose row the caller holds ({@link #lockForMove}) back in the state an Exemption request froze,
+     * with the Overdue flag's time from then.
+     */
+    void restored(UUID id, SubmissionState state, @Nullable Instant overdueSince, LocalDate today) {
+        jdbc.sql(RESTORED).param("id", id).param("state", state.name())
+                .param("overdueSince", overdueSince == null ? null : utc(overdueSince)).param("today", today).update();
     }
 
     /** Passes a VA Submission whose row the caller holds ({@link #lockForMove}) to endorsement now. */

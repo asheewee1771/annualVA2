@@ -33,7 +33,11 @@ import sg.annualva.submission.Submissions;
  *       the Cyber Manager In Review, both VA POCs Awaiting Endorsement);
  *   <li>moved to another Quarter or transferred by the Register: the SMO/Tech Lead, and on a transfer the former one too;
  *   <li>made Not Endorsed by its VA Cycle's close: the SMO/Tech Lead; a VA POC's close also clears the endorsement pair of
- *       a VA Submission that was Awaiting Endorsement, as an endorsement would (ticket 41, ADR 0044).
+ *       a VA Submission that was Awaiting Endorsement, as an endorsement would (ticket 41, ADR 0044), and the pairs of one
+ *       that was Exemption Requested;
+ *   <li>an Exemption requested: both VA POCs, as a pair; a request from Awaiting Endorsement leaves the endorsement pair
+ *       open. Decided: the request's pair clears for both, an approval clears the endorsement pair too, and the SMO/Tech
+ *       Lead is told (ticket 40, ADR 0046).
  * </ul>
  */
 @Component
@@ -58,7 +62,12 @@ class WorkflowNotices {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     void on(SubmissionEvent event) {
         UUID id = event.submissionId();
-        if (event.from() == SubmissionState.AWAITING_ENDORSEMENT) {
+        if (event.from() == SubmissionState.EXEMPTION_REQUESTED) {
+            exemptionDecided(event);
+            return;
+        }
+        // A request freezes the VA Submission without handling its endorsement: the pair stays open for a rejection.
+        if (event.from() == SubmissionState.AWAITING_ENDORSEMENT && event.to() != SubmissionState.EXEMPTION_REQUESTED) {
             notifications.handled(id, Awaits.ENDORSEMENT, event.actorId(), event.at());
         }
         switch (event.to()) {
@@ -66,9 +75,28 @@ class WorkflowNotices {
             case RETURNED_FOR_REWORK -> notifications.toSmo(notice(event, NoticeAction.REWORK, Links.rework(id)));
             case AWAITING_ENDORSEMENT -> notifications.toVaPocs(notice(event, NoticeAction.ENDORSE, Links.endorse(id)),
                     Awaits.ENDORSEMENT);
+            case EXEMPTION_REQUESTED -> notifications.toVaPocs(
+                    notice(event, NoticeAction.DECIDE_EXEMPTION, Links.EXEMPTION_QUEUE), Awaits.EXEMPTION);
             // Endorsed is an FYI for the weekly digest (story 93, Release 2); the other states arrive with their tickets.
             default -> { }
         }
+    }
+
+    /**
+     * A VA POC decided an Exemption (ticket 40): the request's pair clears for both VA POCs, an approval handles the
+     * endorsement pair too (Exempted needs no endorsement), and the SMO/Tech Lead is told, linked to where the VA
+     * Submission now is: their inbox when it is back to Not Started.
+     */
+    private void exemptionDecided(SubmissionEvent event) {
+        UUID id = event.submissionId();
+        notifications.handled(id, Awaits.EXEMPTION, event.actorId(), event.at());
+        if (event.to() == SubmissionState.EXEMPTED) {
+            notifications.handled(id, Awaits.ENDORSEMENT, event.actorId(), event.at());
+            notifications.toSmo(notice(event, NoticeAction.EXEMPTION_APPROVED, Links.prepare(id)));
+            return;
+        }
+        String link = event.to() == SubmissionState.NOT_STARTED ? Links.SMO_INBOX : Links.prepare(id);
+        notifications.toSmo(notice(event, NoticeAction.EXEMPTION_REJECTED, link));
     }
 
     @TransactionalEventListener
@@ -101,6 +129,11 @@ class WorkflowNotices {
         for (CycleClosed.NotEndorsed item : event.notEndorsed()) {
             UUID closedBy = event.closedBy();
             if (closedBy != null && item.from() == SubmissionState.AWAITING_ENDORSEMENT) {
+                notifications.handled(item.submissionId(), Awaits.ENDORSEMENT, closedBy, event.at());
+            }
+            if (closedBy != null && item.from() == SubmissionState.EXEMPTION_REQUESTED) {
+                // Frozen from Awaiting Endorsement, its endorsement pair is still open too (ticket 40).
+                notifications.handled(item.submissionId(), Awaits.EXEMPTION, closedBy, event.at());
                 notifications.handled(item.submissionId(), Awaits.ENDORSEMENT, closedBy, event.at());
             }
             notifications.toSmo(new Notice(item.systemId(), item.submissionId(), SubmissionState.NOT_ENDORSED.name(),

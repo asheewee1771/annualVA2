@@ -230,6 +230,8 @@ public class TestEndpoints {
                 // The notifications (V136) name the Systems and the VA Submissions, so they go before both.
                 jdbc.sql("DROP TRIGGER IF EXISTS test_notification_fault ON notification").update();
                 jdbc.sql("DELETE FROM notification").update();
+                // The Exemption requests (V144_40) name the VA Submissions and their evidence files.
+                jdbc.sql("DELETE FROM exemption").update();
                 jdbc.sql("DELETE FROM finding_occurrence").update();
                 // The returns (V130) name the reviews, and the reviews (V21, V129) name the proposals, the batches and the
                 // Scan Reports, so they go first, a return before the reviews it names and a Finding's review before the

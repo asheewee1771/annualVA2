@@ -229,7 +229,32 @@ public enum AuditAction {
      * {@code state_to} and the {@code cycle}). Attributed to the VA POC who closed the Cycle, or to nobody for the
      * lifecycle job. About the System and the VA Submission.
      */
-    SUBMISSION_NOT_ENDORSED("submission-not-endorsed", "database");
+    SUBMISSION_NOT_ENDORSED("submission-not-endorsed", "database"),
+    /**
+     * An SMO/Tech Lead requested an Exemption and the VA Submission froze (stories 43 and 44; SUCCESS, with
+     * {@code state_from}, {@code NOT_STARTED} when the request created it, {@code state_to}, the {@code exemption_id} and
+     * the {@code basis}), or was refused: segregation of duties, the state, the Cycle, or a file still being checked
+     * (REFUSED, with a fixed reason). About the System and the VA Submission; never the evidence.
+     */
+    EXEMPTION_REQUESTED("exemption-requested", "database"),
+    /**
+     * A VA POC approved an Exemption and the VA Submission is Exempted (story 46; SUCCESS, with {@code state_from},
+     * {@code state_to} and the {@code exemption_id}), or was refused: segregation of duties, the state, or a request
+     * already decided (REFUSED, with the {@code exemption_id} and a fixed reason). A refusal for want of a fresh sign-in is
+     * the {@code REQUEST_REFUSED} entry of every step-up. About the System and the VA Submission.
+     */
+    EXEMPTION_APPROVED("exemption-approved", "database"),
+    /**
+     * A VA POC rejected an Exemption and the VA Submission went back to the state it was in (story 46; SUCCESS, with
+     * {@code state_from}, {@code state_to} and the {@code exemption_id}), or was refused as an approval is. About the
+     * System and the VA Submission.
+     */
+    EXEMPTION_REJECTED("exemption-rejected", "database"),
+    /**
+     * A VA POC read the pending Exemption requests (story 45), which carry the evidence an SMO/Tech Lead wrote, so every
+     * read is audited, with the {@code count} of requests listed; never their text.
+     */
+    EXEMPTIONS_VIEWED("exemptions-viewed", "database");
 
     private final String ecs;
     private final String category;

@@ -11,6 +11,9 @@ public final class Links {
     /** The SMO/Tech Lead's inbox: where a System with no VA Submission is started. */
     public static final String SMO_INBOX = "/smo";
 
+    /** The VA POCs' queue of pending Exemption requests. */
+    public static final String EXEMPTION_QUEUE = "/va-poc/exemptions";
+
     private Links() {}
 
     /** Where the SMO/Tech Lead prepares a VA Submission. */

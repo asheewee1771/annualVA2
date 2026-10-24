@@ -56,7 +56,7 @@ class SubmitChecks implements SubmitReadiness {
         FindingStore.Counts counts = findings.counts(submissionId);
         List<Blocker> blockers = new ArrayList<>();
         if (!files.scanning().isEmpty()) {
-            blockers.add(new Blocker("files-scanning",
+            blockers.add(new Blocker(FILES_SCANNING,
                     "These files are still being checked. Wait until every one has finished.", null, files.scanning()));
         }
         for (ReportType type : ReportType.values()) {

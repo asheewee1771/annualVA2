@@ -159,34 +159,40 @@ public class Submissions {
      * exclusively for a move to another state, so that it waits for every review in progress and none starts until it
      * commits (ADR 0035 item 3).
      */
-    private enum Hold {
+    enum Hold {
         SHARED,
         EXCLUSIVE
     }
 
     /**
-     * What a step command checks beyond ownership and segregation of duties: the step it acts at, the one state it acts
+     * What a step command checks beyond ownership and segregation of duties: the step it acts at, the states it acts
      * from, and the fixed reason and sentence of a refusal in any other state (ADR 0035 item 2, ADR 0042 item 1). The
      * access guard's need is the step's own.
      */
-    private record Gate(SubmissionStep step, SubmissionState from, String refusedReason, String refusedSentence) {}
+    record Gate(SubmissionStep step, Set<SubmissionState> from, String refusedReason, String refusedSentence) {
+
+        Gate {
+            from = Set.copyOf(from);
+        }
+    }
 
     /** Reviewing, returning and passing to endorsement: the Cyber Manager, In Review. */
-    private static final Gate REVIEWING = new Gate(SubmissionStep.REVIEW, SubmissionState.IN_REVIEW,
+    private static final Gate REVIEWING = new Gate(SubmissionStep.REVIEW, Set.of(SubmissionState.IN_REVIEW),
             "state-not-reviewable",
             "This VA Submission can be reviewed, returned or passed to endorsement only while it is In Review.");
 
     /** Endorsing: a VA POC, Awaiting Endorsement. */
-    private static final Gate ENDORSING = new Gate(SubmissionStep.ENDORSE, SubmissionState.AWAITING_ENDORSEMENT,
+    private static final Gate ENDORSING = new Gate(SubmissionStep.ENDORSE, Set.of(SubmissionState.AWAITING_ENDORSEMENT),
             "state-not-endorsable", "This VA Submission can be endorsed only while it is Awaiting Endorsement.");
 
     /**
      * A VA Submission that passed a {@link Gate}: its row held as {@code hold} says until the caller's transaction ends,
      * and the caller recorded at the gate's step. Only {@link #atStep} makes one, and only one held exclusively is moved.
      *
+     * @param from the state it was found in, one of the gate's
      * @param refused the entry a later refusal of the same command is recorded as, before its reason
      */
-    private record AtStep(UUID submissionId, UUID systemId, Gate gate, AuditEvent refused, Hold hold) {}
+    record AtStep(UUID submissionId, UUID systemId, SubmissionState from, AuditEvent refused, Hold hold) {}
 
     /**
      * What a write answers when the VA Submission is not in Draft or Returned for Rework: it audits its own refusal (ADR
@@ -296,7 +302,8 @@ public class Submissions {
      * @throws RejectedRequestException 403 {@code sod-conflict} when the caller is also the System's Cyber Manager (story
      *     58: assigned to the reviewing step, so never its submitter); 409 {@code invalid-transition} when the Cycle is
      *     closed, the System was not in the Cycle (added after a newer Cycle opened, ADR 0044), it already has a VA
-     *     Submission in the Cycle, or its Quarter is Handled outside the app
+     *     Submission in the Cycle that is not Not Started (one a rejected Exemption request made is taken, ADR 0046), or
+     *     its Quarter is Handled outside the app
      */
     @Transactional
     public Submission start(UUID systemId, @Nullable Integer cycleYear) {
@@ -304,26 +311,61 @@ public class Submissions {
         AuditEvent refused = actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_STARTED, AuditOutcome.REFUSED))
                 .onSystem(systemId);
         sod.require(SubmissionStep.SUBMIT, systemId, null, refused);
-        VaCycle cycle = calendar.running(cycleYear);
-        store.holdCycle(cycle.year());
-        requireOpenCycle(cycle.year(), refused);
-        int inCycle = register.quarterIn(systemId, cycle.year()).orElseThrow(() -> refusedStart(systemId,
-                "not-in-cycle", "This System was not in the System Register when this VA Cycle's successor opened, so it "
-                + "has no VA Submission in this VA Cycle."));
-        Quarter quarter = cycle.quarters().get(inCycle - 1);
-        if (quarter.handledOutsideApp()) {
-            throw refusedStart(systemId, "quarter-handled-outside-app",
-                    "This System's Quarter is handled outside the app, so no VA Submission is started for it here.");
-        }
+        Quarter quarter = placed(systemId, cycleYear, refused);
         Instant now = clock.instant();
         UUID caller = user.id();
-        UUID id = store.insert(systemId, cycle.year(), quarter.number(), SubmissionState.DRAFT, quarter.submitDue(),
-                quarter.reviewDue(), quarter.endorseDue(), now, calendar.dateOf(now), caller).orElseThrow(() -> refusedStart(systemId,
-                        "already-started", "This System already has a VA Submission in this VA Cycle."));
+        UUID id = inserted(systemId, quarter, SubmissionState.DRAFT, now).orElseThrow(() -> refusedWith(refused,
+                "already-started", "This System already has a VA Submission in this VA Cycle."));
         store.recordParticipation(id, caller, SubmissionStep.SUBMIT, now);
         audit.record(actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_STARTED, AuditOutcome.SUCCESS))
                 .onSystem(systemId).onSubmission(id).with(DetailKey.STATE_TO, SubmissionState.DRAFT.name()));
         return view(id);
+    }
+
+    /**
+     * The VA Submission of a System the caller is SMO/Tech Lead of, in a VA Cycle, for an Exemption request (ticket 40):
+     * the one there is, in whatever state, or, for a System that has none, one created Not Started, which the request then
+     * moves (spec: "an Exemption on a Not Started System creates the VA Submission"). Ownership comes first (a System the
+     * caller may not submit for is "not found"), then the Cycle and the Quarter as for a start, refused as
+     * {@code refusedAs}; the request's own checks, segregation of duties included, follow at its step ({@link #atStep}).
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    UUID forRequest(UUID systemId, @Nullable Integer cycleYear, AuditEvent refusedAs) {
+        register.active(systemId, Need.SUBMIT);
+        Quarter quarter = placed(systemId, cycleYear, refusedAs.onSystem(systemId));
+        return existing(systemId, quarter.cycle())
+                .or(() -> inserted(systemId, quarter, SubmissionState.NOT_STARTED, clock.instant()))
+                .or(() -> existing(systemId, quarter.cycle()))
+                .orElseThrow(ResourceNotFoundException::new);
+    }
+
+    private Optional<UUID> existing(UUID systemId, int cycleYear) {
+        return store.inCycle(List.of(systemId), cycleYear).stream().map(SubmissionStore.Row::id).findFirst();
+    }
+
+    private Optional<UUID> inserted(UUID systemId, Quarter quarter, SubmissionState state, Instant now) {
+        return store.insert(systemId, quarter.cycle(), quarter.number(), state, quarter.submitDue(), quarter.reviewDue(),
+                quarter.endorseDue(), now, calendar.dateOf(now), user.id());
+    }
+
+    /**
+     * The Quarter a System is in, in a VA Cycle, for a command that may create its VA Submission: the Cycle running and
+     * open, held against a close until the caller's transaction ends (ADR 0044), and the System in it in a Quarter the app
+     * runs. Each refusal is audited as {@code refused}.
+     */
+    private Quarter placed(UUID systemId, @Nullable Integer cycleYear, AuditEvent refused) {
+        VaCycle cycle = calendar.running(cycleYear);
+        store.holdCycle(cycle.year());
+        requireOpenCycle(cycle.year(), refused);
+        int inCycle = register.quarterIn(systemId, cycle.year()).orElseThrow(() -> refusedWith(refused,
+                "not-in-cycle", "This System was not in the System Register when this VA Cycle's successor opened, so it "
+                + "has no VA Submission in this VA Cycle."));
+        Quarter quarter = cycle.quarters().get(inCycle - 1);
+        if (quarter.handledOutsideApp()) {
+            throw refusedWith(refused, "quarter-handled-outside-app",
+                    "This System's Quarter is handled outside the app, so no VA Submission is started for it here.");
+        }
+        return quarter;
     }
 
     /**
@@ -572,7 +614,7 @@ public class Submissions {
      * and the VA Submission with a fixed reason. The caller is then recorded at the gate's step, kept only if their command
      * commits.
      */
-    private AtStep atStep(UUID id, Gate gate, AuditEvent refusedAs, Hold hold) {
+    AtStep atStep(UUID id, Gate gate, AuditEvent refusedAs, Hold hold) {
         SubmissionStore.Located located = store.locate(id).orElseThrow(ResourceNotFoundException::new);
         guard.requireSystem(located.systemId(), gate.step().need());
         SubmissionStore.Located held = (hold == Hold.EXCLUSIVE ? store.lockForMove(id) : store.lockForEdit(id))
@@ -580,12 +622,13 @@ public class Submissions {
         AuditEvent refused = refusedAs.onSystem(held.systemId()).onSubmission(id);
         sod.require(gate.step(), held.systemId(), id, refused);
         requireOpenCycle(held.cycleYear(), refused);
-        if (!gate.from().name().equals(held.state())) {
+        SubmissionState from = SubmissionState.valueOf(held.state());
+        if (!gate.from().contains(from)) {
             audit.recordIndependently(refused.with(DetailKey.REASON, gate.refusedReason()));
             throw new RejectedRequestException(HttpStatus.CONFLICT, NOT_ALLOWED_NOW, gate.refusedSentence());
         }
         store.recordParticipation(id, user.id(), gate.step(), clock.instant());
-        return new AtStep(id, held.systemId(), gate, refused, hold);
+        return new AtStep(id, held.systemId(), from, refused, hold);
     }
 
     /**
@@ -595,12 +638,12 @@ public class Submissions {
      * publishes the event the notifications listen for after the commit. Only a VA Submission held exclusively is moved,
      * so a move never overtakes a review in progress (ADR 0039).
      */
-    private Submission moved(AtStep target, SubmissionState to, Instant now, Function<LocalDate, AuditEvent> write) {
+    Submission moved(AtStep target, SubmissionState to, Instant now, Function<LocalDate, AuditEvent> write) {
         if (target.hold() != Hold.EXCLUSIVE) {
             throw new IllegalStateException("a move holds the VA Submission exclusively (ADR 0039)");
         }
         UUID id = target.submissionId();
-        SubmissionState from = target.gate().from();
+        SubmissionState from = target.from();
         AuditEvent success = write.apply(calendar.dateOf(now));
         audit.record(actor.attribute(success).onSystem(target.systemId()).onSubmission(id)
                 .with(DetailKey.STATE_FROM, from.name()).with(DetailKey.STATE_TO, to.name()));
@@ -744,9 +787,8 @@ public class Submissions {
     }
 
     /** Audits the refusal in a transaction of its own, then answers 409; the reason and sentence are fixed text. */
-    private RejectedRequestException refusedStart(UUID systemId, String reason, String detail) {
-        audit.recordIndependently(actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_STARTED, AuditOutcome.REFUSED))
-                .onSystem(systemId).with(DetailKey.REASON, reason));
+    private RejectedRequestException refusedWith(AuditEvent refused, String reason, String detail) {
+        audit.recordIndependently(refused.with(DetailKey.REASON, reason));
         return new RejectedRequestException(HttpStatus.CONFLICT, NOT_ALLOWED_NOW, detail);
     }
 
