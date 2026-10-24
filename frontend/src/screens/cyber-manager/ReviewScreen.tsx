@@ -9,7 +9,7 @@ import { reportTitle } from "../shared/scanReports.ts";
 import { STATE_LABELS } from "../shared/systemStates.ts";
 import { BatchesSection } from "./BatchesSection.tsx";
 import { LatestReview } from "./LatestReview.tsx";
-import { CM_INBOX_PATH } from "./paths.ts";
+import { auditHistoryPath, CM_INBOX_PATH } from "./paths.ts";
 import { ReviewFindingsList } from "./ReviewFindingsList.tsx";
 import { ReviewForm } from "./ReviewForm.tsx";
 import { ReviewSessionContext, useReviewSession, type ReviewSession } from "./reviewSession.ts";
@@ -92,6 +92,8 @@ export function ReviewScreen({ submissionId, classification }: { submissionId: s
       <div className="card">
         <p>
           <AppLink path={CM_INBOX_PATH}>Back to your inbox</AppLink>
+          {" · "}
+          <AppLink path={auditHistoryPath(submissionId)}>Audit history</AppLink>
         </p>
         <h2>Review VA Submission</h2>
         {submission.error ? <ErrorPanel problem={submission.error.problem} /> : null}
