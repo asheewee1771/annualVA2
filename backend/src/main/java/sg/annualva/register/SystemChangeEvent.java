@@ -15,6 +15,12 @@ import org.jspecify.annotations.Nullable;
  */
 public record SystemChangeEvent(UUID systemId, Change change, @Nullable String formerSmoEmail, Instant at) {
 
+    /** Ids and codes only: the email stays out of any log line a framework writes about the event (lm-19). */
+    @Override
+    public String toString() {
+        return "SystemChangeEvent[systemId=" + systemId + ", change=" + change + ", at=" + at + "]";
+    }
+
     /** The Register changes an SMO/Tech Lead is told about. A withdrawal joins them with ticket 43. */
     public enum Change {
         /** The System moved to another Quarter. */

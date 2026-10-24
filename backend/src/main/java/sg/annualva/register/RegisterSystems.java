@@ -99,9 +99,8 @@ public class RegisterSystems {
      */
     @Transactional(readOnly = true)
     public Optional<Named> named(UUID systemId) {
-        return store.systems().stream().filter(system -> system.id().equals(systemId)).findFirst()
-                .map(system -> new Named(system.id(), system.code(), system.name(), system.smoEmail(),
-                        system.cyberManagerEmail(), system.quarter()));
+        return store.system(systemId).map(system -> new Named(system.id(), system.code(), system.name(),
+                system.smoEmail(), system.cyberManagerEmail(), system.quarter()));
     }
 
     /** The Systems still in the Register whose id passes the test, in System ID order. */
