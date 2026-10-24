@@ -11,6 +11,18 @@ export function reworkPath(submissionId: string): string {
   return `${submissionPath(submissionId)}/rework`;
 }
 
+/** Where an Exemption is requested for a System (its own id, not its System ID). */
+export function exemptionRequestPath(systemId: string): string {
+  return `${SMO_AREA_PATH}/systems/${systemId}/exemption`;
+}
+
+const EXEMPTION_PATH = /^\/smo\/systems\/([0-9a-fA-F-]{36})\/exemption\/?$/;
+
+/** The System a path requests an Exemption for, or undefined when the path is not one. */
+export function exemptionRequestOf(path: string): string | undefined {
+  return EXEMPTION_PATH.exec(path)?.[1];
+}
+
 const SUBMISSION_PATH = /^\/smo\/submissions\/([0-9a-fA-F-]{36})(\/rework)?\/?$/;
 
 /** The VA Submission a path is about and whether it is its rework queue, or undefined when the path is not a submission's. */

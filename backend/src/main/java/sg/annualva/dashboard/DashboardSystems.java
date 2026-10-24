@@ -15,6 +15,7 @@ import sg.annualva.access.Need;
 import sg.annualva.cycle.Quarter;
 import sg.annualva.cycle.VaCycle;
 import sg.annualva.register.RegisterSystems;
+import sg.annualva.submission.SubmissionState;
 import sg.annualva.submission.Submissions;
 
 /**
@@ -32,7 +33,7 @@ class DashboardSystems {
     /**
      * One System in a Quarter the app runs.
      *
-     * @param submissionId its VA Submission in the Cycle, or null while it is Not Started
+     * @param submissionId its VA Submission in the Cycle, or null while it is Not Started (with a row or without)
      * @param dueOn the last day of the window its state waits on; null for a final or frozen state
      * @param endorsedLate whether its VA Submission was endorsed after the Quarter's last day
      * @param reached when its VA Submission reached each milestone; none while it is Not Started
@@ -91,7 +92,9 @@ class DashboardSystems {
                         quarter.endorseDue(), dueOn, overdueNotStarted.contains(system.id()), false,
                         Submissions.Milestones.NONE));
             } else {
-                live.add(new Row(system, SystemState.of(submission.state()), submission.id(), submission.submitDue(),
+                // A Not Started VA Submission (one a rejected Exemption request left) offers nothing to open: no id.
+                @Nullable UUID id = submission.state() == SubmissionState.NOT_STARTED ? null : submission.id();
+                live.add(new Row(system, SystemState.of(submission.state()), id, submission.submitDue(),
                         submission.reviewDue(), submission.endorseDue(), submission.dueOn(), submission.overdue(),
                         submission.endorsedLate(), submission.reached()));
             }

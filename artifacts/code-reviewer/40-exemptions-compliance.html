@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review &mdash; 40-exemptions</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall: PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">build WARN &middot; C0 H0 M0 L1</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN &middot; C0 H0 M0 L8</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN &middot; C0 H0 M0 L2</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">semgrep WARN &middot; C0 H0 M0 L1</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN &middot; C0 H0 M0 L3</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react WARN &middot; C0 H0 M0 L4</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN &middot; C0 H0 M0 L7</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">impl/40-exemptions</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report</h1>
+          <p class="text-sm text-slate-500 mt-1">Ticket 40, Exemptions (stories 43 to 46): an SMO/Tech Lead requests an Exemption for a System, which freezes its VA Submission in Exemption Requested (creating it in a new <span class="font-mono text-xs">NOT_STARTED</span> state for a Not Started System), and a VA POC approves it (Exempted, conditional for a scheduled VA) or rejects it (back to exactly the previous state and Overdue flag) after a fresh sign-in. Diff <span class="font-mono text-xs">integration/annual-va-r1...HEAD</span> on <span class="font-mono text-xs">impl/40-exemptions</span>, now at HEAD <span class="font-mono text-xs">14f81b1</span> (43 files, +2409 / -89).</p>
+        </div>
+        <div class="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 space-y-2">
+          <p><strong>What the checks saw.</strong> Five checks (<span class="font-mono text-xs">code-review</span>, <span class="font-mono text-xs">semgrep</span>, <span class="font-mono text-xs">im8</span>, <span class="font-mono text-xs">react</span>, <span class="font-mono text-xs">springboot</span>) reviewed the first round at <span class="font-mono text-xs">b6f5615</span> (commits <span class="font-mono text-xs">6680d09</span>, <span class="font-mono text-xs">16cbb3f</span>, <span class="font-mono text-xs">fb9cf1e</span>). <span class="font-mono text-xs">thermo-nuclear</span> ran a second round at <span class="font-mono text-xs">0499f15</span>. <span class="font-mono text-xs">build</span> is judged on the final gate logs taken on the tree that became <span class="font-mono text-xs">14f81b1</span>.</p>
+          <p><strong>What changed after the first round.</strong> <span class="font-mono text-xs">4415f24</span> (start takes a Not Started row by its own statement, one rule per Exemption concern, no <span class="font-mono text-xs">Location</span>, <span class="font-mono text-xs">DECIDE</span> kept in the step CHECK), <span class="font-mono text-xs">7a4b9b3</span> (rescan, request-side SoD, future prior VA and freeze-from-In-Review tests), <span class="font-mono text-xs">f51740b</span> (the request form keyed by Cycle and VA Submission, shared basis labels), <span class="font-mono text-xs">0499f15</span> (ADR renumbered from 0046 to <strong>0048</strong>, item 5 marked provisional) and <span class="font-mono text-xs">14f81b1</span> (no <span class="font-mono text-xs">submissionId</span> for a Not Started row on any dashboard, fixing thermo-nuclear H1).</p>
+          <p>The aggregator checked every resolved item against the code at <span class="font-mono text-xs">14f81b1</span>; they are listed under &ldquo;Resolved since the review&rdquo; and not counted. Carried-over first-round findings that cite ADR 0046 mean what is now <strong>ADR 0048</strong> (ADR 0046 is now ticket 37&rsquo;s mail outbox), and their line numbers refer to <span class="font-mono text-xs">b6f5615</span> unless a current line is given. The refactor in <span class="font-mono text-xs">4415f24</span> (<span class="font-mono text-xs">WorkflowNotices</span>, <span class="font-mono text-xs">Links</span>, <span class="font-mono text-xs">SubmissionStore</span>, <span class="font-mono text-xs">ExemptionFields</span>) was reviewed by thermo-nuclear&rsquo;s second round and the build, not by semgrep, im8 or springboot again. <span class="font-mono text-xs">14f81b1</span> was reviewed by the aggregator only.</p>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Executive Summary</h2>
+          <p class="text-xs text-slate-500 mt-1">Overall status across all active checks. <strong>Overall PASS:</strong> no check has an open Critical or High finding. The one High (thermo-nuclear H1, a Not Started row leaking its VA Submission id to every dashboard) is fixed at the read boundary in <span class="font-mono text-xs">14f81b1</span>, and all seven first-round Mediums are resolved. The build is green on the final tree: 1002 tests, 0 failures, ArchUnit passing, JaCoCo line and branch thresholds met, and <span class="font-mono">npm run check</span> clean. Every check is WARN because Low findings remain; none blocks the merge.</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Check</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Status</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">C / H / M / L</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Summary of gaps</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">build <span class="text-xs text-slate-400">(HEAD 14f81b1)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 1</td>
+              <td class="px-4 py-2">Back end <span class="font-mono text-xs">clean verify</span> BUILD SUCCESS: 1002 tests, 0 failures, 0 errors; ArchUnit passes; &ldquo;All coverage checks have been met.&rdquo; Front end <span class="font-mono text-xs">npm run check</span> passes every step. One advisory Low: fallow lists <span class="font-mono text-xs">RequestForm</span> (99 lines) as a large function.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">thermo-nuclear <span class="text-xs text-slate-400">(round 2, 0499f15)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 8</td>
+              <td class="px-4 py-2">H1 resolved in <span class="font-mono text-xs">14f81b1</span>. The round-1 High and seven Mediums were already resolved or accepted. Eight Lows: re-reads under the lock, a three-step lookup, a derived <span class="font-mono text-xs">conditional</span>, two scopes for one read, <span class="font-mono text-xs">Submissions.java</span> at 890 lines, the client copy of the exemptible states, one unwrapped Javadoc line, and (aggregator) a stale sentence in ADR 0048 item 4.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">code-review <span class="text-xs text-slate-400">(b6f5615)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 2</td>
+              <td class="px-4 py-2">Both Mediums resolved: S1 (<span class="font-mono text-xs">DECIDE</span> kept, ADR 0048 item 5 provisional) and P1 (rescan test). Seven Lows resolved too. Every acceptance criterion is implemented, with no scope creep. Two Lows remain: the client copy of the exemptible states (S6) and no test for a VA POC who only acted at another step (P3).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">semgrep <span class="text-xs text-slate-400">(b6f5615)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 1</td>
+              <td class="px-4 py-2">Semgrep 1.179.0, seven rulesets (469 rules), 39 targets, 0 errors. Zero findings in ticket 40&rsquo;s code. One pre-existing, test-only Low (an allow-listed value concatenated into SQL in <span class="font-mono text-xs">TestEndpoints</span>).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">im8 <span class="text-xs text-slate-400">(b6f5615)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 3</td>
+              <td class="px-4 py-2">as-2, as-3, as-7, as-12, ac-1, ac-2, lm-4, dp-8 and pm-6 pass. Lows: as-1 (fields checked in the service, after the state and SoD checks), lm-19 (records holding the evidence keep the generated <span class="font-mono text-xs">toString()</span>) and an as-13 advisory (no sentinel test on refusal bodies).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">react <span class="text-xs text-slate-400">(b6f5615)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 4</td>
+              <td class="px-4 py-2">M1 (a stale evidence file sent after a Cycle change) and L3 (no loading state) resolved in <span class="font-mono text-xs">f51740b</span>. Four Lows remain: a silent evidence-file read failure, a doubled step-up message, no busy guard on the evidence download, and no <span class="font-mono text-xs">aria-invalid</span> on the file select.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">springboot <span class="text-xs text-slate-400">(b6f5615)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 7</td>
+              <td class="px-4 py-2">All seven sub-reviews ran (batch not applicable). M-1 (<span class="font-mono text-xs">Location</span> to an unserved address) and M-2 (no request-side SoD test) resolved. Seven Lows: <span class="font-mono text-xs">atStep</span>/<span class="font-mono text-xs">moved</span> without <span class="font-mono text-xs">MANDATORY</span>, 12 constructor dependencies, a generic 400 for a malformed UUID, extra SELECTs, the <span class="font-mono text-xs">VIEW</span> scope in <span class="font-mono text-xs">pending</span>, loops in tests, and the step-up refusal&rsquo;s audit entry unchecked.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-600">None open. No check has an open Critical or High finding.</p>
+          <p class="text-sm text-slate-600">Resolved since the review (verified at <span class="font-mono text-xs">14f81b1</span>):</p>
+          <ul class="list-disc pl-6 text-sm text-slate-600 space-y-1">
+            <li><strong>thermo-nuclear H1 (High)</strong>: <span class="font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/DashboardSystems.java:95-96</span>. A VA Submission row in <span class="font-mono text-xs">NOT_STARTED</span> (left by a rejected Exemption request) is now answered with <span class="font-mono text-xs">submissionId</span> null, so the documented contract (&ldquo;null while it is Not Started (with a row or without)&rdquo;) holds again. Every dashboard reader (<span class="font-mono text-xs">SmoInbox</span>, <span class="font-mono text-xs">CmInbox</span>, <span class="font-mono text-xs">QuarterBoard</span>, <span class="font-mono text-xs">CycleMatrix</span>, <span class="font-mono text-xs">ReviewMarkers</span>, and the Exemption queue&rsquo;s <span class="font-mono text-xs">DashboardSystems</span> read) takes the id from this one <span class="font-mono text-xs">Row</span>, so the Quarter board and the Cyber Manager inbox no longer link to a Not Started VA Submission. The front-end special cases are gone (<span class="font-mono text-xs">SmoInboxScreen.tsx:86</span>, <span class="font-mono text-xs">ExemptionRequestScreen.tsx:138</span>), and the ADR 0048 consequences line is updated. <span class="font-mono text-xs">ExemptionDecisionTest</span> asserts the SMO inbox answers a null id after a rejection from Not Started; the other readers share the same row, so they are covered by construction rather than by their own assertion.</li>
+            <li>The seven first-round Mediums: code-review S1 and P1, springboot M-1 and M-2, and react M1 (details in each card).</li>
+          </ul>
+          <p class="text-sm text-slate-600">For a human decision (ADR 0048, provisional): item 3 (the evidence file through the existing upload pipeline), item 4 (a request on a Not Started System creates a <span class="font-mono text-xs">NOT_STARTED</span> row), item 5 (deciding an Exemption recorded at the endorsing step; <span class="font-mono text-xs">DECIDE</span> kept, unused, in the step CHECK while <span class="font-mono text-xs">CONTEXT.md</span> lists it as a step of its own) and item 6 (the endorsement pair left open on a request; the Exemption notices in-app only).</p>
+        </div>
+      </div>
+
+      <!-- build -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build <span class="text-xs text-slate-400">(HEAD 14f81b1)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-600 space-y-1">
+          <p>Fast mode (approved by the user): the build check judged the back end from the implementer&rsquo;s log at <span class="font-mono text-xs">0499f15</span> and ran the front end itself. After <span class="font-mono text-xs">14f81b1</span> both gates were run again; the aggregator checked the timing. Every file <span class="font-mono text-xs">14f81b1</span> changes was last written at 07:03:44 to 07:03:56 (SGT). The back-end run took 20:39 min and finished at 07:24:45, so it started at about 07:04:06; the front-end log was written at 07:04. The commit followed at 07:24:56, and the worktree is clean.</p>
+          <p>Back end (<span class="font-mono text-xs">t40-verify4.log</span>): <span class="font-mono text-xs">./mvnw -B -ntp clean verify</span> BUILD SUCCESS. 1002 tests, 0 failures, 0 errors, 0 skipped (Seam 1 on Testcontainers). <span class="font-mono text-xs">ArchitectureTest</span> 16/16, <span class="font-mono text-xs">ExemptionDecisionTest</span> 12/12. JaCoCo: &ldquo;All coverage checks have been met&rdquo; (at least 80 % line and branch).</p>
+          <p>Front end (<span class="font-mono text-xs">t40-fe4.log</span>): <span class="font-mono text-xs">npm run check</span> passes Prettier, <span class="font-mono text-xs">tsc -b</span>, <span class="font-mono text-xs">vite build</span> (110 modules), the no-raw-HTML check, dependency-cruiser (0 violations, 103 modules), fallow dead-code (no issues) and health (0 above threshold, maintainability 91.0). No Vitest suite, by convention.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ExemptionRequestScreen.tsx</td>
+              <td class="px-4 py-2">58</td>
+              <td class="px-4 py-2">L1. <span class="font-mono text-xs">fallow health</span> lists <span class="font-mono text-xs">RequestForm</span> (99 lines against a 60-line threshold) among the large functions, still at <span class="font-mono text-xs">14f81b1</span>. Advisory; the check does not fail. Could split the field groups from the submit and error handling.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-400">Info</td>
+              <td class="px-4 py-2 font-mono text-xs">backend (test log)</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">Expected ERROR lines from the failing-pipeline tests, <span class="font-mono text-xs">ErrorResponseTest</span> and a refused VA POC grant. Nothing failed. Not counted.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <!-- thermo-nuclear -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear <span class="text-xs text-slate-400">(round 2, reviewed at 0499f15)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-500">No file crosses 1000 lines (<span class="font-mono text-xs">Submissions.java</span> 890, <span class="font-mono text-xs">SubmissionStore.java</span> 667, <span class="font-mono text-xs">Exemptions.java</span> 282; largest new front-end file <span class="font-mono text-xs">ExemptionRequestScreen.tsx</span>, 196). Round 1&rsquo;s H1 and M3 to M7 are resolved; M1 (Exemptions drives <span class="font-mono text-xs">Submissions.atStep</span>) is accepted under ADR 0042 item 1; M2 became L1. Good: <span class="font-mono text-xs">TAKE_NOT_STARTED</span> as its own statement, <span class="font-mono text-xs">WorkflowNotices.handledBy(from, to)</span> as one pure rule, <span class="font-mono text-xs">Decision</span> carrying its audit action and target, the exhaustive <span class="font-mono text-xs">ExemptionFields.Window</span>, and &ldquo;pending&rdquo; defined once in SQL.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Exemptions.java</td>
+              <td class="px-4 py-2">163-164, 233-235, 268-271</td>
+              <td class="px-4 py-2">L1. The request and the decision read the VA Submission again (<span class="font-mono text-xs">store.find</span>, <span class="font-mono text-xs">quarterOf</span>) after <span class="font-mono text-xs">atStep</span> has located and locked it. Correct, one extra read per command. Later: have <span class="font-mono text-xs">forRequest</span> return the Quarter and store the lapse date at request time, deleting <span class="font-mono text-xs">quarterOf</span>. Same as springboot L-4.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td>
+              <td class="px-4 py-2">344-346</td>
+              <td class="px-4 py-2">L2. <span class="font-mono text-xs">forRequest</span> reads <span class="font-mono text-xs">existing().or(inserted).or(existing)</span>; with the insert now <span class="font-mono text-xs">ON CONFLICT DO NOTHING</span>, <span class="font-mono text-xs">inserted(...).or(existing)</span> is the same race-safe flow in two steps. Optional.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Exemptions.java</td>
+              <td class="px-4 py-2">66-69, 93-97, 277-281</td>
+              <td class="px-4 py-2">L3. <span class="font-mono text-xs">Exemption.conditional</span> is derived (the <span class="font-mono text-xs">exemption_lapse_check</span> CHECK makes it <span class="font-mono text-xs">lapsesOn != null</span>), and <span class="font-mono text-xs">view()</span> copies the row by hand to add it; the client does not read it. Drop it from the contract or compute it in <span class="font-mono text-xs">ExemptionStore.row</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/ExemptionQueue.java; submission/Exemptions.java</td>
+              <td class="px-4 py-2">68; 209</td>
+              <td class="px-4 py-2">L4. Two scopes for one read: the queue scopes with <span class="font-mono text-xs">Need.ENDORSE</span>, then <span class="font-mono text-xs">pending</span> filters again with <span class="font-mono text-xs">Need.VIEW</span>. Keep one and say which in the Javadoc. Same as springboot L-5.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">L5. 890 of 1000 lines after +72 for <span class="font-mono text-xs">forRequest</span>, <span class="font-mono text-xs">existing</span>, <span class="font-mono text-xs">inserted</span>, <span class="font-mono text-xs">placed</span>. No action now; before ticket 42 adds its step commands, decide where the start/request placement code goes and record it as an amendment to ADR 0042.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SmoInboxScreen.tsx; ExemptionRequestScreen.tsx; va-poc/ExemptionQueueScreen.tsx</td>
+              <td class="px-4 py-2">52-58</td>
+              <td class="px-4 py-2">L6. <span class="font-mono text-xs">EXEMPTIBLE</span> mirrors the server&rsquo;s <span class="font-mono text-xs">Exemptions.REQUESTING</span>, and the <span class="font-mono text-xs">UNREACHABLE</span> / <span class="font-mono text-xs">instanceof ApiError</span> idiom is copied again (19 files). Have the SMO inbox answer an <span class="font-mono text-xs">exemptible</span> flag per row, and add <span class="font-mono text-xs">problemOf(failure)</span> to <span class="font-mono text-xs">api/problem.ts</span>. Same as code-review S6.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SegregationOfDuties.java</td>
+              <td class="px-4 py-2">28</td>
+              <td class="px-4 py-2">L7 (narrowed by the aggregator). <span class="font-mono text-xs">14f81b1</span> rewrapped the long Javadoc lines in <span class="font-mono text-xs">SystemState.java</span> and <span class="font-mono text-xs">package-info.java</span>, but the rewrap of <span class="font-mono text-xs">SegregationOfDuties.java</span> left line 28 at 165 characters (the file&rsquo;s width is about 120). Rewrap it.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">docs/adr/0048-an-exemption-request-freezes-the-va-submission-and-a-rejection-puts-back-its-state-and-overdue-flag.md</td>
+              <td class="px-4 py-2">item 4</td>
+              <td class="px-4 py-2">A1 (found by the aggregator while verifying H1). Item 4 still says the dashboards show a <span class="font-mono text-xs">NOT_STARTED</span> row &ldquo;as Not Started with its id&rdquo;. Since <span class="font-mono text-xs">14f81b1</span> they answer no id, as the updated Consequences line says, so the ADR contradicts itself. Change &ldquo;with its id&rdquo; to &ldquo;with no id&rdquo;.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-3 text-sm text-slate-600 border-t border-slate-100">
+          <p class="font-medium text-slate-700">Resolved since the review</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li>H1 (High): a Not Started VA Submission row leaked its id through <span class="font-mono text-xs">DashboardSystems</span>, patched at two SMO call sites and left wrong on the Quarter board and the Cyber Manager inbox. Fixed in <span class="font-mono text-xs">14f81b1</span> as the review proposed: <span class="font-mono text-xs">DashboardSystems.java:95-96</span> passes <span class="font-mono text-xs">null</span> for a <span class="font-mono text-xs">NOT_STARTED</span> row and keeps its windows, <span class="font-mono text-xs">dueOn</span> and <span class="font-mono text-xs">overdue</span>; the <span class="font-mono text-xs">Row</span> Javadoc states the contract; both front-end patches are removed; the ADR consequences line is amended; <span class="font-mono text-xs">ExemptionDecisionTest</span> asserts <span class="font-mono text-xs">submissionId</span> null on the SMO inbox after a rejection from Not Started (and <span class="font-mono text-xs">7a4b9b3</span>&rsquo;s SoD test asserts it for a refused request). The review&rsquo;s step 5 also asked for assertions on the CM inbox and the Quarter board; those readers take the same <span class="font-mono text-xs">Row</span>, so this is covered by construction. Verified by the final build (1002 tests pass).</li>
+            <li>Part of L7: the <span class="font-mono text-xs">SystemState.java</span> and <span class="font-mono text-xs">package-info.java</span> Javadoc lines are rewrapped (<span class="font-mono text-xs">14f81b1</span>).</li>
+          </ul>
+        </div>
+      </details>
+
+      <!-- code-review -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review <span class="text-xs text-slate-400">(reviewed at b6f5615)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-500">Two axes, Standards and Spec. Verified clean: step commands through <span class="font-mono text-xs">atStep</span>, <span class="font-mono text-xs">moved</span> and <span class="font-mono text-xs">OVERDUE_AFTER_MOVE</span>; step-up before any read; the evidence text never in audit, logs or error bodies; time only through <span class="font-mono text-xs">Clock</span>; the exclusive lock; rollback of the inserted Not Started row on a refusal; <span class="font-mono text-xs">WHERE decision IS NULL</span> under concurrent decisions; request gate, VA date windows, lapse deadline, notifications, audited queue read and dp-8 labels as the spec says. No scope creep.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SmoInboxScreen.tsx; backend/src/main/java/sg/annualva/submission/Exemptions.java</td>
+              <td class="px-4 py-2">49 (now 52-58); REQUESTING</td>
+              <td class="px-4 py-2">S6 (Standards, duplicated rule). The inbox repeats the server&rsquo;s list of exemptible states to decide whether to show the link. The server still refuses, but the lists can drift. Carry an <span class="font-mono text-xs">exemptible</span> flag on the SMO inbox row, or comment the copy. Same as thermo-nuclear L6.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ExemptionDecisionTest.java</td>
+              <td class="px-4 py-2">207</td>
+              <td class="px-4 py-2">P3 (Spec, test gap). Both decision SoD refusal tests still have the Register naming the VA POC as the System&rsquo;s SMO or Cyber Manager; a VA POC who only acted at another step is never tested on its own. Have the VA POC request as SMO, move the System to another SMO through the Register, and assert approve answers 403 <span class="font-mono text-xs">sod-conflict</span>.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-3 text-sm text-slate-600 border-t border-slate-100">
+          <p class="font-medium text-slate-700">Resolved since the review</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li>S1 (Medium): the migration dropped <span class="font-mono text-xs">DECIDE</span> from the participation step CHECK while the glossary lists deciding an Exemption as its own step. <span class="font-mono text-xs">4415f24</span> removes the drop, so <span class="font-mono text-xs">V144_40__exemption.sql</span> no longer touches <span class="font-mono text-xs">submission_participation_step_check</span> and V134&rsquo;s <span class="font-mono text-xs">('SUBMIT', 'REVIEW', 'ENDORSE', 'DECIDE')</span> stands. <span class="font-mono text-xs">0499f15</span> marks ADR 0048 item 5 provisional (&ldquo;items 3, 4, 5 and 6 provisional&rdquo;) and explains how a human could make <span class="font-mono text-xs">DECIDE</span> a step. <span class="font-mono text-xs">CONTEXT.md</span> is unchanged, which is consistent while the item awaits the human.</li>
+            <li>P1 (Medium): no test of a request while a rescan is scanning. <span class="font-mono text-xs">7a4b9b3</span> adds <span class="font-mono text-xs">ExemptionRequestTest.aRequestIsRefusedWhileARescanIsStillScanning</span>: 409 <span class="font-mono text-xs">files-scanning</span> naming the rescan file, a REFUSED audit entry with that reason, the state still DRAFT, then accepted once the rescan settles.</li>
+            <li>S2 (Low): the conditional rule is one <span class="font-mono text-xs">static boolean conditional(Decision, Basis)</span> (<span class="font-mono text-xs">Exemptions.java:67</span>), used at lines 233 and 280 (<span class="font-mono text-xs">4415f24</span>).</li>
+            <li>S3 (Low): <span class="font-mono text-xs">Decision</span> carries its <span class="font-mono text-xs">AuditAction</span> and target state; one <span class="font-mono text-xs">RESTORED</span> statement for both moves (<span class="font-mono text-xs">4415f24</span>).</li>
+            <li>S4 (Low): <span class="font-mono text-xs">ExemptionFields.Window</span> is chosen once per basis by an exhaustive <span class="font-mono text-xs">switch</span> (<span class="font-mono text-xs">4415f24</span>).</li>
+            <li>S5 (Low): one <span class="font-mono text-xs">BASIS_LABELS</span> map in <span class="font-mono text-xs">frontend/src/api/exemptions.ts:8</span>, used by both screens (<span class="font-mono text-xs">f51740b</span>).</li>
+            <li>S7 (Low): the pairs a move clears are one rule, <span class="font-mono text-xs">WorkflowNotices.handledBy(from, to)</span>, asked by the move listener and the Cycle close (<span class="font-mono text-xs">4415f24</span>).</li>
+            <li>P2 (Low): <span class="font-mono text-xs">ExemptionRequestTest.aPriorVaCannotBeDatedAfterToday</span> (<span class="font-mono text-xs">7a4b9b3</span>).</li>
+            <li>P4 (Low): <span class="font-mono text-xs">ExemptionDecisionTest.whileFrozenFromInReviewTheCyberManagerCannotReviewAndARejectionKeepsWhatWasConfirmed</span>: a review and a return are 409 <span class="font-mono text-xs">invalid-transition</span> while frozen, and a rejection restores IN_REVIEW with the confirmation kept (<span class="font-mono text-xs">7a4b9b3</span>).</li>
+          </ul>
+        </div>
+      </details>
+
+      <!-- semgrep -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep <span class="text-xs text-slate-400">(reviewed at b6f5615)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-500">Semgrep 1.179.0 in Docker, read-only mount, <span class="font-mono text-xs">--metrics=off</span>. Pass 1: <span class="font-mono text-xs">p/security-audit</span>, <span class="font-mono text-xs">p/default</span>, <span class="font-mono text-xs">p/secrets</span> (330 rules). Pass 2: <span class="font-mono text-xs">p/java</span>, <span class="font-mono text-xs">p/typescript</span>, <span class="font-mono text-xs">p/react</span>, <span class="font-mono text-xs">p/owasp-top-ten</span> (139 rules). 39 targets, 0 errors, no P0 or P1. Manual spot-check: <span class="font-mono text-xs">ExemptionStore</span> SQL is constants with named binds, the only concatenation in <span class="font-mono text-xs">SubmissionStore</span> is a compile-time constant, refusal messages never echo input, no new log statements, no raw HTML in the front end. Not re-run after <span class="font-mono text-xs">4415f24</span>; the later back-end changes are SQL constants, tests and the one-line <span class="font-mono text-xs">DashboardSystems</span> fix.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/harness/TestEndpoints.java</td>
+              <td class="px-4 py-2">355-357</td>
+              <td class="px-4 py-2">1 (P2, pre-existing, test only). <span class="font-mono text-xs">tainted-sql-string</span>: <span class="font-mono text-xs">reportFileFault</span> concatenates <span class="font-mono text-xs">prefix</span> into a <span class="font-mono text-xs">CREATE TRIGGER</span>. The value is checked against <span class="font-mono text-xs">[A-Z_]+</span> first (line 350), the class is a <span class="font-mono text-xs">@TestConfiguration</span> that does not ship, and this branch did not change these lines. No action.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <!-- im8 -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8 <span class="text-xs text-slate-400">(reviewed at b6f5615)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-500">Passing: as-2 (constant SQL, <span class="font-mono text-xs">encodeURIComponent</span>), as-3 (evidence as a text node, the file saved and never rendered), as-7 / ac-1 (<span class="font-mono text-xs">@PreAuthorize</span> on all four endpoints, 404 scope guard, SoD on request and decision, once-only decision), as-12 (the evidence file must be a READY <span class="font-mono text-xs">EVIDENCE</span> file of the same VA Submission; a request waits for every scan), ac-2 (<span class="font-mono text-xs">exemption-decide</span> step-up before any read), lm-4 (request, decision, refusals and queue reads audited, never the evidence), dp-8 (all four inputs in <span class="font-mono text-xs">ClassifiedField</span>), pm-6 (ADR and README). Other controls are not touched. Manual items: ADR 0048 items 3 to 6 await a human; the business accepts that an SMO may freeze a VA Submission In Review or Awaiting Endorsement; no deployed profile enables DEBUG/TRACE on <span class="font-mono text-xs">org.springframework.web</span> or <span class="font-mono text-xs">.jdbc</span>; the classification label fits Exemption evidence.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/ExemptionController.java; ExemptionFields.java; frontend/src/api/exemptions.ts</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">as-1 L-1. Every field is checked in <span class="font-mono text-xs">ExemptionFields</span>, but in the service (no <span class="font-mono text-xs">@Valid</span> at the controller) and after ownership, state and SoD; everything rolls back on the 400, so nothing persists. Also: the raw <span class="font-mono text-xs">evidence</span> has no size bound before <span class="font-mono text-xs">cleanLongText</span> walks it (project-wide), and the front end casts responses with no runtime check (project-wide, reported before).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Exemptions.java; ExemptionStore.java; ExemptionFields.java; dashboard/ExemptionQueue.java</td>
+              <td class="px-4 py-2">records</td>
+              <td class="px-4 py-2">lm-19 L-2. Five records holding the free-text <span class="font-mono text-xs">evidence</span> (<span class="font-mono text-xs">Exemptions.Request</span>, <span class="font-mono text-xs">Exemptions.Exemption</span>, <span class="font-mono text-xs">ExemptionStore.Row</span>, <span class="font-mono text-xs">ExemptionFields.Parsed</span>, <span class="font-mono text-xs">ExemptionQueue.Request</span>) keep the generated <span class="font-mono text-xs">toString()</span>; still none overrides it at <span class="font-mono text-xs">14f81b1</span>. No code logs them today. Optionally override <span class="font-mono text-xs">toString()</span> on <span class="font-mono text-xs">Request</span> and <span class="font-mono text-xs">Parsed</span> to omit it.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ExemptionRequestTest.java</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">as-13 A-1 (advisory, test evidence). No test sends sentinel evidence on a request that is then refused (400 on another field, 409 <span class="font-mono text-xs">files-scanning</span> or state, 403 SoD) and checks it is absent from the problem body and the REFUSED audit entry, the pattern ADR 0027 item 9 set. Correct by construction today.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <!-- react -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react <span class="text-xs text-slate-400">(reviewed at b6f5615)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-500">Complies with ADR 0002 (reads through <span class="font-mono text-xs">useResource</span>, no new data library) and ADR 0009 (no React unit tests). Sound: pure renders, no new <span class="font-mono text-xs">useEffect</span>, loaders stabilised with <span class="font-mono text-xs">useCallback</span>, stable keys, controlled inputs, report content only as JSX text, the evidence file saved and never rendered.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ExemptionRequestScreen.tsx</td>
+              <td class="px-4 py-2">40-41</td>
+              <td class="px-4 py-2">L1. A failed read of the evidence files is silent: <span class="font-mono text-xs">files.error</span> is never shown and the select offers only &ldquo;No file&rdquo;. Render an <span class="font-mono text-xs">ErrorPanel</span> under the select and disable it while loading.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/ExemptionQueueScreen.tsx</td>
+              <td class="px-4 py-2">113</td>
+              <td class="px-4 py-2">L2. A 403 <span class="font-mono text-xs">step-up-required</span> on a decision is shown twice: the app-level step-up explanation and the screen&rsquo;s own <span class="font-mono text-xs">ErrorPanel</span>. Skip <span class="font-mono text-xs">setProblem</span> when <span class="font-mono text-xs">isStepUpRequired</span>, as <span class="font-mono text-xs">RegisterScreen</span> and <span class="font-mono text-xs">ExportsScreen</span> do.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/ExemptionQueueScreen.tsx</td>
+              <td class="px-4 py-2">27, 34</td>
+              <td class="px-4 py-2">L4. The evidence download has no busy guard (repeated clicks start parallel downloads) and falls back to a file name with no extension. Add a local <span class="font-mono text-xs">saving</span> state and a better fallback name.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ExemptionRequestScreen.tsx</td>
+              <td class="px-4 py-2">44</td>
+              <td class="px-4 py-2">L5. The server names <span class="font-mono text-xs">evidenceFileId</span> in a 400 <span class="font-mono text-xs">invalid-field</span>, but only <span class="font-mono text-xs">basis</span>, <span class="font-mono text-xs">vaDate</span> and <span class="font-mono text-xs">evidence</span> get <span class="font-mono text-xs">aria-invalid</span> (still so at <span class="font-mono text-xs">14f81b1</span>). Pass an <span class="font-mono text-xs">invalid</span> prop to <span class="font-mono text-xs">EvidenceFileChoice</span>.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-3 text-sm text-slate-600 border-t border-slate-100">
+          <p class="font-medium text-slate-700">Resolved since the review</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li>M1 (Medium): form state and the chosen evidence file could go stale when the VA Cycle changed, sending an <span class="font-mono text-xs">evidenceFileId</span> of the old VA Submission. <span class="font-mono text-xs">f51740b</span> renders <span class="font-mono text-xs">RequestForm</span> only when <span class="font-mono text-xs">inbox.data &amp;&amp; system &amp;&amp; !inbox.loading</span> and keys it by <span class="font-mono text-xs">`${cycle}:${system.submissionId ?? &quot;none&quot;}`</span> (<span class="font-mono text-xs">ExemptionRequestScreen.tsx:179-187</span>), so a Cycle or VA Submission change remounts it with fresh state.</li>
+            <li>L3 (Low): the screen now shows &ldquo;Loading your System&hellip;&rdquo; while the inbox loads (<span class="font-mono text-xs">ExemptionRequestScreen.tsx:178</span>, <span class="font-mono text-xs">f51740b</span>).</li>
+          </ul>
+        </div>
+      </details>
+
+      <!-- springboot -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot <span class="text-xs text-slate-400">(reviewed at b6f5615)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-500">Seven sub-reviews: core WARN (2 Low), web WARN (1 Low open), data WARN (2 Low), batch PASS (not applicable), security PASS (1 Low), logging PASS, test WARN (2 Low open). Passed: constructor injection and stateless beans; the <span class="font-mono text-xs">ExemptionEvidence</span> port inverting the dependency on <span class="font-mono text-xs">ingestion</span>; <span class="font-mono text-xs">no-store</span> on every response; constant SQL with named parameters; the partial unique index for one pending request; the compare-and-set decision; notifications after commit; <span class="font-mono text-xs">@PreAuthorize</span> plus object-level checks and step-up first; no new logging; Seam 1 tests on the shared context with a fake clock.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td>
+              <td class="px-4 py-2">685, 709 (now)</td>
+              <td class="px-4 py-2">L-1 (core/data). <span class="font-mono text-xs">atStep</span> and <span class="font-mono text-xs">moved</span> are now called from another bean (<span class="font-mono text-xs">Exemptions</span>) and take row locks, but do not declare <span class="font-mono text-xs">@Transactional(propagation = MANDATORY)</span> as <span class="font-mono text-xs">forRequest</span> does. Outside a transaction the <span class="font-mono text-xs">FOR UPDATE</span> lock would be released at once without an error. Add the annotation.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Exemptions.java</td>
+              <td class="px-4 py-2">113</td>
+              <td class="px-4 py-2">L-2 (core). Twelve constructor dependencies: the request, the decision and the audited queue read in one bean, which also reaches into <span class="font-mono text-xs">SubmissionStore</span> directly. Optional: move <span class="font-mono text-xs">pending</span> to its own bean.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Exemptions.java</td>
+              <td class="px-4 py-2">Request record</td>
+              <td class="px-4 py-2">L-3 (web). A malformed <span class="font-mono text-xs">evidenceFileId</span> (<span class="font-mono text-xs">UUID</span>) or <span class="font-mono text-xs">cycle</span> (<span class="font-mono text-xs">Integer</span>) gets Jackson&rsquo;s generic 400 with no <span class="font-mono text-xs">field</span>, unlike the other fields. Safe; parse it in <span class="font-mono text-xs">ExemptionFields</span> or record the choice in the ADR.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Exemptions.java</td>
+              <td class="px-4 py-2">147, 162, 236</td>
+              <td class="px-4 py-2">L-4 (data). Extra SELECTs under the exclusive lock: the VA Submission re-read after <span class="font-mono text-xs">atStep</span>, and the Exemption re-read after its insert or decision. Optional: return the Quarter from <span class="font-mono text-xs">atStep</span> and use <span class="font-mono text-xs">RETURNING</span>. Same as thermo-nuclear L1.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Exemptions.java</td>
+              <td class="px-4 py-2">209 (now)</td>
+              <td class="px-4 py-2">L-5 (security, defence in depth). The public <span class="font-mono text-xs">pending</span> filters by <span class="font-mono text-xs">Need.VIEW</span>, broader than its only caller&rsquo;s <span class="font-mono text-xs">Need.ENDORSE</span>; a future caller could read evidence a Cyber Manager may view. Use <span class="font-mono text-xs">Need.ENDORSE</span> or take the <span class="font-mono text-xs">Need</span> as a parameter. Same as thermo-nuclear L4.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ExemptionDecisionTest.java; ExemptionRequestTest.java</td>
+              <td class="px-4 py-2">212; 72, 269 (now)</td>
+              <td class="px-4 py-2">L-6 (test). Assertions inside <span class="font-mono text-xs">for</span> loops (approve and reject, both VA POCs, three files) do not say which iteration failed. Use <span class="font-mono text-xs">@ParameterizedTest</span> or <span class="font-mono text-xs">allSatisfy</span> with <span class="font-mono text-xs">.as(...)</span> labels.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ExemptionDecisionTest.java</td>
+              <td class="px-4 py-2">186</td>
+              <td class="px-4 py-2">L-7 (test). <span class="font-mono text-xs">decidingNeedsAFreshSignInAndChangesNothingWithoutOne</span> does not check the <span class="font-mono text-xs">REQUEST_REFUSED</span> audit entry with <span class="font-mono text-xs">intent = exemption-decide</span> that the <span class="font-mono text-xs">AuditAction</span> Javadoc promises (IM8 ac-2 evidence).</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-3 text-sm text-slate-600 border-t border-slate-100">
+          <p class="font-medium text-slate-700">Resolved since the review</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li>M-1 (Medium, web): the 201 <span class="font-mono text-xs">Location</span> pointed to <span class="font-mono text-xs">/api/exemptions/{id}</span>, which no endpoint serves. <span class="font-mono text-xs">4415f24</span> answers <span class="font-mono text-xs">ResponseEntity.status(HttpStatus.CREATED).cacheControl(noStore()).body(...)</span> with no <span class="font-mono text-xs">Location</span> (<span class="font-mono text-xs">ExemptionController.java</span>, <span class="font-mono text-xs">request</span>), and ADR 0048 item 1 records why.</li>
+            <li>M-2 (Medium, test): no request-side SoD test. <span class="font-mono text-xs">7a4b9b3</span> adds <span class="font-mono text-xs">ExemptionRequestTest.theSystemsCyberManagerMayNotRequestAnExemptionAndNoVaSubmissionIsLeftBehind</span>: 403 <span class="font-mono text-xs">sod-conflict</span> for a started and a Not Started System, the started one still DRAFT, a REFUSED <span class="font-mono text-xs">EXEMPTION_REQUESTED</span> entry with <span class="font-mono text-xs">reason = sod-conflict</span>, and the Not Started System still with no VA Submission.</li>
+          </ul>
+        </div>
+      </details>
+    </main>
+  </body>
+</html>

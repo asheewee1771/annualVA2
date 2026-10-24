@@ -39,7 +39,13 @@ public enum NoticeAction {
      * resubmission comes back to them, whoever passed it.
      */
     VA_POC_RETURNED("A VA POC returned the VA Submission from endorsement: re-review what changes once it is submitted "
-            + "again.");
+            + "again."),
+    /** To both VA POCs, once an SMO/Tech Lead requests an Exemption (ticket 40); either one's decision clears it. */
+    DECIDE_EXEMPTION("Approve or reject the Exemption request."),
+    /** To the SMO/Tech Lead, once a VA POC approves their Exemption. */
+    EXEMPTION_APPROVED("A VA POC approved the Exemption: this System is Exempted."),
+    /** To the SMO/Tech Lead, once a VA POC rejects their Exemption and the VA Submission is back where it was. */
+    EXEMPTION_REJECTED("A VA POC rejected the Exemption: the VA Submission is back where it was before the request.");
 
     private final String message;
 

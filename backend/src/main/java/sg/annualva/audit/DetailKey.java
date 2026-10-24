@@ -73,7 +73,11 @@ public enum DetailKey {
     /** An export's classification: {@code CONFIDENTIAL} or {@code RESTRICTED} (assumption A-1). */
     CLASSIFICATION,
     /** The Quarter an export covers, 1 to 4, when it covers one Quarter only. */
-    QUARTER;
+    QUARTER,
+    /** The Exemption an entry is about (ticket 40): its id, never its evidence. */
+    EXEMPTION_ID,
+    /** What an Exemption rests on (ticket 40): {@code PRIOR_VA} or {@code SCHEDULED_VA}, never the date. */
+    BASIS;
 
     /** The key as stored: lower-case with underscores. */
     String json() {
