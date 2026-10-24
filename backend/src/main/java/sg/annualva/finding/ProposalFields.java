@@ -25,7 +25,7 @@ import sg.annualva.web.RejectedRequestException;
  */
 final class ProposalFields {
 
-    static final int MAX_TEXT = 4000;
+    static final int MAX_TEXT = ReportText.MAX_LONG_TEXT;
     static final int MAX_NAME = 200;
     /** A bound that keeps a date a real one (as-1): the target date is at most this many years from today. */
     static final int MAX_YEARS_AHEAD = 10;

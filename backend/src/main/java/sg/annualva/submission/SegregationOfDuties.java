@@ -71,9 +71,11 @@ class SegregationOfDuties {
     }
 
     /**
-     * The Systems the caller is assigned to at a step other than this one. A scope over every System (a VA POC's) has no
-     * place in the rule yet: how a VA POC counts is decided by the ticket that adds the endorsing step (ADR 0035, ticket
-     * 30), so meeting one here is a programming error, not a silent "assigned to nothing".
+     * The Systems the caller is assigned to at a step other than this one. A scope over every System (a VA POC's) is not an
+     * assignment: holding the VA POC role does not assign a person to the endorsing step of any System; only endorsing,
+     * returning or deciding an Exemption on a VA Submission counts, as {@code submission_participation} (ADR 0039 item 5).
+     * Ticket 34, which adds the endorsing step, gives it no Register assignment; until then meeting such a scope here is a
+     * programming error, not a silent "assigned to nothing".
      */
     private Set<UUID> assignedAtAnotherStep(SubmissionStep step) {
         Set<UUID> systems = new HashSet<>();
@@ -81,8 +83,8 @@ class SegregationOfDuties {
             if (other != step) {
                 SystemScope scope = guard.scope(other.need());
                 if (scope.all()) {
-                    throw new IllegalStateException("decide how a scope over every System counts for segregation of "
-                            + "duties before a step uses one (ADR 0035)");
+                    throw new IllegalStateException("a step assigned by a scope over every System counts by acting only "
+                            + "(ADR 0039 item 5): give it no Register assignment");
                 }
                 systems.addAll(scope.ids());
             }

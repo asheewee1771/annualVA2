@@ -225,9 +225,11 @@ public class TestEndpoints {
                 jdbc.sql("DROP TRIGGER IF EXISTS test_finding_fault ON finding_occurrence").update();
                 jdbc.sql("DROP TRIGGER IF EXISTS test_finding_late ON report_file").update();
                 jdbc.sql("DELETE FROM finding_occurrence").update();
-                // The reviews are append-only too (V21, V129), and name the proposals, the batches and the Scan Reports, so
-                // they go first, a Finding's review before the batch review it names.
-                for (String review : new String[] {"finding_review", "batch_review", "report_review"}) {
+                // The returns (V130) name the reviews, and the reviews (V21, V129) name the proposals, the batches and the
+                // Scan Reports, so they go first, a return before the reviews it names and a Finding's review before the
+                // batch review it names; all are append-only.
+                for (String review : new String[] {"submission_return_item", "submission_return", "finding_review",
+                        "batch_review", "report_review"}) {
                     jdbc.sql("ALTER TABLE " + review + " DISABLE TRIGGER " + review + "_append_only").update();
                     jdbc.sql("DELETE FROM " + review).update();
                     jdbc.sql("ALTER TABLE " + review + " ENABLE TRIGGER " + review + "_append_only").update();

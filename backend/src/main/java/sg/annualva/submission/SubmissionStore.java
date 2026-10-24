@@ -6,8 +6,11 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -133,8 +136,9 @@ class SubmissionStore {
     private static final String LOCK_SHARED = LOCATE + " FOR SHARE";
 
     /**
-     * A submit holds the row against every write to what the SMO/Tech Lead prepares until it commits. NO KEY: the rows
-     * that refer to the VA Submission (a file, a Finding) can still be inserted meanwhile, by the scan job.
+     * A move (a submit, a return, a pass to endorsement) holds the row against every write to what the SMO/Tech Lead
+     * prepares and every review until it commits. NO KEY: the rows that refer to the VA Submission (a file, a Finding, a
+     * return) can still be inserted meanwhile, by the scan job or by the move itself.
      */
     private static final String LOCK_EXCLUSIVE = LOCATE + " FOR NO KEY UPDATE";
 
@@ -155,6 +159,41 @@ class SubmissionStore {
             + "WHERE overdue_since IS NULL AND " + windowPassed("state") + " "
             + "AND system_id = ANY(CAST(:systems AS uuid[])) "
             + "ORDER BY id FOR NO KEY UPDATE SKIP LOCKED) due WHERE s.id = due.id RETURNING s.id, s.system_id, s.state";
+
+    /**
+     * A move out of In Review takes the flag with it ({@link #OVERDUE_AFTER_MOVE}). A pass to endorsement also records when
+     * the review ended ({@code passed_to_endorsement_at}, V133, the Cycle matrix's "reviewed"); a return leaves it as it
+     * was.
+     */
+    private static final String MOVED =
+            "UPDATE va_submission SET state = :state, passed_to_endorsement_at = CASE WHEN :state = '"
+            + SubmissionState.AWAITING_ENDORSEMENT.name() + "' THEN :now ELSE passed_to_endorsement_at END, "
+            + OVERDUE_AFTER_MOVE + " WHERE id = :id";
+
+    private static final String INSERT_RETURN =
+            "INSERT INTO submission_return (submission_id, step, comment, returned_by, returned_at) "
+            + "VALUES (:submission, :step, CAST(:comment AS text), :by, :now) RETURNING id";
+
+    /** The Disputed Findings a return attaches, one row each, in the order given. */
+    private static final String INSERT_RETURNED_FINDINGS =
+            "INSERT INTO submission_return_item (return_id, finding_id, finding_review_id) SELECT :return, finding, review "
+            + "FROM unnest(CAST(:findings AS uuid[]), CAST(:reviews AS uuid[])) WITH ORDINALITY AS item(finding, review, n) "
+            + "ORDER BY n";
+
+    /** The Disputed not-applicable justifications a return attaches, one row each, in the order given. */
+    private static final String INSERT_RETURNED_REPORTS =
+            "INSERT INTO submission_return_item (return_id, report_type, report_review_id) SELECT :return, report_type, "
+            + "review FROM unnest(CAST(:types AS text[]), CAST(:reviews AS uuid[])) WITH ORDINALITY "
+            + "AS item(report_type, review, n) ORDER BY n";
+
+    private static final String RETURNS =
+            "SELECT id, step, comment, returned_by, returned_at FROM submission_return WHERE submission_id = :submission "
+            + "ORDER BY seq DESC";
+
+    private static final String RETURN_ITEMS =
+            "SELECT i.return_id, i.finding_id, i.finding_review_id, i.report_type, i.report_review_id "
+            + "FROM submission_return_item i JOIN submission_return r ON r.id = i.return_id "
+            + "WHERE r.submission_id = :submission ORDER BY i.seq";
 
     /** The VA Submissions, of these Systems, where the person acted at this step. */
     private static final String ACTED_AT =
@@ -222,18 +261,80 @@ class SubmissionStore {
         return located(LOCK_SHARED, id);
     }
 
-    /** The VA Submission's System and state, its row held against every such write until the transaction ends. */
-    Optional<Located> lockForSubmit(UUID id) {
+    /**
+     * The VA Submission's System and state, its row held against every such write, and every review, until the transaction
+     * ends: for a command that moves it to another state.
+     */
+    Optional<Located> lockForMove(UUID id) {
         return located(LOCK_EXCLUSIVE, id);
     }
 
     /**
-     * Moves a VA Submission whose row the caller holds ({@link #lockForSubmit}) to the state, as submitted by this person
+     * Moves a VA Submission whose row the caller holds ({@link #lockForMove}) to the state, as submitted by this person
      * now, on this business date.
      */
     void submitted(UUID id, SubmissionState state, UUID by, Instant now, LocalDate today) {
         jdbc.sql(SUBMITTED).param("id", id).param("state", state.name()).param("by", by).param("now", utc(now))
                 .param("today", today).update();
+    }
+
+    /** Moves a VA Submission whose row the caller holds ({@link #lockForMove}) out of In Review now, on this business date. */
+    void moved(UUID id, SubmissionState state, Instant now, LocalDate today) {
+        jdbc.sql(MOVED).param("id", id).param("state", state.name()).param("now", utc(now)).param("today", today)
+                .update();
+    }
+
+    /** Keeps a return of the VA Submission with what was Disputed when it was returned. */
+    void insertReturn(UUID submissionId, SubmissionStep step, @Nullable String comment, UUID by, Instant now,
+            ReviewProgress.Disputed disputed) {
+        UUID id = jdbc.sql(INSERT_RETURN)
+                .param("submission", submissionId)
+                .param("step", step.name())
+                .param("comment", comment)
+                .param("by", by)
+                .param("now", utc(now))
+                .query(UUID.class)
+                .single();
+        jdbc.sql(INSERT_RETURNED_FINDINGS)
+                .param("return", id)
+                .param("findings", ids(disputed.findings().stream().map(ReviewProgress.DisputedFinding::findingId)
+                        .toList()))
+                .param("reviews", ids(disputed.findings().stream().map(ReviewProgress.DisputedFinding::reviewId)
+                        .toList()))
+                .update();
+        jdbc.sql(INSERT_RETURNED_REPORTS)
+                .param("return", id)
+                .param("types", disputed.reports().stream().map(ReviewProgress.DisputedReport::reportType)
+                        .toArray(String[]::new))
+                .param("reviews", ids(disputed.reports().stream().map(ReviewProgress.DisputedReport::reviewId)
+                        .toList()))
+                .update();
+    }
+
+    /**
+     * The returns of the VA Submission, the latest first, each with what it attached in the order it was attached. An
+     * item is a Finding or a not-applicable justification, never both (V130).
+     */
+    List<Submissions.Return> returns(UUID submissionId) {
+        Map<UUID, List<ReviewProgress.DisputedFinding>> findings = new HashMap<>();
+        Map<UUID, List<ReviewProgress.DisputedReport>> reports = new HashMap<>();
+        jdbc.sql(RETURN_ITEMS).param("submission", submissionId).query(rs -> {
+            UUID returnId = rs.getObject("return_id", UUID.class);
+            UUID finding = rs.getObject("finding_id", UUID.class);
+            if (finding != null) {
+                findings.computeIfAbsent(returnId, key -> new ArrayList<>()).add(
+                        new ReviewProgress.DisputedFinding(finding, rs.getObject("finding_review_id", UUID.class)));
+            } else {
+                reports.computeIfAbsent(returnId, key -> new ArrayList<>()).add(new ReviewProgress.DisputedReport(
+                        rs.getString("report_type"), rs.getObject("report_review_id", UUID.class)));
+            }
+        });
+        return jdbc.sql(RETURNS).param("submission", submissionId).query((rs, row) -> {
+            UUID id = rs.getObject("id", UUID.class);
+            return new Submissions.Return(id, SubmissionStep.valueOf(rs.getString("step")), rs.getString("comment"),
+                    rs.getObject("returned_by", UUID.class), instant(rs, "returned_at"),
+                    findings.getOrDefault(id, List.of()), reports.getOrDefault(id, List.of()));
+        }).list();
     }
 
     /** Flags what is overdue on this business date at this instant, among these active Systems; what was flagged. */

@@ -12,6 +12,7 @@ import { LatestReview } from "./LatestReview.tsx";
 import { auditHistoryPath, CM_INBOX_PATH } from "./paths.ts";
 import { ReviewFindingsList } from "./ReviewFindingsList.tsx";
 import { ReviewForm } from "./ReviewForm.tsx";
+import { FinishReview } from "./FinishReview.tsx";
 import { ReviewSessionContext, useReviewSession, type ReviewSession } from "./reviewSession.ts";
 
 /** The Scan Reports marked not applicable: each justification, clearly marked, with its review. */
@@ -109,6 +110,7 @@ export function ReviewScreen({ submissionId, classification }: { submissionId: s
             caption="Findings to review one by one, the most severe first"
           />
         </section>
+        {reviewable ? <FinishReview /> : null}
       </div>
     </ReviewSessionContext.Provider>
   );

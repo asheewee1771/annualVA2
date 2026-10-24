@@ -14,6 +14,7 @@ import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
+import sg.annualva.submission.ReviewProgress;
 import sg.annualva.submission.Submissions;
 
 /**
@@ -102,6 +103,21 @@ class ReviewStore {
             "SELECT DISTINCT ON (r.report_type) r.report_type, r.justification, r.justification_version, "
             + REVIEW_COLUMNS
             + "FROM report_review r WHERE r.submission_id = :submission ORDER BY r.report_type, r.seq DESC";
+
+    /**
+     * The Disputed Findings of a VA Submission in the order they were read, each with its latest review: the one that
+     * Disputed its current proposal, since a review sets the state and a new proposal puts it back to PENDING.
+     */
+    private static final String DISPUTED_FINDINGS =
+            "SELECT f.id, r.id AS review_id FROM finding f JOIN LATERAL (SELECT id FROM finding_review "
+            + "WHERE finding_id = f.id ORDER BY seq DESC LIMIT 1) r ON true "
+            + "WHERE f.submission_id = :submission AND f.review_state = 'DISPUTED' ORDER BY f.seq";
+
+    /** The Disputed not-applicable justifications of a VA Submission, each with its latest review, the one that Disputed it. */
+    private static final String DISPUTED_JUSTIFICATIONS =
+            "SELECT s.report_type, r.id AS review_id FROM report_slot s JOIN LATERAL (SELECT id FROM report_review "
+            + "WHERE submission_id = s.submission_id AND report_type = s.report_type ORDER BY seq DESC LIMIT 1) r ON true "
+            + "WHERE s.submission_id = :submission AND s.mode = 'NOT_APPLICABLE' AND s.review_state = 'DISPUTED'";
 
     private final JdbcClient jdbc;
 
@@ -195,6 +211,24 @@ class ReviewStore {
                 .list()
                 .forEach(entry -> latest.put(entry.getKey(), entry.getValue()));
         return latest;
+    }
+
+    /** The Disputed Findings of the VA Submission in the order they were read, each with the review that Disputed it. */
+    List<ReviewProgress.DisputedFinding> disputedFindings(UUID submissionId) {
+        return jdbc.sql(DISPUTED_FINDINGS).param("submission", submissionId)
+                .query((rs, row) -> new ReviewProgress.DisputedFinding(rs.getObject("id", UUID.class),
+                        rs.getObject("review_id", UUID.class)))
+                .list();
+    }
+
+    /** The Disputed not-applicable justifications of the VA Submission in Scan Report order, each with its review. */
+    List<ReviewProgress.DisputedReport> disputedReports(UUID submissionId) {
+        return jdbc.sql(DISPUTED_JUSTIFICATIONS).param("submission", submissionId)
+                .query((rs, row) -> Map.entry(ReportType.valueOf(rs.getString("report_type")),
+                        rs.getObject("review_id", UUID.class)))
+                .list().stream().sorted(Map.Entry.comparingByKey())
+                .map(each -> new ReviewProgress.DisputedReport(each.getKey().name(), each.getValue()))
+                .toList();
     }
 
     /** A review read through {@link #REVIEW_COLUMNS}; null when the row has none (an outer join that matched nothing). */

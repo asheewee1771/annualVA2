@@ -29,6 +29,7 @@ import sg.annualva.audit.DetailKey;
 import sg.annualva.cycle.CycleCalendar;
 import sg.annualva.cycle.Quarter;
 import sg.annualva.cycle.VaCycle;
+import sg.annualva.parser.ReportText;
 import sg.annualva.register.RegisterSystems;
 import sg.annualva.web.RejectedRequestException;
 import sg.annualva.web.ResourceNotFoundException;
@@ -124,11 +125,14 @@ public class Submissions {
         private final UUID submissionId;
         private final UUID systemId;
         private final AuditEvent refused;
+        /** How the row is held; only a VA Submission held exclusively may be moved to another state. */
+        private final Hold hold;
 
-        private ReviewTarget(UUID submissionId, UUID systemId, AuditEvent refused) {
+        private ReviewTarget(UUID submissionId, UUID systemId, AuditEvent refused, Hold hold) {
             this.submissionId = submissionId;
             this.systemId = systemId;
             this.refused = refused;
+            this.hold = hold;
         }
 
         public UUID submissionId() {
@@ -147,6 +151,16 @@ public class Submissions {
         public AuditEvent refused() {
             return refused;
         }
+    }
+
+    /**
+     * How a review-step command holds the VA Submission's row: shared for a review, so that reviews run side by side,
+     * exclusively for a move out of In Review, so that it waits for every review in progress and none starts until it
+     * commits (ADR 0035 item 3).
+     */
+    private enum Hold {
+        SHARED,
+        EXCLUSIVE
     }
 
     /**
@@ -190,6 +204,27 @@ public class Submissions {
      */
     public record DeclarationAnswer(@Nullable Boolean declarationAccepted, @Nullable Integer declarationVersion) {}
 
+    /**
+     * What the Cyber Manager says when returning a VA Submission for rework (story 55).
+     *
+     * @param comment why, for the SMO/Tech Lead beside the Disputed items; optional, as each Dispute carries its own
+     */
+    public record ReturnRequest(@Nullable String comment) {}
+
+    /**
+     * A return for rework as kept: who returned it, at which step and when, what they wrote, and what was Disputed then,
+     * each item named by the review that Disputed it (story 55).
+     *
+     * @param comment cleaned; null when none was given
+     * @param returnedBy who (an id, never a name or email)
+     * @param returnedAt when (UTC)
+     * @param disputedFindings the Disputed Findings, in the order they were read
+     * @param disputedReports the Disputed not-applicable justifications, in Scan Report order
+     */
+    public record Return(
+            UUID id, SubmissionStep step, @Nullable String comment, UUID returnedBy, Instant returnedAt,
+            List<ReviewProgress.DisputedFinding> disputedFindings, List<ReviewProgress.DisputedReport> disputedReports) {}
+
     private static final String NOT_ALLOWED_NOW = "invalid-transition";
 
     private final SubmissionStore store;
@@ -203,10 +238,11 @@ public class Submissions {
     private final SubmitReadiness readiness;
     private final ApplicationEventPublisher events;
     private final SegregationOfDuties sod;
+    private final ReviewProgress progress;
 
     Submissions(SubmissionStore store, RegisterSystems register, CycleCalendar calendar, AccessGuard guard,
             CurrentUser user, AuditActor actor, AuditLog audit, Clock clock, SubmitReadiness readiness,
-            ApplicationEventPublisher events, SegregationOfDuties sod) {
+            ApplicationEventPublisher events, SegregationOfDuties sod, ReviewProgress progress) {
         this.store = store;
         this.register = register;
         this.calendar = calendar;
@@ -218,6 +254,7 @@ public class Submissions {
         this.readiness = readiness;
         this.events = events;
         this.sod = sod;
+        this.progress = progress;
     }
 
     /**
@@ -272,7 +309,7 @@ public class Submissions {
     @Transactional
     public Submission submit(UUID id, DeclarationAnswer answer) {
         UUID systemId = owned(id).systemId();
-        SubmissionStore.Located held = store.lockForSubmit(id).orElseThrow(ResourceNotFoundException::new);
+        SubmissionStore.Located held = store.lockForMove(id).orElseThrow(ResourceNotFoundException::new);
         sod.require(SubmissionStep.SUBMIT, systemId, id, refusedSubmit(id, systemId));
         requireEditable(held, id, systemId, this::notSubmittable);
         SubmissionState from = SubmissionState.valueOf(held.state());
@@ -382,18 +419,137 @@ public class Submissions {
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public ReviewTarget lockForReview(UUID id, AuditEvent refusedAs) {
+        return atReviewStep(id, refusedAs, Hold.SHARED);
+    }
+
+    /**
+     * Returns a VA Submission In Review to its SMO/Tech Lead for rework (story 55), with what is Disputed attached: each
+     * Disputed Finding and not-applicable justification, named by the review that Disputed it. What the Cyber Manager
+     * confirmed stays confirmed, as the move touches no review. The checks are a review's (ADR 0035 item 2), with the VA
+     * Submission's row held exclusively, so a review in progress finishes first and none starts until this commits; then
+     * the comment, then that something is Disputed. On success it is Returned for Rework, the return is kept, the caller is
+     * recorded at the reviewing step, the return is audited and a {@link SubmissionEvent} is published for the SMO/Tech
+     * Lead's notification.
+     *
+     * @throws ResourceNotFoundException for a VA Submission that does not exist or of a System the caller is not Cyber
+     *     Manager of
+     * @throws RejectedRequestException 403 {@code sod-conflict}; 409 {@code invalid-transition} when it is not In Review;
+     *     400 {@code invalid-field} naming {@code comment}; 409 {@code nothing-disputed} when nothing is Disputed
+     */
+    @Transactional
+    public Submission returnForRework(UUID id, ReturnRequest request) {
+        ReviewTarget target = atReviewStep(id,
+                actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_RETURNED, AuditOutcome.REFUSED)), Hold.EXCLUSIVE);
+        String comment = returnComment(request.comment());
+        if (!progress.outcome(id).returnable()) {
+            audit.recordIndependently(target.refused().with(DetailKey.REASON, "nothing-disputed"));
+            throw new RejectedRequestException(HttpStatus.CONFLICT, "nothing-disputed",
+                    "Nothing is Disputed, so there is nothing to return for rework: Dispute what needs rework first.");
+        }
+        ReviewProgress.Disputed disputed = progress.disputed(id);
+        Instant now = clock.instant();
+        store.insertReturn(id, SubmissionStep.REVIEW, comment, user.id(), now, disputed);
+        return movedOutOfReview(target, SubmissionState.RETURNED_FOR_REWORK, now,
+                AuditEvent.of(AuditAction.SUBMISSION_RETURNED, AuditOutcome.SUCCESS)
+                        .with(DetailKey.COUNT, disputed.count()));
+    }
+
+    /**
+     * Passes a VA Submission In Review to the VA POCs for endorsement (story 57), once every Finding and every
+     * not-applicable justification is confirmed. The checks are a review's (ADR 0035 item 2), with the VA Submission's row
+     * held exclusively, then that nothing is left unconfirmed ({@link ReviewProgress#outcome}), all listed in one
+     * refusal. On success it is Awaiting Endorsement, the caller is recorded at the reviewing step, the move is audited and
+     * a {@link SubmissionEvent} is published for the VA POCs' notification.
+     *
+     * @throws ResourceNotFoundException as for a return
+     * @throws RejectedRequestException 403 {@code sod-conflict}; 409 {@code invalid-transition} when it is not In Review;
+     *     409 {@code not-confirmed} listing what is still unconfirmed as {@code reasons}
+     */
+    @Transactional
+    public Submission passToEndorsement(UUID id) {
+        ReviewTarget target = atReviewStep(id,
+                actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_PASSED, AuditOutcome.REFUSED)), Hold.EXCLUSIVE);
+        List<SubmitReadiness.Blocker> unconfirmed = progress.outcome(id).endorsementBlockers();
+        if (!unconfirmed.isEmpty()) {
+            audit.recordIndependently(target.refused().with(DetailKey.REASON, "not-confirmed")
+                    .with(DetailKey.COUNT, unconfirmed.size()));
+            throw RejectedRequestException.withReasons(HttpStatus.CONFLICT, "not-confirmed",
+                    "This VA Submission can pass to endorsement only once every Finding and justification is confirmed. "
+                    + "Each reason says what is left.", unconfirmed);
+        }
+        return movedOutOfReview(target, SubmissionState.AWAITING_ENDORSEMENT, clock.instant(),
+                AuditEvent.of(AuditAction.SUBMISSION_PASSED, AuditOutcome.SUCCESS));
+    }
+
+    /**
+     * The returns of a VA Submission, the latest first, for anyone who may see its System (one the caller may not see is
+     * "not found", ADR 0013). A return carries what a person wrote, so every read is audited as
+     * {@code SUBMISSION_RETURNS_VIEWED}, the owner's included, with ids only.
+     */
+    @Transactional
+    public List<Return> returns(UUID id) {
+        SubmissionStore.Located located = store.locate(id).orElseThrow(ResourceNotFoundException::new);
+        guard.requireSystem(located.systemId(), Need.VIEW);
+        List<Return> returns = store.returns(id);
+        audit.record(actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_RETURNS_VIEWED, AuditOutcome.SUCCESS))
+                .onSystem(located.systemId()).onSubmission(id));
+        return returns;
+    }
+
+    /**
+     * The reviewing step's checks, in order (ADR 0035 item 2): ownership (the Cyber Manager of the System; any other is
+     * "not found", ADR 0013); then, with the VA Submission's row held as {@code hold} says until the caller's transaction ends,
+     * segregation of duties (403 {@code sod-conflict}) and the state (In Review; 409 {@code invalid-transition}). Each
+     * refusal is audited in an entry of its own, as {@code refusedAs} about the System and the VA Submission with a fixed
+     * reason. The caller is then recorded at the reviewing step, kept only if their command commits.
+     */
+    private ReviewTarget atReviewStep(UUID id, AuditEvent refusedAs, Hold hold) {
         SubmissionStore.Located located = store.locate(id).orElseThrow(ResourceNotFoundException::new);
         guard.requireSystem(located.systemId(), Need.REVIEW);
-        SubmissionStore.Located held = store.lockForEdit(id).orElseThrow(ResourceNotFoundException::new);
+        SubmissionStore.Located held = (hold == Hold.EXCLUSIVE ? store.lockForMove(id) : store.lockForEdit(id))
+                .orElseThrow(ResourceNotFoundException::new);
         AuditEvent refused = refusedAs.onSystem(held.systemId()).onSubmission(id);
         sod.require(SubmissionStep.REVIEW, held.systemId(), id, refused);
         if (!SubmissionState.IN_REVIEW.name().equals(held.state())) {
             audit.recordIndependently(refused.with(DetailKey.REASON, "state-not-reviewable"));
             throw new RejectedRequestException(HttpStatus.CONFLICT, NOT_ALLOWED_NOW,
-                    "This VA Submission can be reviewed only while it is In Review.");
+                    "This VA Submission can be reviewed, returned or passed to endorsement only while it is In Review.");
         }
         store.recordParticipation(id, user.id(), SubmissionStep.REVIEW, clock.instant());
-        return new ReviewTarget(id, held.systemId(), refused);
+        return new ReviewTarget(id, held.systemId(), refused, hold);
+    }
+
+    /**
+     * Moves a VA Submission held by {@link #atReviewStep} out of In Review: the state (and the Overdue flag with it), the
+     * audit entry {@code success} with the states, and the event the notifications listen for after the commit. Only a
+     * VA Submission held exclusively is moved, so a move never overtakes a review in progress.
+     */
+    private Submission movedOutOfReview(ReviewTarget target, SubmissionState to, Instant now, AuditEvent success) {
+        if (target.hold != Hold.EXCLUSIVE) {
+            throw new IllegalStateException("a move out of In Review holds the VA Submission exclusively (ADR 0039)");
+        }
+        UUID id = target.submissionId();
+        store.moved(id, to, now, calendar.dateOf(now));
+        audit.record(actor.attribute(success).onSystem(target.systemId()).onSubmission(id)
+                .with(DetailKey.STATE_FROM, SubmissionState.IN_REVIEW.name()).with(DetailKey.STATE_TO, to.name()));
+        events.publishEvent(new SubmissionEvent(id, target.systemId(), SubmissionState.IN_REVIEW, to, user.id(), now));
+        return view(id);
+    }
+
+    /**
+     * The comment of a return, cleaned and bounded as every long text a person types (ADR 0027 item 5, IM8 as-1); null
+     * when none was given or nothing is left once cleaned.
+     */
+    private static @Nullable String returnComment(@Nullable String raw) {
+        String cleaned = raw == null ? "" : ReportText.cleanLongText(raw);
+        if (cleaned.isEmpty()) {
+            return null;
+        }
+        if (!ReportText.fits(cleaned, ReportText.MAX_LONG_TEXT)) {
+            throw RejectedRequestException.invalidField("comment",
+                    "The field 'comment' must be at most " + ReportText.MAX_LONG_TEXT + " characters.");
+        }
+        return cleaned;
     }
 
     /**
