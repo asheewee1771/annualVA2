@@ -251,6 +251,8 @@ export interface BatchSummary {
   disputed: number;
   /** Members proposed again since, reviewed one by one. */
   changedSince: number;
+  /** Members still in the batch that were entered by hand: the batch is marked for closer review. */
+  manuallyEntered: number;
 }
 
 /** GET /api/submissions/{id}/batches: the Bulk-set batches of the VA Submission, in the order they were made. */

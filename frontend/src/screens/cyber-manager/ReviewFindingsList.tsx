@@ -19,22 +19,14 @@ import { Pager } from "../shared/Pager.tsx";
 import { reportTitle } from "../shared/scanReports.ts";
 import { LatestReview } from "./LatestReview.tsx";
 import { ReviewForm } from "./ReviewForm.tsx";
+import { useReviewSession } from "./reviewSession.ts";
 
 /** How many Findings one page shows. */
 const PAGE_SIZE = 100;
 
 /** One Finding: what it is, what was proposed, its review, and the Confirm and Dispute controls. */
-function FindingReviewRow({
-  finding,
-  reviewable,
-  classification,
-  onReviewed,
-}: {
-  finding: Finding;
-  reviewable: boolean;
-  classification: string;
-  onReviewed: () => void;
-}) {
+function FindingReviewRow({ finding }: { finding: Finding }) {
+  const { reviewable, classification, reviewed } = useReviewSession();
   const proposal = finding.currentProposal;
   const latest = finding.latestReview;
   return (
@@ -75,7 +67,7 @@ function FindingReviewRow({
             subject={finding.identifier}
             classification={classification}
             send={(input) => reviewFinding(finding.id, proposal.id, input)}
-            onReviewed={onReviewed}
+            onReviewed={reviewed}
           />
         ) : null}
       </td>
@@ -84,19 +76,7 @@ function FindingReviewRow({
 }
 
 /** A table of Findings, each with what was proposed, its review and its own Confirm and Dispute. */
-function FindingsReviewTable({
-  findings,
-  caption,
-  reviewable,
-  classification,
-  onReviewed,
-}: {
-  findings: readonly Finding[];
-  caption: string;
-  reviewable: boolean;
-  classification: string;
-  onReviewed: () => void;
-}) {
+function FindingsReviewTable({ findings, caption }: { findings: readonly Finding[]; caption: string }) {
   return (
     <div className="table-scroll">
       <table className="data-table">
@@ -111,13 +91,7 @@ function FindingsReviewTable({
         </thead>
         <tbody>
           {findings.map((finding) => (
-            <FindingReviewRow
-              key={finding.id}
-              finding={finding}
-              reviewable={reviewable}
-              classification={classification}
-              onReviewed={onReviewed}
-            />
+            <FindingReviewRow key={finding.id} finding={finding} />
           ))}
         </tbody>
       </table>
@@ -130,32 +104,26 @@ function filterOf(batchId: string | null): FindingFilter {
   return batchId === null ? { batched: false } : { batchId };
 }
 
-/** One page of the list: the table and the pager, or that there is nothing to review. */
+/**
+ * One page of the list: the table, or that this page has none, and the pager whenever there is more than one page (so a
+ * page left empty when the list shrank after a review can still be left).
+ */
 function FindingsPageView({
   result,
   caption,
-  reviewable,
-  classification,
-  onReviewed,
   onPage,
 }: {
   result: FindingPage;
   caption: string;
-  reviewable: boolean;
-  classification: string;
-  onReviewed: () => void;
   onPage: (page: number) => void;
 }) {
-  if (result.items.length === 0) return <p className="muted">There are none.</p>;
   return (
     <>
-      <FindingsReviewTable
-        findings={result.items}
-        caption={caption}
-        reviewable={reviewable}
-        classification={classification}
-        onReviewed={onReviewed}
-      />
+      {result.items.length === 0 ? (
+        <p className="muted">There are none here.</p>
+      ) : (
+        <FindingsReviewTable findings={result.items} caption={caption} />
+      )}
       {result.total > PAGE_SIZE ? (
         <Pager page={result.page} pages={Math.ceil(result.total / PAGE_SIZE)} total={result.total} onPage={onPage} />
       ) : null}
@@ -165,36 +133,26 @@ function FindingsPageView({
 
 /**
  * A page at a time of Findings to review, the most severe first, each with its own Confirm and Dispute: the members still
- * in one Bulk-set batch, or, with no batch, every Finding whose current proposal was made alone (or that has none).
- * `version` changes after every review on the screen, and the page is read again then.
+ * in one Bulk-set batch, or, with no batch, every Finding whose current proposal was made alone (or that has none). It
+ * is read again on every refresh of the review screen.
  */
 export function ReviewFindingsList({
-  submissionId,
   batchId,
   heading,
   caption,
-  reviewable,
-  classification,
-  version,
-  onReviewed,
 }: {
-  submissionId: string;
   batchId: string | null;
   /** The heading, followed by how many Findings there are. */
   heading: string;
   caption: string;
-  reviewable: boolean;
-  classification: string;
-  version: number;
-  onReviewed: () => void;
 }) {
+  const { submissionId, refreshKey } = useReviewSession();
   const [page, setPage] = useState(0);
   const load = useCallback(
     () => fetchFindings(submissionId, filterOf(batchId), page, PAGE_SIZE),
-    // version is a dependency so that a review anywhere on the screen reads the page again.
-    [submissionId, batchId, page, version],
+    [submissionId, batchId, page],
   );
-  const findings = useResource(load);
+  const findings = useResource(load, refreshKey);
   const result = findings.data;
   return (
     <>
@@ -204,18 +162,8 @@ export function ReviewFindingsList({
         </strong>
       </p>
       {findings.error ? <ErrorPanel problem={findings.error.problem} /> : null}
-      {result ? (
-        <FindingsPageView
-          result={result}
-          caption={caption}
-          reviewable={reviewable}
-          classification={classification}
-          onReviewed={onReviewed}
-          onPage={setPage}
-        />
-      ) : (
-        <p className="muted">Loading the Findings…</p>
-      )}
+      {findings.loading && !result ? <p className="muted">Loading the Findings…</p> : null}
+      {result ? <FindingsPageView result={result} caption={caption} onPage={setPage} /> : null}
     </>
   );
 }

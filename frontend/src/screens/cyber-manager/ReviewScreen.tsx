@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { fetchScanReportModes, reviewScanReport, type ScanReportMode } from "../../api/scanReports.ts";
 import { fetchSubmission, type Submission } from "../../api/submissions.ts";
 import { AppLink } from "../../app/AppLink.tsx";
@@ -12,21 +12,11 @@ import { LatestReview } from "./LatestReview.tsx";
 import { CM_INBOX_PATH } from "./paths.ts";
 import { ReviewFindingsList } from "./ReviewFindingsList.tsx";
 import { ReviewForm } from "./ReviewForm.tsx";
+import { ReviewSessionContext, useReviewSession, type ReviewSession } from "./reviewSession.ts";
 
 /** The Scan Reports marked not applicable: each justification, clearly marked, with its review. */
-function NotApplicableSection({
-  submissionId,
-  reports,
-  reviewable,
-  classification,
-  onReviewed,
-}: {
-  submissionId: string;
-  reports: readonly ScanReportMode[];
-  reviewable: boolean;
-  classification: string;
-  onReviewed: () => void;
-}) {
+function NotApplicableSection({ reports }: { reports: readonly ScanReportMode[] }) {
+  const { submissionId, reviewable, classification, reviewed } = useReviewSession();
   const notApplicable = reports.filter((report) => report.mode === "NOT_APPLICABLE");
   return (
     <section className="card" aria-labelledby="review-not-applicable">
@@ -51,7 +41,7 @@ function NotApplicableSection({
                 subject={`the not-applicable justification of ${reportTitle(report.reportType)}`}
                 classification={classification}
                 send={(input) => reviewScanReport(submissionId, report.reportType, report.justificationVersion, input)}
-                onReviewed={onReviewed}
+                onReviewed={reviewed}
               />
             ) : null}
           </div>
@@ -87,58 +77,37 @@ function SubmissionSummary({ submission }: { submission: Submission }) {
 export function ReviewScreen({ submissionId, classification }: { submissionId: string; classification: string }) {
   const loadSubmission = useCallback(() => fetchSubmission(submissionId), [submissionId]);
   const loadReports = useCallback(() => fetchScanReportModes(submissionId), [submissionId]);
-  const submission = useResource(loadSubmission);
-  const reports = useResource(loadReports);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const submission = useResource(loadSubmission, refreshKey);
+  const reports = useResource(loadReports, refreshKey);
   const reviewable = submission.data?.state === "IN_REVIEW";
-  const reloadReports = reports.reload;
-  const reloadSubmission = submission.reload;
-  // Goes up after every review, so the batches and every list of Findings are read again: a batch review changes its
-  // members, and a member reviewed alone changes its batch's counts.
-  const [version, setVersion] = useState(0);
-  const reviewed = useCallback(() => {
-    reloadReports();
-    reloadSubmission();
-    setVersion((n) => n + 1);
-  }, [reloadReports, reloadSubmission]);
+  const reviewed = useCallback(() => setRefreshKey((n) => n + 1), []);
+  const session = useMemo<ReviewSession>(
+    () => ({ submissionId, reviewable, classification, refreshKey, reviewed }),
+    [submissionId, reviewable, classification, refreshKey, reviewed],
+  );
 
   return (
-    <div className="card">
-      <p>
-        <AppLink path={CM_INBOX_PATH}>Back to your inbox</AppLink>
-      </p>
-      <h2>Review VA Submission</h2>
-      {submission.error ? <ErrorPanel problem={submission.error.problem} /> : null}
-      {submission.data ? <SubmissionSummary submission={submission.data} /> : null}
-      {reports.error ? <ErrorPanel problem={reports.error.problem} /> : null}
-      {reports.data ? (
-        <NotApplicableSection
-          submissionId={submissionId}
-          reports={reports.data}
-          reviewable={reviewable}
-          classification={classification}
-          onReviewed={reviewed}
-        />
-      ) : null}
-      <BatchesSection
-        submissionId={submissionId}
-        reviewable={reviewable}
-        classification={classification}
-        version={version}
-        onReviewed={reviewed}
-      />
-      <section className="card" aria-labelledby="review-findings">
-        <h3 id="review-findings">Findings proposed one by one</h3>
-        <ReviewFindingsList
-          submissionId={submissionId}
-          batchId={null}
-          heading="Findings not in a batch"
-          caption="Findings to review one by one, the most severe first"
-          reviewable={reviewable}
-          classification={classification}
-          version={version}
-          onReviewed={reviewed}
-        />
-      </section>
-    </div>
+    <ReviewSessionContext.Provider value={session}>
+      <div className="card">
+        <p>
+          <AppLink path={CM_INBOX_PATH}>Back to your inbox</AppLink>
+        </p>
+        <h2>Review VA Submission</h2>
+        {submission.error ? <ErrorPanel problem={submission.error.problem} /> : null}
+        {submission.data ? <SubmissionSummary submission={submission.data} /> : null}
+        {reports.error ? <ErrorPanel problem={reports.error.problem} /> : null}
+        {reports.data ? <NotApplicableSection reports={reports.data} /> : null}
+        <BatchesSection />
+        <section className="card" aria-labelledby="review-findings">
+          <h3 id="review-findings">Findings proposed one by one</h3>
+          <ReviewFindingsList
+            batchId={null}
+            heading="Findings not in a batch"
+            caption="Findings to review one by one, the most severe first"
+          />
+        </section>
+      </div>
+    </ReviewSessionContext.Provider>
   );
 }
