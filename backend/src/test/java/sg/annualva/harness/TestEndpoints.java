@@ -497,8 +497,11 @@ public class TestEndpoints {
         public Map<String, String> standAside() {
             Map<String, String> states = new java.util.LinkedHashMap<>();
             jdbc.sql("UPDATE va_submission s SET state = 'ENDORSED' FROM (SELECT id, state FROM va_submission "
-                    + "WHERE state NOT IN ('ENDORSED', 'EXEMPTED', 'WITHDRAWN', 'NOT_ENDORSED') FOR UPDATE) old "
-                    + "WHERE s.id = old.id RETURNING s.id, old.state")
+                    + "WHERE state = ANY(CAST(:inFlight AS text[])) FOR UPDATE) old WHERE s.id = old.id "
+                    + "RETURNING s.id, old.state")
+                    .param("inFlight", java.util.Arrays.stream(sg.annualva.submission.SubmissionState.values())
+                            .filter(sg.annualva.submission.SubmissionState::inFlight).map(Enum::name)
+                            .toArray(String[]::new))
                     .query(rs -> {
                         states.put(rs.getString("id"), rs.getString("state"));
                     });

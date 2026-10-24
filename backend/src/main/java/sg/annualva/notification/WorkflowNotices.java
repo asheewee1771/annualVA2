@@ -66,8 +66,13 @@ class WorkflowNotices {
         UUID id = event.submissionId();
         handledBy(event.from(), event.to()).forEach(awaits -> notifications.handled(id, awaits, event.actorId(),
                 event.at()));
-        // A decision on the request; a withdrawal by the Register (ticket 43) is told below like any other.
-        if (event.from() == SubmissionState.EXEMPTION_REQUESTED && event.to() != SubmissionState.WITHDRAWN) {
+        if (event.to() == SubmissionState.WITHDRAWN) {
+            // The Register retired the System (ticket 43), whatever state the VA Submission was in, so its SMO/Tech Lead
+            // lost it: their inbox is the link, as on a transfer.
+            notifications.toSmo(notice(event, NoticeAction.WITHDRAWN, Links.SMO_INBOX));
+            return;
+        }
+        if (event.from() == SubmissionState.EXEMPTION_REQUESTED) {
             NoticeAction decided = event.to() == SubmissionState.EXEMPTED ? NoticeAction.EXEMPTION_APPROVED
                     : NoticeAction.EXEMPTION_REJECTED;
             notifications.toSmo(notice(event, decided, Links.forSmo(event.to(), id)));
@@ -80,8 +85,6 @@ class WorkflowNotices {
                     Awaits.ENDORSEMENT);
             case EXEMPTION_REQUESTED -> notifications.toVaPocs(
                     notice(event, NoticeAction.DECIDE_EXEMPTION, Links.EXEMPTION_QUEUE), Awaits.EXEMPTION);
-            // The Register retired the System, so its SMO/Tech Lead lost it: their inbox is the link, as on a transfer.
-            case WITHDRAWN -> notifications.toSmo(notice(event, NoticeAction.WITHDRAWN, Links.SMO_INBOX));
             // Endorsed is an FYI for the weekly digest (story 93, Release 2); the other states arrive with their tickets.
             default -> { }
         }

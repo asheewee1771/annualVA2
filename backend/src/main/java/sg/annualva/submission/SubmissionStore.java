@@ -52,11 +52,12 @@ class SubmissionStore {
     record Finished(UUID id, UUID systemId, @Nullable String from) {}
 
     /**
-     * An in-flight VA Submission (not in a final state) of a System a Register change touches, as the table holds it.
+     * An in-flight VA Submission (started and not in a final state, {@link SubmissionState#inFlight}) of a System a
+     * Register change touches, as the table holds it.
      *
      * @param state as text, so a state no constant names yet can still be read
      */
-    record Unfinished(UUID id, UUID systemId, int cycleYear, String state) {}
+    record InFlight(UUID id, UUID systemId, int cycleYear, String state) {}
 
     /** A person who acted at a step of a VA Submission, by their lower-case email (for the Register's preview). */
     record ActedBy(UUID submissionId, SubmissionStep step, String email) {}
@@ -208,12 +209,12 @@ class SubmissionStore {
             + "ON CONFLICT (system_id, cycle_year) DO NOTHING RETURNING id, system_id";
 
     /** The in-flight VA Submissions of these Systems, in id order, in any Cycle (ADR 0049). */
-    private static final String UNFINISHED =
+    private static final String IN_FLIGHT =
             "SELECT id, system_id, cycle_year, state FROM va_submission WHERE system_id = ANY(CAST(:systems AS uuid[])) "
-            + "AND state = ANY(CAST(:unfinished AS text[])) ORDER BY id";
+            + "AND state = ANY(CAST(:inFlight AS text[])) ORDER BY id";
 
     /** The same, each row held as a move holds it, in id order, until the transaction ends (a Register apply). */
-    private static final String HOLD_UNFINISHED = UNFINISHED + " FOR NO KEY UPDATE";
+    private static final String HOLD_IN_FLIGHT = IN_FLIGHT + " FOR NO KEY UPDATE";
 
     /** Who acted at which step of these VA Submissions, by lower-case email. */
     private static final String ACTED_BY =
@@ -226,7 +227,7 @@ class SubmissionStore {
      */
     private static final String WITHDRAW =
             "UPDATE va_submission s SET state = :state, " + OVERDUE_AFTER_MOVE + " FROM (SELECT id, state FROM va_submission "
-            + "WHERE id = ANY(CAST(:submissions AS uuid[])) AND state = ANY(CAST(:unfinished AS text[])) "
+            + "WHERE id = ANY(CAST(:submissions AS uuid[])) AND state = ANY(CAST(:inFlight AS text[])) "
             + "ORDER BY id FOR NO KEY UPDATE) due WHERE s.id = due.id RETURNING s.id, s.system_id, due.state AS state_from";
 
     /**
@@ -638,22 +639,22 @@ class SubmissionStore {
     }
 
     /** The in-flight VA Submissions of these Systems. */
-    List<Unfinished> unfinished(Collection<UUID> systemIds) {
-        return unfinished(UNFINISHED, systemIds);
+    List<InFlight> inFlight(Collection<UUID> systemIds) {
+        return inFlight(IN_FLIGHT, systemIds);
     }
 
     /** The same, each held as a move holds it until the transaction ends. */
-    List<Unfinished> holdUnfinished(Collection<UUID> systemIds) {
-        return unfinished(HOLD_UNFINISHED, systemIds);
+    List<InFlight> holdInFlight(Collection<UUID> systemIds) {
+        return inFlight(HOLD_IN_FLIGHT, systemIds);
     }
 
-    private List<Unfinished> unfinished(String sql, Collection<UUID> systemIds) {
+    private List<InFlight> inFlight(String sql, Collection<UUID> systemIds) {
         if (systemIds.isEmpty()) {
             return List.of();
         }
         return jdbc.sql(sql).param("systems", ids(systemIds))
-                .param("unfinished", inFlightStates())
-                .query((rs, row) -> new Unfinished(rs.getObject("id", UUID.class), rs.getObject("system_id", UUID.class),
+                .param("inFlight", inFlightStates())
+                .query((rs, row) -> new InFlight(rs.getObject("id", UUID.class), rs.getObject("system_id", UUID.class),
                         rs.getInt("cycle_year"), rs.getString("state")))
                 .list();
     }
@@ -677,7 +678,7 @@ class SubmissionStore {
         return jdbc.sql(WITHDRAW)
                 .param("state", SubmissionState.WITHDRAWN.name())
                 .param("submissions", ids(submissionIds))
-                .param("unfinished", inFlightStates())
+                .param("inFlight", inFlightStates())
                 .param("today", today)
                 .query((rs, row) -> new Finished(rs.getObject("id", UUID.class), rs.getObject("system_id", UUID.class),
                         rs.getString("state_from")))

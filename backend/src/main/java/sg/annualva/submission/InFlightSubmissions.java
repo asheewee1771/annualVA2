@@ -57,7 +57,7 @@ class InFlightSubmissions implements InFlightWork {
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
     public Map<UUID, List<Work>> of(Collection<UUID> systemIds) {
-        return work(store.unfinished(systemIds));
+        return work(store.inFlight(systemIds));
     }
 
     /**
@@ -67,8 +67,12 @@ class InFlightSubmissions implements InFlightWork {
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
     public Map<UUID, List<Work>> hold(Collection<UUID> systemIds, Instant now) {
+        if (systemIds.isEmpty()) {
+            // Nothing is retired or updated (an apply of additions only), so no work can be touched.
+            return Map.of();
+        }
         calendar.cyclesOn(calendar.dateOf(now)).forEach(cycle -> store.lockCycle(cycle.year()));
-        return work(store.holdUnfinished(systemIds));
+        return work(store.holdInFlight(systemIds));
     }
 
     @Override
@@ -89,13 +93,13 @@ class InFlightSubmissions implements InFlightWork {
         return withdrawn.size();
     }
 
-    private Map<UUID, List<Work>> work(List<SubmissionStore.Unfinished> unfinished) {
+    private Map<UUID, List<Work>> work(List<SubmissionStore.InFlight> inFlight) {
         Map<UUID, Map<SubmissionStep, Set<String>>> acted = new HashMap<>();
-        store.actedBy(unfinished.stream().map(SubmissionStore.Unfinished::id).toList())
+        store.actedBy(inFlight.stream().map(SubmissionStore.InFlight::id).toList())
                 .forEach(item -> acted.computeIfAbsent(item.submissionId(), key -> new HashMap<>())
                         .computeIfAbsent(item.step(), key -> new HashSet<>()).add(item.email()));
         Map<UUID, List<Work>> bySystem = new LinkedHashMap<>();
-        for (SubmissionStore.Unfinished item : unfinished) {
+        for (SubmissionStore.InFlight item : inFlight) {
             Map<SubmissionStep, Set<String>> steps = acted.getOrDefault(item.id(), Map.of());
             bySystem.computeIfAbsent(item.systemId(), key -> new ArrayList<>()).add(new Work(item.id(), item.cycleYear(),
                     item.state(), readiness.filesScanning(item.id()), steps.getOrDefault(SubmissionStep.SUBMIT, Set.of()),
