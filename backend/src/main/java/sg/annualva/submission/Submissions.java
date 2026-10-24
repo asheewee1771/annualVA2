@@ -21,6 +21,7 @@ import sg.annualva.access.AccessGuard;
 import sg.annualva.access.AuditActor;
 import sg.annualva.access.CurrentUser;
 import sg.annualva.access.Need;
+import sg.annualva.access.StepUp;
 import sg.annualva.audit.AuditAction;
 import sg.annualva.audit.AuditEvent;
 import sg.annualva.audit.AuditLog;
@@ -225,6 +226,9 @@ public class Submissions {
             UUID id, SubmissionStep step, @Nullable String comment, UUID returnedBy, Instant returnedAt,
             List<ReviewProgress.DisputedFinding> disputedFindings, List<ReviewProgress.DisputedReport> disputedReports) {}
 
+    /** The fixed code of the endorse step-up (IM8 ac-2): the intent a fresh sign-in is started for. */
+    static final String ENDORSE_INTENT = "submission-endorse";
+
     private static final String NOT_ALLOWED_NOW = "invalid-transition";
 
     private final SubmissionStore store;
@@ -239,10 +243,11 @@ public class Submissions {
     private final ApplicationEventPublisher events;
     private final SegregationOfDuties sod;
     private final ReviewProgress progress;
+    private final StepUp stepUp;
 
     Submissions(SubmissionStore store, RegisterSystems register, CycleCalendar calendar, AccessGuard guard,
             CurrentUser user, AuditActor actor, AuditLog audit, Clock clock, SubmitReadiness readiness,
-            ApplicationEventPublisher events, SegregationOfDuties sod, ReviewProgress progress) {
+            ApplicationEventPublisher events, SegregationOfDuties sod, ReviewProgress progress, StepUp stepUp) {
         this.store = store;
         this.register = register;
         this.calendar = calendar;
@@ -255,6 +260,7 @@ public class Submissions {
         this.events = events;
         this.sod = sod;
         this.progress = progress;
+        this.stepUp = stepUp;
     }
 
     /**
@@ -482,6 +488,40 @@ public class Submissions {
     }
 
     /**
+     * Endorses a VA Submission Awaiting Endorsement (stories 65, 67 and 70), as a VA POC. It is a step-up action (IM8
+     * ac-2), so it is refused first unless the caller signed in again within the freshness window (403
+     * {@code step-up-required}). Then ownership (any VA POC may endorse any System's; one that does not exist is "not
+     * found"); then, with the VA Submission's row held exclusively, segregation of duties (story 70: a VA POC who acted
+     * at another step of it, or whom the Register names as its System's SMO/Tech Lead or Cyber Manager, leaves it to the
+     * other VA POC; 403 {@code sod-conflict}) and the state (409 {@code invalid-transition}). On success it is Endorsed,
+     * marked Endorsed Late when the Quarter's last day has passed (story 67), the caller is recorded at the endorsing
+     * step, the endorsement is audited and a {@link SubmissionEvent} is published for the FYI notification.
+     *
+     * @throws ResourceNotFoundException for a VA Submission that does not exist
+     * @throws RejectedRequestException 403 {@code sod-conflict}; 409 {@code invalid-transition} when it is not Awaiting
+     *     Endorsement
+     */
+    @Transactional
+    public Submission endorse(UUID id) {
+        stepUp.require(ENDORSE_INTENT);
+        SubmissionStore.Located located = store.locate(id).orElseThrow(ResourceNotFoundException::new);
+        guard.requireSystem(located.systemId(), Need.ENDORSE);
+        SubmissionStore.Located held = store.lockForMove(id).orElseThrow(ResourceNotFoundException::new);
+        AuditEvent refused = actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_ENDORSED, AuditOutcome.REFUSED))
+                .onSystem(held.systemId()).onSubmission(id);
+        sod.require(SubmissionStep.ENDORSE, held.systemId(), id, refused);
+        if (!SubmissionState.AWAITING_ENDORSEMENT.name().equals(held.state())) {
+            audit.recordIndependently(refused.with(DetailKey.REASON, "state-not-endorsable"));
+            throw new RejectedRequestException(HttpStatus.CONFLICT, NOT_ALLOWED_NOW,
+                    "This VA Submission can be endorsed only while it is Awaiting Endorsement.");
+        }
+        Instant now = clock.instant();
+        store.recordParticipation(id, user.id(), SubmissionStep.ENDORSE, now);
+        return moved(id, held.systemId(), SubmissionState.AWAITING_ENDORSEMENT, SubmissionState.ENDORSED, now,
+                AuditEvent.of(AuditAction.SUBMISSION_ENDORSED, AuditOutcome.SUCCESS));
+    }
+
+    /**
      * The returns of a VA Submission, the latest first, for anyone who may see its System (one the caller may not see is
      * "not found", ADR 0013). A return carries what a person wrote, so every read is audited as
      * {@code SUBMISSION_RETURNS_VIEWED}, the owner's included, with ids only.
@@ -520,20 +560,30 @@ public class Submissions {
     }
 
     /**
-     * Moves a VA Submission held by {@link #atReviewStep} out of In Review: the state (and the Overdue flag with it), the
-     * audit entry {@code success} with the states, and the event the notifications listen for after the commit. Only a
-     * VA Submission held exclusively is moved, so a move never overtakes a review in progress.
+     * Moves a VA Submission held by {@link #atReviewStep} out of In Review. Only a VA Submission held exclusively is
+     * moved, so a move never overtakes a review in progress.
      */
     private Submission movedOutOfReview(ReviewTarget target, SubmissionState to, Instant now, AuditEvent success) {
         if (target.hold != Hold.EXCLUSIVE) {
             throw new IllegalStateException("a move out of In Review holds the VA Submission exclusively (ADR 0039)");
         }
-        UUID id = target.submissionId();
+        return moved(target.submissionId(), target.systemId(), SubmissionState.IN_REVIEW, to, now, success);
+    }
+
+    /**
+     * Moves a VA Submission whose row the caller holds exclusively from one state to another: the state, with the
+     * Overdue flag and the milestone it reaches ({@link SubmissionStore#moved}); the audit entry {@code success} with the
+     * states (and, for an endorsement, whether it was late); and the event the notifications listen for after the commit.
+     */
+    private Submission moved(UUID id, UUID systemId, SubmissionState from, SubmissionState to, Instant now,
+            AuditEvent success) {
         store.moved(id, to, now, calendar.dateOf(now));
-        audit.record(actor.attribute(success).onSystem(target.systemId()).onSubmission(id)
-                .with(DetailKey.STATE_FROM, SubmissionState.IN_REVIEW.name()).with(DetailKey.STATE_TO, to.name()));
-        events.publishEvent(new SubmissionEvent(id, target.systemId(), SubmissionState.IN_REVIEW, to, user.id(), now));
-        return view(id);
+        Submission after = view(id);
+        AuditEvent entry = actor.attribute(success).onSystem(systemId).onSubmission(id)
+                .with(DetailKey.STATE_FROM, from.name()).with(DetailKey.STATE_TO, to.name());
+        audit.record(to == SubmissionState.ENDORSED ? entry.with(DetailKey.ENDORSED_LATE, after.endorsedLate()) : entry);
+        events.publishEvent(new SubmissionEvent(id, systemId, from, to, user.id(), now));
+        return after;
     }
 
     /**

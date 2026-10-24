@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import sg.annualva.access.AccessGuard;
 import sg.annualva.access.CurrentUser;
+import sg.annualva.access.Need;
 import sg.annualva.access.SystemScope;
 import sg.annualva.audit.AuditEvent;
 import sg.annualva.audit.AuditLog;
@@ -22,8 +23,9 @@ import sg.annualva.web.RejectedRequestException;
  * submission_participation}), or when the Register assigns them to another step of its System even before they act: the
  * System's SMO/Tech Lead counts as its submitter and its Cyber Manager as its reviewer ({@link SubmissionStep#need()}).
  *
- * <p>Every command at a step calls {@link #require} once, before it records the step: start, submit and the reviews today,
- * and every later step command (return, pass to endorsement, endorse). {@code ArchitectureTest} keeps it so: a method that
+ * <p>Every command at a step calls {@link #require} once, before it records the step: start, submit, the reviews, the
+ * return, the pass to endorsement and the endorsement. A VA POC is assigned to no step by their role and counts at the
+ * endorsing step only once they act there (ADR 0039 item 5). {@code ArchitectureTest} keeps it so: a method that
  * records a step must call {@link #require}. The read models mark the same VA Submissions through {@link #conflictedAt},
  * so a marker and a refusal never disagree.
  */
@@ -73,22 +75,26 @@ class SegregationOfDuties {
     /**
      * The Systems the caller is assigned to at a step other than this one. A scope over every System (a VA POC's) is not an
      * assignment: holding the VA POC role does not assign a person to the endorsing step of any System; only endorsing,
-     * returning or deciding an Exemption on a VA Submission counts, as {@code submission_participation} (ADR 0039 item 5).
-     * Ticket 34, which adds the endorsing step, gives it no Register assignment; until then meeting such a scope here is a
-     * programming error, not a silent "assigned to nothing".
+     * returning or deciding an Exemption on a VA Submission counts, as {@code submission_participation} (ADR 0039 item 5,
+     * ADR 0040). So the endorsing step has no Register assignment ({@link SubmissionStep#assignedBy()}), and meeting such
+     * a scope here is a programming error, not a silent "assigned to nothing".
      */
     private Set<UUID> assignedAtAnotherStep(SubmissionStep step) {
         Set<UUID> systems = new HashSet<>();
         for (SubmissionStep other : SubmissionStep.values()) {
             if (other != step) {
-                SystemScope scope = guard.scope(other.need());
-                if (scope.all()) {
-                    throw new IllegalStateException("a step assigned by a scope over every System counts by acting only "
-                            + "(ADR 0039 item 5): give it no Register assignment");
-                }
-                systems.addAll(scope.ids());
+                other.assignedBy().ifPresent(need -> systems.addAll(assignedSystems(need)));
             }
         }
         return systems;
+    }
+
+    private Set<UUID> assignedSystems(Need need) {
+        SystemScope scope = guard.scope(need);
+        if (scope.all()) {
+            throw new IllegalStateException("a step assigned by a scope over every System counts by acting only "
+                    + "(ADR 0039 item 5): give it no Register assignment");
+        }
+        return scope.ids();
     }
 }

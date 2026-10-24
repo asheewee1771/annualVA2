@@ -161,13 +161,19 @@ class SubmissionStore {
             + "ORDER BY id FOR NO KEY UPDATE SKIP LOCKED) due WHERE s.id = due.id RETURNING s.id, s.system_id, s.state";
 
     /**
-     * A move out of In Review takes the flag with it ({@link #OVERDUE_AFTER_MOVE}). A pass to endorsement also records when
-     * the review ended ({@code passed_to_endorsement_at}, V133, the Cycle matrix's "reviewed"); a return leaves it as it
-     * was.
+     * A move out of In Review or Awaiting Endorsement takes the flag with it ({@link #OVERDUE_AFTER_MOVE}) and records the
+     * milestone it reaches (V133, the Cycle matrix): a pass to endorsement when the review ended
+     * ({@code passed_to_endorsement_at}); an endorsement when it was endorsed ({@code endorsed_at}) and whether that was
+     * late, which is whether the window the old state waited on, the Quarter's last day, had passed by the Overdue rule
+     * (V20; an {@code UPDATE} reads the old state). A return leaves both as they were.
      */
     private static final String MOVED =
-            "UPDATE va_submission SET state = :state, passed_to_endorsement_at = CASE WHEN :state = '"
-            + SubmissionState.AWAITING_ENDORSEMENT.name() + "' THEN :now ELSE passed_to_endorsement_at END, "
+            "UPDATE va_submission SET state = :state, "
+            + "passed_to_endorsement_at = CASE WHEN :state = '" + SubmissionState.AWAITING_ENDORSEMENT.name()
+            + "' THEN :now ELSE passed_to_endorsement_at END, "
+            + "endorsed_at = CASE WHEN :state = '" + SubmissionState.ENDORSED.name() + "' THEN :now ELSE endorsed_at END, "
+            + "endorsed_late = CASE WHEN :state = '" + SubmissionState.ENDORSED.name() + "' THEN " + windowPassed("state")
+            + " ELSE endorsed_late END, "
             + OVERDUE_AFTER_MOVE + " WHERE id = :id";
 
     private static final String INSERT_RETURN =
@@ -278,7 +284,10 @@ class SubmissionStore {
                 .param("today", today).update();
     }
 
-    /** Moves a VA Submission whose row the caller holds ({@link #lockForMove}) out of In Review now, on this business date. */
+    /**
+     * Moves a VA Submission whose row the caller holds ({@link #lockForMove}) out of In Review or Awaiting Endorsement now,
+     * on this business date.
+     */
     void moved(UUID id, SubmissionState state, Instant now, LocalDate today) {
         jdbc.sql(MOVED).param("id", id).param("state", state.name()).param("now", utc(now)).param("today", today)
                 .update();

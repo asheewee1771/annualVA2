@@ -33,7 +33,7 @@ class VaPocBoardTest extends CyberManagerSeam1 {
         assertThat(systemIds(draft)).containsExactly("SYS-P3");
         assertThat(draft.get(0).get("confirmed").asInt()).isEqualTo(1);
         assertThat(draft.get(0).get("awaitingReview").asInt()).isEqualTo(1);
-        assertThat(draft.get(0).get("sodConflict").asBoolean()).as("no endorsing step is recorded yet").isFalse();
+        assertThat(draft.get(0).get("sodConflict").asBoolean()).as("the VA POC neither acted on it nor is assigned to it").isFalse();
         assertThat(board.toString()).as("another Quarter").doesNotContain("SYS-P4");
         assertThat(systemIds(column(board(vaPoc(), "?quarter=4"), "NOT_STARTED")))
                 .containsExactly("SYS-P4");

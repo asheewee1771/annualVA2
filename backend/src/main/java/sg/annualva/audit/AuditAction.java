@@ -196,7 +196,14 @@ public enum AuditAction {
      */
     SUBMISSION_PASSED("submission-passed-to-endorsement", "database"),
     /** Someone read the returns of a VA Submission, which carry what a person wrote. About the System and the VA Submission. */
-    SUBMISSION_RETURNS_VIEWED("submission-returns-viewed", "database");
+    SUBMISSION_RETURNS_VIEWED("submission-returns-viewed", "database"),
+    /**
+     * A VA POC endorsed a VA Submission Awaiting Endorsement (stories 65 and 67; SUCCESS, with {@code state_from},
+     * {@code state_to} and whether it was {@code endorsed_late}), or was refused: segregation of duties, or it is not
+     * Awaiting Endorsement (REFUSED, with a fixed reason). A refusal for want of a fresh sign-in is the
+     * {@code REQUEST_REFUSED} entry of every step-up. About the System and the VA Submission.
+     */
+    SUBMISSION_ENDORSED("submission-endorsed", "database");
 
     private final String ecs;
     private final String category;
