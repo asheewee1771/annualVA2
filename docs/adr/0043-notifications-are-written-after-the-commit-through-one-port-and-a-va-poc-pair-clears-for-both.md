@@ -32,3 +32,5 @@ Consequences:
 - The listeners run in the request thread after the commit, so the response waits for them; a slow notification write slows the command's response but never undoes it.
 
 Amends ADR 0032 item 3 and ADR 0033 (the events they publish now carry the due date; the sweep publishes one), and ADR 0018 (the apply publishes a change event for a move or a transfer).
+
+Amended by ADR 0048: a withdrawal is heard as a `SubmissionEvent` to Withdrawn, not a `SystemChangeEvent`, and tells the SMO/Tech Lead (`WITHDRAWN`).
