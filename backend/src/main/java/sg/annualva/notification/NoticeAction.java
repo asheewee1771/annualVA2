@@ -39,7 +39,12 @@ public enum NoticeAction {
      * resubmission comes back to them, whoever passed it.
      */
     VA_POC_RETURNED("A VA POC returned the VA Submission from endorsement: re-review what changes once it is submitted "
-            + "again.");
+            + "again."),
+    /**
+     * To the SMO/Tech Lead the Register last named, once a Register apply retired the System and its in-flight VA
+     * Submission became Withdrawn (ticket 43, story 94): nothing more is due from them.
+     */
+    WITHDRAWN("The System Register retired this System, so its VA Submission is Withdrawn: nothing more is due.");
 
     private final String message;
 

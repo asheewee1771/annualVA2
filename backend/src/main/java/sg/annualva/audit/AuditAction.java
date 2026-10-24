@@ -232,6 +232,12 @@ public enum AuditAction {
      */
     SUBMISSION_NOT_ENDORSED("submission-not-endorsed", "database"),
     /**
+     * A Register apply retired a System, and its in-flight VA Submission, confirmed by the VA POC, became Withdrawn (story 7,
+     * ticket 43; SUCCESS, with {@code state_from}, {@code state_to} and the {@code preview_id}). Attributed to the VA POC
+     * who applied the preview. About the System and the VA Submission.
+     */
+    SUBMISSION_WITHDRAWN("submission-withdrawn", "database"),
+    /**
      * A VA POC asked for an export (ticket 44, stories 81 and 84; SUCCESS, with the {@code export_id}, the
      * {@code export_type}, the {@code format}, the {@code classification}, the {@code cycle}, the {@code quarter} when it
      * covers one, and the {@code count} of Systems it lists). A refusal for want of a fresh sign-in is the

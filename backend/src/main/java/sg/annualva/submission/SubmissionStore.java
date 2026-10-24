@@ -45,10 +45,21 @@ class SubmissionStore {
     record Flagged(@Nullable UUID id, UUID systemId, String state, @Nullable LocalDate dueOn) {}
 
     /**
-     * What a Cycle's close has just made Not Endorsed: a VA Submission, with the state it was in as the table held it, or a
-     * System that had none ({@code from} null), now with a Not Endorsed row of its own ({@code id}).
+     * What a statement has just moved to a final state (a Cycle's close to Not Endorsed, a Register apply to Withdrawn): a
+     * VA Submission, with the state it was in as the table held it, or, for a close, a System that had none ({@code from}
+     * null), now with a Not Endorsed row of its own ({@code id}).
      */
-    record NotEndorsed(UUID id, UUID systemId, @Nullable String from) {}
+    record Finished(UUID id, UUID systemId, @Nullable String from) {}
+
+    /**
+     * An in-flight VA Submission (not in a final state) of a System a Register change touches, as the table holds it.
+     *
+     * @param state as text, so a state no constant names yet can still be read
+     */
+    record Unfinished(UUID id, UUID systemId, int cycleYear, String state) {}
+
+    /** A person who acted at a step of a VA Submission, by their lower-case email (for the Register's preview). */
+    record ActedBy(UUID submissionId, SubmissionStep step, String email) {}
 
     /** How a System with no VA Submission is named to the Overdue rule and in an audit entry. */
     static final String NOT_STARTED = "NOT_STARTED";
@@ -179,6 +190,39 @@ class SubmissionStore {
             + "SELECT candidate, :cycle, :quarter, :state, :submitDue, :reviewDue, :endorseDue "
             + "FROM unnest(CAST(:systems AS uuid[])) AS candidate ORDER BY candidate "
             + "ON CONFLICT (system_id, cycle_year) DO NOTHING RETURNING id, system_id";
+
+    /** The in-flight VA Submissions of these Systems, in id order, in any Cycle (ADR 0048). */
+    private static final String UNFINISHED =
+            "SELECT id, system_id, cycle_year, state FROM va_submission WHERE system_id = ANY(CAST(:systems AS uuid[])) "
+            + "AND state = ANY(CAST(:unfinished AS text[])) ORDER BY id";
+
+    /** The same, each row held as a move holds it, in id order, until the transaction ends (a Register apply). */
+    private static final String HOLD_UNFINISHED = UNFINISHED + " FOR NO KEY UPDATE";
+
+    /** Who acted at which step of these VA Submissions, by lower-case email. */
+    private static final String ACTED_BY =
+            "SELECT p.submission_id, p.step, lower(u.email::text) AS email FROM submission_participation p "
+            + "JOIN app_user u ON u.id = p.user_id WHERE p.submission_id = ANY(CAST(:submissions AS uuid[]))";
+
+    /**
+     * A Register apply's withdraw: each of these VA Submissions still in flight becomes Withdrawn, and the flag with it
+     * ({@link #OVERDUE_AFTER_MOVE}: a final state waits on no window). The rows are held in id order as a move holds them.
+     */
+    private static final String WITHDRAW =
+            "UPDATE va_submission s SET state = :state, " + OVERDUE_AFTER_MOVE + " FROM (SELECT id, state FROM va_submission "
+            + "WHERE id = ANY(CAST(:submissions AS uuid[])) AND state = ANY(CAST(:unfinished AS text[])) "
+            + "ORDER BY id FOR NO KEY UPDATE) due WHERE s.id = due.id RETURNING s.id, s.system_id, due.state AS state_from";
+
+    /**
+     * A Not Started System moved to another Quarter: its flag in the Cycle follows the new Quarter's Submission Window by
+     * the one rule (V20), so it is cleared while that window has not passed. Only a System still Not Started there: a
+     * started one's flag went with its VA Submission, and its row stays as the record.
+     */
+    private static final String CLEAR_NOT_STARTED =
+            "DELETE FROM not_started_overdue WHERE system_id = :system AND cycle_year = :cycle AND NOT "
+            + windowPassed("'" + NOT_STARTED + "'", "CAST(:submitDue AS date)", "CAST(:reviewDue AS date)",
+                    "CAST(:endorseDue AS date)")
+            + " AND NOT EXISTS (SELECT 1 FROM va_submission s WHERE s.system_id = :system AND s.cycle_year = :cycle)";
 
     /**
      * A write to what the SMO/Tech Lead prepares holds the VA Submission's row shared until it commits, so a submit (which
@@ -540,36 +584,93 @@ class SubmissionStore {
         jdbc.sql(LOCK_CYCLE_SHARED).param("cycle", cycleYear).query().singleRow();
     }
 
-    /** Holds the VA Cycle against every start and every other close until the transaction ends, for a close. */
-    void lockCycleForClose(int cycleYear) {
+    /**
+     * Holds the VA Cycle against every start, every close and every Register apply until the transaction ends, for a close
+     * or an apply. The locks are always taken in the order Register apply lock, Cycle lock, VA Submission rows (ADR 0044).
+     */
+    void lockCycle(int cycleYear) {
         jdbc.sql(LOCK_CYCLE).param("cycle", cycleYear).query().singleRow();
+    }
+
+    /** The in-flight VA Submissions of these Systems; held as a move holds them when {@code hold} says so. */
+    List<Unfinished> unfinished(Collection<UUID> systemIds, boolean hold) {
+        if (systemIds.isEmpty()) {
+            return List.of();
+        }
+        return jdbc.sql(hold ? HOLD_UNFINISHED : UNFINISHED).param("systems", ids(systemIds))
+                .param("unfinished", unfinishedStates())
+                .query((rs, row) -> new Unfinished(rs.getObject("id", UUID.class), rs.getObject("system_id", UUID.class),
+                        rs.getInt("cycle_year"), rs.getString("state")))
+                .list();
+    }
+
+    /** Who acted at which step of these VA Submissions. */
+    List<ActedBy> actedBy(Collection<UUID> submissionIds) {
+        if (submissionIds.isEmpty()) {
+            return List.of();
+        }
+        return jdbc.sql(ACTED_BY).param("submissions", ids(submissionIds))
+                .query((rs, row) -> new ActedBy(rs.getObject("submission_id", UUID.class),
+                        SubmissionStep.valueOf(rs.getString("step")), rs.getString("email")))
+                .list();
+    }
+
+    /** Withdraws these VA Submissions that are still in flight on this business date; those it moved. */
+    List<Finished> withdraw(Collection<UUID> submissionIds, LocalDate today) {
+        if (submissionIds.isEmpty()) {
+            return List.of();
+        }
+        return jdbc.sql(WITHDRAW)
+                .param("state", SubmissionState.WITHDRAWN.name())
+                .param("submissions", ids(submissionIds))
+                .param("unfinished", unfinishedStates())
+                .param("today", today)
+                .query((rs, row) -> new Finished(rs.getObject("id", UUID.class), rs.getObject("system_id", UUID.class),
+                        rs.getString("state_from")))
+                .list();
+    }
+
+    /** Clears a moved Not Started System's flag in the Quarter's Cycle when its Submission Window has not passed. */
+    void clearNotStartedOverdue(UUID systemId, Quarter quarter, LocalDate today) {
+        jdbc.sql(CLEAR_NOT_STARTED)
+                .param("system", systemId)
+                .param("cycle", quarter.cycle())
+                .param("submitDue", quarter.submitDue())
+                .param("reviewDue", quarter.reviewDue())
+                .param("endorseDue", quarter.endorseDue())
+                .param("today", today)
+                .update();
+    }
+
+    /** The states that are not final (ADR 0044): what a close makes Not Endorsed and a withdraw makes Withdrawn. */
+    private static String[] unfinishedStates() {
+        return Arrays.stream(SubmissionState.values()).filter(state -> !state.isFinal()).map(SubmissionState::name)
+                .toArray(String[]::new);
     }
 
     /**
      * Makes Not Endorsed every VA Submission of the Cycle, from its first live Quarter, of these active Systems, that is not
      * in a final state; those it moved, with the state each was in.
      */
-    List<NotEndorsed> notEndorseUnfinished(int cycleYear, int firstLiveQuarter, Collection<UUID> activeSystems,
+    List<Finished> notEndorseUnfinished(int cycleYear, int firstLiveQuarter, Collection<UUID> activeSystems,
             LocalDate today) {
         if (activeSystems.isEmpty()) {
             return List.of();
         }
-        String[] unfinished = Arrays.stream(SubmissionState.values()).filter(state -> !state.isFinal())
-                .map(SubmissionState::name).toArray(String[]::new);
         return jdbc.sql(NOT_ENDORSE_UNFINISHED)
                 .param("state", SubmissionState.NOT_ENDORSED.name())
                 .param("cycle", cycleYear)
                 .param("firstLive", firstLiveQuarter)
-                .param("unfinished", unfinished)
+                .param("unfinished", unfinishedStates())
                 .param("systems", ids(activeSystems))
                 .param("today", today)
-                .query((rs, row) -> new NotEndorsed(rs.getObject("id", UUID.class), rs.getObject("system_id", UUID.class),
+                .query((rs, row) -> new Finished(rs.getObject("id", UUID.class), rs.getObject("system_id", UUID.class),
                         rs.getString("state_from")))
                 .list();
     }
 
     /** Gives each of these Systems of the Quarter with no VA Submission in its Cycle a Not Endorsed one; those it made. */
-    List<NotEndorsed> notEndorseNotStarted(Quarter quarter, Collection<UUID> systemIds) {
+    List<Finished> notEndorseNotStarted(Quarter quarter, Collection<UUID> systemIds) {
         if (systemIds.isEmpty()) {
             return List.of();
         }
@@ -581,7 +682,7 @@ class SubmissionStore {
                 .param("reviewDue", quarter.reviewDue())
                 .param("endorseDue", quarter.endorseDue())
                 .param("systems", ids(systemIds))
-                .query((rs, row) -> new NotEndorsed(rs.getObject("id", UUID.class), rs.getObject("system_id", UUID.class),
+                .query((rs, row) -> new Finished(rs.getObject("id", UUID.class), rs.getObject("system_id", UUID.class),
                         null))
                 .list();
     }

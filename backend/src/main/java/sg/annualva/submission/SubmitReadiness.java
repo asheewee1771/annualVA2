@@ -13,6 +13,12 @@ import org.jspecify.annotations.Nullable;
 public interface SubmitReadiness {
 
     /**
+     * The reason a file is still on its way through the checks, a rescan included: no route may move the VA Submission
+     * out of its state until it settles (decision 2026-10-18), so the Register's withdraw asks for it too (ADR 0048).
+     */
+    String FILES_SCANNING = "files-scanning";
+
+    /**
      * Every reason the VA Submission cannot be submitted now, in a fixed order; empty when nothing stands in the way. Must
      * run in the caller's transaction.
      */

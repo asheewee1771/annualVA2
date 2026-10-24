@@ -21,7 +21,10 @@ public record SystemChangeEvent(UUID systemId, Change change, @Nullable String f
         return "SystemChangeEvent[systemId=" + systemId + ", change=" + change + ", at=" + at + "]";
     }
 
-    /** The Register changes an SMO/Tech Lead is told about. A withdrawal joins them with ticket 43. */
+    /**
+     * The Register changes an SMO/Tech Lead is told about here. A withdrawal is the VA Submission's own move, heard as a
+     * {@code SubmissionEvent} (ADR 0048).
+     */
     public enum Change {
         /** The System moved to another Quarter. */
         MOVED,

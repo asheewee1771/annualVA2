@@ -3,7 +3,6 @@ package sg.annualva.ingestion;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
-import sg.annualva.harness.ApiClient;
 import tools.jackson.databind.JsonNode;
 
 /**
@@ -29,17 +28,16 @@ class RegisterNotificationTest extends NotificationSeam1 {
 
     @Test
     void aTransferTellsTheNewSmoAndTheFormerOne() {
+        // Not Started: a transfer of a System with in-flight work is blocked in Release 1 (ticket 43, ADR 0048).
         registered(listed("SYS-N1", "Notice one", SMO_A, CM, "Q3"), listed("SYS-N2", "Notice two", SMO_A, CM, "Q3"));
-        ApiClient formerSmo = signedInAs(SMO_A);
-        String draft = started(formerSmo, idOf("SYS-N1")).get("id").asString();
 
         registered(listed("SYS-N1", "Notice one", SMO_B, CM, "Q3"), listed("SYS-N2", "Notice two", SMO_A, CM, "Q3"));
 
         JsonNode incoming = only(signedInAs(SMO_B), "SYSTEM_TRANSFERRED_TO_YOU");
-        assertThat(incoming.get("state").asString()).isEqualTo("DRAFT");
-        assertThat(incoming.get("submissionId").asString()).isEqualTo(draft);
+        assertThat(incoming.get("state").asString()).isEqualTo("NOT_STARTED");
+        assertThat(incoming.get("submissionId").isNull()).isTrue();
         assertThat(incoming.get("dueOn").asString()).isEqualTo("2027-08-15");
-        assertThat(incoming.get("link").asString()).isEqualTo("/smo/submissions/" + draft);
+        assertThat(incoming.get("link").asString()).isEqualTo("/smo");
         JsonNode outgoing = only(signedInAs(SMO_A), "SYSTEM_TRANSFERRED_FROM_YOU");
         assertThat(outgoing.get("systemCode").asString()).isEqualTo("SYS-N1");
         assertThat(outgoing.get("dueOn").isNull()).as("nothing is due from them any more").isTrue();

@@ -33,6 +33,8 @@ import sg.annualva.submission.Submissions;
  *   <li>Overdue: the person whose step it is (the SMO/Tech Lead while it is Not Started, a Draft or Returned for Rework,
  *       the Cyber Manager In Review, both VA POCs Awaiting Endorsement);
  *   <li>moved to another Quarter or transferred by the Register: the SMO/Tech Lead, and on a transfer the former one too;
+ *   <li>Withdrawn because the Register retired the System (ticket 43): the SMO/Tech Lead it last named; a withdrawal from
+ *       Awaiting Endorsement clears the VA POC pair, as an endorsement would;
  *   <li>made Not Endorsed by its VA Cycle's close: the SMO/Tech Lead; a VA POC's close also clears the endorsement pair of
  *       a VA Submission that was Awaiting Endorsement, as an endorsement would (ticket 41, ADR 0044).
  * </ul>
@@ -68,6 +70,8 @@ class WorkflowNotices {
             case RETURNED_FOR_REWORK -> returned(event);
             case AWAITING_ENDORSEMENT -> notifications.toVaPocs(notice(event, NoticeAction.ENDORSE, Links.endorse(id)),
                     Awaits.ENDORSEMENT);
+            // The Register retired the System, so its SMO/Tech Lead lost it: their inbox is the link, as on a transfer.
+            case WITHDRAWN -> notifications.toSmo(notice(event, NoticeAction.WITHDRAWN, Links.SMO_INBOX));
             // Endorsed is an FYI for the weekly digest (story 93, Release 2); the other states arrive with their tickets.
             default -> { }
         }

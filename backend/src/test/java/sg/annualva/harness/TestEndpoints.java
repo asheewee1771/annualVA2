@@ -488,6 +488,22 @@ public class TestEndpoints {
         }
 
         /** A VA Submission in a state no command enters yet (the tables accept all nine), for the tests of the file rules. */
+        /**
+         * Stands every in-flight VA Submission (not in a final state) aside as Endorsed and answers the state each was in,
+         * by id, so a test can apply a Register change that Release 1 blocks or withdraws (ADR 0048) and put them back.
+         */
+        @PostMapping("/api/test/submissions/stand-aside")
+        public Map<String, String> standAside() {
+            Map<String, String> states = new java.util.LinkedHashMap<>();
+            jdbc.sql("UPDATE va_submission s SET state = 'ENDORSED' FROM (SELECT id, state FROM va_submission "
+                    + "WHERE state NOT IN ('ENDORSED', 'EXEMPTED', 'WITHDRAWN', 'NOT_ENDORSED') FOR UPDATE) old "
+                    + "WHERE s.id = old.id RETURNING s.id, old.state")
+                    .query(rs -> {
+                        states.put(rs.getString("id"), rs.getString("state"));
+                    });
+            return states;
+        }
+
         @PostMapping("/api/test/submissions/{id}/state/{state}")
         public Map<String, String> submissionState(@PathVariable UUID id, @PathVariable String state) {
             jdbc.sql("UPDATE va_submission SET state = :state WHERE id = :id").param("state", state).param("id", id)

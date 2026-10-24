@@ -342,9 +342,12 @@ class VaPocReturnTest extends MailSeam1 {
         assertThat(matrixRow("SYS-F1").get("reviewed").get("doneOn").asString()).isEqualTo("2027-08-25");
     }
 
-    /** SYS-F1 with this SMO/Tech Lead and Cyber Manager, and SYS-F2 as before: a VA POC applies the Register again. */
+    /**
+     * SYS-F1 with this SMO/Tech Lead and Cyber Manager, and SYS-F2 as before: a VA POC applies the Register again, with
+     * SYS-F1's VA Submission in flight (Release 2's mid-cycle transfer; Release 1 blocks it, ADR 0048).
+     */
     private void registeredWith(String smo, String manager) {
-        registered(List.of(listed("SYS-F1", "File one", smo, manager, "Q3"),
-                listed("SYS-F2", "File two", SMO_B, CM_OTHER, "Q3")), List.of());
+        registeredMidCycle(listed("SYS-F1", "File one", smo, manager, "Q3"),
+                listed("SYS-F2", "File two", SMO_B, CM_OTHER, "Q3"));
     }
 }
