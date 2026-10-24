@@ -19,3 +19,5 @@ Consequences: every write to a VA Submission's prepared content now also locks i
 Amends ADR 0020 (the submit is the second command; the VA Submission read gains `submittedAt` and `declaration`), ADR 0028 item 6 and ADR 0031 item 6 (the readiness read gains `blockers`; `ReportFileAges` becomes `ReportFileReadiness`), and ADR 0030 item 6 (a write to a Scan Report locks the VA Submission shared before the Scan Report).
 
 Amended by ADR 0033: a submit keeps the Overdue flag only if the Review Window has passed as well.
+
+Amended by the decision of 2026-10-24 (`docs/agents/reviewer-decisions.md`): item 1's "by a new migration" no longer holds. A VA POC publishes each new Declaration version in the app (ticket 61); the table, the append-only trigger and "the current wording is the highest version" are unchanged.

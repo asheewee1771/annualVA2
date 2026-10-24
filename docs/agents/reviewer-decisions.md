@@ -309,3 +309,10 @@ Human decisions on reviewer findings. Check here before asking again. Each entry
 - **Finding:** Awaiting Endorsement and Exemption Requested show under "Waiting on others", and Endorsed, Exempted, Withdrawn and Not Endorsed under "Done" with "Nothing more to do", although Not Endorsed is a failed outcome.
 - **Chosen action:** keep as built; ticket 41, which brings Not Endorsed into use, decides its own heading or label. Decided 2026-10-24.
 - **When to reuse:** any finding about how the SMO inbox groups or labels a final state before its ticket lands.
+
+## The Declaration text is published in the app by a VA POC
+
+- **Area:** the Declaration text (ticket 24, ticket 61, ADR 0032, spec open question "the exact wording of the Declaration text, and who owns its versions")
+- **Finding:** ticket 24 planned to ship the agreed wording as a new database migration through a change request; the human asked whether it could be set later in the app instead.
+- **Chosen action:** a VA POC publishes each new Declaration version in the app (ticket 61): append-only versions, step-up, audited by version number only. The VA POC role owns the text. Ticket 61 decides whether a second approver is needed and whether a version can take effect from a chosen date. The agreed wording is still agreed with the PO and the cyber team (ticket 24) and published before UAT. Decided 2026-10-24.
+- **When to reuse:** any other fixed text every user must accept: manage it as published, append-only versions in the app, not by migration.
