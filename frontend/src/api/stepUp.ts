@@ -77,17 +77,23 @@ function store(key: string, value: unknown): void {
   }
 }
 
-/** Reads and removes an entry; an unreadable, damaged or abandoned (too old) one counts as nothing saved. */
-function take(key: string): unknown {
+/** Reads an entry; an unreadable, damaged or abandoned (too old) one counts as nothing saved. */
+function read(key: string): unknown {
   try {
     const raw = window.sessionStorage.getItem(key);
-    window.sessionStorage.removeItem(key);
     if (raw === null) return undefined;
     const kept = JSON.parse(raw) as Partial<Kept<unknown>>;
     return typeof kept.savedAt === "number" && Date.now() - kept.savedAt <= MAX_AGE_MS ? kept.value : undefined;
   } catch {
     return undefined;
   }
+}
+
+/** Reads and removes an entry. */
+function take(key: string): unknown {
+  const value = read(key);
+  clearKey(key);
+  return value;
 }
 
 /** Remembers the route and any draft before the browser leaves for the single sign-on. */
@@ -111,12 +117,20 @@ export function clearStepUpState(): void {
   clearKey(DRAFT_KEY);
 }
 
-/** The draft saved for this action, read once and forgotten by the form that owns the action. */
+/**
+ * The draft saved for this action, read once and forgotten by the form that owns the action. A draft for another action
+ * is left where it is, for its own form to take.
+ */
 export function takeRestoredDraft(intent: string): unknown {
-  const saved = take(DRAFT_KEY);
-  return typeof saved === "object" && saved !== null && "intent" in saved && saved.intent === intent && "draft" in saved
-    ? saved.draft
-    : undefined;
+  const saved = read(DRAFT_KEY);
+  if (typeof saved !== "object" || saved === null || !("intent" in saved) || saved.intent !== intent) return undefined;
+  clearKey(DRAFT_KEY);
+  return "draft" in saved ? saved.draft : undefined;
+}
+
+/** Whether a refusal is the one the app answers with its step-up explanation, so a screen need not show it again. */
+export function isStepUpRequired(problem: Problem): boolean {
+  return problem.type.endsWith("/step-up-required");
 }
 
 /** The outcome in the address bar, removed from it so a reload does not show it again. */

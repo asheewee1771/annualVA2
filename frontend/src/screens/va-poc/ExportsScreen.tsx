@@ -1,4 +1,4 @@
-import { useCallback, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { fetchCycleMatrix, type MatrixSystem } from "../../api/dashboards.ts";
 import {
   downloadExport,
@@ -9,7 +9,7 @@ import {
   type ExportStatus,
 } from "../../api/exports.ts";
 import { ApiError, type Problem } from "../../api/problem.ts";
-import { takeRestoredDraft } from "../../api/stepUp.ts";
+import { isStepUpRequired, takeRestoredDraft } from "../../api/stepUp.ts";
 import { ClassifiedField } from "../../components/ClassifiedField.tsx";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { usePolling } from "../../hooks/usePolling.ts";
@@ -18,6 +18,8 @@ import { CycleSelector } from "../shared/CycleSelector.tsx";
 import { saveFile } from "../shared/saveFile.ts";
 
 const INTENT = "export-mgmt-summary";
+/** Times as the rest of the app shows them, in Singapore time. */
+const WHEN = new Intl.DateTimeFormat("en-SG", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Singapore" });
 const UNREACHABLE: Problem = { type: "about:blank", title: "The server could not be reached", status: 0 };
 
 const STATUS_LABELS: Readonly<Record<ExportStatus, string>> = {
@@ -44,12 +46,28 @@ interface Scope {
   systems: string[] | undefined;
 }
 
+const EMPTY: Scope = { cycle: undefined, quarter: undefined, systems: undefined };
+
+function numberOr(value: unknown): number | undefined {
+  return typeof value === "number" ? value : undefined;
+}
+
 /** The request the person was making before a step-up, when it was this screen's; otherwise an empty form. */
 function restoredRequest(): Scope {
   const draft = takeRestoredDraft(INTENT);
-  const asked: Partial<ExportRequest> = typeof draft === "object" && draft !== null ? (draft as ExportRequest) : {};
-  return { cycle: asked.cycle, quarter: asked.quarter, systems: asked.systems };
+  if (typeof draft !== "object" || draft === null) return EMPTY;
+  const asked = draft as Record<string, unknown>;
+  const systems = Array.isArray(asked["systems"])
+    ? asked["systems"].filter((id): id is string => typeof id === "string")
+    : undefined;
+  return { cycle: numberOr(asked["cycle"]), quarter: numberOr(asked["quarter"]), systems };
 }
+
+/**
+ * Read once as the page loads, as the Register reads its own: a step-up return is a page load, and the draft is taken
+ * before anything renders. Forgotten once the form has used it.
+ */
+let leftForSignIn = restoredRequest();
 
 /** The Systems one may choose: those of the Quarter asked for (or of the whole Cycle), Withdrawn left out. */
 function listedIn(systems: MatrixSystem[] | undefined, quarter: number | undefined): MatrixSystem[] {
@@ -161,7 +179,7 @@ function SystemChoice({
  * Quarter or Cycle makes it Confidential; some of them, Restricted / Sensitive-Normal (story 86). The server decides.
  */
 function SummaryForm({ classification, onQueued }: { classification: string; onQueued: () => void }) {
-  const [restored] = useState(restoredRequest);
+  const [restored] = useState(() => leftForSignIn);
   const [cycle, setCycle] = useState(restored.cycle);
   const [quarter, setQuarter] = useState(restored.quarter);
   const [chosen, setChosen] = useState(restored.systems);
@@ -170,6 +188,9 @@ function SummaryForm({ classification, onQueued }: { classification: string; onQ
   const loadMatrix = useCallback(() => fetchCycleMatrix(cycle), [cycle]);
   const matrix = useResource(loadMatrix);
   const listed = listedIn(matrix.data?.systems, quarter);
+  useEffect(() => {
+    leftForSignIn = EMPTY;
+  }, []);
 
   async function ask(event: FormEvent) {
     event.preventDefault();
@@ -179,7 +200,9 @@ function SummaryForm({ classification, onQueued }: { classification: string; onQ
       await requestExport(summaryRequest(cycle, quarter, chosen, listed));
       onQueued();
     } catch (failure) {
-      setProblem(problemOf(failure));
+      const refused = problemOf(failure);
+      // The app already explains a step-up and brings the VA POC back here with the form filled in.
+      if (!isStepUpRequired(refused)) setProblem(refused);
     } finally {
       setBusy(false);
     }
@@ -213,7 +236,7 @@ function SummaryForm({ classification, onQueued }: { classification: string; onQ
       )}
       {problem ? <ErrorPanel problem={problem} /> : null}
       <p>
-        <button type="submit" className="button" disabled={busy}>
+        <button type="submit" className="button" disabled={busy || chosen?.length === 0}>
           Ask for the summary
         </button>
       </p>
@@ -243,7 +266,7 @@ function ExportRow({ row, onProblem }: { row: Export; onProblem: (problem: Probl
 
   return (
     <tr>
-      <td>{new Date(row.requestedAt).toLocaleString()}</td>
+      <td>{WHEN.format(new Date(row.requestedAt))}</td>
       <td>{covers(row)}</td>
       <td>{CLASSIFICATION_LABELS[row.classification]}</td>
       <td>
@@ -251,7 +274,7 @@ function ExportRow({ row, onProblem }: { row: Export; onProblem: (problem: Probl
         {row.status === "READY" && row.expiresAt !== null ? (
           <>
             <br />
-            <small className="muted">Kept until {new Date(row.expiresAt).toLocaleString()}</small>
+            <small className="muted">Kept until {WHEN.format(new Date(row.expiresAt))}</small>
           </>
         ) : null}
       </td>
