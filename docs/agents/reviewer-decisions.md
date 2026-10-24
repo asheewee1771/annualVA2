@@ -295,3 +295,17 @@ Human decisions on reviewer findings. Check here before asking again. Each entry
 - **Finding:** the sweep flagged and audited the Draft or In Review VA Submission of a retired System, which nobody can see or act on until ticket 43 withdraws it.
 - **Chosen action:** exclude VA Submissions whose System is retired from the sweep now, with a Seam 1 test. Decided 2026-10-23.
 - **When to reuse:** any job that acts on VA Submissions: skip those of retired Systems unless the job is the one that withdraws them.
+
+## The Cyber Manager inbox lists Not Started Systems too
+
+- **Area:** Cyber Manager inbox (ticket 27, ADR 0034, story 48)
+- **Finding:** story 48 and the ticket say the inbox shows the caller's "VA Submissions"; a Not Started System has none, so the wording would leave it off.
+- **Chosen action:** keep as built. Every System in the Cyber Manager's review scope is listed, Not Started included, under "Waiting on others" (never above "Needs your review"), Overdue first. Decided 2026-10-24.
+- **When to reuse:** any list of a role's Systems that could leave out Systems with no VA Submission: include them, grouped so they never crowd out work that needs action.
+
+## The SMO inbox puts the later states under Waiting on others or Done until ticket 41
+
+- **Area:** SMO inbox (ticket 27, ADR 0034 item 6, ADR 0019), Not Endorsed (ticket 41)
+- **Finding:** Awaiting Endorsement and Exemption Requested show under "Waiting on others", and Endorsed, Exempted, Withdrawn and Not Endorsed under "Done" with "Nothing more to do", although Not Endorsed is a failed outcome.
+- **Chosen action:** keep as built; ticket 41, which brings Not Endorsed into use, decides its own heading or label. Decided 2026-10-24.
+- **When to reuse:** any finding about how the SMO inbox groups or labels a final state before its ticket lands.

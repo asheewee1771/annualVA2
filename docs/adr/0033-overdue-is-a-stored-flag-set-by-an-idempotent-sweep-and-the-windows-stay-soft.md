@@ -16,3 +16,5 @@ Not done here, on purpose: the reminders and the weekly Overdue message (ticket 
 Consequences: every VA Submission row carries its flag time; the Overdue flag is read, never computed, by every screen, export and reminder that follows; an Overdue Draft uploads, proposes and submits like any other (no command looks at the flag).
 
 Amends ADR 0019 item 4 (the inbox now answers `overdue`, for Not Started Systems too), ADR 0020 item 4 (`overdue` is set by the sweep, and a start takes a Not Started System's flag) and ADR 0032 item 3 (a submit keeps the flag only if the Review Window has passed).
+
+Amended by ADR 0034: the Cyber Manager inbox lists Overdue first, then by the day the current window ends, read through `current_window_due`.

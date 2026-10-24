@@ -7,6 +7,7 @@
 **Status:** ready-for-agent
 **Effort (orchestrator estimate):** about 9.2 developer days across stories 17 (7.9), 68 (1.3); `*` marks the critical path. See `reports/dev-report.md`.
 **Data model note (2026-10-05):** ticket 06 computes the calendar and adds no `va_cycle` table (ADR 0015). This ticket adds the table (migration) for `closed_at`, `closed_by` and the early-close override of `closes_on`; the computed `phaseOn` in `VaCycle` is the place to read it. See `docs/agents/reviewer-decisions.md`.
+**SMO inbox note (2026-10-24):** the SMO inbox lists a Not Endorsed VA Submission under "Done" (ticket 27, ADR 0034 item 6) until this ticket decides its own heading or label (reviewer decisions, 2026-10-24).
 
 - [ ] A daily job opens the next Cycle when its Q1 starts; the new Cycle takes its Systems and Quarters from the standing Register; while two Cycles overlap a Register apply changes only the newer Cycle; `GET /api/cycles` marks which Cycles are open and the shell's Cycle selector filters every dashboard call.
 - [ ] `POST /api/cycles/{year}/close` (VA POC, step-up, with a confirm dialog in the UI) and the daily auto-close after `closes_on` set every non-final submission in live Quarters (including Exemption Requested) to Not Endorsed, create a Not Endorsed row for each Not Started System, record the close, audit each change and notify the SMOs.

@@ -12,3 +12,7 @@ Status: accepted
 Consequences: the inbox is not audited (it names no report or Finding, like the Register list, ADR 0018); a System added partway through a Quarter shows the Quarter's dates until the Release 2 mid-cycle changes give it its own windows; the response is not paged (an SMO holds a handful of Systems).
 
 Amended by ADR 0033: the inbox answers `overdue` on every item, Not Started included, from the flag the sweep stored.
+
+Amended by ADR 0034: the inbox names every state; Awaiting Endorsement and Exemption Requested wait on the VA POCs, and a final state is Done with nothing next.
+
+Amended by ADR 0034 (correction): the inbox lists its Systems through the one dashboard reader, and `nextActionDueOn` is the last day of the window the state waits on by the one Overdue rule (ADR 0033 item 2). A VA Submission Returned for Rework is therefore due on `review_due`, not `submit_due`; ticket 31 (the guided rework queue) may revisit that date, in the rule.
