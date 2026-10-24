@@ -164,10 +164,23 @@ public class Submissions {
      * @param overdue the Overdue flag (ADR 0033)
      * @param dueOn the last day of the window its state waits on, by the one Overdue rule (ADR 0033 item 2); null for a
      *     final or frozen state, which waits on none
+     * @param endorsedLate whether it was endorsed after the Quarter's last day
+     * @param reached when it reached each milestone
      */
     public record Summary(
             UUID id, SubmissionState state, LocalDate submitDue, LocalDate reviewDue, LocalDate endorseDue,
-            boolean overdue, @Nullable LocalDate dueOn) {}
+            boolean overdue, @Nullable LocalDate dueOn, boolean endorsedLate, Milestones reached) {}
+
+    /**
+     * When a VA Submission last reached each of its milestones (UTC), each null until it has (ADR 0037): submitted for
+     * review, passed to endorsement by the Cyber Manager (which ends the review) and endorsed by a VA POC.
+     */
+    public record Milestones(
+            @Nullable Instant submitted, @Nullable Instant passedToEndorsement, @Nullable Instant endorsed) {
+
+        /** A System with no VA Submission has reached none. */
+        public static final Milestones NONE = new Milestones(null, null, null);
+    }
 
     /**
      * What the SMO/Tech Lead says about the Declaration when submitting.
@@ -433,7 +446,8 @@ public class Submissions {
         for (SubmissionStore.Row row : store.inCycle(systemIds.stream().filter(scope::contains).toList(), cycleYear)) {
             started.put(row.systemId(),
                     new Summary(row.id(), row.state(), row.submitDue(), row.reviewDue(), row.endorseDue(),
-                            row.overdue(), row.dueOn()));
+                            row.overdue(), row.dueOn(), row.endorsedLate(),
+                            new Milestones(row.submittedAt(), row.passedToEndorsementAt(), row.endorsedAt())));
         }
         return started;
     }

@@ -1,8 +1,8 @@
 import { AppLink } from "../../app/AppLink.tsx";
 import type { AreaProps } from "../shared/AreaProps.ts";
+import { QuarterBoardScreen } from "../shared/QuarterBoardScreen.tsx";
 import { CmInboxScreen } from "./CmInboxScreen.tsx";
 import { CM_BOARD_PATH, CM_INBOX_PATH, reviewedSubmissionOf } from "./paths.ts";
-import { QuarterBoardScreen } from "./QuarterBoardScreen.tsx";
 import { ReviewScreen } from "./ReviewScreen.tsx";
 
 /**
@@ -31,7 +31,7 @@ export function CyberManagerArea({ path, classification }: AreaProps) {
       {reviewing ? (
         <ReviewScreen key={reviewing} submissionId={reviewing} classification={classification} />
       ) : onBoard ? (
-        <QuarterBoardScreen classification={classification} />
+        <QuarterBoardScreen classification={classification} whose="your Systems" />
       ) : (
         <CmInboxScreen classification={classification} />
       )}

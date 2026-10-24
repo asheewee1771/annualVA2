@@ -6,9 +6,9 @@ import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { useResource } from "../../hooks/useResource.ts";
 import { CycleSelector } from "../shared/CycleSelector.tsx";
 import { HandledOutsideSection } from "../shared/HandledOutsideSection.tsx";
+import { findingsLabel, ReviewFlags } from "../shared/ReviewFlags.tsx";
 import { STATE_LABELS } from "../shared/systemStates.ts";
 import { reviewPath } from "./paths.ts";
-import { findingsLabel, ReviewFlags } from "./ReviewFlags.tsx";
 
 const GROUPS: readonly { group: InboxGroup; title: string; empty: string }[] = [
   { group: "NEEDS_YOUR_ACTION", title: "Needs your review", empty: "Nothing is waiting for your review." },
