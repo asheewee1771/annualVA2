@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { dayLabel } from "../../api/cycles.ts";
-import { decideExemption, fetchExemptionQueue, type QueuedExemption } from "../../api/exemptions.ts";
+import { BASIS_LABELS, decideExemption, fetchExemptionQueue, type QueuedExemption } from "../../api/exemptions.ts";
 import { ApiError, type Problem } from "../../api/problem.ts";
 import { fetchReportFileContent } from "../../api/reportFiles.ts";
 import { useSelectedCycle } from "../../app/CycleChoice.tsx";
@@ -10,11 +10,6 @@ import { saveFile } from "../shared/saveFile.ts";
 import { STATE_LABELS } from "../shared/systemStates.ts";
 
 const UNREACHABLE: Problem = { type: "about:blank", title: "The server could not be reached", status: 0 };
-
-const BASIS_LABELS = {
-  PRIOR_VA: "VA done before the Quarter",
-  SCHEDULED_VA: "VA scheduled after the Quarter (conditional)",
-} as const;
 
 const WHEN = new Intl.DateTimeFormat("en-SG", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Singapore" });
 

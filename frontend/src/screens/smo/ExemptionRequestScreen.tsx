@@ -1,6 +1,6 @@
 import { useCallback, useState, type FormEvent } from "react";
 import { fetchSmoInbox, type InboxSystem } from "../../api/dashboards.ts";
-import { MAX_EVIDENCE_LENGTH, requestExemption, type ExemptionBasis } from "../../api/exemptions.ts";
+import { BASIS_LABELS, MAX_EVIDENCE_LENGTH, requestExemption, type ExemptionBasis } from "../../api/exemptions.ts";
 import { ApiError, type Problem } from "../../api/problem.ts";
 import { fetchReportFiles } from "../../api/reportFiles.ts";
 import { useSelectedCycle } from "../../app/CycleChoice.tsx";
@@ -14,10 +14,7 @@ import { SMO_AREA_PATH } from "./paths.ts";
 
 const UNREACHABLE: Problem = { type: "about:blank", title: "The server could not be reached", status: 0 };
 
-const BASES: readonly { basis: ExemptionBasis; label: string }[] = [
-  { basis: "PRIOR_VA", label: "A VA done within the 3 months before the Quarter" },
-  { basis: "SCHEDULED_VA", label: "A VA scheduled within the 3 months after the Quarter (a conditional Exemption)" },
-];
+const BASES: readonly ExemptionBasis[] = ["PRIOR_VA", "SCHEDULED_VA"];
 
 /**
  * The supporting evidence files of the VA Submission that passed every check, which one may be attached; a System
@@ -104,8 +101,8 @@ function RequestForm({
           onChange={(event) => setBasis(event.target.value === "SCHEDULED_VA" ? "SCHEDULED_VA" : "PRIOR_VA")}
         >
           {BASES.map((option) => (
-            <option key={option.basis} value={option.basis}>
-              {option.label}
+            <option key={option} value={option}>
+              {BASIS_LABELS[option]}
             </option>
           ))}
         </select>
@@ -178,14 +175,20 @@ export function ExemptionRequestScreen({ systemId, classification }: { systemId:
       <h2>Request an Exemption</h2>
       {inbox.error ? <ErrorPanel problem={inbox.error.problem} /> : null}
       {inbox.data && !system ? <p>This System is not one of yours in this VA Cycle.</p> : null}
-      {inbox.data && system ? (
+      {inbox.loading ? <p className="muted">Loading your System…</p> : null}
+      {inbox.data && system && !inbox.loading ? (
         <>
           <p className="muted">
             <span className="mono">{system.systemId}</span> {system.name}, VA Cycle {inbox.data.cycle}, Q
             {system.quarter}: {STATE_LABELS[system.state]}. While a VA POC decides, the VA Submission is frozen: nothing
             can be changed or submitted. A rejection puts it back exactly as it was.
           </p>
-          <RequestForm system={system} cycle={inbox.data.cycle} classification={classification} />
+          <RequestForm
+            key={`${String(inbox.data.cycle)}:${system.submissionId ?? "none"}`}
+            system={system}
+            cycle={inbox.data.cycle}
+            classification={classification}
+          />
         </>
       ) : null}
     </div>

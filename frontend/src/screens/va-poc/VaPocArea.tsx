@@ -20,6 +20,27 @@ const AUDIT_LOG_PATH = "/va-poc/audit-log";
 const REGISTER_PATH = "/va-poc/register";
 const EXPORTS_PATH = "/va-poc/exports";
 
+/** A tab of the area: where it is, its name, and what it shows. */
+interface Tab {
+  path: string;
+  label: string;
+  render: (classification: string) => ReactNode;
+}
+
+const QUARTER_BOARD: Tab = {
+  path: VA_POC_PATH,
+  label: "Quarter board",
+  render: (classification) => (
+    <QuarterBoardScreen classification={classification} whose="every System" boardFor={ENDORSE_BOARD} />
+  ),
+};
+
+const TABS: readonly Tab[] = [
+  QUARTER_BOARD,
+  { path: MATRIX_PATH, label: "Cycle matrix", render: () => <CycleMatrixScreen /> },
+  { path: EXEMPTIONS_PATH, label: "Exemption requests", render: () => <ExemptionQueueScreen /> },
+];
+
 /** A page beneath the area, with the way back. */
 function SubPage({ children }: { children: ReactNode }) {
   return (
@@ -63,27 +84,18 @@ export function VaPocArea({ path, classification }: AreaProps) {
       </SubPage>
     );
   }
-  const onMatrix = path === MATRIX_PATH;
-  const onExemptions = path === EXEMPTIONS_PATH;
+  const tab = TABS.find((candidate) => candidate.path === path) ?? QUARTER_BOARD;
   return (
     <>
       <nav className="tabs" aria-label="VA POC views">
         <ul>
-          <li>
-            <AppLink path={VA_POC_PATH} current={!onMatrix && !onExemptions}>
-              Quarter board
-            </AppLink>
-          </li>
-          <li>
-            <AppLink path={MATRIX_PATH} current={onMatrix}>
-              Cycle matrix
-            </AppLink>
-          </li>
-          <li>
-            <AppLink path={EXEMPTIONS_PATH} current={onExemptions}>
-              Exemption requests
-            </AppLink>
-          </li>
+          {TABS.map((candidate) => (
+            <li key={candidate.path}>
+              <AppLink path={candidate.path} current={candidate === tab}>
+                {candidate.label}
+              </AppLink>
+            </li>
+          ))}
           <li>
             <AppLink path={REGISTER_PATH}>System Register</AppLink>
           </li>
@@ -95,11 +107,7 @@ export function VaPocArea({ path, classification }: AreaProps) {
           </li>
         </ul>
       </nav>
-      {onExemptions ? <ExemptionQueueScreen /> : null}
-      {onMatrix ? <CycleMatrixScreen /> : null}
-      {onMatrix || onExemptions ? null : (
-        <QuarterBoardScreen classification={classification} whose="every System" boardFor={ENDORSE_BOARD} />
-      )}
+      {tab.render(classification)}
     </>
   );
 }

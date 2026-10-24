@@ -4,6 +4,12 @@ import type { SubmissionState } from "./submissions.ts";
 /** What an Exemption rests on: a VA done in the 3 months before the Quarter, or one scheduled in the 3 months after. */
 export type ExemptionBasis = "PRIOR_VA" | "SCHEDULED_VA";
 
+/** How each basis is named on screen, in the order a form offers them. */
+export const BASIS_LABELS: Readonly<Record<ExemptionBasis, string>> = {
+  PRIOR_VA: "A VA done within the 3 months before the Quarter",
+  SCHEDULED_VA: "A VA scheduled within the 3 months after the Quarter (a conditional Exemption)",
+};
+
 /** The longest the evidence may be once the server has cleaned it (IM8 as-1). */
 export const MAX_EVIDENCE_LENGTH = 4000;
 

@@ -45,7 +45,10 @@ function nextLabel({ state, nextAction, nextActionDueOn }: InboxSystem): string 
 
 const UNREACHABLE: Problem = { type: "about:blank", title: "The server could not be reached", status: 0 };
 
-/** The states an Exemption can be requested in: any before Endorsed with no request pending (story 43). */
+/**
+ * The states an Exemption can be requested in: any before Endorsed with no request pending (story 43). It only decides
+ * whether the link is offered; the server's gate (`Exemptions.REQUESTING`) refuses every other state.
+ */
 const EXEMPTIBLE: ReadonlySet<SystemState> = new Set<SystemState>([
   "NOT_STARTED",
   "DRAFT",
