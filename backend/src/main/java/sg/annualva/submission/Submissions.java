@@ -181,9 +181,11 @@ public class Submissions {
             "state-not-reviewable",
             "This VA Submission can be reviewed, returned or passed to endorsement only while it is In Review.");
 
-    /** Endorsing: a VA POC, Awaiting Endorsement. */
-    private static final Gate ENDORSING = new Gate(SubmissionStep.ENDORSE, Set.of(SubmissionState.AWAITING_ENDORSEMENT),
-            "state-not-endorsable", "This VA Submission can be endorsed only while it is Awaiting Endorsement.");
+    /** Endorsing and returning for rework: a VA POC, Awaiting Endorsement. */
+    private static final Gate ENDORSING = new Gate(SubmissionStep.ENDORSE,
+            Set.of(SubmissionState.AWAITING_ENDORSEMENT),
+            "state-not-endorsable",
+            "This VA Submission can be endorsed or returned by a VA POC only while it is Awaiting Endorsement.");
 
     /**
      * A VA Submission that passed a {@link Gate}: its row held as {@code hold} says until the caller's transaction ends,
@@ -192,7 +194,7 @@ public class Submissions {
      * @param from the state it was found in, one of the gate's
      * @param refused the entry a later refusal of the same command is recorded as, before its reason
      */
-    record AtStep(UUID submissionId, UUID systemId, SubmissionState from, AuditEvent refused, Hold hold) {}
+    record AtStep(UUID submissionId, UUID systemId, Gate gate, SubmissionState from, AuditEvent refused, Hold hold) {}
 
     /**
      * What a write answers when the VA Submission is not in Draft or Returned for Rework: it audits its own refusal (ADR
@@ -236,9 +238,10 @@ public class Submissions {
     public record DeclarationAnswer(@Nullable Boolean declarationAccepted, @Nullable Integer declarationVersion) {}
 
     /**
-     * What the Cyber Manager says when returning a VA Submission for rework (story 55).
+     * What the Cyber Manager or a VA POC says when returning a VA Submission for rework (stories 55 and 66).
      *
-     * @param comment why, for the SMO/Tech Lead beside the Disputed items; optional, as each Dispute carries its own
+     * @param comment why, for the SMO/Tech Lead: optional for the Cyber Manager, as each Dispute carries its own; required
+     *     for a VA POC, whose return attaches nothing else
      */
     public record ReturnRequest(@Nullable String comment) {}
 
@@ -258,6 +261,9 @@ public class Submissions {
 
     /** The fixed code of the endorse step-up (IM8 ac-2): the intent a fresh sign-in is started for. */
     static final String ENDORSE_INTENT = "submission-endorse";
+
+    /** The fixed code of a VA POC's return step-up (IM8 ac-2). */
+    static final String RETURN_INTENT = "submission-return";
 
     private static final String NOT_ALLOWED_NOW = "invalid-transition";
 
@@ -504,37 +510,97 @@ public class Submissions {
     }
 
     /**
-     * Returns a VA Submission In Review to its SMO/Tech Lead for rework (story 55), with what is Disputed attached: each
-     * Disputed Finding and not-applicable justification, named by the review that Disputed it. What the Cyber Manager
-     * confirmed stays confirmed, as the move touches no review. The checks are a review's (ADR 0035 item 2), with the VA
-     * Submission's row held exclusively, so a review in progress finishes first and none starts until this commits; then
-     * the comment, then that something is Disputed. On success it is Returned for Rework, the return is kept, the caller is
-     * recorded at the reviewing step, the return is audited and a {@link SubmissionEvent} is published for the SMO/Tech
-     * Lead's notification.
+     * Returns a VA Submission to its SMO/Tech Lead for rework, at the step the caller acts at: the Cyber Manager's from In
+     * Review (story 55, {@link #returnFromReview}) or a VA POC's from Awaiting Endorsement (story 66,
+     * {@link #returnFromEndorsement}). A caller who holds one of the two roles returns at its step; one who holds both
+     * returns as a VA POC, unless they are the System's Cyber Manager and it is not Awaiting Endorsement, so each meets the
+     * refusals of the step they act at (ADR 0047 item 1).
      *
-     * @throws ResourceNotFoundException for a VA Submission that does not exist or of a System the caller is not Cyber
-     *     Manager of
-     * @throws RejectedRequestException 403 {@code sod-conflict}; 409 {@code invalid-transition} when it is not In Review;
-     *     400 {@code invalid-field} naming {@code comment}; 409 {@code nothing-disputed} when nothing is Disputed
+     * @throws ResourceNotFoundException for a VA Submission that does not exist or the caller may not return
+     * @throws RejectedRequestException as each step's return says
      */
     @Transactional
     public Submission returnForRework(UUID id, ReturnRequest request) {
-        AtStep target = atStep(id, REVIEWING,
-                actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_RETURNED, AuditOutcome.REFUSED)), Hold.EXCLUSIVE);
-        String comment = returnComment(request.comment());
+        return returnsAtEndorsingStep(id) ? returnFromEndorsement(id, request) : returnFromReview(id, request);
+    }
+
+    /**
+     * Whether the caller returns this VA Submission as a VA POC: they hold the endorse need (every System, ADR 0042), and
+     * either review no System or are not this one's Cyber Manager, or it is Awaiting Endorsement. Only a caller who holds
+     * both roles has the VA Submission located first, so a VA POC's step-up still comes before any lookup.
+     */
+    private boolean returnsAtEndorsingStep(UUID id) {
+        if (!guard.scope(Need.ENDORSE).all()) {
+            return false;
+        }
+        Set<UUID> reviewing = guard.scope(Need.REVIEW).ids();
+        if (reviewing.isEmpty()) {
+            return true;
+        }
+        SubmissionStore.Located located = store.locate(id).orElseThrow(ResourceNotFoundException::new);
+        return !reviewing.contains(located.systemId())
+                || ENDORSING.from().contains(SubmissionState.valueOf(located.state()));
+    }
+
+    /**
+     * The Cyber Manager's return of a VA Submission In Review (story 55), with what is Disputed attached: each Disputed
+     * Finding and not-applicable justification, named by the review that Disputed it. What the Cyber Manager confirmed
+     * stays confirmed, as the move touches no review. The checks are a review's (ADR 0035 item 2), with the VA
+     * Submission's row held exclusively, so a review in progress finishes first and none starts until this commits; then
+     * the comment, then that something is Disputed. On success it is Returned for Rework ({@link #returned}).
+     *
+     * @throws ResourceNotFoundException for a VA Submission of a System the caller is not Cyber Manager of
+     * @throws RejectedRequestException 403 {@code sod-conflict}; 409 {@code invalid-transition} when it is not In Review;
+     *     400 {@code invalid-field} naming {@code comment}; 409 {@code nothing-disputed} when nothing is Disputed
+     */
+    private Submission returnFromReview(UUID id, ReturnRequest request) {
+        AtStep target = atStep(id, REVIEWING, refusedReturn(), Hold.EXCLUSIVE);
+        String comment = returnComment(request.comment(), false);
         if (!progress.outcome(id).returnable()) {
             audit.recordIndependently(target.refused().with(DetailKey.REASON, "nothing-disputed"));
             throw new RejectedRequestException(HttpStatus.CONFLICT, "nothing-disputed",
                     "Nothing is Disputed, so there is nothing to return for rework: Dispute what needs rework first.");
         }
-        ReviewProgress.Disputed disputed = progress.disputed(id);
+        return returned(target, comment, progress.disputed(id));
+    }
+
+    /**
+     * A VA POC's return of a VA Submission Awaiting Endorsement (story 66), to challenge something the Cyber Manager
+     * confirmed. It is a step-up action (IM8 ac-2), refused first without a fresh sign-in (403 {@code step-up-required}),
+     * as an endorsement is; then the endorsement's checks (ADR 0042 item 1), so segregation of duties counts the caller at
+     * the endorsing step; then the comment, which is required, as nothing else explains the return. It attaches nothing,
+     * as nothing is Disputed Awaiting Endorsement, and touches no review: the resubmission goes through the Cyber Manager
+     * again, who re-reviews only what changed (ADR 0040). On success it is Returned for Rework ({@link #returned}).
+     *
+     * @throws RejectedRequestException 403 {@code step-up-required} or {@code sod-conflict}; 409
+     *     {@code invalid-transition} when it is not Awaiting Endorsement; 400 {@code invalid-field} naming {@code comment}
+     */
+    private Submission returnFromEndorsement(UUID id, ReturnRequest request) {
+        stepUp.require(RETURN_INTENT);
+        AtStep target = atStep(id, ENDORSING, refusedReturn(), Hold.EXCLUSIVE);
+        String comment = returnComment(request.comment(), true);
+        return returned(target, comment, ReviewProgress.Disputed.NONE);
+    }
+
+    /**
+     * Keeps the return at the gate's step with what it attaches, and moves the VA Submission to Returned for Rework: the
+     * caller is recorded at the step, the return is audited with the {@code count} attached and a {@link SubmissionEvent}
+     * is published for the notifications.
+     */
+    private Submission returned(AtStep target, @Nullable String comment, ReviewProgress.Disputed disputed) {
+        UUID id = target.submissionId();
         Instant now = clock.instant();
-        store.insertReturn(id, SubmissionStep.REVIEW, comment, user.id(), now, disputed);
+        store.insertReturn(id, target.gate().step(), comment, user.id(), now, disputed);
         return moved(target, SubmissionState.RETURNED_FOR_REWORK, now, today -> {
             store.moved(id, SubmissionState.RETURNED_FOR_REWORK, today);
             return AuditEvent.of(AuditAction.SUBMISSION_RETURNED, AuditOutcome.SUCCESS)
                     .with(DetailKey.COUNT, disputed.count());
         });
+    }
+
+    /** A refused return's entry, before its System, VA Submission and reason: attributed to the caller. */
+    private AuditEvent refusedReturn() {
+        return actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_RETURNED, AuditOutcome.REFUSED));
     }
 
     /**
@@ -628,7 +694,7 @@ public class Submissions {
             throw new RejectedRequestException(HttpStatus.CONFLICT, NOT_ALLOWED_NOW, gate.refusedSentence());
         }
         store.recordParticipation(id, user.id(), gate.step(), clock.instant());
-        return new AtStep(id, held.systemId(), from, refused, hold);
+        return new AtStep(id, held.systemId(), gate, from, refused, hold);
     }
 
     /**
@@ -662,11 +728,15 @@ public class Submissions {
 
     /**
      * The comment of a return, cleaned and bounded as every long text a person types (ADR 0027 item 5, IM8 as-1); null
-     * when none was given or nothing is left once cleaned.
+     * when none was given or nothing is left once cleaned, which a {@code required} comment (a VA POC's) refuses.
      */
-    private static @Nullable String returnComment(@Nullable String raw) {
+    private static @Nullable String returnComment(@Nullable String raw, boolean required) {
         String cleaned = raw == null ? "" : ReportText.cleanLongText(raw);
         if (cleaned.isEmpty()) {
+            if (required) {
+                throw RejectedRequestException.invalidField("comment",
+                        "The field 'comment' is required: say what the SMO/Tech Lead should rework.");
+            }
             return null;
         }
         if (!ReportText.fits(cleaned, ReportText.MAX_LONG_TEXT)) {

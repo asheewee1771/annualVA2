@@ -20,7 +20,7 @@ class NotificationStore {
     private static final String INSERT =
             "INSERT INTO notification (recipient_id, system_id, submission_id, state, action, due_on, link, created_at, "
             + "group_key, awaits) VALUES (:recipient, :system, :submission, :state, :action, :dueOn, :link, :at, "
-            + ":groupKey, :awaits)";
+            + ":groupKey, :awaits) RETURNING id";
 
     /** Every open pair a VA POC's decision on the VA Submission handles: both rows of each, with who and when. */
     private static final String HANDLE =
@@ -54,9 +54,13 @@ class NotificationStore {
         this.jdbc = jdbc;
     }
 
-    /** One person's row of a notice; {@code groupKey} and {@code awaits} are set together, for a VA POC pair only. */
-    void insert(UUID recipient, Notice notice, @Nullable UUID groupKey, @Nullable Awaits awaits) {
-        jdbc.sql(INSERT)
+    /**
+     * One person's row of a notice; {@code groupKey} and {@code awaits} are set together, for a VA POC pair only.
+     *
+     * @return the notification's id
+     */
+    UUID insert(UUID recipient, Notice notice, @Nullable UUID groupKey, @Nullable Awaits awaits) {
+        return jdbc.sql(INSERT)
                 .param("recipient", recipient)
                 .param("system", notice.systemId())
                 .param("submission", notice.submissionId())
@@ -67,7 +71,8 @@ class NotificationStore {
                 .param("at", utc(notice.at()))
                 .param("groupKey", groupKey)
                 .param("awaits", awaits == null ? null : awaits.name())
-                .update();
+                .query(UUID.class)
+                .single();
     }
 
     void handle(UUID submissionId, Awaits awaits, UUID handler, Instant at) {

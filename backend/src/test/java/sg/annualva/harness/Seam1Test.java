@@ -35,6 +35,10 @@ public abstract class Seam1Test {
     @Autowired
     protected InMemoryFileStore fileStore;
 
+    /** The mail-relay fake; emptied before every test. */
+    @Autowired
+    protected CapturingMailRelay mailRelay;
+
     protected ApiClient api;
 
     /** Arranges Systems and role grants through the test-only endpoints, from a separate browser. */
@@ -49,6 +53,7 @@ public abstract class Seam1Test {
     void freshClient() {
         scanner.reset();
         fileStore.reset();
+        mailRelay.reset();
         api = new ApiClient(port);
         arrange = new Arrange(new ApiClient(port).withCsrf());
         issuer.clientJwksUrl("http://localhost:" + port + "/.well-known/jwks.json");

@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review &mdash; 35-va-poc-return</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall: PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">build PASS &middot; C0 H0 M0 L0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN &middot; C0 H0 M2 L4</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN &middot; C0 H0 M0 L8</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">semgrep PASS &middot; C0 H0 M0 L0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN &middot; C0 H0 M0 L4</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react WARN &middot; C0 H0 M0 L1</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN &middot; C0 H0 M0 L8</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">impl/35-va-poc-return</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report (round 2)</h1>
+          <p class="text-sm text-slate-500 mt-1">Ticket 35, a VA POC returns a VA Submission Awaiting Endorsement for rework, with a required comment. Diff <span class="font-mono text-xs">integration/annual-va-r1...HEAD</span> on <span class="font-mono text-xs">impl/35-va-poc-return</span> at HEAD <span class="font-mono text-xs">0b1860b</span> (17 files).</p>
+        </div>
+        <div class="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 space-y-2">
+          <p><strong>Mixed rounds.</strong> <span class="font-mono text-xs">thermo-nuclear</span>, <span class="font-mono text-xs">code-review</span> and <span class="font-mono text-xs">springboot</span> are second-round artifacts, run after the fix commits <span class="font-mono text-xs">2e00a7c</span>, <span class="font-mono text-xs">0e21955</span> and <span class="font-mono text-xs">da7b444</span>. <span class="font-mono text-xs">build</span> ran on HEAD <span class="font-mono text-xs">0b1860b</span> (back end from a reused log of <span class="font-mono text-xs">da7b444</span>; only a front-end file changed since). <span class="font-mono text-xs">semgrep</span>, <span class="font-mono text-xs">im8</span> and <span class="font-mono text-xs">react</span> are first-round artifacts, so some of their line numbers refer to earlier code, and im8 still calls the ADR 0045 (it is now ADR 0047).</p>
+          <p><strong>Fixed since the artifacts were written.</strong> The react and im8 Mediums (the module-level comment cache not tied to a VA Submission, and the per-panel busy state) were fixed in <span class="font-mono text-xs">2e00a7c</span> and <span class="font-mono text-xs">0b1860b</span>. The thermo-nuclear and code-review second rounds ran before <span class="font-mono text-xs">0b1860b</span>. That commit moved <span class="font-mono text-xs">setBusy(false)</span> from <span class="font-mono text-xs">finally</span> into <span class="font-mono text-xs">catch</span>, so the buttons stay disabled after a successful move until the new state is read. This resolves their Medium. The aggregator checked these fixes in <span class="font-mono text-xs">frontend/src/screens/va-poc/EndorseScreen.tsx</span> at HEAD. Fixed items are listed under &ldquo;Resolved&rdquo; in each card and are not counted.</p>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Executive Summary</h2>
+          <p class="text-xs text-slate-500 mt-1">Overall status across all active checks. <strong>Overall PASS:</strong> no check has a Critical or High finding. Two structural Mediums from thermo-nuclear remain: the role and state dispatcher in one return endpoint (ADR 0047 item 1, still provisional), and the third copy of the module-global step-up draft pattern. Everything else is Low.</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Check</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Status</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">C / H / M / L</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Summary of gaps</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">build</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 0</td>
+              <td class="px-4 py-2">Back end <span class="font-mono text-xs">clean verify</span> BUILD SUCCESS: 950 tests, 0 failures (including <span class="font-mono text-xs">VaPocReturnTest</span>, 14 tests), ArchUnit passes, JaCoCo line 97.57 % and branch 91.91 %. Front end <span class="font-mono text-xs">npm run check</span> on 0b1860b exits 0. Informational notes only.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">thermo-nuclear <span class="text-xs text-slate-400">(round 2)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 2 / 4</td>
+              <td class="px-4 py-2">Round-1 High (comment cache leak) is fixed, and so is the round-2 Medium about <span class="font-mono text-xs">finally { setBusy(false) }</span>. Still open: the dispatcher inside one endpoint, the third copy of the module-global draft cache, a boolean flag argument, the intent code typed three times, two migrations for one ticket, and a duplicate step-up problem.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">code-review <span class="text-xs text-slate-400">(round 2)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 8</td>
+              <td class="px-4 py-2">The Standards Medium (busy reset in <span class="font-mono text-xs">finally</span>) is fixed. All five acceptance criteria are met. Low items left: a stale V141_35 comment, a test name, a boolean flag, commit hygiene, a missing cross-ticket note, the VA POC's comment not shown on the Cyber Manager's re-review, and three provisional ADR 0047 items that need a human decision.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">semgrep</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 0</td>
+              <td class="px-4 py-2">328 rules (<span class="font-mono text-xs">p/security-audit</span> and <span class="font-mono text-xs">p/default</span>) on 14 files: 0 findings, 0 errors, no <span class="font-mono text-xs">nosemgrep</span> suppressions.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">im8</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 4</td>
+              <td class="px-4 py-2">M-1 (a restored comment can prefill another VA Submission) is fixed. Low items left: service-only validation of the comment, the audit catalogue Javadoc, a dual-role caller looked up before the step-up, and the comment kept in sessionStorage across the step-up.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">react</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 1</td>
+              <td class="px-4 py-2">Both Mediums (cache leak, per-panel busy state) and the Lows on render-phase side effects and the stale <span class="font-mono text-xs">aria-invalid</span> are fixed. One Low is left: after a successful move the buttons stay disabled until the refetch lands. That behaviour is intended and was restored in 0b1860b.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">springboot <span class="text-xs text-slate-400">(round 2)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 8</td>
+              <td class="px-4 py-2">Round-1 High on migration numbering was withdrawn and is now Low. Low items left: an unlocked pre-read for dual-role callers, the README refusal order, a <span class="font-mono text-xs">default</span> branch in <span class="font-mono text-xs">WorkflowNotices.returned</span>, the comment checked after the lock, Flyway out-of-order on long-lived databases, no <span class="font-mono text-xs">consumes</span>, and two test-structure items.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-600">No Critical or High findings remain. The open Mediums and the decisions a human needs to make are listed below.</p>
+          <ul class="list-disc pl-5 text-sm space-y-2">
+            <li><span class="text-amber-600">Medium</span> (thermo-nuclear #1): <span class="font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java:489-498</span>. One return endpoint carries two commands, chosen by a role-scope and state dispatcher. For dual-role callers it does an unlocked <span class="font-mono text-xs">store.locate</span> that <span class="font-mono text-xs">atStep</span> repeats. ADR 0047 item 1 is still provisional.</li>
+            <li><span class="text-amber-600">Medium</span> (thermo-nuclear #3): <span class="font-mono text-xs">frontend/src/screens/va-poc/EndorseScreen.tsx:104-121</span>. This is the third copy of the module-global step-up draft pattern, after RegisterScreen and ExportsScreen. Whether it runs before the step-up arrival clears drafts depends on import order.</li>
+            <li><span class="text-slate-500">Human decision needed</span> (code-review Spec #2): ADR 0047 items 1, 2 and 4 (the shared endpoint, the return attaching nothing, the Cycle matrix keeping the reviewed date) are &ldquo;provisional, awaiting a human decision&rdquo;. <span class="font-mono text-xs">docs/agents/reviewer-decisions.md</span> has no entry for them.</li>
+            <li><span class="text-slate-500">Fixed</span>: the comment cache leak across VA Submissions (react #1, im8 M-1, thermo-nuclear round-1 High) and the busy state (react #2, the thermo-nuclear #2 and code-review S1 regression) are resolved at HEAD 0b1860b.</li>
+          </ul>
+        </div>
+      </div>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td></tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-4 text-sm text-slate-600 border-t border-slate-100 space-y-1">
+          <p>Informational, below Low: fallow health lists <span class="font-mono text-xs">frontend/src/screens/smo/ReworkScreen.tsx</span> (258 LOC, fan-out 12) and <span class="font-mono text-xs">frontend/src/screens/va-poc/EndorseScreen.tsx</span> as hotspots under the threshold. <span class="font-mono text-xs">backend/src/main/java/sg/annualva/adapters/oidc/MccHttp.java:51</span> uses a deprecated API. That predates this ticket.</p>
+          <p>Coverage misses in changed classes (<span class="font-mono text-xs">Submissions.java:663-664</span>, <span class="font-mono text-xs">WorkflowNotices.java:83</span>, <span class="font-mono text-xs">:121</span>) are outside this ticket's hunks.</p>
+        </div>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear (round 2)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td>
+              <td class="px-4 py-2 font-mono text-xs">489-498</td>
+              <td class="px-4 py-2">#1. <span class="font-mono text-xs">returnsAtEndorsingStep</span> dispatches one endpoint between two commands by role scope and state. For dual-role callers it does an unlocked <span class="font-mono text-xs">store.locate</span> that <span class="font-mono text-xs">atStep</span> repeats, and it compares state names as strings. <span class="font-mono text-xs">ReturnRequest.comment</span> is optional or required depending on the caller. Fix: record the human decision. Preferred is a separate <span class="font-mono text-xs">POST /api/submissions/{id}/va-poc-return</span>; at least pass the <span class="font-mono text-xs">Located</span> into <span class="font-mono text-xs">atStep</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/EndorseScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">104-121, 146</td>
+              <td class="px-4 py-2">#3. This is the third copy of the &ldquo;module-global mutable draft, taken at import time, cleared by a component effect&rdquo; pattern (after <span class="font-mono text-xs">RegisterScreen.tsx:157</span> and <span class="font-mono text-xs">ExportsScreen.tsx:70</span>). It reads <span class="font-mono text-xs">window.location.pathname</span> and consumes sessionStorage when the module is evaluated, so the ordering against <span class="font-mono text-xs">takeStepUpArrival()</span> depends on import order. Fix: add one <span class="font-mono text-xs">takeStepUpDraft&lt;T&gt;(intent, parse)</span> or a <span class="font-mono text-xs">useStepUpDraft</span> hook in <span class="font-mono text-xs">api/stepUp.ts</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td>
+              <td class="px-4 py-2 font-mono text-xs">514, 537, 688</td>
+              <td class="px-4 py-2">#4. <span class="font-mono text-xs">returnComment(raw, boolean required)</span> is a boolean trap. Fix: derive the requirement from the gate's step, or split it into <span class="font-mono text-xs">optionalReturnComment</span> and <span class="font-mono text-xs">requiredReturnComment</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/EndorseScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">20</td>
+              <td class="px-4 py-2">#5. The intent code <span class="font-mono text-xs">"submission-return"</span> is typed by hand in three places. A typo would silently drop the kept comment. Fix: export named intent constants from <span class="font-mono text-xs">api/stepUp.ts</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V135__va_poc_return.sql, V141_35__va_poc_return_notices.sql</td>
+              <td class="px-4 py-2 font-mono text-xs">1</td>
+              <td class="px-4 py-2">#6. Two CHECK-only migrations for one ticket. V135 has no ordering need of its own. Fix: fold it into V141_35 and update the README and ADR references.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/EndorseScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">70</td>
+              <td class="px-4 py-2">#7. <span class="font-mono text-xs">useMove</span>'s catch also shows a <span class="font-mono text-xs">step-up-required</span> problem in the ErrorPanel, on top of the app's step-up explanation. Fix: <span class="font-mono text-xs">if (!isStepUpRequired(refused)) onProblem(refused);</span>, as RegisterScreen and ExportsScreen do.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-4 text-sm text-slate-600 border-t border-slate-100 space-y-1">
+          <p class="font-semibold text-slate-800">Resolved (not counted)</p>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>#2 (Medium): <span class="font-mono text-xs">useMove</span>'s <span class="font-mono text-xs">finally { setBusy(false) }</span> re-enabled the buttons after a successful move. Fixed in 0b1860b: <span class="font-mono text-xs">setBusy(false)</span> now runs only in <span class="font-mono text-xs">catch</span> (checked at HEAD). The artifact's follow-up suggestion to extract the hook into <span class="font-mono text-xs">screens/shared/useSubmissionMove.ts</span> and share it with <span class="font-mono text-xs">FinishReview</span> is still open as an optional refactor.</li>
+            <li>Round 1 #1 (High, comment cache leaks across VA Submissions), #4, #6, #7 and #8: fixed in the round-1 fix commits.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review (round 2)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V141_35__va_poc_return_notices.sql</td>
+              <td class="px-4 py-2 font-mono text-xs">6</td>
+              <td class="px-4 py-2">Standards #2 (also Spec #3). The comment still says <span class="font-mono text-xs">VA_POC_RETURNED</span> goes &ldquo;to the Cyber Manager who passed it&rdquo;. Since 0e21955 it goes to the System's current Cyber Manager. Fix: update the comment.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/VaPocReturnTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">148</td>
+              <td class="px-4 py-2">Standards #3. The test name <span class="font-mono text-xs">onlyAVaPocReturnsAndOnlyAVaSubmissionAwaitingEndorsement</span> reads as if only a VA POC can return. Fix: rename it, for example to <span class="font-mono text-xs">aVaPocReturnsOnlyAVaSubmissionAwaitingEndorsement</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td>
+              <td class="px-4 py-2 font-mono text-xs">688</td>
+              <td class="px-4 py-2">Standards #4 (judgement call). The boolean flag argument in <span class="font-mono text-xs">returnComment(raw, boolean required)</span>. It does keep the comment rule in one place. Optional fix: two small wrappers or a <span class="font-mono text-xs">REQUIRED</span>/<span class="font-mono text-xs">OPTIONAL</span> enum.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">commits 0e21955, 2e00a7c</td>
+              <td class="px-4 py-2 font-mono text-xs">-</td>
+              <td class="px-4 py-2">Standards #5 (commit hygiene). 0e21955 is typed <span class="font-mono text-xs">refactor</span> but changes notice text and a DB constraint, and its subject joins two changes. 2e00a7c bundles several fixes. Fix: reword or split before merging, or accept them as they are.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">CONVENTIONS.md (cross-ticket notes)</td>
+              <td class="px-4 py-2 font-mono text-xs">-</td>
+              <td class="px-4 py-2">Standards #6 (process). No cross-ticket note records the <span class="font-mono text-xs">V141_35</span> migration-name exception. ADR 0047 item 6 does explain it. Fix: add one note.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">85</td>
+              <td class="px-4 py-2">Spec #1 (partial, stories 63/56). The Cyber Manager's re-review screen never shows the VA POC's return comment, although <span class="font-mono text-xs">GET /api/submissions/{id}/returns</span> allows CYBER_MANAGER. Fix: when the latest return is at <span class="font-mono text-xs">ENDORSE</span>, fetch the returns and show the comment as text, or record the deferral in ADR 0047.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">docs/adr/0047-a-va-poc-return-is-the-return-at-the-endorsing-step-with-a-required-comment.md</td>
+              <td class="px-4 py-2 font-mono text-xs">3</td>
+              <td class="px-4 py-2">Spec #2 (needs a human decision). Items 1, 2 and 4 (the shared endpoint, the return attaching nothing, the Cycle matrix keeping the reviewed date) are provisional. Fix: list them as Human Decision Needed in the hand-off and record the answers in <span class="font-mono text-xs">docs/agents/reviewer-decisions.md</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V141_35__va_poc_return_notices.sql</td>
+              <td class="px-4 py-2 font-mono text-xs">6</td>
+              <td class="px-4 py-2">Spec #3. The same stale recipient comment as Standards #2, reported on the spec axis.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-4 text-sm text-slate-600 border-t border-slate-100 space-y-1">
+          <p class="font-semibold text-slate-800">Resolved (not counted)</p>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>Standards #1 (Medium, regression from 2e00a7c): <span class="font-mono text-xs">setBusy(false)</span> in <span class="font-mono text-xs">finally</span> at <span class="font-mono text-xs">EndorseScreen.tsx:72</span> re-enabled both buttons during the refetch, which contradicted ADR 0047 item 7. Fixed in 0b1860b: <span class="font-mono text-xs">busy</span> is now reset only in <span class="font-mono text-xs">catch</span> (checked at HEAD).</li>
+            <li>Round-1 Standards #1, #2, #4, #5, #6 and #7, and round-1 Spec #1, #3 and #5: fixed or resolved, as the artifact records.</li>
+          </ul>
+          <p>Acceptance criteria AC1 to AC5 are all met, with Seam 1 tests in <span class="font-mono text-xs">VaPocReturnTest.java</span>.</p>
+        </div>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td></tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-4 text-sm text-slate-600 border-t border-slate-100">
+          <p>The two SQL migrations were matched only by multilang rules (the community packs have no PostgreSQL DDL rules).</p>
+        </div>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionController.java, Submissions.java</td>
+              <td class="px-4 py-2 font-mono text-xs">71; 239, 538</td>
+              <td class="px-4 py-2">L-1 (as-1). The return comment is validated only in the service: <span class="font-mono text-xs">ReturnRequest</span> has no <span class="font-mono text-xs">@Valid</span> or <span class="font-mono text-xs">@Size</span>. Fix: add <span class="font-mono text-xs">@Size(max = 4000)</span>, or record service-only validation as the accepted pattern.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/audit/AuditAction.java</td>
+              <td class="px-4 py-2 font-mono text-xs">186-191</td>
+              <td class="px-4 py-2">L-2 (lm-4). The <span class="font-mono text-xs">SUBMISSION_RETURNED</span> Javadoc describes only the Cyber Manager's return. Fix: cover the VA POC's return and its refusal reasons, and note that a missing step-up is the <span class="font-mono text-xs">REQUEST_REFUSED</span> entry.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td>
+              <td class="px-4 py-2 font-mono text-xs">489-498</td>
+              <td class="px-4 py-2">L-3 (ac-2/as-7). A dual-role caller is looked up before the step-up check, so an unknown id gives 404 before <span class="font-mono text-xs">step-up-required</span>. Harmless today. No fix required. Optionally pin it with a test and note it in the ADR.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/api/stepUp.ts</td>
+              <td class="px-4 py-2 font-mono text-xs">101-104</td>
+              <td class="px-4 py-2">L-4 (as-8/as-11). The return comment, which can carry report content, is kept in sessionStorage for up to 15 minutes across the step-up (the ADR 0004 mechanism). Fix: accept it under ADR 0004 and record that in ADR 0047, or require the step-up before the comment is typed.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-4 text-sm text-slate-600 border-t border-slate-100 space-y-1">
+          <p class="font-semibold text-slate-800">Resolved (not counted)</p>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>M-1 (Medium): a restored return comment could prefill another VA Submission's Return panel. Fixed in 2e00a7c: the draft is tied to the VA Submission taken from the path, and the module cache is cleared once a Return panel has read it (checked at HEAD).</li>
+          </ul>
+          <p>Manual checklist (open): confirm the VA POC return is on the spec's ac-2 sensitive-action list, confirm the classification level on the comment field, and confirm that service-only validation is accepted.</p>
+        </div>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/EndorseScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">58-81 (round 1)</td>
+              <td class="px-4 py-2">#5. On success <span class="font-mono text-xs">useMove</span> leaves <span class="font-mono text-xs">busy</span> true and relies on the refetch to unmount the panels. If the refetch fails or still reports Awaiting Endorsement, both buttons stay disabled until a reload. Note: 0b1860b keeps this behaviour on purpose (ADR 0047 item 7), because resetting <span class="font-mono text-xs">busy</span> on success caused the Medium that thermo-nuclear and code-review raised. A narrower fix is to reset <span class="font-mono text-xs">busy</span> when the submission state or <span class="font-mono text-xs">refreshKey</span> changes.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-4 text-sm text-slate-600 border-t border-slate-100 space-y-1">
+          <p class="font-semibold text-slate-800">Resolved (not counted)</p>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>#1 (Medium): the module-level <span class="font-mono text-xs">commentLeftForSignIn</span> was not tied to a VA Submission. Fixed in 2e00a7c: <span class="font-mono text-xs">leftForSignIn</span> holds <span class="font-mono text-xs">{submissionId, comment}</span>, is used only for a matching <span class="font-mono text-xs">submissionId</span>, and is cleared on the panel's mount.</li>
+            <li>#2 (Medium): each panel had its own <span class="font-mono text-xs">busy</span>, so two moves could run at once. Fixed in 2e00a7c and 0b1860b: one <span class="font-mono text-xs">Mover</span> is shared by both panels.</li>
+            <li>#3 (Low): side effects in the <span class="font-mono text-xs">useState</span> initialiser. Resolved: the draft is now taken once at module load, and the initialiser is a pure lookup (checked at HEAD).</li>
+            <li>#4 (Low): <span class="font-mono text-xs">aria-invalid</span> stayed true after an edit. Resolved: <span class="font-mono text-xs">aria-invalid={flagged}</span>, where <span class="font-mono text-xs">flagged</span> is <span class="font-mono text-xs">problem?.field === "comment" &amp;&amp; !edited</span> (checked at HEAD).</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot (round 2)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td>
+              <td class="px-4 py-2 font-mono text-xs">497</td>
+              <td class="px-4 py-2">#1 (spring-data/core). For a dual-role caller, the branch is picked from an unlocked <span class="font-mono text-xs">store.locate</span>, and the row is read three times. This is safe, because the gate checks again under the lock. Fix: add a comment, or pass the first <span class="font-mono text-xs">Located</span> into <span class="font-mono text-xs">atStep</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java (README.md:226)</td>
+              <td class="px-4 py-2 font-mono text-xs">489-498</td>
+              <td class="px-4 py-2">#2 (spring-security). The README does not say that a dual-role caller gets 404 for an unknown id before <span class="font-mono text-xs">step-up-required</span>. Nothing leaks. Fix: add one clause to README.md:226.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/WorkflowNotices.java</td>
+              <td class="px-4 py-2 font-mono text-xs">160</td>
+              <td class="px-4 py-2">#3 (spring-core). <span class="font-mono text-xs">default -&gt;</span> sends the Cyber Manager's REWORK notice, so a future return origin would silently get the wrong sentence. Fix: use <span class="font-mono text-xs">case IN_REVIEW -&gt;</span> and make <span class="font-mono text-xs">default</span> do nothing or throw.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td>
+              <td class="px-4 py-2 font-mono text-xs">536-537</td>
+              <td class="px-4 py-2">#4 (spring-data). The required comment is checked after <span class="font-mono text-xs">atStep</span>, so a bad comment takes the row lock before the 400. This matches the ADR refusal order. Fix: accept it as documented.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V135__va_poc_return.sql, V141_35__va_poc_return_notices.sql</td>
+              <td class="px-4 py-2 font-mono text-xs">1</td>
+              <td class="px-4 py-2">#5 (spring-data; round-1 High, withdrawn). A long-lived database already past V144 fails Flyway validation because <span class="font-mono text-xs">spring.flyway.out-of-order</span> is unset (application.yml:16). This affects the whole run. No change in this ticket: the merger records the run-wide choice.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionController.java</td>
+              <td class="px-4 py-2 font-mono text-xs">68</td>
+              <td class="px-4 py-2">#6 (spring-web). The <span class="font-mono text-xs">@PostMapping</span> declares no <span class="font-mono text-xs">consumes = APPLICATION_JSON_VALUE</span>, like every JSON POST in the codebase. Optional fix, best done across the codebase.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/VaPocReturnTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">186</td>
+              <td class="px-4 py-2">#7 (spring-test). The 404 check for a dual-role caller sits inside a segregation-of-duties test. Fix: move it into its own test.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/VaPocReturnTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">188-192</td>
+              <td class="px-4 py-2">#8 (spring-test). The <span class="font-mono text-xs">sod-conflict</span> refusal asserts only the audit reason. Fix: also assert the state is <span class="font-mono text-xs">AWAITING_ENDORSEMENT</span> and that no event was published.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-4 text-sm text-slate-600 border-t border-slate-100 space-y-1">
+          <p class="font-semibold text-slate-800">Resolved (not counted)</p>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>Round-1 #2 (notice wording) and #6, #7, #8 (tests): fixed. Round-1 #1 (High, migration numbering): withdrawn as High and carried as Low #5.</li>
+          </ul>
+          <p>spring-batch-review: not applicable. spring-logging-review: no findings; the comment never reaches logs, audit details, events, error bodies or notices.</p>
+        </div>
+      </details>
+    </main>
+  </body>
+</html>

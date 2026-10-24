@@ -53,6 +53,13 @@ annualva:
     base-url: http://localhost:9083
   mcns:
     base-url: http://localhost:9082
+  # Mock template ids: mock-MCNS logs whatever it is sent (README, Simulating the mocks).
+  mail:
+    app-url: https://localhost:8443
+    templates:
+      returned-for-rework: dev-returned-for-rework
+      overdue: dev-overdue
+      register-change: dev-register-change
   dev:
     # MockPass personas carry a uuid but no email; the System Register works by email.
     identities:

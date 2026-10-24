@@ -95,9 +95,13 @@ export function fetchDeclarationText(): Promise<DeclarationText> {
 }
 
 /**
- * POST /api/submissions/{id}/return: the Cyber Manager returns it to the SMO/Tech Lead for rework with what is Disputed
- * attached, and an optional comment (blank sends none). The server answers 409 `nothing-disputed` when nothing is
- * Disputed, and 409 `invalid-transition` once it is not In Review.
+ * POST /api/submissions/{id}/return: back to the SMO/Tech Lead for rework (blank sends no comment).
+ *
+ * - The Cyber Manager returns it from In Review with what is Disputed attached; the comment is optional. The server
+ *   answers 409 `nothing-disputed` when nothing is Disputed, and 409 `invalid-transition` once it is not In Review.
+ * - A VA POC returns it from Awaiting Endorsement; the comment is required (400 `invalid-field` without one). A step-up
+ *   action: 403 `step-up-required` without a sign-in from the last five minutes, 403 `sod-conflict` when this VA POC
+ *   acted at, or is assigned to, another step of it, and 409 `invalid-transition` once it is not Awaiting Endorsement.
  */
 export function returnForRework(id: string, comment: string): Promise<Submission> {
   return request<Submission>(
@@ -131,8 +135,12 @@ export function endorseSubmission(id: string): Promise<Submission> {
  */
 export interface SubmissionReturn {
   id: string;
+  /** The step it was returned at: REVIEW (the Cyber Manager) or ENDORSE (a VA POC). */
   step: SubmissionStep;
-  /** Null when none was given: each Dispute carries its own comment. */
+  /**
+   * Null when the Cyber Manager gave none, as each Dispute carries its own; a VA POC's return always has one, as it
+   * attaches nothing else.
+   */
   comment: string | null;
   /** A user id, never a name or email. */
   returnedBy: string;

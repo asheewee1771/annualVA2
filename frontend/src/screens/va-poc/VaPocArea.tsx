@@ -40,7 +40,7 @@ function SubPage({ children }: { children: ReactNode }) {
 export function VaPocArea({ path, classification }: AreaProps) {
   const endorsing = endorsedSubmissionOf(path);
   if (endorsing) {
-    return <EndorseScreen key={endorsing} submissionId={endorsing} />;
+    return <EndorseScreen key={endorsing} submissionId={endorsing} classification={classification} />;
   }
   if (path === REGISTER_PATH) {
     return (

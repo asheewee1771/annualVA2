@@ -43,6 +43,7 @@ import sg.annualva.audit.DetailKey;
 import sg.annualva.access.RoleGrantStore;
 import sg.annualva.export.ExportWorker;
 import sg.annualva.ingestion.ScanPoller;
+import sg.annualva.notification.MailOutbox;
 import sg.annualva.submission.CycleLifecycle;
 import sg.annualva.submission.OverdueSweep;
 import sg.annualva.web.ProblemResponses;
@@ -112,15 +113,18 @@ public class TestEndpoints {
         private final TransactionTemplate transaction;
         private final ScanPoller scanPoller;
         private final OverdueSweep overdueSweep;
+        private final MailOutbox mailOutbox;
         private final CycleLifecycle cycleLifecycle;
         private final ExportWorker exportWorker;
 
         public TestController(AppUserStore users, RoleGrantStore grants, AccessGuard guard, StepUp stepUp, JdbcClient jdbc,
                 Clock clock, AuditLog audit, TransactionTemplate transaction, ScanPoller scanPoller,
-                OverdueSweep overdueSweep, CycleLifecycle cycleLifecycle, ExportWorker exportWorker) {
+                OverdueSweep overdueSweep, MailOutbox mailOutbox, CycleLifecycle cycleLifecycle,
+                ExportWorker exportWorker) {
             this.cycleLifecycle = cycleLifecycle;
             this.scanPoller = scanPoller;
             this.overdueSweep = overdueSweep;
+            this.mailOutbox = mailOutbox;
             this.exportWorker = exportWorker;
             this.users = users;
             this.grants = grants;
@@ -232,6 +236,8 @@ public class TestEndpoints {
                 jdbc.sql("DROP TRIGGER IF EXISTS test_finding_late ON report_file").update();
                 // The notifications (V136) name the Systems and the VA Submissions, so they go before both.
                 jdbc.sql("DROP TRIGGER IF EXISTS test_notification_fault ON notification").update();
+                // The mail outbox (V137) names the notifications, so it goes before them.
+                jdbc.sql("DELETE FROM mail_outbox").update();
                 jdbc.sql("DELETE FROM notification").update();
                 // The Exemption requests (V144_40) name the VA Submissions and their evidence files.
                 jdbc.sql("DELETE FROM exemption").update();
@@ -315,6 +321,53 @@ public class TestEndpoints {
         public Map<String, String> overdue() {
             overdueSweep.sweep();
             return Map.of("ran", "overdue");
+        }
+
+        /** One pass of the mail dispatcher, which {@code annualva.scheduling.enabled=false} keeps from running by itself in tests. */
+        @PostMapping("/api/test/jobs/mail")
+        public Map<String, String> mail() {
+            try {
+                mailOutbox.dispatch();
+            } catch (CapturingMailRelay.DispatcherStopped stopped) {
+                return Map.of("ran", "stopped");
+            }
+            return Map.of("ran", "mail");
+        }
+
+        private static final String OUTBOX =
+                "SELECT o.id, u.email::text AS recipient, n.action, o.template, o.status, o.attempts, o.next_attempt_at, "
+                + "o.relay_message_id FROM mail_outbox o JOIN notification n ON n.id = o.notification_id "
+                + "JOIN app_user u ON u.id = n.recipient_id ORDER BY o.created_at, n.action, u.email";
+
+        /** Observation until a delivery read exists (ticket 39): every queued mail, oldest first, as the outbox holds it. */
+        @GetMapping("/api/test/mail-outbox")
+        public List<Map<String, Object>> outbox() {
+            return jdbc.sql(OUTBOX).query((rs, row) -> {
+                Map<String, Object> view = new java.util.LinkedHashMap<>();
+                view.put("id", rs.getObject("id", UUID.class).toString());
+                view.put("recipient", rs.getString("recipient"));
+                view.put("action", rs.getString("action"));
+                view.put("template", rs.getString("template"));
+                view.put("status", rs.getString("status"));
+                view.put("attempts", rs.getInt("attempts"));
+                view.put("nextAttemptAt",
+                        rs.getObject("next_attempt_at", java.time.OffsetDateTime.class).toInstant().toString());
+                view.put("relayMessageId", rs.getString("relay_message_id"));
+                return view;
+            }).list();
+        }
+
+        /**
+         * A System's name or System ID ({@code name}, {@code code}; a missing one is kept) changed behind the Register's
+         * back to one the Register would refuse (a format character, say), so a test can prove the mail allow-list
+         * refuses whatever reaches it, whoever wrote it.
+         */
+        @PostMapping("/api/test/systems/{id}/name")
+        public Map<String, String> renameSystem(@PathVariable UUID id, @RequestBody Map<String, String> body) {
+            jdbc.sql("UPDATE va_system SET name = coalesce(:name, name), code = coalesce(CAST(:code AS citext), code) "
+                    + "WHERE id = :id").param("name", body.get("name")).param("code", body.get("code")).param("id", id)
+                    .update();
+            return Map.of("id", id.toString());
         }
 
         /** One pass of the VA Cycle lifecycle job, which {@code annualva.scheduling.enabled=false} keeps from running by itself in tests. */

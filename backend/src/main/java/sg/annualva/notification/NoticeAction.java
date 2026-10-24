@@ -29,6 +29,17 @@ public enum NoticeAction {
      * Submission, or the one the close made for a System that had none, is Not Endorsed.
      */
     NOT_ENDORSED("The VA Cycle closed before this System's VA Submission was endorsed: it is Not Endorsed."),
+    /**
+     * To the SMO/Tech Lead, once a VA POC returned the VA Submission (ticket 35): nothing is Disputed, so the sentence
+     * points at the VA POC's comment, which the notification never carries.
+     */
+    VA_POC_REWORK("A VA POC returned the VA Submission: read their comment, rework it and submit it again."),
+    /**
+     * To the System's Cyber Manager, once a VA POC returned its VA Submission from Awaiting Endorsement (ticket 35): the
+     * resubmission comes back to them, whoever passed it.
+     */
+    VA_POC_RETURNED("A VA POC returned the VA Submission from endorsement: re-review what changes once it is submitted "
+            + "again."),
     /** To both VA POCs, once an SMO/Tech Lead requests an Exemption (ticket 40); either one's decision clears it. */
     DECIDE_EXEMPTION("Approve or reject the Exemption request."),
     /** To the SMO/Tech Lead, once a VA POC approves their Exemption. */

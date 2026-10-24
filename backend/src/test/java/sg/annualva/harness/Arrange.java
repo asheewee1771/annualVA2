@@ -78,6 +78,47 @@ public final class Arrange {
         assertThat(client.post("/api/test/faults/notification/" + mode).status()).isEqualTo(200);
     }
 
+    /** One pass of the mail dispatcher, which a test runs by hand because scheduling is off in tests. */
+    public void mailDispatch() {
+        mailDispatchEnding("mail");
+    }
+
+    /** One pass of the mail dispatcher that stops mid-call, as the relay fake was told to make it ({@code stopNext}). */
+    public void mailDispatchStopped() {
+        mailDispatchEnding("stopped");
+    }
+
+    private void mailDispatchEnding(String ending) {
+        var response = client.post("/api/test/jobs/mail");
+        assertThat(response.status()).as(response.body()).isEqualTo(200);
+        assertThat(ApiClient.json(response).get("ran").asString()).isEqualTo(ending);
+    }
+
+    /**
+     * Every queued mail, oldest first, as {@code recipient}, {@code action}, {@code template}, {@code status},
+     * {@code attempts}, {@code nextAttemptAt} and {@code relayMessageId}.
+     */
+    public JsonNode mailOutbox() {
+        var response = client.get("/api/test/mail-outbox");
+        assertThat(response.status()).isEqualTo(200);
+        return ApiClient.json(response);
+    }
+
+    /** Renames a System behind the Register's back, to a name the Register would refuse. */
+    public void renameSystem(String systemUuid, String name) {
+        changeSystem(systemUuid, "name", name);
+    }
+
+    /** Changes a System's System ID behind the Register's back, to one the Register would refuse. */
+    public void recodeSystem(String systemUuid, String code) {
+        changeSystem(systemUuid, "code", code);
+    }
+
+    private void changeSystem(String systemUuid, String field, String value) {
+        String json = ApiClient.toJson(java.util.Map.of(field, value));
+        assertThat(client.postJson("/api/test/systems/" + systemUuid + "/name", json).status()).isEqualTo(200);
+    }
+
     /** Rejects a file as another pass of the scan job would have, without touching its bytes. */
     public void rejectFile(String fileId) {
         assertThat(client.post("/api/test/report-files/" + fileId + "/rejected").status()).isEqualTo(200);
