@@ -167,7 +167,7 @@ The preview says what each row would do to in-flight work (a VA Submission that 
 - **Withdrawn:** final and read-only; the Overdue flag clears; one `SUBMISSION_WITHDRAWN` entry per VA Submission (`state_from`, `state_to`, `preview_id`); the SMO/Tech Lead is told (`WITHDRAWN`, mailed with the `register-change` template, `change_kind` "Withdrawn"); a VA POC pair on it clears. A retired System leaves every dashboard and count, so the Quarter board's Withdrawn column stays empty.
 - **A Not Started System moved** to another Quarter loses its Overdue flag while the new Quarter's Submission Window is open; the sweep sets it again when it passes.
 - **Migration:** V144_43 adds `WITHDRAWN` to `notification_action_check`.
-- **Front end:** the preview shows Will withdraw (a tick per VA Submission; Apply stays disabled until each is ticked, and the ticks survive the step-up sign-in), Will move and Will transfer (with why each is blocked), then the other groups.
+- **Front end:** the preview shows Will withdraw (a tick per VA Submission; Apply stays disabled until each is ticked, and the ticks survive the step-up sign-in), Will move and Will transfer (with why each is blocked), then every row by its outcome, a held-back one with what holds it back.
 
 ## SMO inbox
 
