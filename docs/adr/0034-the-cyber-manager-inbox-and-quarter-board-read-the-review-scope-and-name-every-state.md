@@ -17,4 +17,4 @@ Amends ADR 0019 (the SMO inbox names every state) and ADR 0033 (the Cyber Manage
 
 Amended by ADR 0035: item 4's marker no longer reads participation only. `sodConflict` is true when segregation of duties refuses the caller's review by the one rule the review itself is refused by: they acted on the VA Submission at another step, or are assigned to another step of its System (its SMO/Tech Lead, say). `Submissions.actedAtAnotherStep` is now `Submissions.conflictedAt`, and ticket 28 records the `REVIEW` step.
 
-Amended by ADR 0036: the Quarter board is open to `VA_POC`, read for `Need.ENDORSE` (every System), and a VA POC's cards mark no segregation-of-duties conflict until the endorsing step is recorded.
+Amended by ADR 0037: the Quarter board is open to `VA_POC`, read for `Need.ENDORSE` (every System), and a VA POC's cards mark no segregation-of-duties conflict until the endorsing step is recorded.

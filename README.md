@@ -169,7 +169,7 @@ A Cyber Manager sees the VA Submissions of the Systems assigned to them, Overdue
 
 ## VA POC Quarter board and Cycle matrix
 
-A VA POC sees a Quarter board of every System and a matrix of the whole VA Cycle, as two tabs (story 64, ADR 0036).
+A VA POC sees a Quarter board of every System and a matrix of the whole VA Cycle, as two tabs (story 64, ADR 0037).
 
 - **Board:** the same `GET /api/dashboards/quarter-board` read for the endorse scope (`Need.ENDORSE`, every System). A person who is both a VA POC and a Cyber Manager gets the VA POC's board. `sodConflict` stays `false` on it until the endorsing step is recorded (ticket 34).
 - **Matrix API:** `GET /api/dashboards/cycle-matrix?cycle=` (VA POC only; an SMO/Tech Lead, Cyber Manager, Auditor or a person with no role gets `403`, no session `401`; a Cycle the app does not run `404`) answers `cycle`, `quarters`, `systems` and `handledOutsideApp`.

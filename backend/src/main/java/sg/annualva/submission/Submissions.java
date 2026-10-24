@@ -172,7 +172,7 @@ public class Submissions {
             boolean overdue, @Nullable LocalDate dueOn, boolean endorsedLate, Milestones reached) {}
 
     /**
-     * When a VA Submission last reached each of its milestones (UTC), each null until it has (ADR 0036): submitted for
+     * When a VA Submission last reached each of its milestones (UTC), each null until it has (ADR 0037): submitted for
      * review, passed to endorsement by the Cyber Manager (which ends the review) and endorsed by a VA POC.
      */
     public record Milestones(
