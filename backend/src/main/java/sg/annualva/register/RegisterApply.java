@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,7 +38,7 @@ import sg.annualva.web.ResourceNotFoundException;
  * lock, so the second of two concurrent applies sees the first one's changes and is refused. The preview is applied at
  * most once and for an hour. All of it, the audit entries included, commits or rolls back together (ADR 0014). A VA
  * POC's scope is every System, so no ownership check applies (ADR 0013). While two VA Cycles overlap it changes only
- * the newer one: the older one keeps its Systems and Quarters as they were when the newer one opened (ADR 0043).
+ * the newer one: the older one keeps its Systems and Quarters as they were when the newer one opened (ADR 0044).
  */
 @Service
 public class RegisterApply {
@@ -57,9 +58,11 @@ public class RegisterApply {
     private final CycleCalendar calendar;
     private final Clock clock;
     private final RegisterSystems systems;
+    private final ApplicationEventPublisher events;
 
     RegisterApply(RegisterStore store, RegisterRoles roles, StepUp stepUp, AuditLog audit, AuditActor actor,
-            CurrentUser user, CycleCalendar calendar, Clock clock, RegisterSystems systems) {
+            CurrentUser user, CycleCalendar calendar, Clock clock, RegisterSystems systems,
+            ApplicationEventPublisher events) {
         this.systems = systems;
         this.store = store;
         this.roles = roles;
@@ -69,6 +72,7 @@ public class RegisterApply {
         this.user = user;
         this.calendar = calendar;
         this.clock = clock;
+        this.events = events;
     }
 
     /**
@@ -82,7 +86,7 @@ public class RegisterApply {
         store.lockApply();
         Preview preview = store.preview(previewId).orElseThrow(ResourceNotFoundException::new);
         Instant now = clock.instant();
-        // While two Cycles overlap the apply changes only the newer: the older keeps its Systems first (ADR 0043).
+        // While two Cycles overlap the apply changes only the newer: the older keeps its Systems first (ADR 0044).
         systems.keepOlderCycles(now);
         if (!Preview.WAITING.equals(preview.status())) {
             throw conflict("preview-applied", "This preview has already been applied. Upload the file again to change the Register.");
@@ -114,6 +118,7 @@ public class RegisterApply {
                     SystemSnapshot after = row.after();
                     store.updateSystem(row.existingSystemId(), after.name(), after.smoEmail(), after.cyberManagerEmail(),
                             quarter(after));
+                    announce(row.existingSystemId(), row.before(), after, now);
                     updated++;
                 }
                 case RETIRE -> {
@@ -183,6 +188,20 @@ public class RegisterApply {
             return false;
         }
         return baseline.stream().allMatch(system -> system.retired() || mentioned.contains(system.id()));
+    }
+
+    /**
+     * Publishes what an updated System's SMO/Tech Lead is told about (story 94): a move to another Quarter, and a transfer
+     * to another SMO/Tech Lead, each heard by the notifications after the commit (ADR 0043).
+     */
+    private void announce(UUID systemId, SystemSnapshot before, SystemSnapshot after, Instant now) {
+        if (!before.quarter().equals(after.quarter())) {
+            events.publishEvent(new SystemChangeEvent(systemId, SystemChangeEvent.Change.MOVED, null, now));
+        }
+        if (!before.smoEmail().equals(after.smoEmail())) {
+            events.publishEvent(
+                    new SystemChangeEvent(systemId, SystemChangeEvent.Change.TRANSFERRED, before.smoEmail(), now));
+        }
     }
 
     private static int quarter(SystemSnapshot snapshot) {

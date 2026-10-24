@@ -295,7 +295,7 @@ public class Submissions {
      * @throws ResourceNotFoundException for a System the caller may not submit for, or a Cycle the app does not run
      * @throws RejectedRequestException 403 {@code sod-conflict} when the caller is also the System's Cyber Manager (story
      *     58: assigned to the reviewing step, so never its submitter); 409 {@code invalid-transition} when the Cycle is
-     *     closed, the System was not in the Cycle (added after a newer Cycle opened, ADR 0043), it already has a VA
+     *     closed, the System was not in the Cycle (added after a newer Cycle opened, ADR 0044), it already has a VA
      *     Submission in the Cycle, or its Quarter is Handled outside the app
      */
     @Transactional
@@ -367,7 +367,7 @@ public class Submissions {
                 .with(DetailKey.STATE_FROM, from.name())
                 .with(DetailKey.STATE_TO, SubmissionState.IN_REVIEW.name())
                 .with(DetailKey.DECLARATION_VERSION, declaration.version()));
-        events.publishEvent(new SubmissionEvent(id, systemId, from, SubmissionState.IN_REVIEW, caller, now));
+        publish(id, systemId, from, SubmissionState.IN_REVIEW, now);
         return view(id);
     }
 
@@ -604,8 +604,17 @@ public class Submissions {
         AuditEvent success = write.apply(calendar.dateOf(now));
         audit.record(actor.attribute(success).onSystem(target.systemId()).onSubmission(id)
                 .with(DetailKey.STATE_FROM, from.name()).with(DetailKey.STATE_TO, to.name()));
-        events.publishEvent(new SubmissionEvent(id, target.systemId(), from, to, user.id(), now));
+        publish(id, target.systemId(), from, to, now);
         return view(id);
+    }
+
+    /**
+     * Publishes the move for the notifications, which listen after the commit (ADR 0043), with the caller as the actor
+     * and the last day of the window the new state waits on as the row now reads it (the one rule, V20).
+     */
+    private void publish(UUID id, UUID systemId, SubmissionState from, SubmissionState to, Instant now) {
+        LocalDate dueOn = store.find(id).map(SubmissionStore.Row::dueOn).orElse(null);
+        events.publishEvent(new SubmissionEvent(id, systemId, from, to, user.id(), now, dueOn));
     }
 
     /**
@@ -719,7 +728,7 @@ public class Submissions {
     }
 
     /**
-     * After its VA Cycle closes no transition is accepted (story 68, ADR 0043): neither once the close is recorded nor
+     * After its VA Cycle closes no transition is accepted (story 68, ADR 0044): neither once the close is recorded nor
      * after the Cycle's close date before the lifecycle job records it. Audited in an entry of its own as {@code refused}
      * with {@code reason} {@code cycle-closed}, then 409 {@code invalid-transition}. The one exception, a Q4 conditional
      * Exemption's VA recorded, confirmed or lapsed after the close, is ticket 42's command, which does not ask this.

@@ -21,7 +21,7 @@ import sg.annualva.web.ResourceNotFoundException;
  * never from an instant's UTC date (ADR 0006). A Quarter starts on the first Monday of February, May, August or
  * November and ends the day before the next one starts, so it is 12 to 14 weeks long and "week 13" always means its
  * last day. Q4 ends the day before the next Cycle's Q1. The one thing it reads besides the clock is a Cycle's close, which
- * cannot be derived ({@link CycleStore}, ADR 0043).
+ * cannot be derived ({@link CycleStore}, ADR 0044).
  */
 @Service
 public class CycleCalendar {

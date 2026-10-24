@@ -1,5 +1,7 @@
 package sg.annualva.register;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -25,9 +27,13 @@ import tools.jackson.databind.ObjectMapper;
 @Repository
 class RegisterStore {
 
-    private static final String SYSTEMS =
+    private static final String SYSTEM_COLUMNS =
             "SELECT id, code::text AS code, name, smo_email::text AS smo_email, cm_email::text AS cm_email, quarter, "
-            + "retired_at IS NOT NULL AS retired FROM va_system ORDER BY code";
+            + "retired_at IS NOT NULL AS retired FROM va_system ";
+
+    private static final String SYSTEMS = SYSTEM_COLUMNS + "ORDER BY code";
+
+    private static final String SYSTEM = SYSTEM_COLUMNS + "WHERE id = :id";
 
     /**
      * Which of these System IDs are the same System, by the column's own citext rules: each value with the smallest of
@@ -52,7 +58,7 @@ class RegisterStore {
     private static final String LOCK_APPLY = "SELECT pg_advisory_xact_lock(hashtext('annualva.register-apply'))";
 
     /**
-     * Keeps a Cycle's Systems as the Register holds them now: the active Systems and their Quarters, once (ADR 0043). The
+     * Keeps a Cycle's Systems as the Register holds them now: the active Systems and their Quarters, once (ADR 0044). The
      * caller holds the apply lock, so no apply lands between the two statements.
      */
     private static final String FREEZE =
@@ -98,9 +104,17 @@ class RegisterStore {
     }
 
     List<ExistingSystem> systems() {
-        return jdbc.sql(SYSTEMS).query((rs, row) -> new ExistingSystem(
-                rs.getObject("id", UUID.class), rs.getString("code"), rs.getString("name"), rs.getString("smo_email"),
-                rs.getString("cm_email"), rs.getInt("quarter"), rs.getBoolean("retired"))).list();
+        return jdbc.sql(SYSTEMS).query((rs, row) -> existing(rs)).list();
+    }
+
+    /** One System, retired or not. */
+    Optional<ExistingSystem> system(UUID id) {
+        return jdbc.sql(SYSTEM).param("id", id).query((rs, row) -> existing(rs)).optional();
+    }
+
+    private static ExistingSystem existing(ResultSet rs) throws SQLException {
+        return new ExistingSystem(rs.getObject("id", UUID.class), rs.getString("code"), rs.getString("name"),
+                rs.getString("smo_email"), rs.getString("cm_email"), rs.getInt("quarter"), rs.getBoolean("retired"));
     }
 
     /**

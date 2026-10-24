@@ -50,7 +50,7 @@ public record VaCycle(
 
     /**
      * The Cycle is open through its close date, as a Quarter's endorsement is due through its last day, and closed once
-     * its close is recorded or that date has passed, whichever comes first (ADR 0043): so no transition is accepted
+     * its close is recorded or that date has passed, whichever comes first (ADR 0044): so no transition is accepted
      * between midnight and the lifecycle job's pass that records the close.
      */
     public CyclePhase phaseOn(LocalDate day) {

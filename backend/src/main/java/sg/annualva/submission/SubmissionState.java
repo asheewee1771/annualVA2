@@ -31,7 +31,7 @@ public enum SubmissionState {
 
     /**
      * Endorsed, Exempted, Withdrawn and Not Endorsed are final: nothing more is done (spec state table). Every other state
-     * becomes Not Endorsed when its VA Cycle closes, Exemption Requested included (ADR 0043).
+     * becomes Not Endorsed when its VA Cycle closes, Exemption Requested included (ADR 0044).
      */
     public boolean isFinal() {
         return switch (this) {

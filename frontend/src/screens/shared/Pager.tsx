@@ -4,11 +4,14 @@ export function Pager({
   pages,
   total,
   onPage,
+  noun = "Findings",
 }: {
   page: number;
   pages: number;
   total: number;
   onPage: (page: number) => void;
+  /** What is counted, in the plural. */
+  noun?: string;
 }) {
   return (
     <div className="pager">
@@ -16,7 +19,7 @@ export function Pager({
         Previous page
       </button>
       <span aria-live="polite">
-        Page {page + 1} of {pages} ({total} Findings)
+        Page {page + 1} of {pages} ({total} {noun})
       </span>
       <button
         type="button"

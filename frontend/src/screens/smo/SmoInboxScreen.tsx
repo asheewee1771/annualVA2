@@ -28,7 +28,7 @@ const ACTION_LABELS: Readonly<Record<NextAction, string>> = {
 
 /**
  * What is next and by when, as the server said; a final state has nothing next. Not Endorsed is listed under Done, as
- * nothing more can be done once its VA Cycle has closed, but says it failed rather than "nothing more to do" (ADR 0043).
+ * nothing more can be done once its VA Cycle has closed, but says it failed rather than "nothing more to do" (ADR 0044).
  */
 function nextLabel({ state, nextAction, nextActionDueOn }: InboxSystem): string {
   if (state === "NOT_ENDORSED") return "Not endorsed: the VA Cycle closed before it was endorsed";

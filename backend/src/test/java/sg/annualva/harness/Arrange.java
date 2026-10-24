@@ -63,6 +63,11 @@ public final class Arrange {
         assertThat(client.post("/api/test/faults/finding/" + mode).status()).isEqualTo(200);
     }
 
+    /** Makes every write of a notification fail in the database ("on"); "off" removes the fault. */
+    public void notificationFault(String mode) {
+        assertThat(client.post("/api/test/faults/notification/" + mode).status()).isEqualTo(200);
+    }
+
     /** Rejects a file as another pass of the scan job would have, without touching its bytes. */
     public void rejectFile(String fileId) {
         assertThat(client.post("/api/test/report-files/" + fileId + "/rejected").status()).isEqualTo(200);

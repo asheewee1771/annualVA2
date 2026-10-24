@@ -12,7 +12,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 /**
- * What the calendar cannot derive about a VA Cycle (ADR 0015 item 1, ADR 0043): that the lifecycle job recorded its
+ * What the calendar cannot derive about a VA Cycle (ADR 0015 item 1, ADR 0044): that the lifecycle job recorded its
  * opening, and its close, with an early close's date. Constant SQL, named parameters (as-2). The submission module's
  * lifecycle writes it; the calendar reads it into {@link VaCycle#closedAt()} and {@link VaCycle#closesOn()}.
  */

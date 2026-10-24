@@ -29,7 +29,7 @@ import sg.annualva.web.RejectedRequestException;
 import sg.annualva.web.ResourceNotFoundException;
 
 /**
- * The VA Cycle lifecycle (stories 17 and 68, ADR 0043). A Cycle opens when its Q1 starts: the lifecycle job records it,
+ * The VA Cycle lifecycle (stories 17 and 68, ADR 0044). A Cycle opens when its Q1 starts: the lifecycle job records it,
  * and the older Cycle keeps its Systems and Quarters from then on, so a Register apply changes only the newer one. A
  * Cycle closes 4 weeks after its Q4 ends, when the job records the close the day after its close date, or earlier when a
  * VA POC closes it, after a fresh sign-in, once its Q4 has ended. Either way, in one transaction, every VA Submission of

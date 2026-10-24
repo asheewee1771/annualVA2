@@ -1,4 +1,4 @@
--- The VA Cycle lifecycle (ticket 41, stories 17 and 68, ADR 0043): a Cycle opens when its Q1 starts and closes 4 weeks
+-- The VA Cycle lifecycle (ticket 41, stories 17 and 68, ADR 0044): a Cycle opens when its Q1 starts and closes 4 weeks
 -- after its Q4 ends, or earlier when a VA POC closes it; the close makes every VA Submission that is neither Endorsed
 -- nor Exempted, and every System with none, Not Endorsed. The calendar itself stays computed (ADR 0015); only what
 -- cannot be derived is stored.

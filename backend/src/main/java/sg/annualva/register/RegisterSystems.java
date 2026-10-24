@@ -31,7 +31,7 @@ import sg.annualva.web.ResourceNotFoundException;
  *
  * <p>The Register is one standing list whose Quarter column applies to every VA Cycle, so a Cycle's Systems are the
  * Register's, until a newer Cycle opens: from then on the older Cycle keeps its Systems and their Quarters as they were,
- * and an apply changes only the newer one (story 17, ADR 0043). Every reader of a Cycle's Systems asks here.
+ * and an apply changes only the newer one (story 17, ADR 0044). Every reader of a Cycle's Systems asks here.
  */
 @Service
 public class RegisterSystems {
@@ -55,6 +55,16 @@ public class RegisterSystems {
      * @param quarter 1 to 4
      */
     public record ActiveSystem(UUID id, String systemId, String name, int quarter) {}
+
+    /**
+     * A System with the people the Register names for it, for a consumer that tells them something.
+     *
+     * @param id the System's own id
+     * @param systemId the System ID as the VA POC typed it
+     * @param quarter 1 to 4
+     */
+    public record Named(UUID id, String systemId, String name, String smoEmail, String cyberManagerEmail,
+            int quarter) {}
 
     private final RegisterStore store;
     private final AccessGuard guard;
@@ -120,7 +130,7 @@ public class RegisterSystems {
 
     /**
      * Keeps the Systems of every VA Cycle that is no longer the newest to have started, as the Register holds them now,
-     * unless they are kept already, so that an apply from now on changes only the newest Cycle (ADR 0043). The lifecycle
+     * unless they are kept already, so that an apply from now on changes only the newest Cycle (ADR 0044). The lifecycle
      * job calls it when a Cycle opens, and every apply calls it first, so the Cycles are kept even when the apply comes
      * before the job's pass. It takes the apply lock (re-entrant, so an apply that holds it already passes), so an apply
      * never lands between the two.
@@ -148,6 +158,17 @@ public class RegisterSystems {
                         .map(quarter -> new ActiveSystem(system.id(), system.systemId(), system.name(), quarter))
                         .orElse(system))
                 .toList();
+    }
+
+    /**
+     * One System as the Register holds it now, retired or not, with the people it names, for the notifications, which
+     * address whoever acts next after a move has committed and act for nobody (ADR 0043). It skips the access guard, so
+     * it is never for a request: the architecture test names its callers.
+     */
+    @Transactional(readOnly = true)
+    public Optional<Named> named(UUID systemId) {
+        return store.system(systemId).map(system -> new Named(system.id(), system.code(), system.name(),
+                system.smoEmail(), system.cyberManagerEmail(), system.quarter()));
     }
 
     /** The Systems still in the Register whose id passes the test, in System ID order. */
