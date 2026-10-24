@@ -244,6 +244,14 @@ body {
   margin-bottom: 8px;
 }
 
+/* The Cycle matrix's strip: the four Quarters side by side, wrapping on a narrow screen. */
+.quarter-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+}
+
 .interstitial {
   max-width: 520px;
   border: 1px solid var(--border);

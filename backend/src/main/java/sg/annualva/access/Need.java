@@ -16,7 +16,7 @@ public enum Need {
     ENDORSE,
     /**
      * Read the audit history of the System's VA Submissions: any VA POC (every entry), and the Cyber Manager assigned to
-     * it (the VA Submissions they reviewed, ADR 0037).
+     * it (the VA Submissions they reviewed, ADR 0038).
      */
     AUDIT
 }

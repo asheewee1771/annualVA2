@@ -39,6 +39,16 @@ abstract class CyberManagerSeam1 extends InboxSeam1 {
         return ids;
     }
 
+    /** The Systems of one column of a Quarter board. */
+    protected static JsonNode column(JsonNode board, String state) {
+        for (JsonNode column : board.get("columns")) {
+            if (column.get("state").asString().equals(state)) {
+                return column.get("systems");
+            }
+        }
+        throw new AssertionError("no column " + state + " in " + board);
+    }
+
     /** The SMO/Tech Lead starts the VA Submission of one of their Systems; its id. */
     protected static String started(ApiClient smo, String systemId) {
         String system = item(inbox(smo), "systems", systemId).get("id").asString();

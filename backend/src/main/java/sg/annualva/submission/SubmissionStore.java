@@ -27,7 +27,8 @@ class SubmissionStore {
     record Row(
             UUID id, UUID systemId, int cycleYear, int quarter, SubmissionState state, boolean overdue,
             boolean endorsedLate, LocalDate submitDue, LocalDate reviewDue, LocalDate endorseDue, Instant startedAt,
-            @Nullable Instant submittedAt, @Nullable Instant overdueSince, @Nullable LocalDate dueOn) {}
+            @Nullable Instant submittedAt, @Nullable Instant overdueSince, @Nullable LocalDate dueOn,
+            @Nullable Instant passedToEndorsementAt, @Nullable Instant endorsedAt) {}
 
     /**
      * What the Overdue sweep has just flagged: a VA Submission, or a System with none (Not Started, no {@code id}), with
@@ -114,7 +115,7 @@ class SubmissionStore {
      */
     private static final String COLUMNS =
             "SELECT id, system_id, cycle_year, quarter, state, overdue, endorsed_late, submit_due, review_due, "
-            + "endorse_due, started_at, submitted_at, overdue_since, "
+            + "endorse_due, started_at, submitted_at, overdue_since, passed_to_endorsement_at, endorsed_at, "
             + "current_window_due(state, submit_due, review_due, endorse_due) AS due_on FROM va_submission ";
 
     private static final String FIND = COLUMNS + "WHERE id = :id";
@@ -368,7 +369,8 @@ class SubmissionStore {
                 rs.getBoolean("endorsed_late"), rs.getObject("submit_due", LocalDate.class),
                 rs.getObject("review_due", LocalDate.class), rs.getObject("endorse_due", LocalDate.class),
                 instant(rs, "started_at"), nullableInstant(rs, "submitted_at"), nullableInstant(rs, "overdue_since"),
-                rs.getObject("due_on", LocalDate.class));
+                rs.getObject("due_on", LocalDate.class), nullableInstant(rs, "passed_to_endorsement_at"),
+                nullableInstant(rs, "endorsed_at"));
     }
 
     private static @Nullable Instant nullableInstant(ResultSet rs, String column) throws SQLException {

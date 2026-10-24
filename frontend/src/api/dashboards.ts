@@ -118,6 +118,60 @@ export interface QuarterBoard {
   handledOutsideApp: HandledOutsideSystem[];
 }
 
+/** Where a Quarter stands today: run by the manual process, over, running, or still to come. */
+export type QuarterPhase = "HANDLED_OUTSIDE_APP" | "CLOSED" | "CURRENT" | "UPCOMING";
+
+/** One Quarter of the Cycle matrix's strip. Withdrawn is never counted; a Quarter Handled outside the app counts nothing. */
+export interface QuarterStrip {
+  quarter: number;
+  startsOn: string;
+  endsOn: string;
+  phase: QuarterPhase;
+  /** The number of Systems in each state, every state but Withdrawn, zeros included. */
+  counts: Partial<Record<SystemState, number>>;
+  total: number;
+  /** How many of the Endorsed were endorsed after the Quarter's last day. */
+  endorsedLate: number;
+}
+
+/** One milestone of a System: submitted, reviewed (passed to endorsement) or endorsed. */
+export interface Milestone {
+  /** The last day of the window it is due in. */
+  dueOn: string;
+  /** The business date it was last reached; null until it is. */
+  doneOn: string | null;
+  /** The System's state waits on this milestone now; the row's Overdue flag says whether its window passed. */
+  current: boolean;
+}
+
+/** One System of the Cycle, in a Quarter the app runs. */
+export interface MatrixSystem {
+  id: string;
+  systemId: string;
+  name: string;
+  quarter: number;
+  state: SystemState;
+  submissionId: string | null;
+  overdue: boolean;
+  endorsedLate: boolean;
+  submitted: Milestone;
+  reviewed: Milestone;
+  endorsed: Milestone;
+}
+
+/** GET /api/dashboards/cycle-matrix: the whole VA Cycle for a VA POC, a strip of four Quarters then one row per System. */
+export interface CycleMatrix {
+  cycle: number;
+  quarters: QuarterStrip[];
+  systems: MatrixSystem[];
+  handledOutsideApp: HandledOutsideSystem[];
+}
+
+/** The Cycle matrix (the VA Cycle running today when no year is given). */
+export function fetchCycleMatrix(cycle?: number): Promise<CycleMatrix> {
+  return request<CycleMatrix>("GET", `/api/dashboards/cycle-matrix${query({ cycle })}`);
+}
+
 /** The Quarter board (the VA Cycle and Quarter running today when none is given). */
 export function fetchQuarterBoard(cycle?: number, quarter?: number): Promise<QuarterBoard> {
   return request<QuarterBoard>("GET", `/api/dashboards/quarter-board${query({ cycle, quarter })}`);

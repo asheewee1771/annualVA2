@@ -19,7 +19,7 @@ import sg.annualva.web.ResourceNotFoundException;
 
 /**
  * Read access to the audit log: a VA POC reads every entry (story 84), a Cyber Manager the history of the VA Submissions
- * they reviewed on Systems still assigned to them (story 85, ADR 0037), with the same filters. Auditors read the log within
+ * they reviewed on Systems still assigned to them (story 85, ADR 0038), with the same filters. Auditors read the log within
  * their scope in a later ticket. There is no write, update or delete endpoint: the log changes only by the application
  * recording something.
  */

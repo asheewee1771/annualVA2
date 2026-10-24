@@ -2,6 +2,7 @@ import { NO_FILTERS } from "../../api/audit.ts";
 import { AppLink } from "../../app/AppLink.tsx";
 import type { AreaProps } from "../shared/AreaProps.ts";
 import { AuditLogScreen } from "../shared/AuditLogScreen.tsx";
+import { QuarterBoardScreen } from "../shared/QuarterBoardScreen.tsx";
 import { CmInboxScreen } from "./CmInboxScreen.tsx";
 import {
   auditedSubmissionOf,
@@ -11,7 +12,6 @@ import {
   reviewedSubmissionOf,
   reviewPath,
 } from "./paths.ts";
-import { QuarterBoardScreen } from "./QuarterBoardScreen.tsx";
 import { ReviewScreen } from "./ReviewScreen.tsx";
 
 const HISTORY_INTRO =
@@ -74,7 +74,7 @@ export function CyberManagerArea({ path, classification }: AreaProps) {
       ) : onHistory ? (
         <AuditHistory key={path} submissionId={audited} classification={classification} />
       ) : onBoard ? (
-        <QuarterBoardScreen classification={classification} />
+        <QuarterBoardScreen classification={classification} whose="your Systems" />
       ) : (
         <CmInboxScreen classification={classification} />
       )}

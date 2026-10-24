@@ -8,16 +8,19 @@ import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import sg.annualva.access.AccessGuard;
 import sg.annualva.access.Need;
 import sg.annualva.cycle.CycleCalendar;
 import sg.annualva.cycle.VaCycle;
 
 /**
  * The Quarter board (story 49): one Quarter of a VA Cycle at once, its Systems in one column per state, from Not Started
- * to Not Endorsed in the order of the spec's state table, every column present even when it is empty. A Cyber Manager
- * sees only the Systems assigned to them in the System Register: the one dashboard reader ({@link DashboardSystems}) for
- * {@link Need#REVIEW}, reading that Quarter only, with the Cyber Manager's {@link ReviewMarkers}. In a Quarter Handled
- * outside the app every column is empty and its Systems are listed apart, with nothing to do.
+ * to Not Endorsed in the order of the spec's state table, every column present even when it is empty. It is the one
+ * dashboard reader ({@link DashboardSystems}) reading that Quarter only, with the {@link ReviewMarkers}. A VA POC (story
+ * 64) reads it for {@link Need#ENDORSE} and sees every System of the Quarter; a Cyber Manager (story 49) reads it for
+ * {@link Need#REVIEW} and sees only the Systems assigned to them in the System Register. A person who holds both roles
+ * sees the VA POC's board, which holds the other. In a Quarter Handled outside the app every column is empty and its
+ * Systems are listed apart, with nothing to do.
  */
 @Service
 public class QuarterBoard {
@@ -30,7 +33,8 @@ public class QuarterBoard {
      * @param confirmed the Findings whose current proposal the Cyber Manager confirmed
      * @param awaitingReview the Findings whose current proposal awaits the Cyber Manager's review
      * @param sodConflict whether segregation of duties refuses the caller's review (ticket 28): they acted on the VA
-     *     Submission at another step, or are assigned to another step of its System (its SMO/Tech Lead, say)
+     *     Submission at another step, or are assigned to another step of its System (its SMO/Tech Lead, say); always false
+     *     on a VA POC's board until the endorsing step is recorded (ticket 34)
      */
     public record Card(
             UUID id, String systemId, String name, @Nullable UUID submissionId, boolean overdue, long confirmed,
@@ -48,11 +52,13 @@ public class QuarterBoard {
     private final CycleCalendar calendar;
     private final DashboardSystems systems;
     private final ReviewMarkers markers;
+    private final AccessGuard guard;
 
-    QuarterBoard(CycleCalendar calendar, DashboardSystems systems, ReviewMarkers markers) {
+    QuarterBoard(CycleCalendar calendar, DashboardSystems systems, ReviewMarkers markers, AccessGuard guard) {
         this.calendar = calendar;
         this.systems = systems;
         this.markers = markers;
+        this.guard = guard;
     }
 
     /**
@@ -64,8 +70,9 @@ public class QuarterBoard {
     public Board board(@Nullable Integer requestedCycle, @Nullable Integer requestedQuarter) {
         VaCycle cycle = calendar.running(requestedCycle);
         int quarter = requestedQuarter == null ? cycle.quarterShownOn(calendar.today()).number() : requestedQuarter;
-        DashboardSystems.Rows rows = systems.in(cycle, Need.REVIEW, quarter);
-        Map<UUID, ReviewMarkers.Marker> marked = markers.of(rows.live());
+        Need need = guard.scope(Need.ENDORSE).all() ? Need.ENDORSE : Need.REVIEW;
+        DashboardSystems.Rows rows = systems.in(cycle, need, quarter);
+        Map<UUID, ReviewMarkers.Marker> marked = markers.of(rows.live(), need);
         Map<SystemState, List<Card>> byState = new EnumMap<>(SystemState.class);
         for (DashboardSystems.Row row : rows.live()) {
             byState.computeIfAbsent(row.state(), state -> new ArrayList<>())

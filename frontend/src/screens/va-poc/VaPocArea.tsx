@@ -1,11 +1,13 @@
 import type { ReactNode } from "react";
 import { AppLink } from "../../app/AppLink.tsx";
 import type { AreaProps } from "../shared/AreaProps.ts";
-import { AreaLanding } from "../shared/AreaLanding.tsx";
 import { AuditLogScreen } from "../shared/AuditLogScreen.tsx";
+import { QuarterBoardScreen } from "../shared/QuarterBoardScreen.tsx";
+import { CycleMatrixScreen } from "./CycleMatrixScreen.tsx";
 import { RegisterScreen } from "./RegisterScreen.tsx";
 
 const AREA_PATH = "/va-poc";
+const MATRIX_PATH = "/va-poc/cycle-matrix";
 const AUDIT_LOG_PATH = "/va-poc/audit-log";
 const REGISTER_PATH = "/va-poc/register";
 
@@ -21,7 +23,10 @@ function SubPage({ children }: { children: ReactNode }) {
   );
 }
 
-/** The VA POC's working area: its landing page and, beneath it, the System Register and the audit log. */
+/**
+ * The VA POC's working area (story 64): two tabs, the Quarter board of every System and the Cycle matrix, and, beneath
+ * the area, the System Register and the audit log.
+ */
 export function VaPocArea({ path, classification }: AreaProps) {
   if (path === REGISTER_PATH) {
     return (
@@ -37,15 +42,34 @@ export function VaPocArea({ path, classification }: AreaProps) {
       </SubPage>
     );
   }
+  const onMatrix = path === MATRIX_PATH;
   return (
     <>
-      <AreaLanding title="VA POC">The Quarter board and the Cycle matrix appear here.</AreaLanding>
-      <p>
-        <AppLink path={REGISTER_PATH}>System Register</AppLink>
-      </p>
-      <p>
-        <AppLink path={AUDIT_LOG_PATH}>Audit log</AppLink>
-      </p>
+      <nav className="tabs" aria-label="VA POC views">
+        <ul>
+          <li>
+            <AppLink path={AREA_PATH} current={!onMatrix}>
+              Quarter board
+            </AppLink>
+          </li>
+          <li>
+            <AppLink path={MATRIX_PATH} current={onMatrix}>
+              Cycle matrix
+            </AppLink>
+          </li>
+          <li>
+            <AppLink path={REGISTER_PATH}>System Register</AppLink>
+          </li>
+          <li>
+            <AppLink path={AUDIT_LOG_PATH}>Audit log</AppLink>
+          </li>
+        </ul>
+      </nav>
+      {onMatrix ? (
+        <CycleMatrixScreen classification={classification} />
+      ) : (
+        <QuarterBoardScreen classification={classification} whose="every System" />
+      )}
     </>
   );
 }

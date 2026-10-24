@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review â€” 33-va-poc-board-and-cycle-matrix</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall: PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">build WARN Â· C0 H0 M0 L2</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN Â· C0 H0 M3 L7</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN Â· C0 H0 M2 L10</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">semgrep WARN Â· C0 H0 M0 L5</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN Â· C0 H0 M2 L2</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react WARN Â· C0 H0 M0 L6</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN Â· C0 H0 M1 L5</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">impl/33-va-poc-board</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report</h1>
+          <p class="text-sm text-slate-600 mt-1">Ticket 33: VA POC Quarter board and Cycle matrix. Branch <span class="font-mono text-xs">impl/33-va-poc-board</span> (HEAD c7ecb9f) against <span class="font-mono text-xs">integration/annual-va-r1</span>; 29 files, +862 / -69.</p>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Executive Summary</h2>
+          <p class="text-xs text-slate-500 mt-1">Overall compliance evaluation status across all active checks. Overall verdict: PASS (no check has a Critical or High finding).</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Check</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Status</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">C / H / M / L</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Summary of gaps</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">build</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 2</td>
+              <td class="px-4 py-2">All gates pass (833 tests, JaCoCo, Prettier, tsc, vite, depcruise, fallow). Pre-existing deprecation warning; Flyway V133 merge-order risk.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">thermo-nuclear</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 3 / 7</td>
+              <td class="px-4 py-2">Role flag with nullable step, milestone "current" inferred by date equality, parallel due/reached triples on <span class="font-mono text-xs">Row</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">code-review</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 2 / 10</td>
+              <td class="px-4 py-2">Frontend renames in the backend commit leave 330c59d unbuildable; reviewed/endorsed milestone columns have no real writer yet.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">semgrep</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 5</td>
+              <td class="px-4 py-2">No findings in code this ticket wrote; all five are pre-existing (P2).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">im8</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 2 / 2</td>
+              <td class="px-4 py-2">No runtime response validation (project pattern, as-1); unaudited VA POC-wide dashboard reads need policy confirmation (lm-4).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">react</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 6</td>
+              <td class="px-4 py-2">Stale data while switching Cycle, lost selection on tab switch, tab-bar semantics, missing row headers.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">springboot</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 5</td>
+              <td class="px-4 py-2">New milestone columns have no writer (ticket 30 shipped without one); dual-role SoD marker; test gaps.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-600">No Critical or High findings. The most important Medium items to address:</p>
+          <ul class="list-disc pl-5 space-y-2 text-sm">
+            <li><span class="font-semibold">Integration gap (code-review P1, springboot M1):</span> <span class="font-mono text-xs">backend/src/main/resources/db/migration/V133__submission_milestones.sql:10-12</span>. Nothing writes <span class="font-mono text-xs">passed_to_endorsement_at</span> / <span class="font-mono text-xs">endorsed_at</span>; ticket 30 (1e3aa34) and ticket 34 do not mention them, so the matrix's reviewed/endorsed milestones stay null for real VA Submissions.</li>
+            <li><span class="font-semibold">Commit hygiene (code-review S1):</span> <span class="font-mono text-xs">frontend/src/screens/shared/QuarterBoardScreen.tsx:1</span>, <span class="font-mono text-xs">frontend/src/screens/shared/ReviewFlags.tsx:1</span>. Renamed in backend commit 330c59d without import updates, so the frontend does not build at that commit.</li>
+            <li><span class="font-semibold">Fragile milestone inference (thermo-nuclear F2):</span> <span class="font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/CycleMatrix.java:121-122</span>. "current" depends on the three due dates being pairwise distinct.</li>
+            <li><span class="font-semibold">Audit policy (im8 lm-4):</span> <span class="font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/CycleMatrixController.java:9-12</span>. Confirm ADR 0019's non-audit rule covers VA POC-wide board reads that show Findings counts for every System.</li>
+          </ul>
+        </div>
+      </div>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN Â· C0 H0 M0 L2</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-left text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Severity</th>
+              <th class="text-left text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">File</th>
+              <th class="text-left text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Line</th>
+              <th class="text-left text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/adapters/oidc/MccHttp.java</td>
+              <td class="px-4 py-2">51</td>
+              <td class="px-4 py-2">L-1: deprecated <span class="font-mono text-xs">RestClient.Builder.messageConverters(...)</span>, marked for removal. Pre-existing on the base branch; not introduced here.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V133__submission_milestones.sql</td>
+              <td class="px-4 py-2">â€”</td>
+              <td class="px-4 py-2">L-2: Flyway version gap (V21 â†’ V133) without <span class="font-mono text-xs">out-of-order</span>; applying V133 to a persistent database before ticket 30's V130 breaks validation on the next deploy. Confirm merge/deploy order.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN Â· C0 H0 M3 L7</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-left text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Severity</th>
+              <th class="text-left text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">File</th>
+              <th class="text-left text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Line</th>
+              <th class="text-left text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/QuarterBoard.java<br />backend/src/main/java/sg/annualva/dashboard/ReviewMarkers.java</td>
+              <td class="px-4 py-2">73-75<br />47-51</td>
+              <td class="px-4 py-2">F1: one <span class="font-mono text-xs">vaPoc</span> boolean drives two parallel ternaries and a nullable <span class="font-mono text-xs">SubmissionStep</span> in a shared component. Decide the <span class="font-mono text-xs">Need</span> once and let <span class="font-mono text-xs">SubmissionStep.of(Need)</span> resolve the step.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/CycleMatrix.java</td>
+              <td class="px-4 py-2">121-122</td>
+              <td class="px-4 py-2">F2: the current milestone is inferred by <span class="font-mono text-xs">dueOn.equals(row.dueOn())</span>, correct only while the three due dates are distinct. Carry a <span class="font-mono text-xs">Window</span> enum from the window rule instead.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/DashboardSystems.java<br />backend/src/main/java/sg/annualva/submission/Submissions.java<br />backend/src/main/java/sg/annualva/dashboard/CycleMatrix.java</td>
+              <td class="px-4 py-2">38-41, 88-94<br />446-449, 486-500<br />111-118</td>
+              <td class="px-4 py-2">F3: due dates and reached instants are two parallel triples zipped by position; <span class="font-mono text-xs">Row</span> has 10 positional components with adjacent booleans. Model each milestone as a <span class="font-mono text-xs">(dueOn, reachedAt)</span> pair.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/CycleMatrix.java</td>
+              <td class="px-4 py-2">125-142</td>
+              <td class="px-4 py-2">F4: <span class="font-mono text-xs">counts.containsKey</span> is an implicit "is countable" filter; Withdrawn exclusion encoded twice. Use an explicit filter and <span class="font-mono text-xs">groupingBy</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/CycleMatrixScreen.tsx</td>
+              <td class="px-4 py-2">133-135</td>
+              <td class="px-4 py-2">F5: column headers hard-code business windows ("due week 2", "due week 4") in the browser.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/CycleMatrixScreen.tsx</td>
+              <td class="px-4 py-2">54</td>
+              <td class="px-4 py-2">F6: one-off optional <span class="font-mono text-xs">late?</span> prop on the generic <span class="font-mono text-xs">MilestoneCell</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/CycleMatrixScreen.tsx<br />frontend/src/api/dashboards.ts</td>
+              <td class="px-4 py-2">24<br />131</td>
+              <td class="px-4 py-2">F7: <span class="font-mono text-xs">as SystemState[]</span> cast and loose <span class="font-mono text-xs">Partial&lt;Record&lt;SystemState, number&gt;&gt;</span> where the contract is exact.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/VaPocArea.tsx<br />frontend/src/screens/cyber-manager/CyberManagerArea.tsx</td>
+              <td class="px-4 py-2">48-67<br />17-30</td>
+              <td class="px-4 py-2">F8: tab nav markup duplicated between areas (borderline; raise if a third area adopts tabs).</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V133__submission_milestones.sql</td>
+              <td class="px-4 py-2">8-12</td>
+              <td class="px-4 py-2">F9: <span class="font-mono text-xs">IF NOT EXISTS</span> hedges unclear column ownership; tell tickets 30 and 34 to write, not re-add, the columns.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/harness/TestEndpoints.java<br />backend/src/test/java/sg/annualva/harness/Arrange.java<br />backend/src/test/java/sg/annualva/ingestion/SubmitMilestoneTest.java</td>
+              <td class="px-4 py-2">394-405<br />91-102<br />â€”</td>
+              <td class="px-4 py-2">F10: <span class="font-mono text-xs">/milestones</span> test endpoint also sets <span class="font-mono text-xs">endorsed_late</span> and rewrites <span class="font-mono text-xs">submitted_by</span>; JSON built by concatenation; dashboard assertion placed in the ingestion test package.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN Â· C0 H0 M2 L10</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-left text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Severity</th>
+              <th class="text-left text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">File</th>
+              <th class="text-left text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Line</th>
+              <th class="text-left text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/shared/QuarterBoardScreen.tsx<br />frontend/src/screens/shared/ReviewFlags.tsx</td>
+              <td class="px-4 py-2">1</td>
+              <td class="px-4 py-2">S1 (Standards): backend commit 330c59d also renames these frontend files without updating imports, so the frontend does not build at that commit; breaches "one logical change per commit". Move the renames into the frontend commit.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/CycleMatrix.java<br />backend/src/main/resources/db/migration/V133__submission_milestones.sql</td>
+              <td class="px-4 py-2">116-117<br />10-12</td>
+              <td class="px-4 py-2">P1 (Spec): reviewed/endorsed milestone dates have no real writer; ticket 30's pass (1e3aa34) never sets <span class="font-mono text-xs">passed_to_endorsement_at</span>, and tickets 30/34 do not mention the columns, so <span class="font-mono text-xs">reviewed.doneOn</span> stays null after integration.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/CycleMatrixScreen.tsx</td>
+              <td class="px-4 py-2">108-109</td>
+              <td class="px-4 py-2">S2: "Withdrawn submissions" should use the glossary term "VA Submissions".</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/CycleMatrix.java</td>
+              <td class="px-4 py-2">35</td>
+              <td class="px-4 py-2">S3: <span class="font-mono text-xs">Phase.CLOSED</span> uses a word CONTEXT.md lists to avoid; prefer <span class="font-mono text-xs">ENDED</span> or <span class="font-mono text-xs">PAST</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/QuarterBoard.java</td>
+              <td class="px-4 py-2">74-76</td>
+              <td class="px-4 py-2">S4: repeated switches on <span class="font-mono text-xs">vaPoc</span>; one mapping from scope to (need, step) would keep them together.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/CycleMatrix.java</td>
+              <td class="px-4 py-2">113-116, 122</td>
+              <td class="px-4 py-2">S5: message chains on <span class="font-mono text-xs">row.system()</span> repeat <span class="font-mono text-xs">QuarterBoard.java:90</span>; <span class="font-mono text-xs">milestone(row, ...)</span> takes the whole row only for <span class="font-mono text-xs">dueOn</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/DashboardSystems.java<br />backend/src/main/java/sg/annualva/submission/Submissions.java</td>
+              <td class="px-4 py-2">38-41<br />170-172</td>
+              <td class="px-4 py-2">S6: data clump of due dates, overdue, <span class="font-mono text-xs">endorsedLate</span> and <span class="font-mono text-xs">reached</span> in two records.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/CycleMatrixScreen.tsx</td>
+              <td class="px-4 py-2">133-134</td>
+              <td class="px-4 py-2">S7: headers restate the window rule in the browser and are wrong for a System added partway through a Quarter.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/shared/QuarterBoardScreen.tsx</td>
+              <td class="px-4 py-2">40</td>
+              <td class="px-4 py-2">S8: prop <span class="font-mono text-xs">whose</span> is really subtitle text; a name like <span class="font-mono text-xs">systemsLabel</span> says what it holds.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/SubmitMilestoneTest.java</td>
+              <td class="px-4 py-2">24</td>
+              <td class="px-4 py-2">S9: hand-rolled find-row loop duplicates <span class="font-mono text-xs">InboxSeam1.item(...)</span>; dashboard endpoint tested from the ingestion package.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/CycleMatrixScreen.tsx</td>
+              <td class="px-4 py-2">57, 133-134</td>
+              <td class="px-4 py-2">P2 (Spec): story 64 asks for milestone dots against due weeks; the week only appears in hard-coded headers (same root cause as S7).</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/dashboard/CycleMatrixTest.java</td>
+              <td class="px-4 py-2">39, 60</td>
+              <td class="px-4 py-2">P3 (Spec): nothing asserts the Withdrawn SYS-C6 still appears in <span class="font-mono text-xs">systems</span> (ADR 0037 item 3).</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN Â· C0 H0 M0 L5</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-left text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Severity</th>
+              <th class="text-left text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">File</th>
+              <th class="text-left text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Line</th>
+              <th class="text-left text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/harness/TestEndpoints.java</td>
+              <td class="px-4 py-2">314</td>
+              <td class="px-4 py-2"><span class="font-mono text-xs">tainted-sql-string</span> on pre-existing, test-only <span class="font-mono text-xs">reportFileFault</span>; input allow-listed to <span class="font-mono text-xs">[A-Z_]+</span>. False positive in practice; branch lines 390-410 use bound params. (P2)</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/FindingProposalFieldsTest.java, ManualFindingTest.java, ScanReportModeTest.java</td>
+              <td class="px-4 py-2">73, 135, 137; 169; 147</td>
+              <td class="px-4 py-2">Raw bidirectional characters in test files not touched by this branch; write as <span class="font-mono text-xs">\uXXXX</span> escapes. (P2)</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/arch/ArchitectureTest.java</td>
+              <td class="px-4 py-2">118</td>
+              <td class="px-4 py-2"><span class="font-mono text-xs">unsafe-reflection</span> in an ArchUnit test; test-only, pre-existing. (P2)</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">scripts/mock-mockpass-assertions.js</td>
+              <td class="px-4 py-2">11</td>
+              <td class="px-4 py-2"><span class="font-mono text-xs">path-join-resolve-traversal</span> in a local mock script; pre-existing. (P2)</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">artifacts/code-reviewer/*-compliance.html</td>
+              <td class="px-4 py-2">6-7</td>
+              <td class="px-4 py-2"><span class="font-mono text-xs">missing-integrity</span> on the CDN script in generated review reports; not application code. (P2)</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN Â· C0 H0 M2 L2</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-left text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Severity</th>
+              <th class="text-left text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">File</th>
+              <th class="text-left text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Line</th>
+              <th class="text-left text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/api/dashboards.ts</td>
+              <td class="px-4 py-2">172</td>
+              <td class="px-4 py-2">as-1: the <span class="font-mono text-xs">CycleMatrix</span> response is cast with no runtime check (existing project-wide pattern; defence in depth only). Back-end inputs are validated (quarter 1..4, Cycle allow-list â†’ 404).</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/CycleMatrixController.java<br />backend/src/main/java/sg/annualva/dashboard/QuarterBoardController.java</td>
+              <td class="px-4 py-2">9-12<br />12-13</td>
+              <td class="px-4 py-2">lm-4: matrix and board reads are not audited (ADR 0019/0037) while the board now shows Findings counts for every System to any VA POC. Confirm the policy and record it in <span class="font-mono text-xs">docs/agents/reviewer-decisions.md</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/QuarterBoard.java<br />frontend/src/screens/cyber-manager/CyberManagerArea.tsx</td>
+              <td class="px-4 py-2">74-76<br />34</td>
+              <td class="px-4 py-2">ac-1: a VA POC + Cyber Manager sees every System labelled "your Systems" in the Cyber Manager tab and loses <span class="font-mono text-xs">sodConflict</span> markers; no over-exposure, server still refuses conflicted reviews.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/ReviewMarkers.java</td>
+              <td class="px-4 py-2">â€”</td>
+              <td class="px-4 py-2">Non-IM8: the VA POC board reports <span class="font-mono text-xs">sodConflict=false</span> until ticket 34 records the endorsing step (tracked deferral); ticket 34 must enforce SoD on endorse server-side.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN Â· C0 H0 M0 L6</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-left text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Severity</th>
+              <th class="text-left text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">File</th>
+              <th class="text-left text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Line</th>
+              <th class="text-left text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/CycleMatrixScreen.tsx</td>
+              <td class="px-4 py-2">100-120</td>
+              <td class="px-4 py-2">F1: the previous Cycle's data stays on screen while a new Cycle loads or after its request fails, with no loading indicator.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/VaPocArea.tsx</td>
+              <td class="px-4 py-2">68-72</td>
+              <td class="px-4 py-2">F2: chosen Cycle and Quarter are lost when switching between the two VA POC tabs (unmount discards local state).</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/VaPocArea.tsx</td>
+              <td class="px-4 py-2">61-66</td>
+              <td class="px-4 py-2">F3: "System Register" and "Audit log" are styled as tabs but lead to sub-pages without the tab bar or <span class="font-mono text-xs">aria-current</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/CycleMatrixScreen.tsx</td>
+              <td class="px-4 py-2">82-84</td>
+              <td class="px-4 py-2">F4: matrix rows have no row header; use <span class="font-mono text-xs">&lt;th scope="row"&gt;</span> for the System cell.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/CycleMatrixScreen.tsx</td>
+              <td class="px-4 py-2">126-146</td>
+              <td class="px-4 py-2">F5: an empty matrix still renders the table header above the "No Systems" message.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/CycleMatrixScreen.tsx</td>
+              <td class="px-4 py-2">133-135</td>
+              <td class="px-4 py-2">F6: column headings repeat the server-owned due-window rule.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN Â· C0 H0 M1 L5</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-left text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Severity</th>
+              <th class="text-left text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">File</th>
+              <th class="text-left text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Line</th>
+              <th class="text-left text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V133__submission_milestones.sql<br />backend/src/main/java/sg/annualva/submission/SubmissionStore.java</td>
+              <td class="px-4 py-2">11-12<br />433</td>
+              <td class="px-4 py-2">M1 (spring-data): <span class="font-mono text-xs">passed_to_endorsement_at</span> / <span class="font-mono text-xs">endorsed_at</span> have no writer outside the test endpoint; ticket 30 already shipped without one. Add the requirement to tickets 30/34 and a Seam 1 test driving the real pass command.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/QuarterBoard.java</td>
+              <td class="px-4 py-2">74-76</td>
+              <td class="px-4 py-2">L1 (spring-security): a dual-role Cyber Manager + VA POC loses the SoD marker on the Quarter board; not an access bypass.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V133__submission_milestones.sql</td>
+              <td class="px-4 py-2">â€”</td>
+              <td class="px-4 py-2">L2 (Flyway): parallel-ticket version numbers depend on merge order; merge V1xx tickets in ascending order or renumber at integration.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/dashboard/CycleMatrixTest.java</td>
+              <td class="px-4 py-2">29, 39</td>
+              <td class="px-4 py-2">L3 (spring-test): the Withdrawn row SYS-C6 is never asserted to appear in <span class="font-mono text-xs">systems</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/dashboard/CycleMatrixTest.java<br />backend/src/test/java/sg/annualva/ingestion/SubmitMilestoneTest.java</td>
+              <td class="px-4 py-2">119<br />24</td>
+              <td class="px-4 py-2">L4 (spring-test): conditional logic inside test assertions; loop duplicates an existing lookup helper.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/harness/Arrange.java</td>
+              <td class="px-4 py-2">92-102</td>
+              <td class="px-4 py-2">L5 (spring-test): test harness builds the JSON request body by string concatenation with no escaping.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+      <section class="mt-8 rounded-lg border border-slate-200 bg-white p-4">
+        <h2 class="text-lg font-semibold">Addressed after this review</h2>
+        <ul class="mt-2 list-disc pl-6 text-sm">
+          <li>thermo-nuclear (QuarterBoard.java, ReviewMarkers.java): the board decides the Need once; <span class="font-mono text-xs">ReviewMarkers.of(rows, need)</span> resolves the step through <span class="font-mono text-xs">SubmissionStep.actingFor(need)</span>, so the parallel ternaries and the nullable step are gone.</li>
+          <li>code-review S1: the branch was re-committed so the front-end renames are in the front-end commit and every commit builds.</li>
+          <li>spring-test L3: <span class="font-mono text-xs">CycleMatrixTest</span> now asserts that the Withdrawn System keeps its row while the counts leave it out.</li>
+          <li>thermo-nuclear (CycleMatrix.java, matching the current milestone by due day): kept. The three due days always differ (<span class="font-mono text-xs">va_submission_windows_check</span>), and ADR 0037 item 4 records this.</li>
+          <li>code-review P1 and springboot M1 (nothing writes <span class="font-mono text-xs">passed_to_endorsement_at</span> or <span class="font-mono text-xs">endorsed_at</span> yet): left for the merger and tickets 30 and 34, as ADR 0037 item 5 records.</li>
+        </ul>
+      </section>
+    </main>
+  </body>
+</html>
