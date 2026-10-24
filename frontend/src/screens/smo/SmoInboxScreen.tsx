@@ -83,7 +83,7 @@ function RowAction({
   starting: boolean;
   onStart: (system: InboxSystem) => void;
 }) {
-  if (system.submissionId && system.state !== "NOT_STARTED") {
+  if (system.submissionId) {
     const rework = system.state === "RETURNED_FOR_REWORK";
     return (
       <AppLink path={rework ? reworkPath(system.submissionId) : submissionPath(system.submissionId)}>

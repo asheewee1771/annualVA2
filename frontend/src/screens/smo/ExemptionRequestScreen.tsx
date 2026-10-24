@@ -135,7 +135,7 @@ function RequestForm({
         />
       </ClassifiedField>
       <EvidenceFileChoice
-        submissionId={system.state === "NOT_STARTED" ? null : system.submissionId}
+        submissionId={system.submissionId}
         value={fileId}
         busy={busy}
         classification={classification}

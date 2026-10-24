@@ -24,8 +24,8 @@ import sg.annualva.web.RejectedRequestException;
  * System's SMO/Tech Lead counts as its submitter and its Cyber Manager as its reviewer ({@link SubmissionStep#need()}).
  *
  * <p>Every command at a step calls {@link #require} once, before it records the step: start, submit, the reviews, the
- * return, the pass to endorsement, the endorsement, and an Exemption's request and decision (ADR 0048). A VA POC is assigned to no step by their role and counts at the
- * endorsing step only once they act there (ADR 0039 item 5). {@code ArchitectureTest} keeps it so: a method that
+ * return, the pass to endorsement, the endorsement, and an Exemption's request and decision (ADR 0048). A VA POC is
+ * assigned to no step by their role and counts at the endorsing step only once they act there (ADR 0039 item 5). {@code ArchitectureTest} keeps it so: a method that
  * records a step must call {@link #require}. The read models mark the same VA Submissions through {@link #conflictedAt},
  * so a marker and a refusal never disagree.
  */

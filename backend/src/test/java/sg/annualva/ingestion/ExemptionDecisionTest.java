@@ -191,6 +191,7 @@ class ExemptionDecisionTest extends ExemptionSeam1 {
         assertThat(row.get("state").asString()).isEqualTo("NOT_STARTED");
         assertThat(row.get("nextAction").asString()).isEqualTo("START_SUBMISSION");
         assertThat(row.get("nextActionDueOn").asString()).isEqualTo("2027-08-15");
+        assertThat(row.get("submissionId").isNull()).as("a Not Started row offers nothing to open").isTrue();
         JsonNode told = only(smoB, "EXEMPTION_REJECTED");
         assertThat(told.get("state").asString()).isEqualTo("NOT_STARTED");
         assertThat(told.get("link").asString()).isEqualTo("/smo");

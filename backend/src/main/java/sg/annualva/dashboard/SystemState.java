@@ -4,7 +4,8 @@ import sg.annualva.submission.SubmissionState;
 
 /**
  * How a System in a Quarter is shown on a dashboard: Not Started while it has no VA Submission, otherwise its VA
- * Submission's state (Not Started too for one a rejected Exemption request created). The order is the spec's state table, which is the order of the Quarter board's columns.
+ * Submission's state (Not Started too for one a rejected Exemption request created). The order is the spec's state
+ * table, which is the order of the Quarter board's columns.
  */
 public enum SystemState {
     NOT_STARTED,

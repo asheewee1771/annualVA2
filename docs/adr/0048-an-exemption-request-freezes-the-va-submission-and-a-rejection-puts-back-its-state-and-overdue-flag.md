@@ -30,5 +30,5 @@ Not done here, on purpose:
 - Any Playwright scenario (ticket 53).
 
 Consequences:
-- `SubmissionState` has ten constants; a reader that took "has a row" to mean "started" must ask the state (the dashboards and the SMO inbox do).
+- `SubmissionState` has ten constants. The one dashboard reader (`DashboardSystems`) answers no `submissionId` for a Not Started row, so every dashboard, board and inbox still reads "has an id" as "started"; a reader of `va_submission` itself must ask the state.
 - A VA POC who rejected an Exemption may still endorse the same VA Submission, as both are the endorsing step (ADR 0042 item 2).
