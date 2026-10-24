@@ -253,6 +253,10 @@ export interface Readiness {
   undated: NamedFile[];
   /** Every reason it cannot be submitted now, apart from the Declaration ticked on the screen; empty when ready. */
   blockers: Reason[];
+  /** Something is Disputed, so the Cyber Manager may return it for rework. */
+  returnable: boolean;
+  /** What is not yet confirmed, in the server's words; empty once it may pass to endorsement. */
+  endorsementBlockers: Reason[];
 }
 
 /** GET /api/submissions/{id}/readiness: the progress counts of the VA Submission's Findings. */

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { dayLabel } from "../../api/cycles.ts";
 import { fetchReadiness, type Readiness } from "../../api/findings.ts";
-import { ApiError, type Problem, type Reason, type ReasonFile } from "../../api/problem.ts";
+import { ApiError, type Problem } from "../../api/problem.ts";
 import { fetchReportFiles } from "../../api/reportFiles.ts";
 import { fetchScanReportModes } from "../../api/scanReports.ts";
 import {
@@ -22,37 +22,11 @@ import { EditableContext } from "./Editable.tsx";
 import { FindingsSection } from "./FindingsSection.tsx";
 import { SMO_AREA_PATH } from "./paths.ts";
 import { ScanReportsSection } from "./ScanReportsSection.tsx";
-import { SCAN_REPORTS } from "../shared/scanReports.ts";
+import { ReasonList } from "../shared/ReasonList.tsx";
 
 const WHEN = new Intl.DateTimeFormat("en-SG", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Singapore" });
 
 const UNREACHABLE: Problem = { type: "about:blank", title: "The server could not be reached", status: 0 };
-
-/** A file a reason names, by its name and its Scan Report, as text. */
-function fileWords(file: ReasonFile): string {
-  const report = SCAN_REPORTS.find((each) => each.type === file.reportType);
-  return `${file.name} (${report ? report.title : file.reportType})`;
-}
-
-/** What stands in the way of submitting, each reason in the server's words with the files it names. */
-function ReasonList({ reasons }: { reasons: readonly Reason[] }) {
-  return (
-    <ul>
-      {reasons.map((reason, index) => (
-        <li key={`${reason.reason}-${reason.reportType ?? ""}-${index}`}>
-          {reason.message}
-          {reason.files.length > 0 ? (
-            <ul>
-              {reason.files.map((file) => (
-                <li key={file.fileId}>{fileWords(file)}</li>
-              ))}
-            </ul>
-          ) : null}
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 /** The Declaration as it was accepted at the latest submit: the exact wording kept with the VA Submission. */
 function AcceptedDeclarationView({ declaration }: { declaration: AcceptedDeclaration }) {

@@ -89,6 +89,27 @@ export function fetchDeclarationText(): Promise<DeclarationText> {
 }
 
 /**
+ * POST /api/submissions/{id}/return: the Cyber Manager returns it to the SMO/Tech Lead for rework with what is Disputed
+ * attached, and an optional comment (blank sends none). The server answers 409 `nothing-disputed` when nothing is
+ * Disputed, and 409 `invalid-transition` once it is not In Review.
+ */
+export function returnForRework(id: string, comment: string): Promise<Submission> {
+  return request<Submission>(
+    "POST",
+    `/api/submissions/${encodeURIComponent(id)}/return`,
+    comment.trim() === "" ? {} : { comment },
+  );
+}
+
+/**
+ * POST /api/submissions/{id}/pass-to-endorsement: the Cyber Manager passes it to the VA POCs. The server answers 409
+ * `not-confirmed` with what is still unconfirmed (`reasons`), and 409 `invalid-transition` once it is not In Review.
+ */
+export function passToEndorsement(id: string): Promise<Submission> {
+  return request<Submission>("POST", `/api/submissions/${encodeURIComponent(id)}/pass-to-endorsement`, {});
+}
+
+/**
  * POST /api/submissions/{id}/submit: submits for review with the Declaration of this version ticked. The server answers
  * 409 `not-ready` with every reason it cannot be submitted yet (`reasons`), and 409 `invalid-transition` once it is not
  * in Draft or Returned for Rework.
