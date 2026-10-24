@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review &mdash; 32-re-review-changed</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall: PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">build WARN &middot; 0C / 0H / 0M / 3L</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN &middot; 0C / 0H / 1M / 4L</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN &middot; 0C / 0H / 2M / 8L</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">semgrep PASS &middot; 0C / 0H / 0M / 0L</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">im8 PASS &middot; 0C / 0H / 0M / 0L</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react WARN &middot; 0C / 0H / 0M / 2L</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN &middot; 0C / 0H / 1M / 5L</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">impl/32-re-review-changed</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report</h1>
+          <p class="text-sm text-slate-500 mt-1">Ticket 32: re-review only what changed. Range <span class="font-mono text-xs">integration/annual-va-r1..HEAD</span> (commits d54f4f5, 8667ddf, 50f7e32, 51ea423; 11 files, +268 / -37).</p>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Executive Summary</h2>
+          <p class="text-xs text-slate-500 mt-1">Overall compliance evaluation status across all active checks. No check has a Critical or High finding, so the overall status is PASS. Four Medium findings (two of them the same gap, reported by two checks) and 22 Low findings are advisory.</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Check</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Status</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">C / H / M / L</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Summary of gaps</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">build</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 3</td>
+              <td class="px-4 py-2">Back end <span class="font-mono text-xs">clean verify</span> (879 tests, ArchUnit, JaCoCo) and front end <span class="font-mono text-xs">npm run check</span> all pass. Low only: a pre-existing deprecation warning, advisory fallow health notes, and log timing (check reported PASS).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">thermo-nuclear</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 4</td>
+              <td class="px-4 py-2">Overlapping <span class="font-mono text-xs">batchId</span> / <span class="font-mono text-xs">changedOnly</span> props in <span class="font-mono text-xs">ReviewFindingsList</span> allow an invalid state. Low: count query join cost, growing <span class="font-mono text-xs">FindingFilter</span>, view asymmetry, inline test URL.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">code-review</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 2 / 8</td>
+              <td class="px-4 py-2">Spec: ADR 0040 item 2 is still provisional and unrecorded; acceptance criterion 3 is only partly proven (batch-reviewed and rescan-withdrawn cases untested). Standards: Low only.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">semgrep</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 0</td>
+              <td class="px-4 py-2">328 rules (<span class="font-mono text-xs">p/security-audit</span> + <span class="font-mono text-xs">p/default</span>) over 9 changed source files; no findings, no scan errors.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">im8</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 0</td>
+              <td class="px-4 py-2">Typed, bound parameter; access control and audit unchanged. Manual checklist: business owner to confirm ADR 0040 item 2 semantics.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">react</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 2</td>
+              <td class="px-4 py-2">Low only: the same contradictory-props concern and the meaningless <span class="font-mono text-xs">batchId={null}</span> at the call site (check reported PASS).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">springboot</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 5</td>
+              <td class="px-4 py-2">Rescan-withdrawn branch documented but untested. Low: test loop, 400-only assertion, no combined-filter test, nine-param handler, count join cost.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-600">No Critical or High findings in any check.</p>
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Medium Findings</h3>
+          <p class="text-xs text-slate-500">As found at review. Three are now resolved and P1 is deferred; see Resolved after review below.</p>
+          <ul class="list-disc pl-5 space-y-2 text-sm">
+            <li><span class="text-amber-600">Medium</span> &middot; thermo-nuclear &middot; <a class="font-mono text-xs text-sky-700 underline" href="../../frontend/src/screens/cyber-manager/ReviewFindingsList.tsx">frontend/src/screens/cyber-manager/ReviewFindingsList.tsx:106</a> &mdash; <span class="font-mono text-xs">batchId</span> and <span class="font-mono text-xs">changedOnly</span> both choose the list mode and <span class="font-mono text-xs">changedOnly</span> silently overrides the batch; replace with one discriminated <span class="font-mono text-xs">scope</span> prop or pass the <span class="font-mono text-xs">FindingFilter</span>.</li>
+            <li><span class="text-amber-600">Medium</span> &middot; code-review (P1) &middot; <a class="font-mono text-xs text-sky-700 underline" href="../../docs/adr/0040-a-finding-changed-since-its-last-review-is-one-whose-latest-review-is-not-of-its-current-proposal.md">docs/adr/0040-...-current-proposal.md:3</a> &mdash; item 2 (meaning of &ldquo;changed since last review&rdquo;) is provisional and missing from <span class="font-mono text-xs">docs/agents/reviewer-decisions.md</span>; the Changed view omits never-reviewed Findings. Needs a human decision recorded.</li>
+            <li><span class="text-amber-600">Medium</span> &middot; code-review (P2) &middot; <a class="font-mono text-xs text-sky-700 underline" href="../../backend/src/test/java/sg/annualva/ingestion/ReReviewTest.java">backend/src/test/java/sg/annualva/ingestion/ReReviewTest.java:39</a> &mdash; acceptance criterion 3 partly met: no Seam 1 test for (a) a batch-confirmed Finding proposed again being listed as changed, (b) a Finding whose proposal a rescan withdrew being listed as changed.</li>
+            <li><span class="text-amber-600">Medium</span> &middot; springboot (spring-test-review) &middot; <a class="font-mono text-xs text-sky-700 underline" href="../../backend/src/test/java/sg/annualva/ingestion/ReReviewTest.java">backend/src/test/java/sg/annualva/ingestion/ReReviewTest.java:1</a> &mdash; the &ldquo;rescan left it with no proposal&rdquo; branch (<span class="font-mono text-xs">WITHDRAW_RESCAN_PROPOSALS</span>, FindingStore.java:216, predicate 104-105) has no test; add one using the <span class="font-mono text-xs">ReplaceSeam1</span> helpers. Overlaps P2(b).</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-4">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Resolved after review</h2>
+          <p class="text-xs text-slate-500 mt-1">Follow-up commits on <span class="font-mono">impl/32-re-review-changed</span>, each checked against <span class="font-mono">git show</span> of the named commit. The overall status stays PASS.</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Finding</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Outcome</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Commit</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Evidence</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2">thermo-nuclear Medium: overlapping <span class="font-mono text-xs">batchId</span> / <span class="font-mono text-xs">changedOnly</span> props (also covers code-review S2 and react Lows 1-2)</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Resolved</span></td>
+              <td class="px-4 py-2 font-mono text-xs">b1eaecd refactor(frontend): narrow the review list by one filter prop</td>
+              <td class="px-4 py-2"><span class="font-mono text-xs">ReviewFindingsList</span> now takes a single <span class="font-mono text-xs">filter: FindingFilter</span>; <span class="font-mono text-xs">filterOf</span> is gone. <span class="font-mono text-xs">ReviewScreen</span> passes the module constants <span class="font-mono text-xs">NOT_IN_A_BATCH</span> and <span class="font-mono text-xs">CHANGED_SINCE_LAST_REVIEW</span>; <span class="font-mono text-xs">BatchesSection</span> passes a <span class="font-mono text-xs">useMemo</span>'d <span class="font-mono text-xs">{ batchId }</span>, so the <span class="font-mono text-xs">useCallback</span> dependency stays stable.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2">code-review P2 and springboot spring-test Medium: no batch-review case and no rescan-withdrawal case</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Resolved</span></td>
+              <td class="px-4 py-2 font-mono text-xs">7b0f896 test: prove a batch-reviewed or rescan-withdrawn Finding counts as changed since its last review</td>
+              <td class="px-4 py-2">Two Seam 1 tests added to <span class="font-mono text-xs">ReReviewTest</span>: <span class="font-mono text-xs">aFindingConfirmedInABatchReviewAndProposedAgainIsChanged</span> and <span class="font-mono text-xs">aFindingWhoseProposalARescanTookAwayDuringReworkIsChanged</span> (asserts <span class="font-mono text-xs">currentProposal</span> is null and the Finding is listed as changed, not unchanged). The class now has 8 tests; the implementer reports all passing (not re-run by this aggregator).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2">code-review P1: ADR 0040 item 2 is provisional</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">Deferred</span></td>
+              <td class="px-4 py-2 font-mono text-xs">-</td>
+              <td class="px-4 py-2">Left open on purpose as a Human Decision Needed item for the implementer's report. It is a product decision, not a code defect.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/adapters/oidc/MccHttp.java</td>
+              <td class="px-4 py-2 font-mono text-xs">51</td>
+              <td class="px-4 py-2">Pre-existing compiler deprecation warning: <span class="font-mono text-xs">RestClient.Builder.messageConverters(Consumer)</span> is deprecated for removal. Outside the changeset; will break on a future Spring upgrade.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewFindingsList.tsx, ReviewScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">-</td>
+              <td class="px-4 py-2">Advisory fallow health notes: <span class="font-mono text-xs">ReviewFindingsList.tsx</span> in the triage list (score 86.3, CRAP risk 132); <span class="font-mono text-xs">ReviewScreen.tsx</span> a churn hotspot. Both under threshold.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">(front-end log)</td>
+              <td class="px-4 py-2 font-mono text-xs">-</td>
+              <td class="px-4 py-2">Front-end log predates the commits by about a minute; the only later commit is docs-only, so no rerun was needed.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewFindingsList.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">106-108, 144-161</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Resolved</span> in b1eaecd &ldquo;refactor(frontend): narrow the review list by one filter prop&rdquo;. Two overlapping props choose the list mode: <span class="font-mono text-xs">filterOf</span> gives <span class="font-mono text-xs">changedOnly</span> priority over <span class="font-mono text-xs">batchId</span>, so <span class="font-mono text-xs">&lt;ReviewFindingsList batchId="x" changedOnly /&gt;</span> type-checks and ignores the batch; the caller (ReviewScreen.tsx 73-76) passes a meaningless <span class="font-mono text-xs">batchId={null}</span>. Fix: one discriminated <span class="font-mono text-xs">scope</span> prop, or pass the <span class="font-mono text-xs">FindingFilter</span> (module constants / <span class="font-mono text-xs">useMemo</span>).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">134</td>
+              <td class="px-4 py-2"><span class="font-mono text-xs">COUNT</span> now always pays for the <span class="font-mono text-xs">LATEST_REVIEW</span> lateral join, even without the filter. Accepted by the ADR; optionally use a correlated subquery inside <span class="font-mono text-xs">FILTERED</span> if latency matters.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingFilter.java</td>
+              <td class="px-4 py-2 font-mono text-xs">22-25</td>
+              <td class="px-4 py-2">Seven positional components, two adjacent nullable tri-state Booleans; a swapped argument would compile. Add a builder or named factory before the next filter.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">135-149</td>
+              <td class="px-4 py-2">The two views are built asymmetrically: &ldquo;changed&rdquo; is a named component, &ldquo;all&rdquo; an inline fragment. Extract an <span class="font-mono text-xs">AllFindingsSection</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ReReviewTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">50</td>
+              <td class="px-4 py-2">The <span class="font-mono text-xs">total</span> assertion rebuilds the list URL by hand next to the <span class="font-mono text-xs">listedIds</span> helper. Add a <span class="font-mono text-xs">listed(client, sub, query)</span> helper returning the parsed page.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">docs/adr/0040-a-finding-changed-since-its-last-review-is-one-whose-latest-review-is-not-of-its-current-proposal.md</td>
+              <td class="px-4 py-2 font-mono text-xs">3</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">Deferred</span> Human Decision Needed; not a code defect. P1 (Spec). Item 2 is &ldquo;provisional, awaiting a human decision&rdquo; and <span class="font-mono text-xs">docs/agents/reviewer-decisions.md</span> has no entry. Under the narrow reading the Changed view (ReviewScreen.tsx:71) omits never-reviewed Findings (first reported by a rescan during rework, or left PENDING at a return). A human must confirm and record the reading.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ReReviewTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">39</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Resolved</span> in 7b0f896 &ldquo;test: prove a batch-reviewed or rescan-withdrawn Finding counts as changed since its last review&rdquo;. P2 (Spec). Acceptance criterion 3 partly met: no Seam 1 test that (a) a batch-confirmed Finding proposed again is listed as changed, (b) a Finding left with no proposal after a rescan withdraws it is listed as changed.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">104</td>
+              <td class="px-4 py-2">S1. <span class="font-mono text-xs">FILTERED</span> uses alias <span class="font-mono text-xs">r</span> that exists only when <span class="font-mono text-xs">LATEST_REVIEW</span> is joined; only Javadoc enforces it. Build the shared FROM + joins once for page and count.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewFindingsList.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">106</td>
+              <td class="px-4 py-2">S2. Flag argument: <span class="font-mono text-xs">filterOf(batchId, changedOnly)</span> ignores <span class="font-mono text-xs">batchId</span> when <span class="font-mono text-xs">changedOnly</span>; use a discriminated <span class="font-mono text-xs">scope</span> prop.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">65</td>
+              <td class="px-4 py-2">S3. <span class="font-mono text-xs">ChangedFindingsSection</span> (65-79) repeats the card / h3 / list shape of the one-by-one section (140-147). Optional extraction.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ReReviewTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">50</td>
+              <td class="px-4 py-2">S4. Lines 50 and 123 build the Findings list URL inline, repeating <span class="font-mono text-xs">listedIds</span> in <span class="font-mono text-xs">ReviewSeam1</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">(commit history)</td>
+              <td class="px-4 py-2 font-mono text-xs">-</td>
+              <td class="px-4 py-2">S5. Commit scopes <span class="font-mono text-xs">feat(finding)</span> and unscoped <span class="font-mono text-xs">test:</span> differ from the usual <span class="font-mono text-xs">backend</span>/<span class="font-mono text-xs">frontend</span> scopes.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ReReviewTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">50</td>
+              <td class="px-4 py-2">P3. ADR 0040 item 4 says the filter combines with every other filter; no test combines it with <span class="font-mono text-xs">reviewState</span>, <span class="font-mono text-xs">batchId</span> or <span class="font-mono text-xs">severity</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ReReviewTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">57</td>
+              <td class="px-4 py-2">P4. The pass test never asserts the refusal path while one changed Finding is still PENDING after another was confirmed.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">.scratch/annual-va/issues/32-review-engine-re-review-only-changed.md</td>
+              <td class="px-4 py-2 font-mono text-xs">11</td>
+              <td class="px-4 py-2">P5. &ldquo;Including after a VA POC return&rdquo; is legitimately deferred to ticket 35; tracked only.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-4 border-t border-slate-100 text-sm text-slate-600 space-y-1">
+          <p class="font-medium text-slate-900">Manual review checklist</p>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>Confirm the business owner accepts that never-reviewed Findings are not listed under &ldquo;Changed since last review&rdquo; (ADR 0040 item 2, provisional); the pass to endorsement still blocks on them.</li>
+            <li>Optional: decide whether the <span class="font-mono text-xs">FINDINGS_VIEWED</span> audit entry should record the filter used (today it records the count only).</li>
+          </ul>
+        </div>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewFindingsList.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">106-107</td>
+              <td class="px-4 py-2"><span class="font-mono text-xs">filterOf(batchId, changedOnly)</span> silently drops <span class="font-mono text-xs">batchId</span> when <span class="font-mono text-xs">changedOnly</span> is true, so a contradictory combination is expressible. No live bug; model scope as one discriminated prop.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">74-75</td>
+              <td class="px-4 py-2"><span class="font-mono text-xs">ChangedFindingsSection</span> must pass a meaningless <span class="font-mono text-xs">batchId={null}</span>. Goes away with the fix above.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ReReviewTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">1-126</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Resolved</span> in 7b0f896 &ldquo;test: prove a batch-reviewed or rescan-withdrawn Finding counts as changed since its last review&rdquo;. spring-test-review. The documented &ldquo;rescan left it with none&rdquo; branch (<span class="font-mono text-xs">WITHDRAW_RESCAN_PROPOSALS</span> at FindingStore.java:216 sets <span class="font-mono text-xs">current_proposal_id = NULL</span>; predicate 104-105 then counts it as changed) has no Seam 1 test. JaCoCo cannot see SQL branches. Add a test using the <span class="font-mono text-xs">ReplaceSeam1</span> helpers.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ReReviewTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">63-65</td>
+              <td class="px-4 py-2">spring-test-review. Loop over a server-computed list hides which Findings are expected; assert the list equals <span class="font-mono text-xs">back.changed()</span> first.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ReReviewTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">123-124</td>
+              <td class="px-4 py-2">spring-test-review. <span class="font-mono text-xs">theFilterTakesOnlyTrueOrFalse</span> asserts only 400; also assert the problem-detail type.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ReReviewTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">39-54</td>
+              <td class="px-4 py-2">spring-test-review. Total checked only for <span class="font-mono text-xs">true</span>; add a combined-filter assertion (e.g. <span class="font-mono text-xs">reviewState=PENDING&amp;changedSinceLastReview=true</span>) and the <span class="font-mono text-xs">false</span> total.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingController.java</td>
+              <td class="px-4 py-2 font-mono text-xs">94</td>
+              <td class="px-4 py-2">spring-web-review. Handler now takes nine <span class="font-mono text-xs">@RequestParam</span>s mapped by hand into <span class="font-mono text-xs">FindingFilter</span>; consider <span class="font-mono text-xs">@ModelAttribute</span> binding. Not a defect.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">134</td>
+              <td class="px-4 py-2">spring-data-review. <span class="font-mono text-xs">COUNT</span> always runs the lateral latest-review probe; small cost on <span class="font-mono text-xs">finding_review_finding_idx</span>. Revisit only if profiling shows it.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+    </main>
+  </body>
+</html>
