@@ -36,11 +36,27 @@ public class FindingController {
     private final Findings findings;
     private final BulkProposals bulk;
     private final ManualFindings manual;
+    private final Reviews reviews;
 
-    FindingController(Findings findings, BulkProposals bulk, ManualFindings manual) {
+    FindingController(Findings findings, BulkProposals bulk, ManualFindings manual, Reviews reviews) {
         this.findings = findings;
         this.bulk = bulk;
         this.manual = manual;
+        this.reviews = reviews;
+    }
+
+    /**
+     * The Cyber Manager confirms or Disputes the Finding's current proposal (story 50): 201 with the review. The body names
+     * the {@code decision}, a {@code comment} (required to Dispute) and the {@code proposalId} reviewed, which must still be
+     * the current one (else 409 {@code proposal-changed}). Someone who acted at another step of the VA Submission, or is
+     * assigned to one, is refused with 403 {@code sod-conflict}; a VA Submission that is not In Review is 409
+     * {@code invalid-transition}; an SMO/Tech Lead, a VA POC or an Auditor is refused with 403 by the role rule.
+     */
+    @PostMapping("/api/findings/{id}/reviews")
+    @PreAuthorize("hasRole('CYBER_MANAGER')")
+    public ResponseEntity<ReviewView> review(@PathVariable UUID id, @RequestBody ReviewRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore())
+                .body(reviews.reviewFinding(id, request));
     }
 
     /**

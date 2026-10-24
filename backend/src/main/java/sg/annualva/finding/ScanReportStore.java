@@ -20,9 +20,9 @@ import sg.annualva.submission.Submissions;
 class ScanReportStore {
 
     /** One Scan Report's mode as the table holds it. */
-    record Slot(ReportMode mode, @Nullable String justification, @Nullable ReviewState reviewState) {
+    record Slot(ReportMode mode, @Nullable String justification, @Nullable ReviewState reviewState, int version) {
 
-        static final Slot UPLOADED = new Slot(ReportMode.UPLOAD, null, null);
+        static final Slot UPLOADED = new Slot(ReportMode.UPLOAD, null, null, 0);
     }
 
     /** A Finding entered by hand, ready to be kept. */
@@ -39,7 +39,8 @@ class ScanReportStore {
             + "ON CONFLICT (submission_id, report_type) DO NOTHING";
 
     private static final String SLOT_COLUMNS =
-            "SELECT mode, justification, review_state FROM report_slot WHERE submission_id = :submission "
+            "SELECT mode, justification, review_state, justification_version FROM report_slot "
+            + "WHERE submission_id = :submission "
             + "AND report_type = :type ";
 
     /** A write that relies on the mode (an upload, a Finding by hand) holds it so that the mode cannot change under it. */
@@ -57,12 +58,18 @@ class ScanReportStore {
             + "AND kind = 'MACHINE_READABLE' AND reject_code IS NULL) "
             + "OR EXISTS (SELECT 1 FROM finding WHERE submission_id = :submission AND report_type = :type)";
 
+    /**
+     * Writes the mode, the justification, its review and its version, all decided by {@link ScanReports#setMode} from the
+     * row it holds.
+     */
     private static final String UPDATE =
             "UPDATE report_slot SET mode = :mode, justification = CAST(:justification AS text), "
-            + "review_state = CAST(:review AS text) WHERE submission_id = :submission AND report_type = :type";
+            + "review_state = CAST(:review AS text), justification_version = :version "
+            + "WHERE submission_id = :submission AND report_type = :type";
 
     private static final String OF_SUBMISSION =
-            "SELECT report_type, mode, justification, review_state FROM report_slot WHERE submission_id = :submission";
+            "SELECT report_type, mode, justification, review_state, justification_version FROM report_slot "
+            + "WHERE submission_id = :submission";
 
     /** A Finding entered by hand; nothing when the VA Submission already has one with the same identity key. */
     private static final String INSERT_MANUAL =
@@ -88,7 +95,7 @@ class ScanReportStore {
                 .param("submission", submissionId)
                 .param("type", type.name())
                 .query((rs, row) -> new Slot(ReportMode.valueOf(rs.getString("mode")), rs.getString("justification"),
-                        reviewStateOf(rs.getString("review_state"))))
+                        reviewStateOf(rs.getString("review_state")), rs.getInt("justification_version")))
                 .single();
     }
 
@@ -106,6 +113,7 @@ class ScanReportStore {
                 .param("mode", slot.mode().name())
                 .param("justification", slot.justification())
                 .param("review", review == null ? null : review.name())
+                .param("version", slot.version())
                 .update();
     }
 
@@ -115,7 +123,7 @@ class ScanReportStore {
         jdbc.sql(OF_SUBMISSION).param("submission", submissionId)
                 .query((rs, row) -> Map.entry(ReportType.valueOf(rs.getString("report_type")),
                         new Slot(ReportMode.valueOf(rs.getString("mode")), rs.getString("justification"),
-                                reviewStateOf(rs.getString("review_state")))))
+                                reviewStateOf(rs.getString("review_state")), rs.getInt("justification_version"))))
                 .list()
                 .forEach(slot -> slots.put(slot.getKey(), slot.getValue()));
         return slots;

@@ -3,10 +3,12 @@ package sg.annualva.finding;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,9 +22,24 @@ import org.springframework.web.bind.annotation.RestController;
 public class ScanReportController {
 
     private final ScanReports reports;
+    private final Reviews reviews;
 
-    ScanReportController(ScanReports reports) {
+    ScanReportController(ScanReports reports, Reviews reviews) {
         this.reports = reports;
+        this.reviews = reviews;
+    }
+
+    /**
+     * The Cyber Manager confirms or Disputes the justification of a Scan Report marked not applicable (story 50): 201 with
+     * the review, which keeps the justification it was about. A Scan Report not marked not applicable is 409
+     * {@code not-reviewable}; the other refusals are those of a Finding's review.
+     */
+    @PostMapping("/api/submissions/{id}/reports/{type}/review")
+    @PreAuthorize("hasRole('CYBER_MANAGER')")
+    public ResponseEntity<ReviewView> review(@PathVariable UUID id, @PathVariable ReportType type,
+            @RequestBody ReviewRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore())
+                .body(reviews.reviewReport(id, type, request));
     }
 
     /** The three Scan Reports with their mode, justification and the review of a not-applicable one. Audited, count only. */

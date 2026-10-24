@@ -2,8 +2,8 @@ package sg.annualva.finding;
 
 /**
  * Where the Cyber Manager's review of a Finding's current proposal is. A Finding with no proposal has no review state;
- * a proposal starts {@link #PENDING}, and a new one puts it back there. Confirming and Disputing arrive with the review
- * engine (tickets 28 and after).
+ * a proposal starts {@link #PENDING}, and a new one puts it back there. The Cyber Manager confirms or Disputes it with a
+ * review of that proposal ({@link Reviews}, ticket 28).
  */
 public enum ReviewState {
     /** Proposed, not yet confirmed or Disputed. */

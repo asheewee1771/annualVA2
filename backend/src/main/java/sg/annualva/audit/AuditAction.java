@@ -32,9 +32,10 @@ public enum AuditAction {
     /** A System was retired by a Register apply; its history stays. One entry per System, about that System. */
     REGISTER_SYSTEM_RETIRED("register-system-retired", "configuration"),
     /**
-     * An SMO/Tech Lead started the VA Submission for a System (SUCCESS), or was refused because it was already started
-     * or its Quarter is Handled outside the app (REFUSED, with a fixed reason). It is about the System and, on success,
-     * the VA Submission; it holds no text from the request.
+     * An SMO/Tech Lead started the VA Submission for a System (SUCCESS), or was refused because it was already started,
+     * its Quarter is Handled outside the app, or segregation of duties does not allow it because they are also the
+     * System's Cyber Manager (REFUSED, with a fixed reason: {@code sod-conflict} for the last). It is about the System
+     * and, on success, the VA Submission; it holds no text from the request.
      */
     SUBMISSION_STARTED("submission-started", "database"),
     /**
@@ -44,9 +45,10 @@ public enum AuditAction {
     SUBMISSION_VIEWED("submission-viewed", "database"),
     /**
      * An SMO/Tech Lead submitted a VA Submission for review (story 40; SUCCESS, with {@code state_from}, {@code state_to}
-     * and the {@code declaration_version} accepted), or was refused because it is not in Draft or Returned for Rework, or
-     * something stands in the way of submitting it (REFUSED, with a fixed reason and, for the latter, the {@code count} of
-     * reasons). About the System and the VA Submission; never the Declaration wording or a file name.
+     * and the {@code declaration_version} accepted), or was refused because segregation of duties does not allow the
+     * caller (they acted at, or are assigned to, the reviewing step: {@code sod-conflict}), it is not in Draft or Returned
+     * for Rework, or something stands in the way of submitting it (REFUSED, with a fixed reason and, for the last, the
+     * {@code count} of reasons). About the System and the VA Submission; never the Declaration wording or a file name.
      */
     SUBMISSION_SUBMITTED("submission-submitted", "database"),
     /**
@@ -151,7 +153,22 @@ public enum AuditAction {
      * Findings entered by hand, or it already has that Finding (REFUSED, with a fixed reason). About the System and the VA
      * Submission; never the title, identifier, package or rule.
      */
-    FINDING_ENTERED("finding-entered", "database");
+    FINDING_ENTERED("finding-entered", "database"),
+    /**
+     * A Cyber Manager confirmed or Disputed the current proposal of a Finding (story 50; SUCCESS, with the
+     * {@code decision}), or was refused because segregation of duties does not allow them to review this VA Submission, it
+     * is not In Review, or the proposal they reviewed is no longer the current one (REFUSED, with a fixed reason). About
+     * the System, the VA Submission and the Finding; never the comment.
+     */
+    FINDING_REVIEWED("finding-reviewed", "database"),
+    /**
+     * A Cyber Manager confirmed or Disputed the justification of a not-applicable Scan Report (story 50; SUCCESS, with
+     * {@code report_type} and the {@code decision}), or was refused because segregation of duties does not allow them to
+     * review this VA Submission, it is not In Review, the Scan Report is not marked not applicable, or its justification
+     * has changed since the version reviewed (REFUSED, with {@code report_type} and a fixed reason). About the System and
+     * the VA Submission; never the comment or the justification.
+     */
+    REPORT_REVIEWED("report-reviewed", "database");
 
     private final String ecs;
     private final String category;

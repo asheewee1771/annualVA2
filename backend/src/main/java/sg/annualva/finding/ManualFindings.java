@@ -84,7 +84,7 @@ public class ManualFindings {
                 .with(DetailKey.REPORT_TYPE, finding.reportType().name()));
         return new FindingView(id, target.systemId(), finding.reportType(), finding.key(), finding.identifier(),
                 finding.packageOrRule(), finding.severity(), false, null, 0, List.of(), null, null, FindingSource.MANUAL,
-                finding.title());
+                finding.title(), null);
     }
 
     /** Audits a refusal in an entry of its own, then answers 409 with the reason as its type; fixed text only. */

@@ -114,6 +114,42 @@ public class Submissions {
     }
 
     /**
+     * A VA Submission the caller may review now (story 50): they are the Cyber Manager assigned to its System, segregation
+     * of duties allows them the reviewing step, it is In Review, and its row is held shared until the caller's transaction
+     * ends, so no other command can move it in between. The caller is recorded at the reviewing step when that transaction
+     * commits. Only {@link #lockForReview} makes one, and every write of a review takes one.
+     */
+    public static final class ReviewTarget {
+
+        private final UUID submissionId;
+        private final UUID systemId;
+        private final AuditEvent refused;
+
+        private ReviewTarget(UUID submissionId, UUID systemId, AuditEvent refused) {
+            this.submissionId = submissionId;
+            this.systemId = systemId;
+            this.refused = refused;
+        }
+
+        public UUID submissionId() {
+            return submissionId;
+        }
+
+        /** The System the VA Submission belongs to. */
+        public UUID systemId() {
+            return systemId;
+        }
+
+        /**
+         * The entry a later refusal of the same review is recorded as: the caller's {@code refusedAs}, now about the System
+         * and the VA Submission, before its reason.
+         */
+        public AuditEvent refused() {
+            return refused;
+        }
+    }
+
+    /**
      * What a write answers when the VA Submission is not in Draft or Returned for Rework: it audits its own refusal (ADR
      * 0014) and returns the 409 to throw.
      */
@@ -153,10 +189,11 @@ public class Submissions {
     private final Clock clock;
     private final SubmitReadiness readiness;
     private final ApplicationEventPublisher events;
+    private final SegregationOfDuties sod;
 
     Submissions(SubmissionStore store, RegisterSystems register, CycleCalendar calendar, AccessGuard guard,
             CurrentUser user, AuditActor actor, AuditLog audit, Clock clock, SubmitReadiness readiness,
-            ApplicationEventPublisher events) {
+            ApplicationEventPublisher events, SegregationOfDuties sod) {
         this.store = store;
         this.register = register;
         this.calendar = calendar;
@@ -167,6 +204,7 @@ public class Submissions {
         this.clock = clock;
         this.readiness = readiness;
         this.events = events;
+        this.sod = sod;
     }
 
     /**
@@ -175,12 +213,15 @@ public class Submissions {
      * @param cycleYear the VA Cycle's year; null for the one running today (before the first live Cycle starts, that
      *     Cycle)
      * @throws ResourceNotFoundException for a System the caller may not submit for, or a Cycle the app does not run
-     * @throws RejectedRequestException 409 {@code invalid-transition} when the System already has a VA Submission in the
-     *     Cycle, or its Quarter is Handled outside the app
+     * @throws RejectedRequestException 403 {@code sod-conflict} when the caller is also the System's Cyber Manager (story
+     *     58: assigned to the reviewing step, so never its submitter); 409 {@code invalid-transition} when the System
+     *     already has a VA Submission in the Cycle, or its Quarter is Handled outside the app
      */
     @Transactional
     public Submission start(UUID systemId, @Nullable Integer cycleYear) {
         RegisterSystems.ActiveSystem system = register.active(systemId, Need.SUBMIT);
+        sod.require(SubmissionStep.SUBMIT, systemId, null,
+                actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_STARTED, AuditOutcome.REFUSED)).onSystem(systemId));
         VaCycle cycle = calendar.running(cycleYear);
         Quarter quarter = cycle.quarters().get(system.quarter() - 1);
         if (quarter.handledOutsideApp()) {
@@ -201,7 +242,8 @@ public class Submissions {
     /**
      * Submits a VA Submission of a System the caller is SMO/Tech Lead of for review (stories 40 and 41). The checks run in
      * the order ownership (another System's VA Submission is "not found"), then, with the VA Submission's row held against
-     * every write to what the SMO/Tech Lead prepares, its state (Draft or Returned for Rework), then everything that
+     * every write to what the SMO/Tech Lead prepares, segregation of duties (story 58: the caller may not have acted at,
+     * or be assigned to, the reviewing step), its state (Draft or Returned for Rework), then everything that
      * stands in the way ({@link SubmitReadiness}) and the Declaration, all listed in one refusal. Holding the row first
      * means no proposal, upload, scan-date confirmation or mode change can land between the checks and the move: each takes
      * the row shared ({@link #lockForEdit}). On success the wording of the Declaration version accepted is kept with who
@@ -210,13 +252,16 @@ public class Submissions {
      *
      * @throws ResourceNotFoundException for a VA Submission that does not exist or of a System the caller is not SMO/Tech
      *     Lead of
-     * @throws RejectedRequestException 409 {@code invalid-transition} when it is not in Draft or Returned for Rework; 409
-     *     {@code not-ready} listing every {@link SubmitReadiness.Blocker} as {@code reasons}, the Declaration's included
+     * @throws RejectedRequestException 403 {@code sod-conflict} as above; 409 {@code invalid-transition} when it is not in
+     *     Draft or Returned for Rework; 409 {@code not-ready} listing every {@link SubmitReadiness.Blocker} as
+     *     {@code reasons}, the Declaration's included
      */
     @Transactional
     public Submission submit(UUID id, DeclarationAnswer answer) {
-        SubmissionStore.Located held = held(id, true, this::notSubmittable);
-        UUID systemId = held.systemId();
+        UUID systemId = owned(id).systemId();
+        SubmissionStore.Located held = store.lockForSubmit(id).orElseThrow(ResourceNotFoundException::new);
+        sod.require(SubmissionStep.SUBMIT, systemId, id, refusedSubmit(id, systemId));
+        requireEditable(held, id, systemId, this::notSubmittable);
         SubmissionState from = SubmissionState.valueOf(held.state());
         Declarations.Text declaration = store.currentDeclarationText();
         List<SubmitReadiness.Blocker> blockers = new ArrayList<>(readiness.blockers(id));
@@ -303,8 +348,39 @@ public class Submissions {
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public EditTarget lockForEdit(UUID id, Refusal onRefused) {
-        SubmissionStore.Located held = held(id, false, onRefused);
-        return new EditTarget(id, held.systemId());
+        UUID systemId = owned(id).systemId();
+        SubmissionStore.Located held = store.lockForEdit(id).orElseThrow(ResourceNotFoundException::new);
+        requireEditable(held, id, systemId, onRefused);
+        return new EditTarget(id, systemId);
+    }
+
+    /**
+     * The only way to write a review of what a VA Submission holds (a Finding's proposal, a not-applicable justification;
+     * story 50). Ownership comes first (a VA Submission of a System the caller is not the Cyber Manager of is "not found",
+     * ADR 0013); then, with its row held shared until the caller's transaction ends, segregation of duties (story 58: the
+     * caller may not have acted at another step on it, nor be assigned to another step of its System; 403
+     * {@code sod-conflict}), then the state (In Review; 409 {@code invalid-transition}). Each refusal is audited in an
+     * entry of its own (ADR 0014), as {@code refusedAs} about the System and the VA Submission with a fixed reason. The
+     * caller is then recorded at the reviewing step, kept only if the review commits.
+     *
+     * @param refusedAs the entry a refusal is recorded as: the review's action, REFUSED, attributed to the caller
+     * @throws ResourceNotFoundException as above
+     * @throws RejectedRequestException 403 {@code sod-conflict} or 409 {@code invalid-transition}, as above
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public ReviewTarget lockForReview(UUID id, AuditEvent refusedAs) {
+        SubmissionStore.Located located = store.locate(id).orElseThrow(ResourceNotFoundException::new);
+        guard.requireSystem(located.systemId(), Need.REVIEW);
+        SubmissionStore.Located held = store.lockForEdit(id).orElseThrow(ResourceNotFoundException::new);
+        AuditEvent refused = refusedAs.onSystem(held.systemId()).onSubmission(id);
+        sod.require(SubmissionStep.REVIEW, held.systemId(), id, refused);
+        if (!SubmissionState.IN_REVIEW.name().equals(held.state())) {
+            audit.recordIndependently(refused.with(DetailKey.REASON, "state-not-reviewable"));
+            throw new RejectedRequestException(HttpStatus.CONFLICT, NOT_ALLOWED_NOW,
+                    "This VA Submission can be reviewed only while it is In Review.");
+        }
+        store.recordParticipation(id, user.id(), SubmissionStep.REVIEW, clock.instant());
+        return new ReviewTarget(id, held.systemId(), refused);
     }
 
     /**
@@ -331,18 +407,11 @@ public class Submissions {
         return located;
     }
 
-    /**
-     * The VA Submission of a System the caller is SMO/Tech Lead of, its row held until the transaction ends (exclusively for
-     * a submit, shared for any other write) and its state then read: one not in Draft or Returned for Rework is refused.
-     */
-    private SubmissionStore.Located held(UUID id, boolean forSubmit, Refusal onRefused) {
-        UUID systemId = owned(id).systemId();
-        SubmissionStore.Located held = (forSubmit ? store.lockForSubmit(id) : store.lockForEdit(id))
-                .orElseThrow(ResourceNotFoundException::new);
+    /** A VA Submission whose row the caller holds, read in its state: one not in Draft or Returned for Rework is refused. */
+    private static void requireEditable(SubmissionStore.Located held, UUID id, UUID systemId, Refusal onRefused) {
         if (!editable(held.state())) {
             throw onRefused.refuse(id, systemId);
         }
-        return held;
     }
 
     private Submission view(UUID id) {
@@ -389,13 +458,14 @@ public class Submissions {
     }
 
     /**
-     * The VA Submissions among these at which the caller acted at a step other than this one, for a read model that marks
-     * where segregation of duties will refuse them that step (story 58): a Cyber Manager who started or submitted a VA
-     * Submission as its SMO/Tech Lead may not review it. Only the caller's own record is read.
+     * The VA Submissions among these where segregation of duties refuses the caller this step (story 58), for a read model
+     * that marks them: the caller acted on it at another step (a Cyber Manager who started or submitted it as its SMO/Tech
+     * Lead), or is assigned to another step of its System in the Register. It is the rule the commands refuse by, so the
+     * marker and the refusal never disagree. Only the caller's own record and grants are read.
      */
     @Transactional(readOnly = true)
-    public Set<UUID> actedAtAnotherStep(Collection<UUID> submissionIds, SubmissionStep step) {
-        return store.actedAtAnotherStep(submissionIds, user.id(), step);
+    public Set<UUID> conflictedAt(Collection<UUID> submissionIds, SubmissionStep step) {
+        return sod.conflictedAt(submissionIds, step);
     }
 
     /**
@@ -415,7 +485,7 @@ public class Submissions {
 
     /** A submit of a VA Submission not in Draft or Returned for Rework: audited in a transaction of its own, then 409. */
     private RejectedRequestException notSubmittable(UUID id, UUID systemId) {
-        audit.recordIndependently(refusedSubmit(id, systemId, "state-not-submittable"));
+        audit.recordIndependently(refusedSubmit(id, systemId).with(DetailKey.REASON, "state-not-submittable"));
         return new RejectedRequestException(HttpStatus.CONFLICT, NOT_ALLOWED_NOW,
                 "This VA Submission can be submitted only from Draft or Returned for Rework.");
     }
@@ -425,13 +495,15 @@ public class Submissions {
      * {@code not-ready} listing them.
      */
     private RejectedRequestException notReady(UUID systemId, UUID id, List<SubmitReadiness.Blocker> blockers) {
-        audit.recordIndependently(refusedSubmit(id, systemId, "not-ready").with(DetailKey.COUNT, blockers.size()));
+        audit.recordIndependently(refusedSubmit(id, systemId).with(DetailKey.REASON, "not-ready")
+                .with(DetailKey.COUNT, blockers.size()));
         return RejectedRequestException.withReasons(HttpStatus.CONFLICT, "not-ready",
                 "This VA Submission cannot be submitted yet. Each reason says what to do.", blockers);
     }
 
-    private AuditEvent refusedSubmit(UUID id, UUID systemId, String reason) {
+    /** A refused submit's entry, before its reason: attributed to the caller, about the System and the VA Submission. */
+    private AuditEvent refusedSubmit(UUID id, UUID systemId) {
         return actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_SUBMITTED, AuditOutcome.REFUSED))
-                .onSystem(systemId).onSubmission(id).with(DetailKey.REASON, reason);
+                .onSystem(systemId).onSubmission(id);
     }
 }

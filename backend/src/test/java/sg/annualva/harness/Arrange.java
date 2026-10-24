@@ -63,12 +63,12 @@ public final class Arrange {
         assertThat(client.post("/api/test/report-files/" + fileId + "/rejected").status()).isEqualTo(200);
     }
 
-    /** Sets the review state of a Finding's current proposal, as the review engine of a later ticket will. */
+    /** Sets the review state of a Finding's current proposal directly, in a state the review engine (ticket 28) does not review in. */
     public void findingReview(String findingId, String state) {
         assertThat(client.post("/api/test/findings/" + findingId + "/review/" + state).status()).isEqualTo(200);
     }
 
-    /** Sets the review state of a not-applicable Scan Report's justification, as the review engine of a later ticket will. */
+    /** Sets the review state of a not-applicable justification directly, in a state the review engine (ticket 28) does not review in. */
     public void reportReview(String submissionId, String reportType, String state) {
         assertThat(client.post("/api/test/submissions/" + submissionId + "/reports/" + reportType + "/review/" + state)
                 .status()).isEqualTo(200);

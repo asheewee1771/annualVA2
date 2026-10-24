@@ -99,12 +99,14 @@ class SubmissionStore {
             + "VALUES (:submission, :user, :step, :now) ON CONFLICT DO NOTHING";
 
     /**
-     * The VA Submissions among these at which the person acted at a step other than this one: where segregation of duties
-     * will refuse them this step.
+     * The segregation-of-duties rule, written once: the VA Submissions among these where segregation of duties refuses the
+     * person this step, because they acted on it at another step, or because its System is one they are assigned to at
+     * another step ({@code :assigned}).
      */
-    private static final String ACTED_AT_ANOTHER_STEP =
-            "SELECT DISTINCT submission_id FROM submission_participation WHERE user_id = :user AND step <> :step "
-            + "AND submission_id = ANY(CAST(:submissions AS uuid[]))";
+    private static final String CONFLICTED =
+            "SELECT s.id FROM va_submission s WHERE s.id = ANY(CAST(:submissions AS uuid[])) "
+            + "AND (s.system_id = ANY(CAST(:assigned AS uuid[])) OR EXISTS (SELECT 1 FROM submission_participation p "
+            + "WHERE p.submission_id = s.id AND p.user_id = :user AND p.step <> :step))";
 
     /**
      * A VA Submission's columns, with {@code due_on}: the last day of the window its state waits on, by the one rule
@@ -293,13 +295,18 @@ class SubmissionStore {
                 .list();
     }
 
-    /** The VA Submissions among these at which the person acted at a step other than this one. */
-    Set<UUID> actedAtAnotherStep(Collection<UUID> submissionIds, UUID userId, SubmissionStep step) {
+    /**
+     * The VA Submissions among these where segregation of duties refuses the person this step: they acted on it at another
+     * step, or its System is among those they are assigned to at another step.
+     */
+    Set<UUID> conflicted(Collection<UUID> submissionIds, UUID userId, SubmissionStep step,
+            Collection<UUID> assignedElsewhere) {
         if (submissionIds.isEmpty()) {
             return Set.of();
         }
-        return Set.copyOf(jdbc.sql(ACTED_AT_ANOTHER_STEP).param("user", userId).param("step", step.name())
-                .param("submissions", ids(submissionIds)).query(UUID.class).list());
+        return Set.copyOf(jdbc.sql(CONFLICTED).param("user", userId).param("step", step.name())
+                .param("submissions", ids(submissionIds)).param("assigned", ids(assignedElsewhere))
+                .query(UUID.class).list());
     }
 
     List<Submissions.Acted> participation(UUID submissionId) {

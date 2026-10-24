@@ -151,6 +151,61 @@ class ArchitectureTest {
     }
 
     /**
+     * Ticket 28 as a gate: a review is written only once {@code Submissions.lockForReview} has held the VA Submission In
+     * Review, checked segregation of duties and recorded the reviewing step. Every method of {@code ReviewStore} that is
+     * not one of its named reads takes a {@code ReviewTarget}, so a new write (ticket 29's batch review, say) is checked by
+     * default; only {@code lockForReview} makes one (its constructor is private).
+     */
+    @Test
+    void writesOfAReviewTakeTheReviewLock() throws Exception {
+        Class<?> reviewTarget = Class.forName("sg.annualva.submission.Submissions$ReviewTarget");
+        var reads = java.util.Set.of("latestOfReports", "review");
+        var missing = Arrays.stream(Class.forName("sg.annualva.finding.ReviewStore").getDeclaredMethods())
+                .filter(method -> !Modifier.isPrivate(method.getModifiers()) && !method.isSynthetic())
+                .filter(method -> !reads.contains(method.getName()))
+                .filter(method -> !Arrays.asList(method.getParameterTypes()).contains(reviewTarget))
+                .map(Method::getName)
+                .toList();
+        assertThat(missing).as("review writes that do not take a ReviewTarget").isEmpty();
+        assertThat(Arrays.stream(reviewTarget.getDeclaredConstructors()).allMatch(c -> Modifier.isPrivate(c.getModifiers())))
+                .as("only Submissions.lockForReview makes a ReviewTarget").isTrue();
+    }
+
+    /**
+     * ADR 0035 as a gate: every command that records a person at a step of a VA Submission first asks the one
+     * segregation-of-duties rule, {@code SegregationOfDuties.require}, so a later step command (return, pass to
+     * endorsement, endorse) cannot skip it. Only {@code Submissions} records a step.
+     */
+    @Test
+    void everyCommandThatRecordsAStepAsksSegregationOfDuties() throws Exception {
+        Class<?> store = Class.forName("sg.annualva.submission.SubmissionStore");
+        Class<?> sod = Class.forName("sg.annualva.submission.SegregationOfDuties");
+        noClasses().that().doNotHaveFullyQualifiedName(sg.annualva.submission.Submissions.class.getName())
+                .should().callMethod("sg.annualva.submission.SubmissionStore", "recordParticipation", "java.util.UUID",
+                        "java.util.UUID", "sg.annualva.submission.SubmissionStep", "java.time.Instant")
+                .because("a step is recorded only by a command of Submissions, which asks segregation of duties first")
+                .check(main);
+        methods().that().areDeclaredIn(sg.annualva.submission.Submissions.class)
+                .should(new com.tngtech.archunit.lang.ArchCondition<com.tngtech.archunit.core.domain.JavaMethod>(
+                        "ask segregation of duties before recording a step") {
+                    @Override
+                    public void check(com.tngtech.archunit.core.domain.JavaMethod method,
+                            com.tngtech.archunit.lang.ConditionEvents events) {
+                        var calls = method.getMethodCallsFromSelf();
+                        boolean records = calls.stream().anyMatch(call -> call.getTargetOwner().isEquivalentTo(store)
+                                && call.getName().equals("recordParticipation"));
+                        boolean asks = calls.stream().anyMatch(call -> call.getTargetOwner().isEquivalentTo(sod)
+                                && call.getName().equals("require"));
+                        if (records && !asks) {
+                            events.add(com.tngtech.archunit.lang.SimpleConditionEvent.violated(method,
+                                    method.getFullName() + " records a step without SegregationOfDuties.require"));
+                        }
+                    }
+                })
+                .check(main);
+    }
+
+    /**
      * ADR 0033: {@code RegisterSystems.everyActive} lists every System without asking the access guard, because the
      * Overdue sweep acts for nobody. Only that job may call it, so no request can list Systems past the guard (ADR 0013).
      * A later scheduled job that needs it adds itself here.

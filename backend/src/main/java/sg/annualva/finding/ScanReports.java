@@ -41,13 +41,16 @@ public class ScanReports {
     private static final String JUSTIFICATION = "justification";
 
     private final ScanReportStore store;
+    private final ReviewStore reviews;
     private final Proposals proposals;
     private final Submissions submissions;
     private final AuditActor actor;
     private final AuditLog audit;
 
-    ScanReports(ScanReportStore store, Proposals proposals, Submissions submissions, AuditActor actor, AuditLog audit) {
+    ScanReports(ScanReportStore store, ReviewStore reviews, Proposals proposals, Submissions submissions, AuditActor actor,
+            AuditLog audit) {
         this.store = store;
+        this.reviews = reviews;
         this.proposals = proposals;
         this.submissions = submissions;
         this.actor = actor;
@@ -63,8 +66,9 @@ public class ScanReports {
     public List<ScanReportView> list(UUID submissionId) {
         UUID systemId = submissions.systemOf(submissionId);
         Map<ReportType, ScanReportStore.Slot> slots = store.ofSubmission(submissionId);
+        Map<ReportType, ReviewView> reviewed = reviews.latestOfReports(submissionId);
         List<ScanReportView> reports = Arrays.stream(ReportType.values())
-                .map(type -> view(type, slots.getOrDefault(type, ScanReportStore.Slot.UPLOADED)))
+                .map(type -> view(type, slots.getOrDefault(type, ScanReportStore.Slot.UPLOADED), reviewed.get(type)))
                 .toList();
         audit.record(actor.attribute(AuditEvent.of(AuditAction.SCAN_REPORTS_VIEWED, AuditOutcome.SUCCESS))
                 .onSystem(systemId).onSubmission(submissionId).with(DetailKey.COUNT, reports.size()));
@@ -99,12 +103,27 @@ public class ScanReports {
             throw new RejectedRequestException(HttpStatus.CONFLICT, "report-not-empty",
                     "This Scan Report already holds a report file or a Finding, so how it is provided cannot change.");
         }
-        ScanReportStore.Slot slot = new ScanReportStore.Slot(mode, justification, review(mode, justification, current));
+        ScanReportStore.Slot slot = next(current, mode, justification);
         store.set(target, type, slot);
         audit.record(actor.attribute(AuditEvent.of(AuditAction.REPORT_MODE_SET, AuditOutcome.SUCCESS))
                 .onSystem(target.systemId()).onSubmission(submissionId)
                 .with(DetailKey.REPORT_TYPE, type.name()).with(DetailKey.MODE, mode.name()));
-        return view(type, slot);
+        ReviewView latest = mode == ReportMode.NOT_APPLICABLE ? reviews.latestOfReports(submissionId).get(type) : null;
+        return view(type, slot, latest);
+    }
+
+    /**
+     * What a mode change leaves, decided once from the row it holds. When the mode or the justification changes, what the
+     * Cyber Manager reviews has changed: the justification's version goes up (ticket 28), so a review read before names a
+     * version that is no longer current, and a not-applicable justification goes back to PENDING (ADR 0030 item 3). The
+     * same mode and justification set again keep both. Any other mode has no review.
+     */
+    private static ScanReportStore.Slot next(ScanReportStore.Slot current, ReportMode mode,
+            @Nullable String justification) {
+        boolean changed = current.mode() != mode || !Objects.equals(current.justification(), justification);
+        ReviewState review = mode != ReportMode.NOT_APPLICABLE ? null
+                : changed ? ReviewState.PENDING : current.reviewState();
+        return new ScanReportStore.Slot(mode, justification, review, changed ? current.version() + 1 : current.version());
     }
 
     /**
@@ -120,16 +139,6 @@ public class ScanReports {
     /** The mode of a Scan Report, its row held shared until the caller's transaction ends (a Finding typed in). */
     ReportMode lockedMode(Submissions.EditTarget target, ReportType type) {
         return store.lock(target, type, false).mode();
-    }
-
-    /** A not-applicable justification is reviewed: a new one awaits the Cyber Manager, the same one keeps its review. */
-    private static @Nullable ReviewState review(ReportMode mode, @Nullable String justification,
-            ScanReportStore.Slot current) {
-        if (mode != ReportMode.NOT_APPLICABLE) {
-            return null;
-        }
-        boolean unchanged = current.mode() == mode && Objects.equals(current.justification(), justification);
-        return unchanged ? current.reviewState() : ReviewState.PENDING;
     }
 
     private static ReportMode mode(ReportType type, @Nullable String raw) {
@@ -168,7 +177,9 @@ public class ScanReports {
         return cleaned;
     }
 
-    private static ScanReportView view(ReportType type, ScanReportStore.Slot slot) {
-        return new ScanReportView(type, slot.mode(), slot.justification(), slot.reviewState());
+    /** A review is shown only beside a not-applicable justification: after a change of mode it is about nothing there. */
+    private static ScanReportView view(ReportType type, ScanReportStore.Slot slot, @Nullable ReviewView latest) {
+        return new ScanReportView(type, slot.mode(), slot.justification(), slot.reviewState(), slot.version(),
+                slot.mode() == ReportMode.NOT_APPLICABLE ? latest : null);
     }
 }

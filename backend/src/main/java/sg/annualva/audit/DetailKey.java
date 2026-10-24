@@ -57,7 +57,9 @@ public enum DetailKey {
      * The state a VA Submission was in when something happened to it that is not a move (ticket 26: the Overdue sweep),
      * or {@code NOT_STARTED} for a System with none: a fixed code.
      */
-    STATE;
+    STATE,
+    /** What a review decided (ticket 28): {@code CONFIRMED} or {@code DISPUTED}, never the comment. */
+    DECISION;
 
     /** The key as stored: lower-case with underscores. */
     String json() {

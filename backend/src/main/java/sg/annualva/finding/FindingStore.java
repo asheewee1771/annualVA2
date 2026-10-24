@@ -33,7 +33,7 @@ class FindingStore {
     record Row(UUID id, UUID systemId, ReportType reportType, String identityKey, String identifier,
             String packageOrRule, Severity severity, boolean didNotComplete, @Nullable Confidence confidence,
             int occurrenceCount, @Nullable ReviewState reviewState, @Nullable ProposalView currentProposal,
-            FindingSource source, @Nullable String title) {}
+            FindingSource source, @Nullable String title, @Nullable ReviewView latestReview) {}
 
     /** Where a Finding is: the VA Submission it belongs to and that VA Submission's System. */
     record Located(UUID submissionId, UUID systemId) {}
@@ -90,6 +90,14 @@ class FindingStore {
             + "AND (NOT :attention OR f.current_proposal_id IS NULL OR f.review_state = 'DISPUTED') ";
 
     /**
+     * The Finding's latest review, of whichever proposal it was (ticket 28): it says what the Cyber Manager last decided and
+     * which proposal that was about, so a reader can tell a review of the current proposal from one of an earlier one.
+     */
+    private static final String LATEST_REVIEW =
+            "LEFT JOIN LATERAL (SELECT * FROM finding_review fr WHERE fr.finding_id = f.id ORDER BY fr.seq DESC LIMIT 1) r "
+            + "ON true ";
+
+    /**
      * A Finding did not complete only if it did at every place it was reported (never for a Finding with no place); its
      * confidence is the most sure of its places (none when no place has one).
      */
@@ -100,8 +108,10 @@ class FindingStore {
             + "(SELECT o.confidence FROM finding_occurrence o WHERE o.finding_id = f.id AND o.confidence IS NOT NULL "
             + "ORDER BY array_position(" + CONFIDENCE_ORDER + ", o.confidence) LIMIT 1) AS confidence, "
             + "(SELECT count(*) FROM finding_occurrence o WHERE o.finding_id = f.id) AS occurrences, "
-            + "f.review_state, f.source, f.title, " + PROPOSAL_COLUMNS
+            + "f.review_state, f.source, f.title, r.proposal_id AS review_proposal_id, " + ReviewStore.REVIEW_COLUMNS + ", "
+            + PROPOSAL_COLUMNS
             + "FROM finding f LEFT JOIN finding_status_proposal p ON p.id = f.current_proposal_id " + REPLACED_FILE
+            + LATEST_REVIEW
             + FILTERED
             + "ORDER BY array_position(" + SEVERITY_ORDER + ", f.severity), f.identifier, f.package_or_rule, f.seq "
             + "LIMIT :limit OFFSET :offset";
@@ -286,7 +296,8 @@ class FindingStore {
                         confidenceOf(rs.getString("confidence")), rs.getInt("occurrences"),
                         reviewStateOf(rs.getString("review_state")),
                         rs.getObject("proposal_id") == null ? null : proposal(rs),
-                        FindingSource.valueOf(rs.getString("source")), rs.getString("title")))
+                        FindingSource.valueOf(rs.getString("source")), rs.getString("title"),
+                        ReviewStore.review(rs, rs.getObject("review_proposal_id", UUID.class), null, null)))
                 .list();
     }
 

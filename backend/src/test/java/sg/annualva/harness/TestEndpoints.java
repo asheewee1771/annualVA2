@@ -225,6 +225,12 @@ public class TestEndpoints {
                 jdbc.sql("DROP TRIGGER IF EXISTS test_finding_fault ON finding_occurrence").update();
                 jdbc.sql("DROP TRIGGER IF EXISTS test_finding_late ON report_file").update();
                 jdbc.sql("DELETE FROM finding_occurrence").update();
+                // The reviews are append-only too (V21), and name the proposals and the Scan Reports, so they go first.
+                for (String review : new String[] {"finding_review", "report_review"}) {
+                    jdbc.sql("ALTER TABLE " + review + " DISABLE TRIGGER " + review + "_append_only").update();
+                    jdbc.sql("DELETE FROM " + review).update();
+                    jdbc.sql("ALTER TABLE " + review + " ENABLE TRIGGER " + review + "_append_only").update();
+                }
                 jdbc.sql("UPDATE finding SET current_proposal_id = NULL, review_state = NULL").update();
                 // The proposals are append-only for the application; only this reset, which owns the test schema, removes them.
                 jdbc.sql("ALTER TABLE finding_status_proposal DISABLE TRIGGER finding_status_proposal_append_only").update();
@@ -353,7 +359,7 @@ public class TestEndpoints {
             return Map.of("rejected", id.toString());
         }
 
-        /** The Cyber Manager's review of a Finding's current proposal, which the review engine (ticket 28) will set: for the proposal and list-filter tests. */
+        /** A review state set directly, for the tests that need one on a Draft, where the review engine (ticket 28) does not review. */
         @PostMapping("/api/test/findings/{id}/review/{state}")
         public Map<String, String> findingReview(@PathVariable UUID id, @PathVariable String state) {
             jdbc.sql("UPDATE finding SET review_state = :state WHERE id = :id AND current_proposal_id IS NOT NULL")
@@ -362,8 +368,8 @@ public class TestEndpoints {
         }
 
         /**
-         * The Cyber Manager's review of a not-applicable Scan Report's justification, which the review engine (ticket 28)
-         * will set: for the tests that a new justification puts it back to PENDING.
+         * A not-applicable justification's review state set directly, on a Draft, where the review engine (ticket 28) does
+         * not review: for the tests that a new justification puts it back to PENDING.
          */
         @PostMapping("/api/test/submissions/{id}/reports/{type}/review/{state}")
         public Map<String, String> reportReview(@PathVariable UUID id, @PathVariable String type,

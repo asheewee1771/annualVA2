@@ -16,8 +16,9 @@ import sg.annualva.submission.Submissions;
 
 /**
  * What the Cyber Manager's dashboards add to each System (stories 48 and 58): how many Findings of its VA Submission they
- * confirmed and how many await their review, and whether segregation of duties will refuse their review, because they
- * acted on that VA Submission at another step, as its SMO/Tech Lead say (ticket 28 refuses the review itself).
+ * confirmed and how many await their review, and whether segregation of duties refuses their review: they acted on that
+ * VA Submission at another step (as its SMO/Tech Lead, say) or are assigned to another step of its System. It is the
+ * rule the review itself is refused by (ticket 28), read through {@link Submissions#conflictedAt}.
  */
 @Component
 class ReviewMarkers {
@@ -40,7 +41,7 @@ class ReviewMarkers {
     Map<UUID, Marker> of(Collection<DashboardSystems.Row> rows) {
         List<UUID> ids = rows.stream().map(DashboardSystems.Row::submissionId).filter(Objects::nonNull).toList();
         Map<UUID, ReviewCounts> counts = findings.reviewCounts(ids);
-        Set<UUID> conflicted = submissions.actedAtAnotherStep(ids, SubmissionStep.REVIEW);
+        Set<UUID> conflicted = submissions.conflictedAt(ids, SubmissionStep.REVIEW);
         return ids.stream().collect(Collectors.toUnmodifiableMap(Function.identity(), id -> {
             ReviewCounts count = counts.getOrDefault(id, ReviewCounts.NONE);
             return new Marker(count.confirmed(), count.awaitingReview(), conflicted.contains(id));
