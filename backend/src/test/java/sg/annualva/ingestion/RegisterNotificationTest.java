@@ -28,7 +28,7 @@ class RegisterNotificationTest extends NotificationSeam1 {
 
     @Test
     void aTransferTellsTheNewSmoAndTheFormerOne() {
-        // Not Started: a transfer of a System with in-flight work is blocked in Release 1 (ticket 43, ADR 0048).
+        // Not Started: a transfer of a System with in-flight work is blocked in Release 1 (ticket 43, ADR 0049).
         registered(listed("SYS-N1", "Notice one", SMO_A, CM, "Q3"), listed("SYS-N2", "Notice two", SMO_A, CM, "Q3"));
 
         registered(listed("SYS-N1", "Notice one", SMO_B, CM, "Q3"), listed("SYS-N2", "Notice two", SMO_A, CM, "Q3"));

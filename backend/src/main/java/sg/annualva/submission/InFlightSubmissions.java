@@ -25,7 +25,7 @@ import sg.annualva.cycle.CycleCalendar;
 import sg.annualva.register.InFlightWork;
 
 /**
- * The in-flight work a Register change touches (stories 5 to 7, ADR 0048), answered where the VA Submissions are kept: the
+ * The in-flight work a Register change touches (stories 5 to 7, ADR 0049), answered where the VA Submissions are kept: the
  * VA Submissions of a System that are not in a final state, whether a file of each is still being checked (the one rule,
  * {@link SubmitReadiness#filesScanning}), and who acted at each step of it. The withdraw is this module's move to
  * Withdrawn: it clears the Overdue flag ({@link SubmissionStore#OVERDUE_AFTER_MOVE}), is audited as the apply's caller's

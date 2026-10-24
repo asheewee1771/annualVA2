@@ -8,7 +8,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * The in-flight work a Register change touches (stories 5 to 7, ADR 0048): the VA Submissions of a System that are not
+ * The in-flight work a Register change touches (stories 5 to 7, ADR 0049): the VA Submissions of a System that are not
  * in a final state. The VA Submissions are kept by the submission module, which sits above this one, so it implements
  * this port, and the preview and the apply ask it without reaching up. Every method runs in the caller's transaction,
  * for a VA POC, whose scope is every System (ADR 0013).

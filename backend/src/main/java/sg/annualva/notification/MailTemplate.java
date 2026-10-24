@@ -30,6 +30,8 @@ enum MailTemplate {
      * the reminders mail the Cyber Manager and the VA POCs before their windows end. So is the Cycle close's Not Endorsed
      * (ticket 41): the spec names it neither a required message nor an FYI. A VA POC's return (ticket 35, ADR 0047) is a
      * Return for Rework for both people it tells: the SMO/Tech Lead who reworks it and the Cyber Manager it comes back to.
+     * An Exemption's request and decision (ticket 40) are in-app only (provisional, ADR 0048): the spec names neither a
+     * required message.
      */
     static Optional<Mailing> of(NoticeAction action) {
         return switch (action) {
@@ -39,7 +41,8 @@ enum MailTemplate {
             case SYSTEM_TRANSFERRED_TO_YOU -> mailed(REGISTER_CHANGE, "Transferred to you");
             case SYSTEM_TRANSFERRED_FROM_YOU -> mailed(REGISTER_CHANGE, "Transferred from you");
             case WITHDRAWN -> mailed(REGISTER_CHANGE, "Withdrawn");
-            case REVIEW, ENDORSE, NOT_ENDORSED -> Optional.empty();
+            case REVIEW, ENDORSE, NOT_ENDORSED, DECIDE_EXEMPTION, EXEMPTION_APPROVED, EXEMPTION_REJECTED ->
+                    Optional.empty();
         };
     }
 

@@ -140,6 +140,32 @@ class RegisterEffectsTest extends MailSeam1 {
     }
 
     @Test
+    void aVaSubmissionWithdrawnWhileItsExemptionIsRequestedIsToldAsAWithdrawalNotADecision() {
+        Draft draft = draft();
+        arrange.submissionState(draft.submissionId(), "EXEMPTION_REQUESTED");
+        ApiClient poc = vaPoc();
+        // SMO_A keeps another System, so they still hold a role and can read the in-app list (ADR 0043 item 7).
+        applyConfirming(poc, preview(poc, file(List.of(F2, listed("SYS-F3", "File three", SMO_A, CM, "Q4")))),
+                List.of(draft.submissionId()));
+
+        assertThat(submission(poc, draft.submissionId()).get("state").asString()).isEqualTo("WITHDRAWN");
+        assertThat(actions(signedInAs(SMO_A))).containsExactly("WITHDRAWN");
+    }
+
+    @Test
+    void aNotStartedRowARejectedExemptionLeftIsNotInFlightWork() {
+        draft();
+        String f2 = idOf("SYS-F2");
+        String notStarted = started(signedInAs(SMO_B), f2).get("id").asString();
+        arrange.submissionState(notStarted, "NOT_STARTED");
+
+        JsonNode row = rowOf(preview(vaPoc(), file(List.of(F1))), "SYS-F2");
+
+        assertThat(row.get("outcome").asString()).isEqualTo("RETIRE");
+        assertThat(texts(row.get("effects"))).isEmpty();
+    }
+
+    @Test
     void aRetirementWhoseVaSubmissionHasAFileStillScanningIsBlockedUntilTheScanSettles() {
         Draft draft = draft();
         uploaded(draft.smo(), draft.submissionId(), SECURE_CONFIGURATION, "results.xml", Samples.xccdfResults());

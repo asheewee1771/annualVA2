@@ -344,7 +344,7 @@ class VaPocReturnTest extends MailSeam1 {
 
     /**
      * SYS-F1 with this SMO/Tech Lead and Cyber Manager, and SYS-F2 as before: a VA POC applies the Register again, with
-     * SYS-F1's VA Submission in flight (Release 2's mid-cycle transfer; Release 1 blocks it, ADR 0048).
+     * SYS-F1's VA Submission in flight (Release 2's mid-cycle transfer; Release 1 blocks it, ADR 0049).
      */
     private void registeredWith(String smo, String manager) {
         registeredMidCycle(listed("SYS-F1", "File one", smo, manager, "Q3"),

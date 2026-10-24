@@ -16,7 +16,7 @@ class ReviewSegregationTest extends ReviewSeam1 {
 
     /**
      * SYS-F1's Register row after a change that makes {@code smo} its SMO/Tech Lead and {@code cm} its Cyber Manager, with
-     * its VA Submission in flight (Release 2's mid-cycle transfer; Release 1 blocks it, ADR 0048).
+     * its VA Submission in flight (Release 2's mid-cycle transfer; Release 1 blocks it, ADR 0049).
      */
     private void reassigned(String smo, String cm) {
         registeredMidCycle(listed("SYS-F1", "File one", smo, cm, "Q3"), listed("SYS-F2", "File two", SMO_B, CM_OTHER, "Q3"));

@@ -239,6 +239,8 @@ public class TestEndpoints {
                 // The mail outbox (V137) names the notifications, so it goes before them.
                 jdbc.sql("DELETE FROM mail_outbox").update();
                 jdbc.sql("DELETE FROM notification").update();
+                // The Exemption requests (V144_40) name the VA Submissions and their evidence files.
+                jdbc.sql("DELETE FROM exemption").update();
                 jdbc.sql("DELETE FROM finding_occurrence").update();
                 // The returns (V130) name the reviews, and the reviews (V21, V129) name the proposals, the batches and the
                 // Scan Reports, so they go first, a return before the reviews it names and a Finding's review before the
@@ -489,7 +491,7 @@ public class TestEndpoints {
 
         /**
          * Stands every in-flight VA Submission (not in a final state) aside as Endorsed and answers the state each was in,
-         * by id, so a test can apply a Register change that Release 1 blocks or withdraws (ADR 0048) and put them back.
+         * by id, so a test can apply a Register change that Release 1 blocks or withdraws (ADR 0049) and put them back.
          */
         @PostMapping("/api/test/submissions/stand-aside")
         public Map<String, String> standAside() {

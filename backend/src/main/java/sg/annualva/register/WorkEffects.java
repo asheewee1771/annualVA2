@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import sg.annualva.cycle.CycleCalendar;
 
 /**
- * What each row of a Register change preview does to in-flight work (stories 5 to 7, ADR 0048), the one place the rule
+ * What each row of a Register change preview does to in-flight work (stories 5 to 7, ADR 0049), the one place the rule
  * is written: the upload classifies its rows with it ({@link #preview}), and the apply classifies the stored rows again
  * with the work it holds ({@link #held}), so it applies exactly what was shown.
  *

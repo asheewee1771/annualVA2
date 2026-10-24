@@ -15,11 +15,11 @@ import org.jspecify.annotations.Nullable;
  *     row whose System ID cannot be used)
  * @param outcome the one thing this row does
  * @param reasons why the row cannot be applied, as fixed codes: for a BLOCKED row what is wrong in the file; for a RETIRE
- *     or an UPDATE what its in-flight work holds it back by (ADR 0048); empty otherwise
+ *     or an UPDATE what its in-flight work holds it back by (ADR 0049); empty otherwise
  * @param unlinkedSmo the SMO/Tech Lead's email matches no sign-in yet (Unlinked SMO, story 12)
  * @param before the System as the Register has it now; null when there is none
  * @param after the System as the file would make it, or as typed (sanitised) for a BLOCKED row; null for a RETIRE
- * @param effects what the row does to the System's in-flight work (story 5, ADR 0048); empty when it touches none
+ * @param effects what the row does to the System's in-flight work (story 5, ADR 0049); empty when it touches none
  * @param inFlight the in-flight VA Submissions those effects are on; empty when there are no effects
  */
 public record PreviewRow(

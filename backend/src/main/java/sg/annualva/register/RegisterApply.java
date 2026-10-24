@@ -41,7 +41,7 @@ import sg.annualva.web.ResourceNotFoundException;
  * POC's scope is every System, so no ownership check applies (ADR 0013). While two VA Cycles overlap it changes only
  * the newer one: the older one keeps its Systems and Quarters as they were when the newer one opened (ADR 0044).
  *
- * <p>In-flight work (stories 5 to 7, ADR 0048): the apply holds the VA Submissions its rows touch and classifies the rows
+ * <p>In-flight work (stories 5 to 7, ADR 0049): the apply holds the VA Submissions its rows touch and classifies the rows
  * again ({@link WorkEffects}), refusing when that differs from what the preview showed, and withdraws a retired System's
  * in-flight VA Submissions only when the VA POC confirmed each one.
  */
@@ -216,7 +216,7 @@ public class RegisterApply {
     /**
      * Publishes what an updated System's SMO/Tech Lead is told about (story 94): a move to another Quarter, and a transfer
      * to another SMO/Tech Lead, each heard by the notifications after the commit (ADR 0043). The submissions hear a move
-     * inside the apply's transaction too, and let a Not Started System's Overdue flag follow its new Quarter (ADR 0048).
+     * inside the apply's transaction too, and let a Not Started System's Overdue flag follow its new Quarter (ADR 0049).
      */
     private void announce(UUID systemId, SystemSnapshot before, SystemSnapshot after, Instant now) {
         if (before.movesIn(after)) {

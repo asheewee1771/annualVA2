@@ -107,7 +107,7 @@ public abstract class RegisterSeam1 extends Seam1Test {
 
     /**
      * Puts exactly these Systems in the Register although the change moves, transfers or retires Systems whose VA
-     * Submissions are in flight, which Release 1 blocks or withdraws (ADR 0048): every in-flight VA Submission is stood
+     * Submissions are in flight, which Release 1 blocks or withdraws (ADR 0049): every in-flight VA Submission is stood
      * aside in a final state while the apply runs, as Release 2's mid-cycle changes will allow, and is then put back in
      * the state it was in. For a test of what follows such a change: segregation of duties, the access guard, the sweep.
      */

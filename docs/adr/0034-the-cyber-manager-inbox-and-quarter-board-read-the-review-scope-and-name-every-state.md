@@ -19,4 +19,4 @@ Amended by ADR 0035: item 4's marker no longer reads participation only. `sodCon
 
 Amended by ADR 0037: the Quarter board is open to `VA_POC`, read for `Need.ENDORSE` (every System), and a VA POC's cards mark no segregation-of-duties conflict until the endorsing step is recorded.
 
-Amended by ADR 0048: the Withdrawn column stays empty, provisionally, since a Withdrawn VA Submission belongs to a retired System, which no dashboard lists.
+Amended by ADR 0049: the Withdrawn column stays empty, provisionally, since a Withdrawn VA Submission belongs to a retired System, which no dashboard lists.

@@ -8,7 +8,7 @@ import java.util.UUID;
 /**
  * A Register change preview: what one uploaded file would do. It expires an hour after it was made; nothing in the
  * Register changes until it is applied ({@link RegisterApply}), and a preview with a row that has a reason (a BLOCKED
- * row, or one its in-flight work holds back, ADR 0048) cannot be.
+ * row, or one its in-flight work holds back, ADR 0049) cannot be.
  */
 public record Preview(UUID id, String status, Instant createdAt, Instant expiresAt, List<PreviewRow> rows) {
 
@@ -16,7 +16,7 @@ public record Preview(UUID id, String status, Instant createdAt, Instant expires
 
     /**
      * How many rows have each outcome, and how many rows, of whatever outcome, flag an Unlinked SMO. Every row has
-     * exactly one outcome, so the five outcome counts add up to the number of rows. Apart from those (ADR 0048): how many
+     * exactly one outcome, so the five outcome counts add up to the number of rows. Apart from those (ADR 0049): how many
      * rows have each effect on in-flight work, held back or not (a row can both move and transfer), and how many rows
      * that are not BLOCKED their in-flight work holds back ({@code heldBack}).
      */

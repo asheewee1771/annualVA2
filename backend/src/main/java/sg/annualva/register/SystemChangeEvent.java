@@ -23,7 +23,7 @@ public record SystemChangeEvent(UUID systemId, Change change, @Nullable String f
 
     /**
      * The Register changes an SMO/Tech Lead is told about here. A withdrawal is the VA Submission's own move, heard as a
-     * {@code SubmissionEvent} (ADR 0048).
+     * {@code SubmissionEvent} (ADR 0049).
      */
     public enum Change {
         /** The System moved to another Quarter. */

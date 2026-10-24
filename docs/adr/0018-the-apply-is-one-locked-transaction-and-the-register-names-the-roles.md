@@ -14,4 +14,4 @@ Status: accepted
 
 Consequences: a System's `added_on` is the Singapore business date of its apply (`CycleCalendar.today()`), which the Window arithmetic of a mid-Quarter add will read; expired and applied previews are still not purged (ticket 49); the preview's effects on in-flight VA Submissions (Will withdraw, Will move, Will transfer) are ticket 43, and until it lands an apply does not touch VA Submissions because none exist yet; a person pre-registered by email is not created by the apply (a grant by email is enough, and the first sign-in links it).
 
-Amended by ADR 0048: the apply reads the withdrawals the VA POC confirmed from its body, refuses a preview whose in-flight work has changed (`409 work-changed`) or whose withdrawals are not exactly confirmed (`400 withdrawal-unconfirmed`), and withdraws a retired System's in-flight VA Submissions.
+Amended by ADR 0049: the apply reads the withdrawals the VA POC confirmed from its body, refuses a preview whose in-flight work has changed (`409 work-changed`) or whose withdrawals are not exactly confirmed (`400 withdrawal-unconfirmed`), and withdraws a retired System's in-flight VA Submissions.

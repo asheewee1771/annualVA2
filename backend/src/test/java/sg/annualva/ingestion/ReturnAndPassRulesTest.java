@@ -30,7 +30,7 @@ class ReturnAndPassRulesTest extends ReturnSeam1 {
         Draft draft = inReview();
         String sub = draft.submissionId();
         reviewed(signedInAs(CM), sub, findingIds(draft.smo(), sub).getFirst(), DISPUTED, "Show the fix.");
-        // Release 2's mid-cycle transfer: Release 1 blocks it while the VA Submission is in flight (ADR 0048).
+        // Release 2's mid-cycle transfer: Release 1 blocks it while the VA Submission is in flight (ADR 0049).
         registeredMidCycle(listed("SYS-F1", "File one", SMO_B, SMO_A, "Q3"),
                 listed("SYS-F2", "File two", SMO_B, CM_OTHER, "Q3"));
         ApiClient formerSmo = signedInAs(SMO_A);

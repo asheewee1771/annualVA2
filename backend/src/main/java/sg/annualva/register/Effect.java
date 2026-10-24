@@ -1,7 +1,7 @@
 package sg.annualva.register;
 
 /**
- * What a Register change does to in-flight work (story 5, ADR 0048): a VA Submission of the System that is not in a final
+ * What a Register change does to in-flight work (story 5, ADR 0049): a VA Submission of the System that is not in a final
  * state. A row with no in-flight work has no effect. In Release 1 only a withdrawal is applied, once the VA POC confirms
  * it; a move and a transfer are shown and blocked until the mid-cycle tickets of Release 2.
  */

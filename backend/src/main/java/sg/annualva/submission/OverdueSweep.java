@@ -56,7 +56,7 @@ public class OverdueSweep {
     }
 
     /**
-     * A Register apply moved a System to another Quarter (ADR 0048): a Not Started System's flag follows the window of its
+     * A Register apply moved a System to another Quarter (ADR 0049): a Not Started System's flag follows the window of its
      * new Quarter (reviewer decisions, 2026-10-23), so in each Cycle that is not closed it is cleared while that Quarter's
      * Submission Window has not passed, by the System's Quarter in that Cycle (an older Cycle keeps its own, so nothing
      * changes there), and the next pass sets it again once it does. Heard inside the apply's transaction, so it commits or
