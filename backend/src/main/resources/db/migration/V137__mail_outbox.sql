@@ -1,4 +1,4 @@
--- The mail outbox (ticket 37, stories 91 and 94, ADR 0045). A required notification (V136) is queued for email in the
+-- The mail outbox (ticket 37, stories 91 and 94, ADR 0046). A required notification (V136) is queued for email in the
 -- transaction that writes it; the dispatcher hands it to the mail relay later, retrying a failed hand-over with backoff
 -- up to five attempts. A row holds no address and no value of the message: the recipient, the System, the state, the
 -- action, the due date and the link are the notification's own, read when the mail is sent. Tickets 38 (reminders) and

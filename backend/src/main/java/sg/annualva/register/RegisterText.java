@@ -2,7 +2,7 @@ package sg.annualva.register;
 
 /**
  * The Register's one rule for what a System ID and a System Name may be (ADR 0016): plain text of bounded length. The
- * preview blocks a row that breaks it; the mail allow-list (ADR 0045) refuses to send a value that breaks it, whatever
+ * preview blocks a row that breaks it; the mail allow-list (ADR 0046) refuses to send a value that breaks it, whatever
  * wrote it.
  */
 public final class RegisterText {

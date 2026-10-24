@@ -6,7 +6,7 @@ import java.util.Map;
  * The mail-relay port: the organisation's notification service, which sends an email from an onboarded template (ADR
  * 0003, assumption A-9). The application hands it a recipient, the relay's own id of a template and the values the
  * template fills in; it never hands over a subject or a body, so the template, not the application, decides the wording.
- * The values have already passed the application's allow-list (ADR 0045). The production adapter is the notification
+ * The values have already passed the application's allow-list (ADR 0046). The production adapter is the notification
  * service's client (ticket 51); the Seam 1 harness fakes it with a relay that captures every message.
  *
  * <p>A recipient address is never logged by an adapter or by its caller (story 91, lm-19). Every method should throw

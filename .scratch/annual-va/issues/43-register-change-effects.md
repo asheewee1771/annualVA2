@@ -20,4 +20,4 @@ The SMO inbox row's `quarter` comes from the Register's current Quarter, while i
 
 ### Note from ticket 37 (2026-10-25)
 
-The withdrawal notice to the SMO/Tech Lead must also be mailed (ticket 37's acceptance names withdrawn among the Register-change messages that reach the SMO by email). Adding the `NoticeAction` constant forces a choice in `MailTemplate.of` (ADR 0045): map it to `REGISTER_CHANGE` with the `change_kind` "Withdrawn", and prove with a Seam 1 test that the SMO receives that mail (`CapturingMailRelay`, `MailSeam1`).
+The withdrawal notice to the SMO/Tech Lead must also be mailed (ticket 37's acceptance names withdrawn among the Register-change messages that reach the SMO by email). Adding the `NoticeAction` constant forces a choice in `MailTemplate.of` (ADR 0046): map it to `REGISTER_CHANGE` with the `change_kind` "Withdrawn", and prove with a Seam 1 test that the SMO receives that mail (`CapturingMailRelay`, `MailSeam1`).

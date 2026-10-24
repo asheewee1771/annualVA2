@@ -10,7 +10,7 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 import tools.jackson.databind.JsonNode;
 
 /**
- * ADR 0045 item 4 (ticket 37): a dispatcher that stops part-way (its instance dies while the relay has a mail) leaves the
+ * ADR 0046 item 4 (ticket 37): a dispatcher that stops part-way (its instance dies while the relay has a mail) leaves the
  * mail leased, not lost. Another pass claims it again only once its five-minute lease has run out, so two instances never
  * hand the same mail over at once; a stopped last attempt is given up on without another hand-over.
  */

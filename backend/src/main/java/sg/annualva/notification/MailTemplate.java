@@ -4,7 +4,7 @@ import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The logical templates a required notification is mailed with (ADR 0045). The relay's own id for each is configuration
+ * The logical templates a required notification is mailed with (ADR 0046). The relay's own id for each is configuration
  * ({@code annualva.mail.templates}). A ticket that mails a new kind adds it here, to its migration's
  * {@code mail_outbox_template_check} and to the configuration of every profile.
  */
@@ -26,7 +26,7 @@ enum MailTemplate {
     /**
      * How a notification is mailed, or not at all when it is in-app only: the one place that says it for every action. The
      * required messages are the spec's (Notifications): deadline reminders (ticket 38), Overdue, Return for Rework and
-     * Disputed, and Register changes. A submit and a pass to endorsement are in-app only (provisional, ADR 0045 item 2):
+     * Disputed, and Register changes. A submit and a pass to endorsement are in-app only (provisional, ADR 0046 item 2):
      * the reminders mail the Cyber Manager and the VA POCs before their windows end. So is the Cycle close's Not Endorsed
      * (ticket 41): the spec names it neither a required message nor an FYI.
      */

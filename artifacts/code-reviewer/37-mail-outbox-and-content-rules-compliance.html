@@ -70,7 +70,7 @@
               <td class="px-4 py-2 font-medium">im8 <span class="text-xs text-slate-400">(d843842)</span></td>
               <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
               <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 2</td>
-              <td class="px-4 py-2">as-1, as-2, as-7, as-8, as-13, dp-3, lm-15, lm-16, lm-19 pass. Lows: as-3, a System Name may carry markup into an MCNS template (escaping depends on ticket 57); lm-4, mail outcomes are not audit entries (accepted by ADR 0044) and <span class="font-mono text-xs">ABANDON</span> logged nothing (now an explicit, logged step).</td>
+              <td class="px-4 py-2">as-1, as-2, as-7, as-8, as-13, dp-3, lm-15, lm-16, lm-19 pass. Lows: as-3, a System Name may carry markup into an MCNS template (escaping depends on ticket 57); lm-4, mail outcomes are not audit entries (accepted by ADR 0046) and <span class="font-mono text-xs">ABANDON</span> logged nothing (now an explicit, logged step).</td>
             </tr>
             <tr class="border-t border-slate-100">
               <td class="px-4 py-2 font-medium">react <span class="text-xs text-slate-400">(d843842)</span></td>
@@ -219,7 +219,7 @@
           <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
         </summary>
         <div class="px-5 pb-3 text-sm text-slate-600 space-y-2">
-          <p>Two axes: Standards (AGENTS.md, CONTEXT.md, reviewer decisions, ADRs, CONVENTIONS.md, Fowler smells) and Spec (ticket 37, the TRD, ADR 0044). Read-only; Maven and the front-end gates were not run by this check.</p>
+          <p>Two axes: Standards (AGENTS.md, CONTEXT.md, reviewer decisions, ADRs, CONVENTIONS.md, Fowler smells) and Spec (ticket 37, the TRD, ADR 0046). Read-only; Maven and the front-end gates were not run by this check.</p>
           <p><strong>Round 1 Mediums:</strong> resolved: code-review S1 (batch-wide lease), code-review S2 (no lease, ABANDON or notification-fault test), springboot M1, thermo-nuclear M1 and M3. Mostly resolved: springboot M2 (residue is M1 below), thermo-nuclear M2 (residue is L6) and thermo-nuclear M4 (accepted).</p>
           <p><strong>After this round</strong> (aggregator&rsquo;s reading of 5c74e58 and 59bdf44, not re-reviewed): M1 is addressed for the <span class="font-mono text-xs">sent</span> path by <span class="font-mono text-xs">MailLeaseTest.aHandOverThatOutlastsItsLeaseKeepsTheOutcomeOfTheClaimThatHoldsTheMail</span>; the retry, settle and record-failed paths stay uncovered (build L1, L2). M2 is addressed by dropping the <span class="font-mono text-xs">state</span> and <span class="font-mono text-xs">link</span> rules (the V136 CHECKs hold them) and adding <span class="font-mono text-xs">MailTest.aSystemIdOutsideTheAllowListIsNeverHandedToTheRelayEither</span>. M3 is addressed by a note under ticket 57&rsquo;s Comments, not the <span class="font-mono text-xs">- [ ]</span> acceptance line it asked for. L1 is addressed by a note on ticket 51, and L2 by <span class="font-mono text-xs">@DurationMin</span> bounds with a <span class="font-mono text-xs">MailConfigurationTest</span> case.</p>
         </div>
@@ -237,7 +237,7 @@
               <td class="px-4 py-2 text-amber-600">Medium</td>
               <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailOutbox.java</td>
               <td class="px-4 py-2 font-mono text-xs">134 (also 67-71, 94-95, 116-117, 125-126)</td>
-              <td class="px-4 py-2"><strong>M1 (Standards).</strong> The claim-lost and record-failed paths, and a relay call that outlasts its lease, have no Seam 1 test, although ADR 0044 items 4 and 5 promise <span class="font-mono text-xs">mail-claim-lost</span> and <span class="font-mono text-xs">mail-record-failed</span>. The batch cap and known-build claim filter live in SQL, so JaCoCo cannot see the gap. Fix: a relay knob that advances the clock past the lease and dispatches again inside <span class="font-mono text-xs">send</span>; assert the claim-lost log (no address) and that the second claim&rsquo;s outcome is stored. <em>Since addressed for the sent path in 5c74e58.</em></td>
+              <td class="px-4 py-2"><strong>M1 (Standards).</strong> The claim-lost and record-failed paths, and a relay call that outlasts its lease, have no Seam 1 test, although ADR 0046 items 4 and 5 promise <span class="font-mono text-xs">mail-claim-lost</span> and <span class="font-mono text-xs">mail-record-failed</span>. The batch cap and known-build claim filter live in SQL, so JaCoCo cannot see the gap. Fix: a relay knob that advances the clock past the lease and dispatches again inside <span class="font-mono text-xs">send</span>; assert the claim-lost log (no address) and that the second claim&rsquo;s outcome is stored. <em>Since addressed for the sent path in 5c74e58.</em></td>
             </tr>
             <tr class="border-t border-slate-100">
               <td class="px-4 py-2 text-amber-600">Medium</td>
@@ -247,9 +247,9 @@
             </tr>
             <tr class="border-t border-slate-100">
               <td class="px-4 py-2 text-amber-600">Medium</td>
-              <td class="px-4 py-2 font-mono text-xs">docs/adr/0044-a-required-notification-is-mailed-from-an-outbox-with-allow-listed-template-values.md</td>
+              <td class="px-4 py-2 font-mono text-xs">docs/adr/0046-a-required-notification-is-mailed-from-an-outbox-with-allow-listed-template-values.md</td>
               <td class="px-4 py-2 font-mono text-xs">11</td>
-              <td class="px-4 py-2"><strong>M3 (Spec).</strong> ADR 0044&rsquo;s promise that MCNS onboarding (ticket 57) confirms every template escapes what it substitutes is not tracked by ticket 57, and it is now the only safeguard against markup or URLs from the Register reaching a mail. Add a <span class="font-mono text-xs">- [ ]</span> line to ticket 57. <em>Since noted under ticket 57&rsquo;s Comments in 59bdf44, not as an acceptance line.</em></td>
+              <td class="px-4 py-2"><strong>M3 (Spec).</strong> ADR 0046&rsquo;s promise that MCNS onboarding (ticket 57) confirms every template escapes what it substitutes is not tracked by ticket 57, and it is now the only safeguard against markup or URLs from the Register reaching a mail. Add a <span class="font-mono text-xs">- [ ]</span> line to ticket 57. <em>Since noted under ticket 57&rsquo;s Comments in 59bdf44, not as an acceptance line.</em></td>
             </tr>
             <tr class="border-t border-slate-100">
               <td class="px-4 py-2 text-slate-500">Low</td>
@@ -315,7 +315,7 @@
               <td class="px-4 py-2 text-slate-500">Low</td>
               <td class="px-4 py-2 font-mono text-xs">.scratch/annual-va/issues/51-real-adapters-under-dev-mcc.md</td>
               <td class="px-4 py-2 font-mono text-xs">10</td>
-              <td class="px-4 py-2"><strong>L11 (Spec).</strong> Ticket 51 still says the mail adapter enforces the value allow-list, while ADR 0044 item 3 puts it on the application side. Amend it so nobody adds a second allow-list. <em>59bdf44 adds a clarifying note; the original line is unchanged.</em></td>
+              <td class="px-4 py-2"><strong>L11 (Spec).</strong> Ticket 51 still says the mail adapter enforces the value allow-list, while ADR 0046 item 3 puts it on the application side. Amend it so nobody adds a second allow-list. <em>59bdf44 adds a clarifying note; the original line is unchanged.</em></td>
             </tr>
             <tr class="border-t border-slate-100">
               <td class="px-4 py-2 text-slate-500">Low</td>
@@ -325,7 +325,7 @@
             </tr>
             <tr class="border-t border-slate-100">
               <td class="px-4 py-2 text-slate-500">Low</td>
-              <td class="px-4 py-2 font-mono text-xs">docs/adr/0044-a-required-notification-is-mailed-from-an-outbox-with-allow-listed-template-values.md</td>
+              <td class="px-4 py-2 font-mono text-xs">docs/adr/0046-a-required-notification-is-mailed-from-an-outbox-with-allow-listed-template-values.md</td>
               <td class="px-4 py-2 font-mono text-xs">3</td>
               <td class="px-4 py-2"><strong>L13 (Spec).</strong> Item 2 (REVIEW and ENDORSE stay in-app only) is &ldquo;provisional, awaiting a human decision&rdquo; but appears in neither reviewer-decisions.md nor PENDING-DECISIONS.md.</td>
             </tr>
@@ -333,7 +333,7 @@
               <td class="px-4 py-2 text-slate-500">Low</td>
               <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/harness/TestEndpoints.java</td>
               <td class="px-4 py-2 font-mono text-xs">323-355</td>
-              <td class="px-4 py-2"><strong>L14 (Spec).</strong> <span class="font-mono text-xs">/api/test/mail-outbox</span> reads <span class="font-mono text-xs">mail_outbox</span> and <span class="font-mono text-xs">/api/test/systems/{id}/name</span> writes <span class="font-mono text-xs">va_system</span> directly. Accepted by ADR 0044 item 6 until ticket 39; a note, not a defect.</td>
+              <td class="px-4 py-2"><strong>L14 (Spec).</strong> <span class="font-mono text-xs">/api/test/mail-outbox</span> reads <span class="font-mono text-xs">mail_outbox</span> and <span class="font-mono text-xs">/api/test/systems/{id}/name</span> writes <span class="font-mono text-xs">va_system</span> directly. Accepted by ADR 0046 item 6 until ticket 39; a note, not a defect.</td>
             </tr>
           </tbody>
         </table>
@@ -406,7 +406,7 @@
               <td class="px-4 py-2 text-slate-500">Low</td>
               <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailOutbox.java</td>
               <td class="px-4 py-2 font-mono text-xs">72 (also 88, 97; MailOutboxStore.java:38)</td>
-              <td class="px-4 py-2"><strong>L-2, lm-4 Audit Logging.</strong> Mail outcomes (<span class="font-mono text-xs">REFUSED</span>, <span class="font-mono text-xs">REJECTED</span>, <span class="font-mono text-xs">FAILED</span>) are only log lines and outbox status, not audit entries; a refusal can signal a <span class="font-mono text-xs">va_system</span> write outside the Register path. The lease-expiry <span class="font-mono text-xs">ABANDON</span> logged nothing. ADR 0044 item 5 accepts the first part. Consider auditing <span class="font-mono text-xs">mail-refused</span>. <em>The abandonment part is since resolved: <span class="font-mono text-xs">abandonExpired</span> is an explicit step that logs <span class="font-mono text-xs">mail-abandoned</span>.</em></td>
+              <td class="px-4 py-2"><strong>L-2, lm-4 Audit Logging.</strong> Mail outcomes (<span class="font-mono text-xs">REFUSED</span>, <span class="font-mono text-xs">REJECTED</span>, <span class="font-mono text-xs">FAILED</span>) are only log lines and outbox status, not audit entries; a refusal can signal a <span class="font-mono text-xs">va_system</span> write outside the Register path. The lease-expiry <span class="font-mono text-xs">ABANDON</span> logged nothing. ADR 0046 item 5 accepts the first part. Consider auditing <span class="font-mono text-xs">mail-refused</span>. <em>The abandonment part is since resolved: <span class="font-mono text-xs">abandonExpired</span> is an explicit step that logs <span class="font-mono text-xs">mail-abandoned</span>.</em></td>
             </tr>
           </tbody>
         </table>
