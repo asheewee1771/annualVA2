@@ -31,13 +31,11 @@ class SubmitChecks implements SubmitReadiness {
     private final ReportFileReadiness files;
     private final ScanReportStore reports;
     private final FindingStore findings;
-    private final ReviewChecks review;
 
-    SubmitChecks(ReportFileReadiness files, ScanReportStore reports, FindingStore findings, ReviewChecks review) {
+    SubmitChecks(ReportFileReadiness files, ScanReportStore reports, FindingStore findings) {
         this.files = files;
         this.reports = reports;
         this.findings = findings;
-        this.review = review;
     }
 
     @Override
@@ -47,8 +45,9 @@ class SubmitChecks implements SubmitReadiness {
     }
 
     /**
-     * The progress counts, the files whose age stands in the way, every reason it cannot be submitted now, and what the
-     * Cyber Manager's return and pass to endorsement judge by ({@link ReviewChecks}).
+     * The progress counts, the files whose age stands in the way, every reason it cannot be submitted now, and, from the
+     * same counts and Scan Reports with no further query, what the Cyber Manager's return and pass to endorsement judge
+     * by ({@link ReviewChecks#outcome(FindingStore.Counts, Map)}).
      */
     @Transactional(propagation = Propagation.MANDATORY)
     Readiness readiness(UUID submissionId) {
@@ -83,8 +82,7 @@ class SubmitChecks implements SubmitReadiness {
                     "These report files are dated after today. Correct each scan date.", null, files.futureDated()));
         }
         return new Readiness(counts.total(), counts.proposed(), counts.unproposed(), counts.awaitingReview(), 0, 0,
-                counts.disputed(), files.tooOld(), files.undated(), blockers, !review.disputed(submissionId).isEmpty(),
-                review.unconfirmed(submissionId));
+                counts.disputed(), files.tooOld(), files.undated(), blockers, ReviewChecks.outcome(counts, slots));
     }
 
     /** The fixed sentence for a Scan Report that is not provided; Secure Configuration cannot be marked not applicable. */

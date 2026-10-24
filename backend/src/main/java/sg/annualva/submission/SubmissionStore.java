@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -168,12 +167,17 @@ class SubmissionStore {
             "INSERT INTO submission_return (submission_id, step, comment, returned_by, returned_at) "
             + "VALUES (:submission, :step, CAST(:comment AS text), :by, :now) RETURNING id";
 
-    /** What a return attaches, one row per Disputed item, in the order given. */
-    private static final String INSERT_RETURN_ITEMS =
-            "INSERT INTO submission_return_item (return_id, finding_id, finding_review_id, report_type, report_review_id) "
-            + "SELECT :return, finding, finding_review, report_type, report_review FROM unnest(CAST(:findings AS uuid[]), "
-            + "CAST(:findingReviews AS uuid[]), CAST(:types AS text[]), CAST(:reportReviews AS uuid[])) WITH ORDINALITY "
-            + "AS item(finding, finding_review, report_type, report_review, n) ORDER BY n";
+    /** The Disputed Findings a return attaches, one row each, in the order given. */
+    private static final String INSERT_RETURNED_FINDINGS =
+            "INSERT INTO submission_return_item (return_id, finding_id, finding_review_id) SELECT :return, finding, review "
+            + "FROM unnest(CAST(:findings AS uuid[]), CAST(:reviews AS uuid[])) WITH ORDINALITY AS item(finding, review, n) "
+            + "ORDER BY n";
+
+    /** The Disputed not-applicable justifications a return attaches, one row each, in the order given. */
+    private static final String INSERT_RETURNED_REPORTS =
+            "INSERT INTO submission_return_item (return_id, report_type, report_review_id) SELECT :return, report_type, "
+            + "review FROM unnest(CAST(:types AS text[]), CAST(:reviews AS uuid[])) WITH ORDINALITY "
+            + "AS item(report_type, review, n) ORDER BY n";
 
     private static final String RETURNS =
             "SELECT id, step, comment, returned_by, returned_at FROM submission_return WHERE submission_id = :submission "
@@ -268,7 +272,7 @@ class SubmissionStore {
 
     /** Keeps a return of the VA Submission with what was Disputed when it was returned. */
     void insertReturn(UUID submissionId, SubmissionStep step, @Nullable String comment, UUID by, Instant now,
-            List<ReviewProgress.Disputed> disputed) {
+            ReviewProgress.Disputed disputed) {
         UUID id = jdbc.sql(INSERT_RETURN)
                 .param("submission", submissionId)
                 .param("step", step.name())
@@ -277,27 +281,37 @@ class SubmissionStore {
                 .param("now", utc(now))
                 .query(UUID.class)
                 .single();
-        jdbc.sql(INSERT_RETURN_ITEMS)
+        jdbc.sql(INSERT_RETURNED_FINDINGS)
                 .param("return", id)
-                .param("findings", texts(disputed, ReviewProgress.Disputed::findingId))
-                .param("findingReviews", texts(disputed, item -> item.findingId() == null ? null : item.reviewId()))
-                .param("types", texts(disputed, ReviewProgress.Disputed::reportType))
-                .param("reportReviews", texts(disputed, item -> item.reportType() == null ? null : item.reviewId()))
+                .param("findings", ids(disputed.findings().stream().map(ReviewProgress.DisputedFinding::findingId)
+                        .toList()))
+                .param("reviews", ids(disputed.findings().stream().map(ReviewProgress.DisputedFinding::reviewId)
+                        .toList()))
+                .update();
+        jdbc.sql(INSERT_RETURNED_REPORTS)
+                .param("return", id)
+                .param("types", disputed.reports().stream().map(ReviewProgress.DisputedReport::reportType)
+                        .toArray(String[]::new))
+                .param("reviews", ids(disputed.reports().stream().map(ReviewProgress.DisputedReport::reviewId)
+                        .toList()))
                 .update();
     }
 
-    /** The returns of the VA Submission, the latest first, each with what it attached in the order it was attached. */
+    /**
+     * The returns of the VA Submission, the latest first, each with what it attached in the order it was attached. An
+     * item is a Finding or a not-applicable justification, never both (V130).
+     */
     List<Submissions.Return> returns(UUID submissionId) {
-        Map<UUID, List<Submissions.ReturnedFinding>> findings = new HashMap<>();
-        Map<UUID, List<Submissions.ReturnedReport>> reports = new HashMap<>();
+        Map<UUID, List<ReviewProgress.DisputedFinding>> findings = new HashMap<>();
+        Map<UUID, List<ReviewProgress.DisputedReport>> reports = new HashMap<>();
         jdbc.sql(RETURN_ITEMS).param("submission", submissionId).query(rs -> {
             UUID returnId = rs.getObject("return_id", UUID.class);
             UUID finding = rs.getObject("finding_id", UUID.class);
             if (finding != null) {
                 findings.computeIfAbsent(returnId, key -> new ArrayList<>()).add(
-                        new Submissions.ReturnedFinding(finding, rs.getObject("finding_review_id", UUID.class)));
+                        new ReviewProgress.DisputedFinding(finding, rs.getObject("finding_review_id", UUID.class)));
             } else {
-                reports.computeIfAbsent(returnId, key -> new ArrayList<>()).add(new Submissions.ReturnedReport(
+                reports.computeIfAbsent(returnId, key -> new ArrayList<>()).add(new ReviewProgress.DisputedReport(
                         rs.getString("report_type"), rs.getObject("report_review_id", UUID.class)));
             }
         });
@@ -443,14 +457,6 @@ class SubmissionStore {
 
     private static Instant instant(ResultSet rs, String column) throws SQLException {
         return rs.getObject(column, OffsetDateTime.class).toInstant();
-    }
-
-    /** One value of each item as text, null where the item has none, for an array parameter. */
-    private static <T> @Nullable String[] texts(List<T> items, Function<T, @Nullable Object> value) {
-        return items.stream().map(item -> {
-            Object each = value.apply(item);
-            return each == null ? null : each.toString();
-        }).toArray(String[]::new);
     }
 
     private static String[] ids(Collection<UUID> ids) {

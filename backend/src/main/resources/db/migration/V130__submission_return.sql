@@ -27,6 +27,7 @@ CREATE TABLE submission_return (
 CREATE INDEX submission_return_submission_idx ON submission_return (submission_id, seq);
 
 CREATE TABLE submission_return_item (
+    id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     return_id         uuid NOT NULL REFERENCES submission_return (id),
     seq               bigint GENERATED ALWAYS AS IDENTITY,
     finding_id        uuid REFERENCES finding (id),

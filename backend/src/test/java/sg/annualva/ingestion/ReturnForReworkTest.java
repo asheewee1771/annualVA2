@@ -84,6 +84,35 @@ class ReturnForReworkTest extends ReturnSeam1 {
     }
 
     @Test
+    void eachReturnKeepsOnlyWhatItAttachedAndTheLatestIsListedFirst() {
+        Draft draft = inReview();
+        String sub = draft.submissionId();
+        ApiClient cm = signedInAs(CM);
+        List<String> ids = findingIds(cm, sub);
+        reviewed(cm, sub, ids.get(0), DISPUTED, "Show the fix.");
+        reviewed(cm, sub, ids.get(1), CONFIRMED, null);
+        returned(cm, sub, "First.");
+        proposed(draft.smo(), ids.get(0), remediated("Upgraded to 2.0."));
+        submitted(draft.smo(), sub);
+        reviewed(cm, sub, ids.get(0), CONFIRMED, null);
+        JsonNode second = reportReviewed(cm, sub, BURP_SUITE, DISPUTED, "It has a web console.");
+
+        returned(cm, sub, "Second.");
+
+        JsonNode kept = returns(draft.smo(), sub);
+        assertThat(kept).hasSize(2);
+        assertThat(kept.get(0).get("comment").asString()).isEqualTo("Second.");
+        assertThat(kept.get(0).get("disputedFindings")).as("the Finding was confirmed this time").isEmpty();
+        assertThat(kept.get(0).get("disputedReports")).hasSize(1);
+        assertThat(kept.get(0).get("disputedReports").get(0).get("reviewId").asString())
+                .isEqualTo(second.get("id").asString());
+        assertThat(kept.get(1).get("comment").asString()).isEqualTo("First.");
+        assertThat(kept.get(1).get("disputedFindings")).hasSize(1);
+        assertThat(kept.get(1).get("disputedFindings").get(0).get("findingId").asString()).isEqualTo(ids.get(0));
+        assertThat(kept.get(1).get("disputedReports")).isEmpty();
+    }
+
+    @Test
     void theCommentIsCleanedAndBounded() {
         Draft draft = inReview();
         String sub = draft.submissionId();

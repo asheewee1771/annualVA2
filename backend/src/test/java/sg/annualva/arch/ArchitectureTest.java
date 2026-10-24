@@ -159,8 +159,8 @@ class ArchitectureTest {
     @Test
     void writesOfAReviewTakeTheReviewLock() throws Exception {
         Class<?> reviewTarget = Class.forName("sg.annualva.submission.Submissions$ReviewTarget");
-        var reads = java.util.Set.of("latestOfReports", "review", "unconfirmedFindings", "unconfirmedJustifications",
-                "disputed");
+        var reads = java.util.Set.of("latestOfReports", "review", "disputedFindings",
+                "disputedReports");
         var missing = Arrays.stream(Class.forName("sg.annualva.finding.ReviewStore").getDeclaredMethods())
                 .filter(method -> !Modifier.isPrivate(method.getModifiers()) && !method.isSynthetic())
                 .filter(method -> !reads.contains(method.getName()))

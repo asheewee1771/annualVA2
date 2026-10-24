@@ -2,7 +2,6 @@ package sg.annualva.submission;
 
 import java.util.List;
 import java.util.UUID;
-import org.jspecify.annotations.Nullable;
 
 /**
  * How far the Cyber Manager's review of a VA Submission is, for the commands that move it out of In Review (stories 55 and
@@ -12,23 +11,50 @@ import org.jspecify.annotations.Nullable;
  */
 public interface ReviewProgress {
 
-    /**
-     * Every reason the VA Submission cannot pass to endorsement now, in a fixed order: Findings awaiting review, Findings
-     * Disputed, then each not-applicable justification awaiting review or Disputed. Empty when every Finding and every
-     * justification is confirmed. Each reason is a {@link SubmitReadiness.Blocker} naming no file. Must run in the caller's
-     * transaction.
-     */
-    List<SubmitReadiness.Blocker> unconfirmed(UUID submissionId);
+    /** Whether it may be returned and what stands in the way of passing it on, by one rule. Runs in the caller's transaction. */
+    Outcome outcome(UUID submissionId);
+
+    /** What is Disputed now, each item named by the review that Disputed it. Runs in the caller's transaction. */
+    Disputed disputed(UUID submissionId);
 
     /**
-     * What is Disputed now, each named by the review that Disputed it: the Findings in the order they were read, then the
-     * not-applicable justifications. Empty when nothing is. Must run in the caller's transaction.
+     * Where the review stands.
+     *
+     * @param returnable whether a Finding or a not-applicable justification is Disputed, so it may be returned for rework
+     * @param endorsementBlockers every reason it cannot pass to endorsement, in a fixed order (Findings awaiting review,
+     *     Findings Disputed, then each not-applicable justification awaiting review or Disputed), each a
+     *     {@link SubmitReadiness.Blocker} naming no file; empty once every Finding and justification is confirmed
      */
-    List<Disputed> disputed(UUID submissionId);
+    record Outcome(boolean returnable, List<SubmitReadiness.Blocker> endorsementBlockers) {
+
+        public Outcome {
+            endorsementBlockers = List.copyOf(endorsementBlockers);
+        }
+    }
 
     /**
-     * One Disputed item: a Finding ({@code findingId}) or the justification of a Scan Report marked not applicable
-     * ({@code reportType}), never both, with the review that Disputed it.
+     * What is Disputed: the Findings in the order they were read, then the not-applicable justifications in Scan Report
+     * order.
      */
-    record Disputed(@Nullable UUID findingId, @Nullable String reportType, UUID reviewId) {}
+    record Disputed(List<DisputedFinding> findings, List<DisputedReport> reports) {
+
+        public Disputed {
+            findings = List.copyOf(findings);
+            reports = List.copyOf(reports);
+        }
+
+        /** How many items are Disputed. */
+        public int count() {
+            return findings.size() + reports.size();
+        }
+    }
+
+    /** A Disputed Finding and the review that Disputed its current proposal. */
+    record DisputedFinding(UUID findingId, UUID reviewId) {}
+
+    /**
+     * A Disputed not-applicable justification, by its Scan Report (the name of the Findings module's {@code ReportType},
+     * as text because that type lives above this module), and the review that Disputed it.
+     */
+    record DisputedReport(String reportType, UUID reviewId) {}
 }

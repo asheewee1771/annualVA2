@@ -5,8 +5,6 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -31,15 +29,6 @@ class ReviewStore {
 
     /** A Scan Report of the VA Submission, its row held: its mode and the version of its justification. */
     record LockedSlot(ReportMode mode, int justificationVersion) {}
-
-    /**
-     * How many Findings of a VA Submission are not confirmed: those awaiting review (PENDING, or with no review state,
-     * which a submitted VA Submission never has), and those Disputed.
-     */
-    record UnconfirmedFindings(long awaiting, long disputed) {}
-
-    /** A not-applicable justification that is not confirmed, and whether it is Disputed (else it awaits review). */
-    record UnconfirmedJustification(ReportType type, boolean disputed) {}
 
     /** The columns of a review, as {@link #review} reads them; a Finding's has no justification. */
     static final String REVIEW_COLUMNS = "r.id AS review_id, r.decision AS review_decision, r.comment AS review_comment, "
@@ -81,14 +70,6 @@ class ReviewStore {
             "SELECT DISTINCT ON (r.report_type) r.report_type, r.justification, r.justification_version, "
             + REVIEW_COLUMNS
             + "FROM report_review r WHERE r.submission_id = :submission ORDER BY r.report_type, r.seq DESC";
-
-    private static final String UNCONFIRMED_FINDINGS =
-            "SELECT count(*) FILTER (WHERE review_state IS NULL OR review_state = 'PENDING') AS awaiting, "
-            + "count(*) FILTER (WHERE review_state = 'DISPUTED') AS disputed FROM finding WHERE submission_id = :submission";
-
-    private static final String UNCONFIRMED_JUSTIFICATIONS =
-            "SELECT report_type, review_state FROM report_slot WHERE submission_id = :submission "
-            + "AND mode = 'NOT_APPLICABLE' AND review_state IS DISTINCT FROM 'CONFIRMED'";
 
     /**
      * The Disputed Findings of a VA Submission in the order they were read, each with its latest review: the one that
@@ -172,34 +153,22 @@ class ReviewStore {
         return latest;
     }
 
-    /** How many Findings of the VA Submission await review or are Disputed. */
-    UnconfirmedFindings unconfirmedFindings(UUID submissionId) {
-        return jdbc.sql(UNCONFIRMED_FINDINGS).param("submission", submissionId)
-                .query((rs, row) -> new UnconfirmedFindings(rs.getLong("awaiting"), rs.getLong("disputed")))
-                .single();
-    }
-
-    /** The not-applicable justifications of the VA Submission that are not confirmed, in the order of {@link ReportType}. */
-    List<UnconfirmedJustification> unconfirmedJustifications(UUID submissionId) {
-        return jdbc.sql(UNCONFIRMED_JUSTIFICATIONS).param("submission", submissionId)
-                .query((rs, row) -> new UnconfirmedJustification(ReportType.valueOf(rs.getString("report_type")),
-                        ReviewState.DISPUTED.name().equals(rs.getString("review_state"))))
-                .list().stream().sorted(Comparator.comparing(UnconfirmedJustification::type)).toList();
-    }
-
-    /** The Disputed Findings, then the Disputed not-applicable justifications, of the VA Submission, each with its review. */
-    List<ReviewProgress.Disputed> disputed(UUID submissionId) {
-        List<ReviewProgress.Disputed> disputed = new ArrayList<>(jdbc.sql(DISPUTED_FINDINGS)
-                .param("submission", submissionId)
-                .query((rs, row) -> new ReviewProgress.Disputed(rs.getObject("id", UUID.class), null,
+    /** The Disputed Findings of the VA Submission in the order they were read, each with the review that Disputed it. */
+    List<ReviewProgress.DisputedFinding> disputedFindings(UUID submissionId) {
+        return jdbc.sql(DISPUTED_FINDINGS).param("submission", submissionId)
+                .query((rs, row) -> new ReviewProgress.DisputedFinding(rs.getObject("id", UUID.class),
                         rs.getObject("review_id", UUID.class)))
-                .list());
-        jdbc.sql(DISPUTED_JUSTIFICATIONS).param("submission", submissionId)
+                .list();
+    }
+
+    /** The Disputed not-applicable justifications of the VA Submission in Scan Report order, each with its review. */
+    List<ReviewProgress.DisputedReport> disputedReports(UUID submissionId) {
+        return jdbc.sql(DISPUTED_JUSTIFICATIONS).param("submission", submissionId)
                 .query((rs, row) -> Map.entry(ReportType.valueOf(rs.getString("report_type")),
                         rs.getObject("review_id", UUID.class)))
                 .list().stream().sorted(Map.Entry.comparingByKey())
-                .forEach(each -> disputed.add(new ReviewProgress.Disputed(null, each.getKey().name(), each.getValue())));
-        return disputed;
+                .map(each -> new ReviewProgress.DisputedReport(each.getKey().name(), each.getValue()))
+                .toList();
     }
 
     /** A review read through {@link #REVIEW_COLUMNS}; null when the row has none (an outer join that matched nothing). */

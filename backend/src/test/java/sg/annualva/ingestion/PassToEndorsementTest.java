@@ -88,14 +88,14 @@ class PassToEndorsementTest extends ReturnSeam1 {
         String sub = draft.submissionId();
         ApiClient cm = signedInAs(CM);
         JsonNode before = readiness(cm, sub);
-        assertThat(before.get("returnable").asBoolean()).as("nothing Disputed yet").isFalse();
-        assertThat(codes(before.get("endorsementBlockers")))
+        assertThat(before.get("review").get("returnable").asBoolean()).as("nothing Disputed yet").isFalse();
+        assertThat(codes(before.get("review").get("endorsementBlockers")))
                 .isEqualTo(codes(refusedReasons(passToEndorsement(cm, sub))));
 
         reportReviewed(cm, sub, BURP_SUITE, DISPUTED, "It has a web console.");
         JsonNode disputed = readiness(cm, sub);
-        assertThat(disputed.get("returnable").asBoolean()).isTrue();
-        assertThat(codes(disputed.get("endorsementBlockers")))
+        assertThat(disputed.get("review").get("returnable").asBoolean()).isTrue();
+        assertThat(codes(disputed.get("review").get("endorsementBlockers")))
                 .containsExactly("findings-awaiting-review", "justification-disputed");
 
         reportReviewed(cm, sub, BURP_SUITE, CONFIRMED, null);
@@ -103,8 +103,8 @@ class PassToEndorsementTest extends ReturnSeam1 {
             reviewed(cm, sub, finding, CONFIRMED, null);
         }
         JsonNode confirmed = readiness(cm, sub);
-        assertThat(confirmed.get("returnable").asBoolean()).isFalse();
-        assertThat(confirmed.get("endorsementBlockers")).isEmpty();
+        assertThat(confirmed.get("review").get("returnable").asBoolean()).isFalse();
+        assertThat(confirmed.get("review").get("endorsementBlockers")).isEmpty();
     }
 
     @Test
