@@ -8,24 +8,35 @@ package sg.annualva.submission;
  */
 public enum SubmissionState {
     /** Started by the SMO/Tech Lead, not yet submitted. */
-    DRAFT,
+    DRAFT("Draft"),
     /** Submitted by the SMO/Tech Lead; with the Cyber Manager. */
-    IN_REVIEW,
+    IN_REVIEW("In Review"),
     /**
      * Back with the SMO/Tech Lead, because of Disputed Findings or a VA POC return; submitted again like a Draft. The
      * commands that return a VA Submission arrive with tickets 30 and 35.
      */
-    RETURNED_FOR_REWORK,
+    RETURNED_FOR_REWORK("Returned for Rework"),
     /** Every Finding is confirmed; with the VA POCs (ticket 30). */
-    AWAITING_ENDORSEMENT,
+    AWAITING_ENDORSEMENT("Awaiting Endorsement"),
     /** Final: a VA POC accepted it (ticket 34). */
-    ENDORSED,
+    ENDORSED("Endorsed"),
     /** Frozen while a VA POC decides its Exemption (ticket 40). */
-    EXEMPTION_REQUESTED,
+    EXEMPTION_REQUESTED("Exemption Requested"),
     /** Final: its Exemption was approved (ticket 40). */
-    EXEMPTED,
+    EXEMPTED("Exempted"),
     /** Final: its System was retired before endorsement (ticket 43). */
-    WITHDRAWN,
+    WITHDRAWN("Withdrawn"),
     /** Final: neither Endorsed nor Exempted when its VA Cycle closed (ticket 41). */
-    NOT_ENDORSED
+    NOT_ENDORSED("Not Endorsed");
+
+    private final String label;
+
+    SubmissionState(String label) {
+        this.label = label;
+    }
+
+    /** The state's name as the screens and a mail show it (CONTEXT.md; the React app's {@code STATE_LABELS}). */
+    public String label() {
+        return label;
+    }
 }

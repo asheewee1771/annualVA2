@@ -19,11 +19,8 @@ class MailTest extends MailSeam1 {
 
     @Test
     void aReturnForReworkIsQueuedAndThenMailedToTheSmoWithTheSystemStateActionDueDateAndLinkOnly() {
-        Draft draft = inReview();
+        Draft draft = returnedForRework();
         String sub = draft.submissionId();
-        ApiClient cm = signedInAs(CM);
-        reviewed(cm, sub, findingIds(cm, sub).get(0), DISPUTED, "Show the upgrade.");
-        returned(cm, sub, "Two items need another look.");
 
         assertThat(mailRelay.sent()).as("queued, not sent, until the dispatcher runs").isEmpty();
         JsonNode queued = outboxOf(SMO_A).getFirst();
@@ -147,23 +144,47 @@ class MailTest extends MailSeam1 {
     }
 
     @Test
-    void aMailIsGivenUpOnAfterItsFifthFailedAttemptAndNeverTriedAgain() {
-        draft();
-        today("2027-08-16");
-        arrange.overdueSweep();
+    void aMailIsTriedAfterOneTwoFourAndEightMinutesAndGivenUpOnAfterItsFifthFailedAttempt() {
+        returnedForRework();
         mailRelay.failNext(100);
 
-        for (int pass = 0; pass < 7; pass++) {
+        for (long wait : new long[] {1, 2, 4, 8}) {
             dispatched();
-            clock.advance(Duration.ofMinutes(30));
+            String due = clock.instant().plus(Duration.ofMinutes(wait)).toString();
+            assertThat(onlyMailOf(SMO_A).get("nextAttemptAt").asString()).as("after a failure, %d minutes", wait)
+                    .isEqualTo(due);
+            clock.advance(Duration.ofMinutes(wait).minusSeconds(1));
+            dispatched();
+            assertThat(onlyMailOf(SMO_A).get("nextAttemptAt").asString()).as("not tried before it is due")
+                    .isEqualTo(due);
+            clock.advance(Duration.ofSeconds(1));
         }
+        dispatched();
+        clock.advance(Duration.ofHours(1));
+        dispatched();
 
-        JsonNode failed = outboxOf(SMO_A).getFirst();
+        JsonNode failed = onlyMailOf(SMO_A);
         assertThat(failed.get("status").asString()).isEqualTo("FAILED");
         assertThat(failed.get("attempts").asInt()).isEqualTo(5);
-        assertThat(outboxOf(SMO_B).getFirst().get("status").asString()).as("the Not Started System's mail too")
-                .isEqualTo("FAILED");
-        assertThat(mailRelay.calls()).as("five attempts each").isEqualTo(10);
+        assertThat(mailRelay.calls()).as("five attempts, then never again").isEqualTo(5);
+        assertThat(mailRelay.sent()).isEmpty();
+    }
+
+    @Test
+    void aNotificationThatCannotBeWrittenQueuesNoMail() {
+        Draft draft = inReview();
+        String sub = draft.submissionId();
+        ApiClient cm = signedInAs(CM);
+        reviewed(cm, sub, findingIds(cm, sub).get(0), DISPUTED, "Show the upgrade.");
+        arrange.notificationFault("on");
+
+        var response = returnForRework(cm, sub, null);
+        arrange.notificationFault("off");
+        dispatched();
+
+        assertThat(response.status()).as(response.body()).isEqualTo(200);
+        assertThat(arrange.mailOutbox()).as("the mail is written with its notification or not at all").isEmpty();
+        assertThat(mailRelay.calls()).isZero();
     }
 
     @Test
@@ -189,7 +210,8 @@ class MailTest extends MailSeam1 {
     @Test
     void aValueOutsideTheAllowListIsNeverHandedToTheRelay() {
         Draft draft = draft();
-        arrange.renameSystem(draft.systemId(), "File one ‮gnp.exe");
+        // A right-to-left override, which the Register refuses in a name, written by code point so the source stays plain.
+        arrange.renameSystem(draft.systemId(), "File one " + (char) 0x202E + "gnp.exe");
         today("2027-08-16");
         arrange.overdueSweep();
 

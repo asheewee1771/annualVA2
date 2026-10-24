@@ -4,7 +4,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -12,8 +14,10 @@ import org.springframework.stereotype.Repository;
 
 /**
  * The mail outbox (V137). Constant SQL, named parameters (as-2). Each statement stands alone, so the dispatcher holds no
- * row lock while it calls the relay (ADR 0012): a claim takes due rows with {@code SKIP LOCKED}, counts the attempt and
- * leases the row, and an outcome is written only while the row is still the claim it read (same attempt, still pending).
+ * row lock while it calls the relay (ADR 0012): a claim takes the next due row with {@code SKIP LOCKED}, counts the
+ * attempt and leases the row, and an outcome is written only while the row is still the claim it read (same attempt,
+ * still pending). A claim takes only rows whose template and action this build knows, so an instance running an older
+ * build leaves a newer kind of mail to the instances that can send it.
  */
 @Repository
 class MailOutboxStore {
@@ -22,10 +26,12 @@ class MailOutboxStore {
             "INSERT INTO mail_outbox (notification_id, template, created_at, next_attempt_at) "
             + "VALUES (:notification, :template, :at, :at)";
 
-    /** The due rows, claimed and leased, with what their notifications say and to whom. */
+    /** The next due row, claimed and leased, with what its notification says and to whom. */
     private static final String CLAIM =
-            "WITH due AS (SELECT id FROM mail_outbox WHERE status = 'PENDING' AND next_attempt_at <= :now "
-            + "AND attempts < :max ORDER BY next_attempt_at, id LIMIT :batch FOR UPDATE SKIP LOCKED), "
+            "WITH due AS (SELECT o.id FROM mail_outbox o JOIN notification n ON n.id = o.notification_id "
+            + "WHERE o.status = 'PENDING' AND o.next_attempt_at <= :now AND o.attempts < :max "
+            + "AND o.template IN (:templates) AND n.action IN (:actions) "
+            + "ORDER BY o.next_attempt_at, o.id LIMIT 1 FOR UPDATE OF o SKIP LOCKED), "
             + "claimed AS (UPDATE mail_outbox o SET attempts = o.attempts + 1, next_attempt_at = :leaseUntil, "
             + "last_attempt_at = :now FROM due WHERE o.id = due.id "
             + "RETURNING o.id, o.notification_id, o.template, o.attempts) "
@@ -34,7 +40,7 @@ class MailOutboxStore {
             + "JOIN notification n ON n.id = c.notification_id JOIN app_user u ON u.id = n.recipient_id "
             + "JOIN va_system s ON s.id = n.system_id";
 
-    /** A claim whose dispatcher stopped after its last attempt: nothing will try it again. */
+    /** The claims whose dispatcher stopped after their last attempt: nothing will try them again. */
     private static final String ABANDON =
             "UPDATE mail_outbox SET status = 'FAILED' WHERE status = 'PENDING' AND attempts >= :max "
             + "AND next_attempt_at <= :now";
@@ -47,6 +53,9 @@ class MailOutboxStore {
     private static final String SETTLE = "UPDATE mail_outbox SET status = :status" + CLAIM_HELD;
 
     private static final String RETRY = "UPDATE mail_outbox SET next_attempt_at = :at" + CLAIM_HELD;
+
+    private static final List<String> TEMPLATES = Arrays.stream(MailTemplate.values()).map(Enum::name).toList();
+    private static final List<String> ACTIONS = Arrays.stream(NoticeAction.values()).map(Enum::name).toList();
 
     /**
      * A claimed mail and what it says: the notification's recipient, System, state, action, due date and link.
@@ -85,28 +94,36 @@ class MailOutboxStore {
                 .update();
     }
 
-    List<Claimed> claim(Instant now, Instant leaseUntil, int batch, int max) {
-        jdbc.sql(ABANDON).param("max", max).param("now", utc(now)).update();
-        return jdbc.sql(CLAIM).param("now", utc(now)).param("leaseUntil", utc(leaseUntil)).param("batch", batch)
-                .param("max", max)
+    /** Settles as failed every claim that was a last attempt and whose lease has run out; returns how many. */
+    int abandonExpired(Instant now, int max) {
+        return jdbc.sql(ABANDON).param("max", max).param("now", utc(now)).update();
+    }
+
+    /** Claims the next due mail, if any, and leases it until {@code leaseUntil}. */
+    Optional<Claimed> claimNext(Instant now, Instant leaseUntil, int max) {
+        return jdbc.sql(CLAIM).param("now", utc(now)).param("leaseUntil", utc(leaseUntil)).param("max", max)
+                .param("templates", TEMPLATES).param("actions", ACTIONS)
                 .query((rs, row) -> new Claimed(rs.getObject("id", UUID.class),
                         MailTemplate.valueOf(rs.getString("template")), rs.getInt("attempts"),
                         rs.getString("recipient"), rs.getString("system_code"), rs.getString("system_name"),
                         rs.getString("state"), NoticeAction.valueOf(rs.getString("action")),
                         rs.getObject("due_on", LocalDate.class), rs.getString("link")))
-                .list();
+                .optional();
     }
 
-    void sent(Claimed mail, String messageId, Instant at) {
-        held(jdbc.sql(SENT).param("messageId", messageId).param("at", utc(at)), mail).update();
+    /** @return whether the claim was still held, so the outcome was written */
+    boolean sent(Claimed mail, String messageId, Instant at) {
+        return held(jdbc.sql(SENT).param("messageId", messageId).param("at", utc(at)), mail).update() == 1;
     }
 
-    void settle(Claimed mail, Settled status) {
-        held(jdbc.sql(SETTLE).param("status", status.name()), mail).update();
+    /** @return whether the claim was still held, so the outcome was written */
+    boolean settle(Claimed mail, Settled status) {
+        return held(jdbc.sql(SETTLE).param("status", status.name()), mail).update() == 1;
     }
 
-    void retryAt(Claimed mail, Instant at) {
-        held(jdbc.sql(RETRY).param("at", utc(at)), mail).update();
+    /** @return whether the claim was still held, so the next attempt was set */
+    boolean retryAt(Claimed mail, Instant at) {
+        return held(jdbc.sql(RETRY).param("at", utc(at)), mail).update() == 1;
     }
 
     private static JdbcClient.StatementSpec held(JdbcClient.StatementSpec statement, Claimed mail) {

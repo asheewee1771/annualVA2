@@ -20,8 +20,9 @@ import org.springframework.validation.annotation.Validated;
  * @param maxAttempts how many times a mail is handed to the relay before it is given up on
  * @param firstRetry how long after a first failed attempt the next one is made; each later wait is twice the one before
  * @param lease how long a claimed mail is left alone before another pass may claim it again (a dispatcher that stopped
- *     part-way), so it should be longer than one relay call can take
- * @param batchSize the most mails one pass claims
+ *     part-way); a mail is leased just before its hand-over, so this must be longer than one relay call can take (the
+ *     relay adapter's timeout, ticket 51)
+ * @param batchSize the most mails one pass hands over
  * @param dispatchInterval how long the job waits between passes; the job reads the same key
  */
 @ConfigurationProperties("annualva.mail")
@@ -36,6 +37,8 @@ public record MailProperties(
         @DefaultValue("30s") @NotNull Duration dispatchInterval) {
 
     public MailProperties {
+        // Bound before validation runs: no templates at all is reported like a missing one.
+        templates = templates == null ? Map.of() : templates;
         EnumSet<MailTemplate> missing = EnumSet.allOf(MailTemplate.class);
         templates.forEach((template, id) -> {
             if (id != null && !id.isBlank()) {

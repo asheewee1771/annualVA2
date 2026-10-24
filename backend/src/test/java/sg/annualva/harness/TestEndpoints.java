@@ -312,7 +312,11 @@ public class TestEndpoints {
         /** One pass of the mail dispatcher, which {@code annualva.scheduling.enabled=false} keeps from running by itself in tests. */
         @PostMapping("/api/test/jobs/mail")
         public Map<String, String> mail() {
-            mailOutbox.dispatch();
+            try {
+                mailOutbox.dispatch();
+            } catch (CapturingMailRelay.DispatcherStopped stopped) {
+                return Map.of("ran", "stopped");
+            }
             return Map.of("ran", "mail");
         }
 

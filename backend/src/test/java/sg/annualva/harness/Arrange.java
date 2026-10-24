@@ -65,7 +65,18 @@ public final class Arrange {
 
     /** One pass of the mail dispatcher, which a test runs by hand because scheduling is off in tests. */
     public void mailDispatch() {
-        assertThat(client.post("/api/test/jobs/mail").status()).isEqualTo(200);
+        mailDispatchEnding("mail");
+    }
+
+    /** One pass of the mail dispatcher that stops mid-call, as the relay fake was told to make it ({@code stopNext}). */
+    public void mailDispatchStopped() {
+        mailDispatchEnding("stopped");
+    }
+
+    private void mailDispatchEnding(String ending) {
+        var response = client.post("/api/test/jobs/mail");
+        assertThat(response.status()).as(response.body()).isEqualTo(200);
+        assertThat(ApiClient.json(response).get("ran").asString()).isEqualTo(ending);
     }
 
     /**
@@ -80,12 +91,8 @@ public final class Arrange {
 
     /** Renames a System behind the Register's back, to a name the Register would refuse. */
     public void renameSystem(String systemUuid, String name) {
-        StringBuilder json = new StringBuilder("{\"name\":\"");
-        name.chars().forEach(c -> json.append(c < 0x20 || c > 0x7e || c == '"' || c == '\\'
-                ? String.format("\\u%04x", c) : String.valueOf((char) c)));
-        json.append("\"}");
-        assertThat(client.postJson("/api/test/systems/" + systemUuid + "/name", json.toString()).status())
-                .isEqualTo(200);
+        String json = ApiClient.toJson(java.util.Map.of("name", name));
+        assertThat(client.postJson("/api/test/systems/" + systemUuid + "/name", json).status()).isEqualTo(200);
     }
 
     /** Rejects a file as another pass of the scan job would have, without touching its bytes. */

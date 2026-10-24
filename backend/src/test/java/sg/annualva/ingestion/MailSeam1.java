@@ -1,7 +1,10 @@
 package sg.annualva.ingestion;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.List;
 import java.util.stream.StreamSupport;
+import sg.annualva.harness.ApiClient;
 import sg.annualva.harness.CapturingMailRelay.Sent;
 import tools.jackson.databind.JsonNode;
 
@@ -16,6 +19,26 @@ abstract class MailSeam1 extends NotificationSeam1 {
     static final String REWORK_TEMPLATE = "ci-returned-for-rework";
     static final String OVERDUE_TEMPLATE = "ci-overdue";
     static final String REGISTER_CHANGE_TEMPLATE = "ci-register-change";
+
+    /**
+     * SYS-F1's VA Submission Returned for Rework with one Finding Disputed: one mail is queued, to {@link #SMO_A}, and
+     * nothing else is due.
+     */
+    protected Draft returnedForRework() {
+        Draft draft = inReview();
+        String sub = draft.submissionId();
+        ApiClient cm = signedInAs(CM);
+        reviewed(cm, sub, findingIds(cm, sub).get(0), DISPUTED, "Show the upgrade.");
+        returned(cm, sub, "Two items need another look.");
+        return draft;
+    }
+
+    /** The one outbox row of this address. */
+    protected JsonNode onlyMailOf(String email) {
+        List<JsonNode> rows = outboxOf(email);
+        assertThat(rows).as("one mail queued for %s", email).hasSize(1);
+        return rows.getFirst();
+    }
 
     /** One pass of the dispatcher. */
     protected void dispatched() {

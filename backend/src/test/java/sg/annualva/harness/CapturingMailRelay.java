@@ -26,9 +26,26 @@ public final class CapturingMailRelay implements MailRelay {
     private final AtomicInteger calls = new AtomicInteger();
     private final AtomicInteger counter = new AtomicInteger();
 
+    /**
+     * Thrown in place of an answer to stand for a dispatcher that stopped mid-call (the instance died): it is an
+     * {@link Error}, so nothing in the application catches it and the claim is left as it was.
+     */
+    public static final class DispatcherStopped extends Error {
+        private static final long serialVersionUID = 1L;
+
+        DispatcherStopped() {
+            super("The dispatcher stopped while the relay had the mail", null, false, false);
+        }
+    }
+
+    private final AtomicInteger stops = new AtomicInteger();
+
     @Override
     public Receipt send(String recipient, String templateId, Map<String, String> values) {
         calls.incrementAndGet();
+        if (stops.getAndUpdate(n -> Math.max(0, n - 1)) > 0) {
+            throw new DispatcherStopped();
+        }
         if (failures.getAndUpdate(n -> Math.max(0, n - 1)) > 0) {
             throw new BoundaryFailureException("The fake mail relay cannot be reached");
         }
@@ -50,6 +67,11 @@ public final class CapturingMailRelay implements MailRelay {
         failures.set(count);
     }
 
+    /** The next call stops the dispatcher mid-call, before the relay answers ({@link DispatcherStopped}). */
+    public void stopNext() {
+        stops.set(1);
+    }
+
     /** Every message the relay accepted, in order. */
     public List<Sent> sent() {
         return List.copyOf(sent);
@@ -65,6 +87,7 @@ public final class CapturingMailRelay implements MailRelay {
         sent.clear();
         rejected.clear();
         failures.set(0);
+        stops.set(0);
         calls.set(0);
         counter.set(0);
     }

@@ -11,7 +11,9 @@ import java.util.Map;
  *
  * <p>A recipient address is never logged by an adapter or by its caller (story 91, lm-19). Every method should throw
  * {@link BoundaryFailureException} when the relay cannot be reached or refuses the call for a reason that may pass; the
- * caller treats any other runtime exception the same way and tries again later.
+ * caller treats any other runtime exception the same way and tries again later. A call must end well within the outbox's
+ * lease ({@code annualva.mail.lease}, five minutes), so an adapter sets its own connect and read timeouts below it;
+ * otherwise another pass may claim the mail again and send it twice.
  */
 public interface MailRelay {
 
