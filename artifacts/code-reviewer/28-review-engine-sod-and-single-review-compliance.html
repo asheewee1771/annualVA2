@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review — 28-review-engine-sod-and-single-review</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall: PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">build: PASS · C0 H0 M0 L0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear: WARN · C0 H0 M3 L7</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review: WARN · C0 H0 M1 L12</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">semgrep: WARN · C0 H0 M0 L1</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8: WARN · C0 H0 M2 L3</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react: WARN · C0 H0 M1 L7</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot: WARN · C0 H0 M1 L13</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">main</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report (round 2)</h1>
+          <p class="text-sm text-slate-500 mt-1">Ticket 28: review engine 1, segregation of duties and single Confirm or Dispute. Uncommitted working tree on <span class="font-mono">main</span> against 378e00f. This is round 2: all seven checks were rerun after a correction pass that answered the round 1 blockers.</p>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Executive Summary</h2>
+          <p class="text-xs text-slate-500 mt-1">Overall compliance evaluation status across all seven active checks. Overall status is PASS: no check reports FAIL and no check has a Critical or High finding. Six checks are WARN on Medium or Low findings only.</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Check</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Status</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">C / H / M / L</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Summary</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">build</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 0</td>
+              <td class="px-4 py-2">Back-end verify (reused log, fingerprint matched): 826 tests, 0 failures; JaCoCo line 97.37 %, branch 91.32 %. <span class="font-mono text-xs">npm run check</span> exit 0. Four informational notes only.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">thermo-nuclear</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 3 / 7</td>
+              <td class="px-4 py-2">Round 1 High resolved: segregation of duties has one entry point, guarded by ArchUnit. Remaining: one nullable shape for two kinds of review, duplicated Finding row markup, two locks on one <span class="font-mono text-xs">report_slot</span> row.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">code-review</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 12</td>
+              <td class="px-4 py-2">Standards: 9 Low. Spec: 1 Medium (prepare records no step and runs no SoD check), 3 Low. None of the removed SQL guards was needed for correctness.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">semgrep</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 1</td>
+              <td class="px-4 py-2">Round 1 P0 (raw bidi character in a test string) fixed. One Low in a script this ticket does not touch. The pre-existing TestEndpoints tainted-SQL High did not reappear.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">im8</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 2 / 3</td>
+              <td class="px-4 py-2">ac-1 WARN (authoring a proposal is not acting at the submitting step), as-1 WARN (service-layer validation, no JSON body cap). as-7, as-2, as-3, as-13, lm-4, lm-19, dp-8 PASS.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">react</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 7</td>
+              <td class="px-4 py-2">The refactor added no defect. All eight round 1 findings remain open; the worst is review controls shown to a Cyber Manager with a SoD conflict.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">springboot</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 13</td>
+              <td class="px-4 py-2">Role gate, scope, lock order, append-only triggers and transactions verified. Medium: ticket 49 does not list the two new review tables. Spring Batch not applicable.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-600">No Critical or High findings in round 2. Both round 1 blockers are resolved:</p>
+          <ul class="list-disc pl-5 text-sm text-slate-700 space-y-1">
+            <li>thermo-nuclear High: segregation of duties now runs through <span class="font-mono text-xs">SegregationOfDuties.require</span> (<span class="font-mono text-xs">backend/src/main/java/sg/annualva/submission/SegregationOfDuties.java:55</span>), called by start, submit and <span class="font-mono text-xs">lockForReview</span>, with the ArchUnit rule <span class="font-mono text-xs">everyCommandThatRecordsAStepAsksSegregationOfDuties</span>.</li>
+            <li>semgrep P0: <span class="font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/FindingReviewTest.java:56</span> now writes the right-to-left override as a Java escape (backslash-u-202E), not as a raw character. No raw bidi or zero-width character remains in the changed files.</li>
+          </ul>
+          <p class="text-sm text-slate-600">Medium findings raised by more than one check (non-blocking, worth a decision before ticket 29):</p>
+          <ul class="list-disc pl-5 text-sm text-slate-700 space-y-1">
+            <li>Prepare and edit paths record no participation and run no SoD check, so an author of proposals later made Cyber Manager could confirm their own work: code-review P1 and im8 M-1 (<span class="font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java:350</span>). No reviewer decision accepts the gap.</li>
+            <li>The review screen ignores <span class="font-mono text-xs">sodConflict</span> and offers Confirm and Dispute that will be refused and audited: react #1 and im8 L-3 (<span class="font-mono text-xs">frontend/src/screens/cyber-manager/ReviewScreen.tsx:222</span>).</li>
+            <li>The review state updates no longer carry the current-proposal or mode guard in SQL: code-review P4 and springboot SB-3 (<span class="font-mono text-xs">backend/src/main/java/sg/annualva/finding/ReviewStore.java:47-48</span>). Safe today; fragile for ticket 29.</li>
+          </ul>
+        </div>
+      </div>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS · C0 H0 M0 L0</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td></tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-4 border-t border-slate-100 text-sm text-slate-600 space-y-1">
+          <p>Informational notes (not counted): a pre-existing deprecation warning in <span class="font-mono text-xs">MccHttp.java:51</span> outside this changeset; the vitest coverage step does not apply (no React unit tests by convention); <span class="font-mono text-xs">fallow audit</span> is covered by <span class="font-mono text-xs">fallow dead-code &amp;&amp; fallow health</span>; the expected ERROR log line from <span class="font-mono text-xs">ErrorResponseTest</span>.</p>
+          <p>Back-end log reused: working-tree fingerprint <span class="font-mono text-xs">cf036cab…</span> matched the stored fingerprint; BUILD SUCCESS.</p>
+        </div>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M3 L7</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/ReviewView.java; ReviewFields.java; ReviewStore.java; frontend/src/api/findings.ts</td>
+              <td class="px-4 py-2 font-mono text-xs">23-25; 37-79; 99, 120-133; 91-108</td>
+              <td class="px-4 py-2">M1: one nullable shape stands for two kinds of review (proposal or justification), padded with positional nulls; every layer works out which kind it holds. Split the subject into a sealed type before ticket 29 copies it.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewScreen.tsx; frontend/src/screens/smo/FindingRow.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">89-114; 131-135, 183-194</td>
+              <td class="px-4 py-2">M2: the Cyber Manager Finding row copy-pastes the SMO row's identity cell and proposal summary. Extract <span class="font-mono text-xs">FindingIdentityCell</span> and <span class="font-mono text-xs">ProposalSummary</span> into <span class="font-mono text-xs">screens/shared/</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/ReviewStore.java; ScanReportStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">36-37, 47-53, 63-64, 103-108; 42-50, 91</td>
+              <td class="px-4 py-2">M3: two stores each lock the same <span class="font-mono text-xs">report_slot</span> row, and <span class="font-mono text-xs">ReviewStore</span> writes columns other stores own. Give <span class="font-mono text-xs">EditTarget</span> and <span class="font-mono text-xs">ReviewTarget</span> a shared supertype and merge the lock paths.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SegregationOfDuties.java; SubmissionStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">57-59; 102-109</td>
+              <td class="px-4 py-2">L1: the assignment-conflict rule is written in Java and in SQL while a comment says it is written once.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td>
+              <td class="px-4 py-2 font-mono text-xs">372-374</td>
+              <td class="px-4 py-2">L2: <span class="font-mono text-xs">lockForReview</span> inlines the ownership check instead of parameterising <span class="font-mono text-xs">owned</span>, and reuses <span class="font-mono text-xs">lockForEdit</span> for a review.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java; finding/Reviews.java</td>
+              <td class="px-4 py-2 font-mono text-xs">125, 146-148, 375, 383; 75, 109, 115</td>
+              <td class="px-4 py-2">L3: <span class="font-mono text-xs">ReviewTarget</span> carries an audit template, coupling audit to the lock token.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/ScanReports.java</td>
+              <td class="px-4 py-2 font-mono text-xs">111, 124-125, 183</td>
+              <td class="px-4 py-2">L4: <span class="font-mono text-xs">setMode</span> checks not-applicable twice, reads every report's review to use one, and <span class="font-mono text-xs">next</span> nests ternaries.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/ReviewStore.java; FindingStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">32-33; 96-98, 111, 114, 300</td>
+              <td class="px-4 py-2">L5: the review SQL fragment and mapper are shared through a hidden table alias <span class="font-mono text-xs">r</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/LatestReview.tsx; shared/Pager.tsx; ReviewScreen.tsx; ReviewForm.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">5; 19; 23, 188-189; 7</td>
+              <td class="px-4 py-2">L6: front-end duplicates left by the refactor (decision labels, hard-coded "Findings" in <span class="font-mono text-xs">Pager</span>, two <span class="font-mono text-xs">PAGE_SIZE</span> constants, another <span class="font-mono text-xs">UNREACHABLE</span>); review types belong in <span class="font-mono text-xs">api/reviews.ts</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingController.java; ScanReportController.java; backend/src/test/java/sg/annualva/arch/ArchitectureTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">55; 37; 162, 174-205</td>
+              <td class="px-4 py-2">L7: review endpoints named <span class="font-mono text-xs">/reviews</span> and <span class="font-mono text-xs">/review</span>; ArchUnit exempts reads by a name list, writes class names in full, and checks presence of <span class="font-mono text-xs">require</span>, not that it comes first.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M1 L12</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java; ADR 0035</td>
+              <td class="px-4 py-2 font-mono text-xs">350; l.58</td>
+              <td class="px-4 py-2">P1 (Spec): preparing records no step and runs no segregation-of-duties check, so someone who only proposed Finding Statuses and is later made Cyber Manager can confirm their own proposals. No reviewer decision accepts the gap.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/ReviewStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">47-48, 86-100</td>
+              <td class="px-4 py-2">P4 (Spec): "only the current proposal" is enforced only by the caller; <span class="font-mono text-xs">SET_FINDING_STATE</span> has no proposal guard. Same for <span class="font-mono text-xs">reviewReport</span> and mode. Fragile for ticket 29.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ReviewSegregationTest.java; QuarterBoardTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">46, 63; 80-100</td>
+              <td class="px-4 py-2">P2 (Spec): no test for a Cyber Manager assigned to another step but not yet acted on the Scan Report review and Quarter board marker; no concurrency test for the locks.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">.scratch/annual-va/issues/30-return-for-rework-and-pass-to-endorsement.md</td>
+              <td class="px-4 py-2 font-mono text-xs">14-15</td>
+              <td class="px-4 py-2">P3 (Spec): ticket 30 gains two acceptance criteria without a human decision, and its open question describes code that has since moved to <span class="font-mono text-xs">SegregationOfDuties</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SegregationOfDuties.java (also README.md, ADR 0035, Submissions.java, ReviewSegregationTest.java)</td>
+              <td class="px-4 py-2 font-mono text-xs">23 (README 176; Submissions 217; test 13)</td>
+              <td class="px-4 py-2">S1 (Standards, hard glossary breach): "submitter" and "reviewer" used as role names; CONTEXT.md avoids them.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">README.md; backend/src/main/java/sg/annualva/finding/Reviews.java; frontend/src/screens/cyber-manager/ReviewForm.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">186; 23; 10, 13</td>
+              <td class="px-4 py-2">S2 (Standards): "item" used for a Finding or justification.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">111, 300</td>
+              <td class="px-4 py-2">S6 (Standards): possible Feature Envy on <span class="font-mono text-xs">ReviewStore.REVIEW_COLUMNS</span> and the static mapper.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/ReviewView.java; ReviewFields.java</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">S9 (Standards): one record for both kinds of review; <span class="font-mono text-xs">proposalId</span> and the justification fields are never set together.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td>
+              <td class="px-4 py-2 font-mono text-xs">261-262, 351-352, 372-374</td>
+              <td class="px-4 py-2">N2 (Standards): locate, guard, lock, not-found sequence written three times; <span class="font-mono text-xs">lockForReview</span> repeats <span class="font-mono text-xs">owned()</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td>
+              <td class="px-4 py-2 font-mono text-xs">223-224, 480-481</td>
+              <td class="px-4 py-2">N3 (Standards): <span class="font-mono text-xs">start</span> builds its refusal entry inline and again in <span class="font-mono text-xs">refusedStart</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td>
+              <td class="px-4 py-2 font-mono text-xs">467-469</td>
+              <td class="px-4 py-2">N4 (Standards): <span class="font-mono text-xs">conflictedAt</span> is a Middle Man forwarding to <span class="font-mono text-xs">sod.conflictedAt</span> (acceptable).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SegregationOfDuties.java</td>
+              <td class="px-4 py-2 font-mono text-xs">83-86</td>
+              <td class="px-4 py-2">N5 (Standards): unreachable <span class="font-mono text-xs">scope.all()</span> fail-fast branch; deliberate per ADR 0035, note only.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/arch/ArchitectureTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">184-185, 189</td>
+              <td class="px-4 py-2">N6 (Standards): the new rule finds <span class="font-mono text-xs">recordParticipation</span> by string signature and would pass silently if it changed; fully qualified names repeated.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M0 L1</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">scripts/mock-mockpass-assertions.js</td>
+              <td class="px-4 py-2 font-mono text-xs">11</td>
+              <td class="px-4 py-2">P2: <span class="font-mono text-xs">path-join-resolve-traversal</span> on <span class="font-mono text-xs">path.resolve(__dirname, p)</span> in the dev MockPass override. Only hard-coded paths reach it; not changed by this ticket; same as round 1.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-4 border-t border-slate-100 text-sm text-slate-600 space-y-1">
+          <p>Semgrep 1.179.0 with <span class="font-mono text-xs">p/security-audit</span> and <span class="font-mono text-xs">p/default</span>: 387 rules on 462 tracked files (1 finding) plus 328 rules on the 19 untracked ticket files (0 findings). The skill reported PASS (0 P0, 0 P1); the severity mapping makes it WARN for the single Low.</p>
+          <p>Round 1 P0 fixed: the bidirectional-characters rule no longer fires anywhere. A scan of every changed and untracked file found no raw bidi or zero-width characters; hostile-input tests use escapes only.</p>
+        </div>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M2 L3</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td>
+              <td class="px-4 py-2 font-mono text-xs">350-355</td>
+              <td class="px-4 py-2">ac-1 M-1 (carried over): <span class="font-mono text-xs">lockForEdit</span> records no participation and calls no SoD check; authoring a proposal or justification does not count as acting at the submitting step. Refuse a review of one's own proposal, record SUBMIT participation on edits, or record a decision.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/ReviewRequest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">as-1 M-2 (carried over): validation runs in <span class="font-mono text-xs">ReviewFields</span> (complete, bounded) rather than Bean Validation with <span class="font-mono text-xs">@Valid</span>, which the implementation plan promises. Record a decision or add the annotations.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">(app-wide JSON request handling)</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">as-1 L-1: JSON request bodies have no size cap; a very long comment is copied before the length check rejects it.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/api/findings.ts; scanReports.ts</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">as-1 L-2: no runtime schema check on API responses (app-wide pattern; back end authoritative).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">222</td>
+              <td class="px-4 py-2">ac-1 L-3: the review screen ignores <span class="font-mono text-xs">sodConflict</span>; a conflicted Cyber Manager sees Confirm and Dispute and learns of the conflict only from the 403 (UX only).</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-4 border-t border-slate-100 text-sm text-slate-600 space-y-1">
+          <p>PASS controls: as-7, as-2, as-3, as-13, lm-4, lm-19, dp-8. Note N-1 (informational, not counted): an unexpected DB check violation would log "Failing row contains" with review text; unreachable while the Java bound and V21 checks agree. Severity column assumes a Low Risk system; under MR, M-2 becomes Low.</p>
+        </div>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M1 L7</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">222</td>
+              <td class="px-4 py-2">#1: <span class="font-mono text-xs">reviewable</span> looks only at the state, so a Cyber Manager with a SoD conflict gets Confirm and Dispute on every item; every click is a 403 that is audited. Expose the conflict flag on the submission read, or record the choice.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewScreen.tsx; frontend/src/screens/shared/Pager.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">145-190</td>
+              <td class="px-4 py-2">#2: on a page change the old page stays live under the new page number; the first load reads "Findings (0)".</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewForm.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">36-50</td>
+              <td class="px-4 py-2">#3: <span class="font-mono text-xs">busy</span> clears before the reload lands, so a second click can record a second review of the same proposal.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewForm.tsx; ReviewScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">46; 222</td>
+              <td class="px-4 py-2">#4: when the VA Submission leaves In Review every form unmounts, losing the 409 explanation and drafted comments.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">149-152, 225-228</td>
+              <td class="px-4 py-2">#5: each Finding review also reloads the unchanged Scan Report modes.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">236-253</td>
+              <td class="px-4 py-2">#6: a failed submission read shows up to three identical alerts; two sections have no loading state.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/LatestReview.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">3, 17</td>
+              <td class="px-4 py-2">#7: a third copy of the same <span class="font-mono text-xs">Intl.DateTimeFormat</span>, and formatting an invalid instant throws during render.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/paths.ts</td>
+              <td class="px-4 py-2 font-mono text-xs">9</td>
+              <td class="px-4 py-2">#8: <span class="font-mono text-xs">reviewPath</span> does not encode the id, unlike every API helper.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M1 L13</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V21__review.sql; .scratch/annual-va/issues/49-retention-and-disposal.md; 60-delete-a-report-file-or-manual-finding.md</td>
+              <td class="px-4 py-2 font-mono text-xs">49: 12</td>
+              <td class="px-4 py-2">SB-1 (spring-data): ticket 49 does not list <span class="font-mono text-xs">finding_review</span> or <span class="font-mono text-xs">report_review</span>, their triggers or delete order, so disposal as written would fail; ticket 60 can now meet a reviewed Finding. Add acceptance lines to both tickets.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/web/ApiExceptionHandler.java; application.yml</td>
+              <td class="px-4 py-2 font-mono text-xs">90-96; 13</td>
+              <td class="px-4 py-2">SB-2: an unexpected CHECK violation would log review text via pgjdbc's error detail; unreachable today. Add <span class="font-mono text-xs">logServerErrorDetail=false</span> or redact.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/ReviewStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">SET_FINDING_STATE, SET_SLOT_STATE</td>
+              <td class="px-4 py-2">SB-3: state updates match on the key alone and rely on the Java check under the lock; add the invariant to SQL and assert one row updated.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/ReviewStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">reviewFinding, reviewReport</td>
+              <td class="px-4 py-2">SB-4: the 201 answer's <span class="font-mono text-xs">reviewedAt</span> can differ from the stored microsecond value.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SegregationOfDuties.java; finding/Reviews.java</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">SB-5: each audited refusal opens a second pooled connection while row locks are held (accepted ADR 0014 pattern); keep pool size and timeout sensible.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingStore.java; ReviewStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">LIST, REVIEW_COLUMNS</td>
+              <td class="px-4 py-2">SB-6: <span class="font-mono text-xs">REVIEW_COLUMNS</span> hard-codes alias <span class="font-mono text-xs">r</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V21__review.sql</td>
+              <td class="px-4 py-2 font-mono text-xs">383-389</td>
+              <td class="px-4 py-2">SB-7: review triggers reuse <span class="font-mono text-xs">declaration_append_only()</span>, owned by the Declarations.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/ScanReports.java</td>
+              <td class="px-4 py-2 font-mono text-xs">setMode</td>
+              <td class="px-4 py-2">SB-8: a mode change reads all three reports' latest review to show one.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingController.java; ScanReportController.java</td>
+              <td class="px-4 py-2 font-mono text-xs">55; 37</td>
+              <td class="px-4 py-2">SB-9: endpoints named <span class="font-mono text-xs">/reviews</span> and <span class="font-mono text-xs">/review</span>; 201 with no Location header.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingController.java; ScanReportController.java</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">SB-10: <span class="font-mono text-xs">@PreAuthorize</span> runs after argument resolution, so a malformed body from a non-Cyber-Manager gets 400, not an audited 403 (consistent with existing endpoints).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/FindingReviewTest.java; ReportReviewTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">SB-11: lock-order claims proven only by sequential tests; add one concurrent test.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ReviewAppendOnlyTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">SB-12: direct-SQL constraint test covers <span class="font-mono text-xs">finding_review</span> but not <span class="font-mono text-xs">report_review</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/arch/ArchitectureTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">SB-13: the SoD ArchUnit rule checks presence of <span class="font-mono text-xs">require</span>, not order, and would miss a call through a private helper.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/FindingReviewTest.java; ReportReviewTest.java; ReviewSegregationTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">—</td>
+              <td class="px-4 py-2">SB-14: Return for Rework is simulated by a direct UPDATE until ticket 30 lands; replace with the real command then.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-4 border-t border-slate-100 text-sm text-slate-600">
+          <p>Skills run: spring-core, spring-web, spring-data, spring-batch (not applicable, no batch code), spring-security, spring-logging, spring-test.</p>
+        </div>
+      </details>
+    </main>
+  </body>
+</html>
