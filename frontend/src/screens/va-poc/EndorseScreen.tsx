@@ -54,7 +54,8 @@ interface Mover {
  * Runs the VA POC's moves one at a time. Both need a sign-in from the last five minutes: without one the app explains
  * the fresh sign-in and brings the VA POC back here to press it again. The server decides every refusal (segregation of
  * duties included); the screen shows its problem, which outlives the panels, and after a move or a 409 reads the VA
- * Submission again, which removes the panels once it is no longer Awaiting Endorsement.
+ * Submission again. After a move the buttons stay disabled until the screen has read the new state, which removes the
+ * panels; after a refusal they are enabled again.
  */
 function useMove(onMoved: () => void, onProblem: (problem: Problem | undefined) => void): Mover {
   const [busy, setBusy] = useState(false);
@@ -68,9 +69,8 @@ function useMove(onMoved: () => void, onProblem: (problem: Problem | undefined) 
     } catch (failure) {
       const refused = failure instanceof ApiError ? failure.problem : UNREACHABLE;
       onProblem(refused);
-      if (refused.status === 409) onMoved();
-    } finally {
       setBusy(false);
+      if (refused.status === 409) onMoved();
     }
   }
 
