@@ -239,7 +239,9 @@ class FindingProposalTest extends ProposalSeam1 {
                 propose(signedInAs(CM), id, remediated("Patched " + SENTINEL)).body());
         arrange.submissionState(draft.submissionId(), "IN_REVIEW");
         String refused = propose(draft.smo(), id, remediated("Patched " + SENTINEL)).body();
-        String audit = otherVaPoc().get("/api/audit-entries?size=200").body();
+        // The System's own entries: the suite shares one audit log, and later-dated entries of other tests can fill the
+        // newest 200.
+        String audit = otherVaPoc().get("/api/audit-entries?size=200&system=" + draft.systemId()).body();
 
         assertThat(kept.toString()).as("the proposal is data, so it is returned").contains(SENTINEL);
         assertThat(output.getAll()).as("the log").doesNotContain(SENTINEL).contains("status-proposed");

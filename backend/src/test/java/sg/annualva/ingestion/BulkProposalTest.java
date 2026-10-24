@@ -415,7 +415,9 @@ class BulkProposalTest extends ProposalSeam1 {
                 bulk(signedInAs(CM), submission, withIds(ids, remediated(SENTINEL))).body());
         arrange.submissionState(submission, "IN_REVIEW");
         String refused = bulk(draft.smo(), submission, withIds(ids, remediated("Patched " + SENTINEL))).body();
-        String audit = otherVaPoc().get("/api/audit-entries?size=200").body();
+        // The System's own entries: the suite shares one audit log, and later-dated entries of other tests can fill the
+        // newest 200.
+        String audit = otherVaPoc().get("/api/audit-entries?size=200&system=" + draft.systemId()).body();
 
         assertThat(kept.toString()).doesNotContain(SENTINEL);
         assertThat(findings(draft.smo(), submission).toString()).as("the proposals are data, so they are returned")
