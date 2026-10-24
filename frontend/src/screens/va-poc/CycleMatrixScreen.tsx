@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import { dayLabel } from "../../api/cycles.ts";
 import {
   fetchCycleMatrix,
@@ -10,9 +10,10 @@ import {
 } from "../../api/dashboards.ts";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { useResource } from "../../hooks/useResource.ts";
-import { CycleSelector } from "../shared/CycleSelector.tsx";
+import { useSelectedCycle } from "../../app/CycleChoice.tsx";
 import { HandledOutsideSection } from "../shared/HandledOutsideSection.tsx";
 import { STATE_LABELS } from "../shared/systemStates.ts";
+import { CloseCycleSection } from "./CloseCyclePanel.tsx";
 
 const PHASE_LABELS: Readonly<Record<QuarterPhase, string>> = {
   HANDLED_OUTSIDE_APP: "handled outside the app",
@@ -91,12 +92,41 @@ function MatrixRow({ system }: { system: MatrixSystem }) {
   );
 }
 
+/** One row per System of the Cycle with its milestones, or a note that the app runs none. */
+function MatrixTable({ systems }: { systems: MatrixSystem[] }) {
+  if (systems.length === 0) return <p className="muted">No Systems in Quarters the app runs.</p>;
+  return (
+    <div className="table-scroll">
+      <table className="data-table">
+        <caption className="visually-hidden">Systems of the VA Cycle and their milestones</caption>
+        <thead>
+          <tr>
+            <th scope="col">System</th>
+            <th scope="col">Quarter</th>
+            <th scope="col">Submitted (due week 2)</th>
+            <th scope="col">Reviewed (due week 4)</th>
+            <th scope="col">Endorsed (due the Quarter&apos;s last day)</th>
+            <th scope="col">State</th>
+          </tr>
+        </thead>
+        <tbody>
+          {systems.map((system) => (
+            <MatrixRow key={system.id} system={system} />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 /**
  * The Cycle matrix (story 64): the whole VA Cycle at once, a strip of its four Quarters with the count of Systems in each
  * state, then one row per System with its milestones against the day each is due. Every count and date is the server's.
+ * Once the shown Cycle's Q4 has ended and until it closes, a VA POC may close it early (stories 17 and 68); the matrix
+ * and the shell's list of Cycles are read again after the close.
  */
-export function CycleMatrixScreen({ classification }: { classification: string }) {
-  const [cycle, setCycle] = useState<number | undefined>(undefined);
+export function CycleMatrixScreen() {
+  const cycle = useSelectedCycle();
   const load = useCallback(() => fetchCycleMatrix(cycle), [cycle]);
   const matrix = useResource(load);
   const shown = matrix.data;
@@ -108,12 +138,7 @@ export function CycleMatrixScreen({ classification }: { classification: string }
         {shown ? `VA Cycle ${shown.cycle}: ` : ""}every Quarter, then every System with its milestones. Withdrawn
         submissions and Quarters handled outside the app are not counted.
       </p>
-      <CycleSelector
-        id="matrix-cycle"
-        classification={classification}
-        selected={cycle ?? shown?.cycle}
-        onSelect={setCycle}
-      />
+      {shown ? <CloseCycleSection year={shown.cycle} onClosed={matrix.reload} /> : null}
       {matrix.error ? <ErrorPanel problem={matrix.error.problem} /> : null}
       {matrix.loading && !shown ? <p className="muted">Loading the matrix…</p> : null}
       {shown ? (
@@ -123,27 +148,7 @@ export function CycleMatrixScreen({ classification }: { classification: string }
               <StripCard key={strip.quarter} strip={strip} cycle={shown.cycle} />
             ))}
           </ul>
-          <div className="table-scroll">
-            <table className="data-table">
-              <caption className="visually-hidden">Systems of the VA Cycle and their milestones</caption>
-              <thead>
-                <tr>
-                  <th scope="col">System</th>
-                  <th scope="col">Quarter</th>
-                  <th scope="col">Submitted (due week 2)</th>
-                  <th scope="col">Reviewed (due week 4)</th>
-                  <th scope="col">Endorsed (due the Quarter&apos;s last day)</th>
-                  <th scope="col">State</th>
-                </tr>
-              </thead>
-              <tbody>
-                {shown.systems.map((system) => (
-                  <MatrixRow key={system.id} system={system} />
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {shown.systems.length === 0 ? <p className="muted">No Systems in Quarters the app runs.</p> : null}
+          <MatrixTable systems={shown.systems} />
           <HandledOutsideSection id="matrix-outside" systems={shown.handledOutsideApp} />
         </>
       ) : null}

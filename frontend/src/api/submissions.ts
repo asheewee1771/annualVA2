@@ -55,7 +55,8 @@ export interface Submission {
   submitDue: string;
   reviewDue: string;
   endorseDue: string;
-  startedAt: string;
+  /** When it was started (an instant, UTC); null for a System its VA Cycle's close found Not Started. */
+  startedAt: string | null;
   /** When it was last submitted for review (an instant, UTC); null until it is. */
   submittedAt: string | null;
   /** The Declaration accepted at its latest submit; null until it is submitted. */
