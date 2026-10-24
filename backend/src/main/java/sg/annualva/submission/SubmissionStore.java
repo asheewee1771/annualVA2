@@ -35,9 +35,9 @@ class SubmissionStore {
 
     /**
      * What the Overdue sweep has just flagged: a VA Submission, or a System with none (Not Started, no {@code id}), with
-     * the state it was in as the table holds it.
+     * the state it was in as the table holds it and the last day of the window that passed (the one rule, V20).
      */
-    record Flagged(@Nullable UUID id, UUID systemId, String state) {}
+    record Flagged(@Nullable UUID id, UUID systemId, String state, @Nullable LocalDate dueOn) {}
 
     /** How a System with no VA Submission is named to the Overdue rule and in an audit entry. */
     static final String NOT_STARTED = "NOT_STARTED";
@@ -54,6 +54,15 @@ class SubmissionStore {
     private static String windowPassed(String state) {
         return windowPassed(state, "submit_due", "review_due", "endorse_due");
     }
+
+    /** The last day of the window the state waits on, for these windows, by the same rule (V20); null for none. */
+    private static String windowDue(String state, String submitDue, String reviewDue, String endorseDue) {
+        return "current_window_due(" + state + ", " + submitDue + ", " + reviewDue + ", " + endorseDue + ")";
+    }
+
+    /** The last day of the window a Not Started System waits on, for the Quarter's dates given as parameters. */
+    private static final String NOT_STARTED_DUE_ON = windowDue("'" + NOT_STARTED + "'", "CAST(:submitDue AS date)",
+            "CAST(:reviewDue AS date)", "CAST(:endorseDue AS date)");
 
     /**
      * What a move to the state {@code :state} does to the flag: it keeps it, and when it was set, only if the window the
@@ -87,12 +96,11 @@ class SubmissionStore {
             + "WHERE " + windowPassed("'" + NOT_STARTED + "'", "CAST(:submitDue AS date)", "CAST(:reviewDue AS date)",
                     "CAST(:endorseDue AS date)")
             + " AND NOT EXISTS (SELECT 1 FROM va_submission s WHERE s.system_id = candidate AND s.cycle_year = :cycle) "
-            + "ORDER BY candidate ON CONFLICT (system_id, cycle_year) DO NOTHING RETURNING system_id";
+            + "ORDER BY candidate ON CONFLICT (system_id, cycle_year) DO NOTHING RETURNING system_id, "
+            + NOT_STARTED_DUE_ON + " AS due_on";
 
     /** The last day of the window a Not Started System waits on in a Quarter, by the one rule (V20). */
-    private static final String NOT_STARTED_DUE =
-            "SELECT current_window_due('" + NOT_STARTED + "', CAST(:submitDue AS date), CAST(:reviewDue AS date), "
-            + "CAST(:endorseDue AS date))";
+    private static final String NOT_STARTED_DUE = "SELECT " + NOT_STARTED_DUE_ON;
 
     private static final String NOT_STARTED_OVERDUE =
             "SELECT system_id FROM not_started_overdue WHERE cycle_year = :cycle "
@@ -119,7 +127,7 @@ class SubmissionStore {
     private static final String COLUMNS =
             "SELECT id, system_id, cycle_year, quarter, state, overdue, endorsed_late, submit_due, review_due, "
             + "endorse_due, started_at, submitted_at, overdue_since, passed_to_endorsement_at, endorsed_at, "
-            + "current_window_due(state, submit_due, review_due, endorse_due) AS due_on FROM va_submission ";
+            + windowDue("state", "submit_due", "review_due", "endorse_due") + " AS due_on FROM va_submission ";
 
     private static final String FIND = COLUMNS + "WHERE id = :id";
 
@@ -158,7 +166,8 @@ class SubmissionStore {
             "UPDATE va_submission s SET overdue_since = :now FROM (SELECT id FROM va_submission "
             + "WHERE overdue_since IS NULL AND " + windowPassed("state") + " "
             + "AND system_id = ANY(CAST(:systems AS uuid[])) "
-            + "ORDER BY id FOR NO KEY UPDATE SKIP LOCKED) due WHERE s.id = due.id RETURNING s.id, s.system_id, s.state";
+            + "ORDER BY id FOR NO KEY UPDATE SKIP LOCKED) due WHERE s.id = due.id RETURNING s.id, s.system_id, s.state, "
+            + windowDue("s.state", "s.submit_due", "s.review_due", "s.endorse_due") + " AS due_on";
 
     /**
      * A move that reaches no milestone (a return for rework): the state, and the flag with it ({@link #OVERDUE_AFTER_MOVE}).
@@ -367,7 +376,7 @@ class SubmissionStore {
         }
         return jdbc.sql(FLAG_OVERDUE).param("systems", ids(activeSystems)).param("today", today).param("now", utc(now))
                 .query((rs, row) -> new Flagged(rs.getObject("id", UUID.class), rs.getObject("system_id", UUID.class),
-                        rs.getString("state")))
+                        rs.getString("state"), rs.getObject("due_on", LocalDate.class)))
                 .list();
     }
 
@@ -387,7 +396,8 @@ class SubmissionStore {
                 .param("endorseDue", quarter.endorseDue())
                 .param("today", today)
                 .param("now", utc(now))
-                .query((rs, row) -> new Flagged(null, rs.getObject("system_id", UUID.class), NOT_STARTED))
+                .query((rs, row) -> new Flagged(null, rs.getObject("system_id", UUID.class), NOT_STARTED,
+                        rs.getObject("due_on", LocalDate.class)))
                 .list();
     }
 

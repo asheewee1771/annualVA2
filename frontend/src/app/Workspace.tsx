@@ -4,8 +4,9 @@ import { AuditorLanding } from "../screens/auditor/Landing.tsx";
 import { CyberManagerArea } from "../screens/cyber-manager/CyberManagerArea.tsx";
 import { SmoArea } from "../screens/smo/SmoArea.tsx";
 import type { AreaProps } from "../screens/shared/AreaProps.ts";
+import { NotificationsScreen } from "../screens/shared/NotificationsScreen.tsx";
 import { VaPocArea } from "../screens/va-poc/VaPocArea.tsx";
-import { RoleNav } from "./RoleNav.tsx";
+import { NOTIFICATIONS_PATH, RoleNav } from "./RoleNav.tsx";
 import { areasFor, type Area, type Role } from "./roles.ts";
 import { navigate, usePath } from "./router.ts";
 
@@ -22,19 +23,21 @@ function areaOf(areas: Area[], path: string): Area | undefined {
 }
 
 /**
- * The signed-in person's place in the app: a nav entry for each role held, and the area for the
- * current path. A path that is not one of their areas (the root, or a role they no longer hold)
- * sends them to their first role's landing area. A person with no role is told so.
+ * The signed-in person's place in the app: a nav entry for each role held and one for their
+ * notifications, and the area (or the notifications) for the current path. A path that is not one of
+ * these (the root, or a role they no longer hold) sends them to their first role's landing area. A
+ * person with no role is told so.
  */
 export function Workspace({ session }: { session: Session }) {
   const areas = areasFor(session.roles);
   const path = usePath();
   const current = areaOf(areas, path);
   const first = areas[0];
+  const onNotifications = path === NOTIFICATIONS_PATH;
 
   useEffect(() => {
-    if (first && !current) navigate(first.path, true);
-  }, [first, current]);
+    if (first && !current && !onNotifications) navigate(first.path, true);
+  }, [first, current, onNotifications]);
 
   if (!first) {
     return (
@@ -53,8 +56,9 @@ export function Workspace({ session }: { session: Session }) {
   const Landing = current ? LANDINGS[current.role] : undefined;
   return (
     <>
-      <RoleNav areas={areas} currentPath={current?.path} />
+      <RoleNav areas={areas} currentPath={onNotifications ? NOTIFICATIONS_PATH : current?.path} />
       <main id="main" className="shell-main">
+        {onNotifications ? <NotificationsScreen /> : null}
         {Landing ? <Landing path={path} classification={session.classification} /> : null}
       </main>
     </>

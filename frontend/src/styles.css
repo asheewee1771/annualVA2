@@ -355,6 +355,10 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
+.notification--unread td {
+  font-weight: 600;
+}
+
 .mono {
   font-family: ui-monospace, monospace;
   font-size: 12px;
