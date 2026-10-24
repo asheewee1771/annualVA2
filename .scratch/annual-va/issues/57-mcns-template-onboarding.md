@@ -11,3 +11,7 @@
 - [ ] Template ids and the sender id are recorded in `application-sit.yml`; the lack of delivery and bounce feedback is raised with the MCNS owners and the answer recorded on the SMO Unreachable ticket.
 
 ## Comments
+
+### Note from ticket 37 (2026-10-25)
+
+ADR 0044 relies on this onboarding for one safeguard: the System Name sent as `system_name` is the Register's plain text, which may hold `<`, `>` or `://`. Confirm that every template HTML-escapes the values it substitutes (send one whose name holds `<b>` and `https://`) and record the answer here. The template keys the app sends are `system_id`, `system_name`, `state`, `action`, `due_date` (absent when none applies), `link` and, for a Register change, `change_kind`; the logical templates are `returned-for-rework`, `overdue` and `register-change` (`ANNUALVA_MAIL_TEMPLATE_*`).

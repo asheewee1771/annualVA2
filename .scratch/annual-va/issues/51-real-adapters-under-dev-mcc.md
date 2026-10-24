@@ -23,3 +23,7 @@ The SFS scanner adapter built here is also what ticket 13 will put in front of t
 - The scanner's **Sanitized** verdict must map to `MalwareScanner.Verdict.CLEAN_SANITIZED`: the application rejects such a file (Scan Report and Register workbook) and never fetches the altered copy (docs/agents/reviewer-decisions.md, ADR 0021 decision 5). `fetchClean` is called only for `CLEAN_UNCHANGED`, and its bytes must be the uploaded ones.
 - Adapters should throw `BoundaryFailureException`, but any runtime exception from a port call is treated as a failed attempt, so none can leave a file stuck.
 - The quarantine bucket should also carry a lifecycle expiry as a second line behind the application's own delete-after-commit (ADR 0021 decision 6); the clean copy of a Scan Report file is keyed by the file's own id.
+
+### Note from ticket 37 (2026-10-25)
+
+The mail adapter implements `sg.annualva.boundary.MailRelay`: the template-id mapping and the value allow-list already run on the application side of the port (ADR 0044), so the adapter only speaks to MCNS. Its connect and read timeouts must stay well below the outbox lease (`annualva.mail.lease`, five minutes): a call that outlasts the lease lets another pass send the mail again, and a last attempt that does is recorded `FAILED` although MCNS took it. Answer `AddressRejected` for an address MCNS refuses (ticket 39), throw `BoundaryFailureException` for anything that may pass, and never log the recipient.
