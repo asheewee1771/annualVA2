@@ -9,9 +9,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * The Quarter board, read-only. Only a Cyber Manager may call it today (the VA POC's board arrives with ticket 33); it
- * shows the Systems assigned to the caller and nobody else's. It names no report and no Finding, only counts, so reading
- * it is not audited (as for the inboxes, ADR 0019).
+ * The Quarter board, read-only, for a Cyber Manager (the Systems assigned to them and nobody else's) and a VA POC (every
+ * System). It names no report and no Finding, only counts, so reading it is not audited (as for the inboxes, ADR 0019).
  */
 @RestController
 public class QuarterBoardController {
@@ -27,7 +26,7 @@ public class QuarterBoardController {
      * @param quarter 1 to 4; omitted for the Quarter running today
      */
     @GetMapping("/api/dashboards/quarter-board")
-    @PreAuthorize("hasRole('CYBER_MANAGER')")
+    @PreAuthorize("hasAnyRole('CYBER_MANAGER', 'VA_POC')")
     public QuarterBoard.Board quarterBoard(@RequestParam(required = false) @Nullable Integer cycle,
             @RequestParam(required = false) @Nullable @Min(1) @Max(4) Integer quarter) {
         return board.board(cycle, quarter);

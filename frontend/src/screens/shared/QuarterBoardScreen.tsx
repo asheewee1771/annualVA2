@@ -3,10 +3,10 @@ import { fetchQuarterBoard, type BoardCard, type SystemState } from "../../api/d
 import { ClassifiedField } from "../../components/ClassifiedField.tsx";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { useResource } from "../../hooks/useResource.ts";
-import { CycleSelector } from "../shared/CycleSelector.tsx";
-import { HandledOutsideSection } from "../shared/HandledOutsideSection.tsx";
-import { STATE_LABELS } from "../shared/systemStates.ts";
+import { CycleSelector } from "./CycleSelector.tsx";
+import { HandledOutsideSection } from "./HandledOutsideSection.tsx";
 import { findingsLabel, ReviewFlags } from "./ReviewFlags.tsx";
+import { STATE_LABELS } from "./systemStates.ts";
 
 const QUARTERS = [1, 2, 3, 4] as const;
 
@@ -31,10 +31,13 @@ function Column({ state, systems }: { state: SystemState; systems: BoardCard[] }
 }
 
 /**
- * The Quarter board (story 49): one Quarter at once, the Systems assigned to the Cyber Manager in one column per state,
- * in the order the server gives. The Quarter running today is shown first; another can be chosen.
+ * The Quarter board (stories 49 and 64): one Quarter at once, its Systems in one column per state, in the order the server
+ * gives. The server decides whose Systems they are: a Cyber Manager's own, or every System for a VA POC. The Quarter
+ * running today is shown first; another can be chosen.
+ *
+ * @param whose how the subtitle names the Systems shown, such as "your Systems"
  */
-export function QuarterBoardScreen({ classification }: { classification: string }) {
+export function QuarterBoardScreen({ classification, whose }: { classification: string; whose: string }) {
   const [cycle, setCycle] = useState<number | undefined>(undefined);
   const [quarter, setQuarter] = useState<number | undefined>(undefined);
   const load = useCallback(() => fetchQuarterBoard(cycle, quarter), [cycle, quarter]);
@@ -45,7 +48,8 @@ export function QuarterBoardScreen({ classification }: { classification: string 
     <div className="card">
       <h2>Quarter board</h2>
       <p className="muted">
-        {shown ? `Q${shown.quarter} of VA Cycle ${shown.cycle}: ` : ""}your Systems in one column per state.
+        {shown ? `Q${shown.quarter} of VA Cycle ${shown.cycle}: ` : ""}
+        {whose} in one column per state.
       </p>
       <CycleSelector
         id="board-cycle"

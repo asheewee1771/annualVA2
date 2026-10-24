@@ -1,6 +1,7 @@
 /**
- * The flags a System carries for its Cyber Manager: Overdue, and where segregation of duties refuses their review, because
- * they acted at, or are assigned to, another step of its VA Submission.
+ * The flags a System carries on the Cyber Manager's inbox and the Quarter board: Overdue, and where segregation of duties
+ * refuses the caller's review, because they acted at, or are assigned to, another step of its VA Submission (never set
+ * on a VA POC's board until the endorsing step is recorded).
  */
 export function ReviewFlags({ overdue, sodConflict }: { overdue: boolean; sodConflict: boolean }) {
   return (
