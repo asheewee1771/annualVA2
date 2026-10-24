@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   fetchBatches,
   reviewBatch,
@@ -32,12 +32,13 @@ function LeftOutNote({ review }: { review: BatchReview }) {
 function BatchMembers({ batch, subject }: { batch: BatchSummary; subject: string }) {
   const [open, setOpen] = useState(false);
   const still = batch.awaitingReview + batch.confirmed + batch.disputed;
+  const members = useMemo(() => ({ batchId: batch.batchId }), [batch.batchId]);
   return (
     <details onToggle={(event) => setOpen(event.currentTarget.open)}>
       <summary>Show the {still} Findings still in this batch</summary>
       {open ? (
         <ReviewFindingsList
-          batchId={batch.batchId}
+          filter={members}
           heading="Findings still in this batch"
           caption={`The Findings of ${subject}, the most severe first`}
         />

@@ -11,7 +11,7 @@ import { STATE_LABELS } from "../shared/systemStates.ts";
 import { BatchesSection } from "./BatchesSection.tsx";
 import { LatestReview } from "./LatestReview.tsx";
 import { auditHistoryPath, CM_INBOX_PATH } from "./paths.ts";
-import { ReviewFindingsList } from "./ReviewFindingsList.tsx";
+import { CHANGED_SINCE_LAST_REVIEW, NOT_IN_A_BATCH, ReviewFindingsList } from "./ReviewFindingsList.tsx";
 import { ReviewForm } from "./ReviewForm.tsx";
 import { FinishReview } from "./FinishReview.tsx";
 import { ReviewSessionContext, useReviewSession, type ReviewSession } from "./reviewSession.ts";
@@ -71,8 +71,7 @@ function ChangedFindingsSection() {
         confirmed; Findings never reviewed are under All Findings.
       </p>
       <ReviewFindingsList
-        batchId={null}
-        changedOnly
+        filter={CHANGED_SINCE_LAST_REVIEW}
         heading="Changed since last review"
         caption="Findings changed since your last review, the most severe first"
       />
@@ -140,7 +139,7 @@ export function ReviewScreen({ submissionId, classification }: { submissionId: s
             <section className="card" aria-labelledby="review-findings">
               <h3 id="review-findings">Findings proposed one by one</h3>
               <ReviewFindingsList
-                batchId={null}
+                filter={NOT_IN_A_BATCH}
                 heading="Findings not in a batch"
                 caption="Findings to review one by one, the most severe first"
               />
