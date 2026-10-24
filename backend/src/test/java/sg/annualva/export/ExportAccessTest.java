@@ -3,7 +3,6 @@ package sg.annualva.export;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,25 +21,6 @@ class ExportAccessTest extends ExportSeam1 {
     @BeforeEach
     void oneSystem() {
         registered(listed("SYS-A1", "Access", SMO_A, CM, "Q3"));
-    }
-
-    private static String userId(ApiClient browser) {
-        return ApiClient.json(browser.get("/api/session")).get("uuid").asString();
-    }
-
-    /** The entries of this action by this person, newest first; the log is the whole suite's. */
-    private List<JsonNode> entries(String action, String actor) {
-        var response = otherVaPoc().get("/api/audit-entries?size=200&action=" + action + "&actor=" + actor);
-        assertThat(response.status()).as(response.body()).isEqualTo(200);
-        List<JsonNode> items = new ArrayList<>();
-        ApiClient.json(response).get("items").forEach(items::add);
-        return items;
-    }
-
-    /** Those of them about this export. */
-    private List<JsonNode> entries(String action, String actor, String exportId) {
-        return entries(action, actor).stream()
-                .filter(entry -> exportId.equals(entry.get("detail").path("export_id").asString(""))).toList();
     }
 
     @Test

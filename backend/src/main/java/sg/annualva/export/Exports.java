@@ -4,12 +4,14 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import sg.annualva.access.AuditActor;
 import sg.annualva.access.CurrentUser;
 import sg.annualva.access.StepUp;
@@ -76,9 +78,10 @@ public class Exports {
     private final AuditLog audit;
     private final AuditActor actor;
     private final Clock clock;
+    private final TransactionTemplate transaction;
 
     Exports(StepUp stepUp, ManagementSummaries summaries, ExportStore store, FileStore files, CurrentUser user,
-            AuditLog audit, AuditActor actor, Clock clock) {
+            AuditLog audit, AuditActor actor, Clock clock, TransactionTemplate transaction) {
         this.stepUp = stepUp;
         this.summaries = summaries;
         this.store = store;
@@ -87,6 +90,7 @@ public class Exports {
         this.audit = audit;
         this.actor = actor;
         this.clock = clock;
+        this.transaction = transaction;
     }
 
     /**
@@ -131,13 +135,26 @@ public class Exports {
     }
 
     /**
-     * The file of one of the caller's exports, once it is made and until its 24 hours are up; the download is audited.
+     * The file of one of the caller's exports, once it is made and until its 24 hours are up. The caller is checked and
+     * the download audited in a short transaction of its own, which has ended before the bytes are read from the store,
+     * so a slow read never holds a pooled connection (as for a Scan Report file, ADR 0021).
      *
      * @throws RejectedRequestException 409 {@code export-not-ready} while it is queued or after it failed, 410
-     *     {@code export-expired} once it has expired; both are audited as refusals
+     *     {@code export-expired} once it has expired (both audited as refusals), 503 {@code storage-unavailable} when the
+     *     store cannot be read
      */
-    @Transactional
     public Download download(UUID id) {
+        ExportStore.Export export = Objects.requireNonNull(transaction.execute(status -> grantDownload(id)));
+        String key = Objects.requireNonNull(export.fileKey());
+        try {
+            return new Download(fileName(export), export.format().mediaType(), files.get(FileStore.Zone.EXPORT, key));
+        } catch (RuntimeException e) {
+            throw new RejectedRequestException(HttpStatus.SERVICE_UNAVAILABLE, "storage-unavailable",
+                    "The export could not be read from storage right now. Try again.");
+        }
+    }
+
+    private ExportStore.Export grantDownload(UUID id) {
         ExportStore.Export export = owned(id);
         ExportStatus status = statusOf(export);
         if (status == ExportStatus.EXPIRED) {
@@ -151,11 +168,10 @@ public class Exports {
             throw new RejectedRequestException(HttpStatus.CONFLICT, "export-not-ready",
                     "This export cannot be downloaded: it is still being made, or making it failed.");
         }
-        byte[] content = files.get(FileStore.Zone.EXPORT, key);
         audit.record(downloaded(AuditOutcome.SUCCESS, id).with(DetailKey.EXPORT_TYPE, export.type().name())
                 .with(DetailKey.FORMAT, export.format().name())
                 .with(DetailKey.CLASSIFICATION, export.classification().name()));
-        return new Download(fileName(export), export.format().mediaType(), content);
+        return export;
     }
 
     private AuditEvent downloaded(AuditOutcome outcome, UUID id) {

@@ -312,6 +312,14 @@ public class TestEndpoints {
             return Map.of("ran", "exports");
         }
 
+        /** Makes what a queued export will hold unreadable, as a row written before its shape changed would be. */
+        @PostMapping("/api/test/exports/{id}/unreadable")
+        public Map<String, String> unreadableExport(@PathVariable UUID id) {
+            jdbc.sql("UPDATE export_request SET content = '{\"cycle\": \"not a year\"}'::jsonb WHERE id = :id")
+                    .param("id", id).update();
+            return Map.of("unreadable", id.toString());
+        }
+
         /**
          * Makes every write that moves a Scan Report file to a status starting with this prefix fail inside the database (a
          * trigger raises), so a test can prove what a rolled-back write leaves behind. {@code off} removes the fault.

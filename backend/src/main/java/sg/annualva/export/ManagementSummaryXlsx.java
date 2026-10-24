@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.Row;
@@ -11,7 +12,6 @@ import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jspecify.annotations.Nullable;
-import sg.annualva.dashboard.CycleMatrix;
 import sg.annualva.dashboard.SystemState;
 
 /**
@@ -25,10 +25,9 @@ final class ManagementSummaryXlsx {
     static final String SUMMARY = "Summary";
     static final String SYSTEMS = "Systems";
 
-    /** The states counted, in the order of the spec's state table; Withdrawn is never counted. */
-    private static final List<SystemState> COUNTED = List.of(SystemState.NOT_STARTED, SystemState.DRAFT,
-            SystemState.IN_REVIEW, SystemState.RETURNED_FOR_REWORK, SystemState.AWAITING_ENDORSEMENT,
-            SystemState.ENDORSED, SystemState.EXEMPTION_REQUESTED, SystemState.EXEMPTED, SystemState.NOT_ENDORSED);
+    /** The states counted, in the order of the spec's state table: every one but Withdrawn, which is never counted. */
+    private static final List<SystemState> COUNTED =
+            Arrays.stream(SystemState.values()).filter(state -> state != SystemState.WITHDRAWN).toList();
 
     private static final List<String> SYSTEM_HEADERS = List.of("System ID", "System Name", "Quarter", "SMO/Tech Lead",
             "State", "Overdue", "Endorsed Late", "Open Deviations");
@@ -79,7 +78,7 @@ final class ManagementSummaryXlsx {
         headers.add("Total");
         text(sheet.createRow(4), headers, bold);
         int r = 5;
-        for (CycleMatrix.QuarterStrip strip : summary.quarters()) {
+        for (ManagementSummary.QuarterLine strip : summary.quarters()) {
             Row row = sheet.createRow(r++);
             text(row, List.of("Q" + strip.quarter(), strip.startsOn().toString(), strip.endsOn().toString()), null);
             int c = 3;

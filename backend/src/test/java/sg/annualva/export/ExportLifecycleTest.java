@@ -43,6 +43,7 @@ class ExportLifecycleTest extends ExportSeam1 {
 
         var early = poc.download(EXPORTS + "/" + id + "/download");
         assertThat(early.status()).as("not made yet").isEqualTo(409);
+        assertRefusedDownload(userId(poc), id, "export-not-ready");
         assertThat(fileStore.count(FileStore.Zone.EXPORT)).isZero();
 
         exportJob();
@@ -65,6 +66,7 @@ class ExportLifecycleTest extends ExportSeam1 {
         assertThat(export(after, id).get("status").asString()).isEqualTo("EXPIRED");
         var gone = after.download(EXPORTS + "/" + id + "/download");
         assertThat(gone.status()).isEqualTo(410);
+        assertRefusedDownload(userId(after), id, "export-expired");
         exportJob();
         assertThat(fileStore.count(FileStore.Zone.EXPORT)).as("the expired file is removed").isZero();
         assertThat(export(after, id).get("status").asString()).isEqualTo("EXPIRED");
@@ -80,6 +82,42 @@ class ExportLifecycleTest extends ExportSeam1 {
 
         assertThat(export(poc, id).get("status").asString()).isEqualTo("FAILED");
         assertThat(poc.download(EXPORTS + "/" + id + "/download").status()).isEqualTo(409);
+    }
+
+    @Test
+    void anExportThatCannotBeReadBackFailsAloneAndThePassGoesOn() {
+        ApiClient poc = vaPoc();
+        String old = requested(poc, WHOLE_CYCLE).get("id").asString();
+        exportJob();
+        clock.advance(Duration.ofHours(25));
+        ApiClient later = vaPoc();
+        String unreadable = requested(later, WHOLE_CYCLE).get("id").asString();
+        clock.advance(Duration.ofSeconds(1));
+        String fine = requested(later, WHOLE_CYCLE).get("id").asString();
+        arrange.unreadableExport(unreadable);
+
+        exportJob();
+
+        assertThat(export(later, unreadable).get("status").asString()).isEqualTo("FAILED");
+        assertThat(export(later, fine).get("status").asString()).isEqualTo("READY");
+        assertThat(export(later, old).get("status").asString()).isEqualTo("EXPIRED");
+        assertThat(fileStore.keys(FileStore.Zone.EXPORT)).as("the expired file is removed in the same pass")
+                .containsExactly(fine);
+    }
+
+    @Test
+    void aStoreThatCannotBeReadIsAServiceUnavailableAndTheExportStaysReady() {
+        ApiClient poc = vaPoc();
+        String id = requested(poc, WHOLE_CYCLE).get("id").asString();
+        exportJob();
+        fileStore.refuseReads(true);
+
+        var refused = poc.download(EXPORTS + "/" + id + "/download");
+
+        assertThat(refused.status()).isEqualTo(503);
+        assertThat(export(poc, id).get("status").asString()).isEqualTo("READY");
+        fileStore.refuseReads(false);
+        assertThat(poc.download(EXPORTS + "/" + id + "/download").status()).isEqualTo(200);
     }
 
     @Test

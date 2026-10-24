@@ -2,6 +2,7 @@ package sg.annualva.export;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import org.jspecify.annotations.Nullable;
 import sg.annualva.dashboard.CycleMatrix;
 import sg.annualva.dashboard.SystemState;
@@ -9,7 +10,9 @@ import sg.annualva.dashboard.SystemState;
 /**
  * What a management summary holds (story 81), read when it is asked for and kept until its file is made: counts by Quarter
  * and state with Endorsed Late, and one line per System. Counts, System IDs and names, SMO/Tech Lead emails, states and
- * flags only; never a Finding. Withdrawn VA Submissions and Quarters Handled outside the app are not in it.
+ * flags only; never a Finding. Withdrawn VA Submissions and Quarters Handled outside the app are not in it. It is the
+ * export module's own shape, stored as JSON while the export is queued, so a change to a dashboard's response does not
+ * change what a queued export reads back.
  *
  * @param cycle the VA Cycle's year
  * @param quarter the one Quarter it covers, or null for the whole Cycle
@@ -18,8 +21,24 @@ import sg.annualva.dashboard.SystemState;
  * @param systems one line per System, by Quarter then System ID
  */
 record ManagementSummary(
-        int cycle, @Nullable Integer quarter, Classification classification, LocalDate asAt,
-        List<CycleMatrix.QuarterStrip> quarters, List<SystemLine> systems) {
+        int cycle, @Nullable Integer quarter, Classification classification, LocalDate asAt, List<QuarterLine> quarters,
+        List<SystemLine> systems) {
+
+    /**
+     * One Quarter of the summary.
+     *
+     * @param counts the number of Systems in each state but Withdrawn
+     * @param endorsedLate how many of the Endorsed were endorsed after the Quarter's last day
+     */
+    record QuarterLine(
+            int quarter, LocalDate startsOn, LocalDate endsOn, Map<SystemState, Long> counts, long total,
+            long endorsedLate) {
+
+        static QuarterLine of(CycleMatrix.QuarterStrip strip) {
+            return new QuarterLine(strip.quarter(), strip.startsOn(), strip.endsOn(), strip.counts(), strip.total(),
+                    strip.endorsedLate());
+        }
+    }
 
     /**
      * One System of the summary.

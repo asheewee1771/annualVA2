@@ -95,6 +95,34 @@ abstract class ExportSeam1 extends CyberManagerSeam1 {
         return all.toString();
     }
 
+    protected static String userId(ApiClient browser) {
+        return ApiClient.json(browser.get("/api/session")).get("uuid").asString();
+    }
+
+    /** The entries of this action by this person, newest first; the log is the whole suite's. */
+    protected List<JsonNode> entries(String action, String actor) {
+        var response = otherVaPoc().get("/api/audit-entries?size=200&action=" + action + "&actor=" + actor);
+        assertThat(response.status()).as(response.body()).isEqualTo(200);
+        List<JsonNode> items = new ArrayList<>();
+        ApiClient.json(response).get("items").forEach(items::add);
+        return items;
+    }
+
+    /** Those of them about this export. */
+    protected List<JsonNode> entries(String action, String actor, String exportId) {
+        return entries(action, actor).stream()
+                .filter(entry -> exportId.equals(entry.get("detail").path("export_id").asString(""))).toList();
+    }
+
+    /** One refused download of this export, by this person, for this reason; ids and codes only. */
+    protected void assertRefusedDownload(String actor, String exportId, String reason) {
+        List<JsonNode> refused = entries("EXPORT_DOWNLOADED", actor, exportId).stream()
+                .filter(entry -> entry.get("outcome").asString().equals("REFUSED"))
+                .filter(entry -> entry.get("detail").get("reason").asString().equals(reason)).toList();
+        assertThat(refused).hasSize(1);
+        assertThat(refused.getFirst().toString()).doesNotContain("SYS-").doesNotContain("@ci.annualva.test");
+    }
+
     /** The row of the sheet whose first cell is this text. */
     protected static List<String> rowStarting(List<List<String>> rows, String first) {
         return rows.stream().filter(row -> !row.isEmpty() && row.getFirst().equals(first)).findFirst()

@@ -50,6 +50,11 @@ public final class Arrange {
         assertThat(client.post("/api/test/jobs/exports").status()).isEqualTo(200);
     }
 
+    /** Makes what a queued export will hold unreadable, as a row written before its shape changed would be. */
+    public void unreadableExport(String exportId) {
+        assertThat(client.post("/api/test/exports/" + exportId + "/unreadable").status()).isEqualTo(200);
+    }
+
     /** Makes writes moving a file to a status with this prefix fail in the database; "off" removes the fault. */
     public void reportFileFault(String prefix) {
         assertThat(client.post("/api/test/faults/report-file/" + prefix).status()).isEqualTo(200);

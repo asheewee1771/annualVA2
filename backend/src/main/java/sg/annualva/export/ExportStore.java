@@ -28,8 +28,8 @@ class ExportStore {
             @Nullable Integer quarter, Classification classification, int systemCount, ExportStatus status,
             @Nullable String fileKey, @Nullable Instant readyAt, @Nullable Instant expiresAt) {}
 
-    /** A queued export with what it will hold. */
-    record Queued(UUID id, ExportFormat format, ManagementSummary summary) {}
+    /** A queued export with what it will hold, as stored: read back with {@link #summary}. */
+    record Queued(UUID id, ExportFormat format, String content) {}
 
     /** A ready export whose 24 hours are up, with the key of its file. */
     record Expiring(UUID id, String fileKey) {}
@@ -103,8 +103,17 @@ class ExportStore {
     List<Queued> queued(int limit) {
         return jdbc.sql(QUEUED).param("limit", limit)
                 .query((rs, row) -> new Queued(rs.getObject("id", UUID.class), ExportFormat.valueOf(rs.getString("format")),
-                        json.readValue(rs.getString("content"), ManagementSummary.class)))
+                        rs.getString("content")))
                 .list();
+    }
+
+    /**
+     * What a queued export will hold, read back from what was stored.
+     *
+     * @throws RuntimeException when it cannot be read (the export job then fails that export alone)
+     */
+    ManagementSummary summary(Queued queued) {
+        return json.readValue(queued.content(), ManagementSummary.class);
     }
 
     /** @return whether this call made it ready (false when another pass already moved it) */
