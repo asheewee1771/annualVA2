@@ -22,3 +22,5 @@ Consequences: a mode chosen by mistake can be undone only before anything is add
 Amends ADR 0021 (an upload of a report file is refused when its Scan Report is not uploaded) and ADR 0027 (a Finding has a source and may have a title; the state rule of a proposal is shared with the mode change and the entry by hand).
 
 Amended by ADR 0032: every write to a Scan Report (and every other write to what the SMO/Tech Lead prepares) first holds the VA Submission's row shared, so a submit cannot land in between.
+
+Amended by ADR 0035: item 3's open question is settled (decision 2026-10-24). A review of a not-applicable justification is a `report_review` row that copies the wording it reviewed and its version; the justification stays overwritten in place. `report_slot.justification_version` goes up whenever the justification or the mode changes, the Scan Reports read gives it, and a review names it (`409 justification-changed` when it is no longer current). The Scan Reports read gives a not-applicable Scan Report's `latestReview`.

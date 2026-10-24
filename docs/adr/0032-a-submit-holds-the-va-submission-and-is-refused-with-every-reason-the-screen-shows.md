@@ -21,3 +21,5 @@ Amends ADR 0020 (the submit is the second command; the VA Submission read gains 
 Amended by ADR 0033: a submit keeps the Overdue flag only if the Review Window has passed as well.
 
 Amended by the decision of 2026-10-24 (`docs/agents/reviewer-decisions.md`): item 1's "by a new migration" no longer holds. A VA POC publishes each new Declaration version in the app (ticket 61); the table, the append-only trigger and "the current wording is the highest version" are unchanged.
+
+Amended by ADR 0035: a submit checks segregation of duties after ownership and with the row held, before the state: someone who acted at, or is assigned to, the reviewing step (the System's Cyber Manager) is refused with `403 sod-conflict`, audited `SUBMISSION_SUBMITTED` REFUSED with `reason=sod-conflict`. Item 3's "the review tickets add the check" is done.

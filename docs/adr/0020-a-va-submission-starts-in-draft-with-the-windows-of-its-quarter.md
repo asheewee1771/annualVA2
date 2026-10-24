@@ -15,3 +15,5 @@ Consequences: the inbox gains `submissionId`, the state `DRAFT` and the next act
 Amended by ADR 0032: submitting is the second command (`POST /api/submissions/{id}/submit`), and the read gains `submittedAt` and the `declaration` accepted at the latest submit.
 
 Amended by ADR 0033: the Overdue sweep sets `overdue` and `overdue_since` (the read gains `overdueSince`), and a start takes the flag a Not Started System already has.
+
+Amended by ADR 0035: a start is refused with `403 sod-conflict` (audited `SUBMISSION_STARTED` REFUSED, `reason=sod-conflict`) when the caller is also the System's Cyber Manager, and `acted` gains the reviewing step (`REVIEW`) once the Cyber Manager reviews.

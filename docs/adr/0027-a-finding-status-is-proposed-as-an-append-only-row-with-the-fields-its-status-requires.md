@@ -20,3 +20,5 @@ Not done here, on purpose: the review (confirm, Dispute), bulk-set, carry-over, 
 Amended by ADR 0029: a proposal records who made it (`proposed_as`: `SMO`, or `RESCAN` for the Remediated proposal a rescan makes for a Finding it reports nowhere), and each proposal shows `proposedAs`.
 
 Amended by ADR 0030: a Finding has a `source` (`PARSED`, or `MANUAL` for one the SMO/Tech Lead typed in) and a Finding entered by hand has a `title`; the state rule of a proposal (`Proposals.editable`) also guards a mode change of a Scan Report and a Finding entered by hand.
+
+Amended by ADR 0035: the review is a `finding_review` row naming the proposal it reviewed; the Finding is CONFIRMED or DISPUTED only while that proposal is its current one, and the list gives each Finding its `latestReview`.

@@ -316,3 +316,10 @@ Human decisions on reviewer findings. Check here before asking again. Each entry
 - **Finding:** ticket 24 planned to ship the agreed wording as a new database migration through a change request; the human asked whether it could be set later in the app instead.
 - **Chosen action:** a VA POC publishes each new Declaration version in the app (ticket 61): append-only versions, step-up, audited by version number only. The VA POC role owns the text. Ticket 61 decides whether a second approver is needed and whether a version can take effect from a chosen date. The agreed wording is still agreed with the PO and the cyber team (ticket 24) and published before UAT. Decided 2026-10-24.
 - **When to reuse:** any other fixed text every user must accept: manage it as published, append-only versions in the app, not by migration.
+
+## A review of a not-applicable justification keeps a copy of the wording it reviewed
+
+- **Area:** reviews of not-applicable justifications (ticket 28, V21 `report_review`, ADR 0030 item 3); follows "A not-applicable justification is overwritten; ticket 28 decides what is kept beside a review" (2026-10-18)
+- **Finding:** the justification is overwritten in place, so after a Dispute and a rewrite the disputed wording would be lost.
+- **Chosen action:** each `report_review` row copies the justification as it was reviewed, in the statement that writes the review; after a rewrite, the latest review still shows the wording it reviewed and why. The justification itself stays overwritten in place (no append-only history). A review names the version of the justification its screen showed and is refused if it has changed since. Decided 2026-10-24.
+- **When to reuse:** any review of free text that can be rewritten after it is reviewed: copy the reviewed text into the review, and refuse a review of a version the reviewer did not see.
