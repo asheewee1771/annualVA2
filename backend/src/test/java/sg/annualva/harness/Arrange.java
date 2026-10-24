@@ -79,7 +79,7 @@ public final class Arrange {
         assertThat(client.post("/api/test/submissions/" + submissionId + "/state/" + state).status()).isEqualTo(200);
     }
 
-    /** Marks a VA Submission endorsed after its Quarter's last day, as the endorse command (ticket 34) will. */
+    /** Marks a VA Submission endorsed after its Quarter's last day, as the endorse command (ticket 34) does. */
     public void endorsedLate(String submissionId) {
         assertThat(client.postJson("/api/test/submissions/" + submissionId + "/milestones", "{\"endorsedLate\":true}")
                 .status()).isEqualTo(200);

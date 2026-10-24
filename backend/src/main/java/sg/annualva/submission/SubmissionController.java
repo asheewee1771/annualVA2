@@ -77,6 +77,16 @@ public class SubmissionController {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(submissions.passToEndorsement(id));
     }
 
+    /**
+     * Endorses the VA Submission Awaiting Endorsement: 200 with it Endorsed (Endorsed Late after the Quarter's last day).
+     * A step-up action: refused with {@code step-up-required} unless the VA POC signed in again within five minutes.
+     */
+    @PostMapping("/api/submissions/{id}/endorse")
+    @PreAuthorize("hasRole('VA_POC')")
+    public ResponseEntity<Submissions.Submission> endorse(@PathVariable UUID id) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(submissions.endorse(id));
+    }
+
     /** The returns of the VA Submission, the latest first, each with what was Disputed then. */
     @GetMapping("/api/submissions/{id}/returns")
     @PreAuthorize("hasAnyRole('SMO','CYBER_MANAGER','VA_POC')")

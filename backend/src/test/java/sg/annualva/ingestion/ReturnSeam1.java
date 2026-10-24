@@ -61,6 +61,18 @@ abstract class ReturnSeam1 extends ReviewSeam1 {
         return ApiClient.json(response);
     }
 
+    /** SYS-x's row on the VA POC's Cycle matrix for the Cycle running today. */
+    protected JsonNode matrixRow(String systemId) {
+        var response = vaPoc().get("/api/dashboards/cycle-matrix");
+        assertThat(response.status()).as(response.body()).isEqualTo(200);
+        for (JsonNode system : ApiClient.json(response).get("systems")) {
+            if (system.get("systemId").asString().equals(systemId)) {
+                return system;
+            }
+        }
+        throw new AssertionError("no " + systemId + " on the matrix");
+    }
+
     /** Confirms every Finding and the Burp Suite justification of a VA Submission In Review, as its Cyber Manager. */
     protected static void confirmEverything(ApiClient cm, String submissionId) {
         for (String finding : findingIds(cm, submissionId)) {

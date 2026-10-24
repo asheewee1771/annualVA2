@@ -32,9 +32,9 @@ public class QuarterBoard {
      * @param overdue the Overdue flag the sweep set; nothing locks
      * @param confirmed the Findings whose current proposal the Cyber Manager confirmed
      * @param awaitingReview the Findings whose current proposal awaits the Cyber Manager's review
-     * @param sodConflict whether segregation of duties refuses the caller's review (ticket 28): they acted on the VA
-     *     Submission at another step, or are assigned to another step of its System (its SMO/Tech Lead, say); always false
-     *     on a VA POC's board until the endorsing step is recorded (ticket 34)
+     * @param sodConflict whether segregation of duties refuses the caller the step the board is read for, the review
+     *     (ticket 28) or, on a VA POC's board, the endorsement (ticket 34): they acted on the VA Submission at another
+     *     step, or are assigned to another step of its System (its SMO/Tech Lead, say)
      */
     public record Card(
             UUID id, String systemId, String name, @Nullable UUID submissionId, boolean overdue, long confirmed,

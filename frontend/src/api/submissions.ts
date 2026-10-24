@@ -19,7 +19,7 @@ export function isEditable(state: SubmissionState): boolean {
 }
 
 /** The steps at which a person acts on a VA Submission. */
-export type SubmissionStep = "SUBMIT" | "REVIEW";
+export type SubmissionStep = "SUBMIT" | "REVIEW" | "ENDORSE";
 
 /** One person's first action at a step (segregation of duties). The person is an id, never a name or email. */
 export interface Acted {
@@ -108,6 +108,16 @@ export function returnForRework(id: string, comment: string): Promise<Submission
  */
 export function passToEndorsement(id: string): Promise<Submission> {
   return request<Submission>("POST", `/api/submissions/${encodeURIComponent(id)}/pass-to-endorsement`, {});
+}
+
+/**
+ * POST /api/submissions/{id}/endorse: a VA POC endorses it (Endorsed Late after the Quarter's last day). A step-up action:
+ * the server answers 403 `step-up-required` without a sign-in from the last five minutes, 403 `sod-conflict` when this
+ * VA POC acted at, or is assigned to, another step of it, and 409 `invalid-transition` once it is not Awaiting
+ * Endorsement.
+ */
+export function endorseSubmission(id: string): Promise<Submission> {
+  return request<Submission>("POST", `/api/submissions/${encodeURIComponent(id)}/endorse`, {});
 }
 
 /**

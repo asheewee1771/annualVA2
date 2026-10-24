@@ -202,7 +202,14 @@ public enum AuditAction {
      * comments and what was proposed, so every read is audited. About the System and the VA Submission, with the number
      * of Findings returned; never their text.
      */
-    REWORK_QUEUE_VIEWED("rework-queue-viewed", "database");
+    REWORK_QUEUE_VIEWED("rework-queue-viewed", "database"),
+    /**
+     * A VA POC endorsed a VA Submission Awaiting Endorsement (stories 65 and 67; SUCCESS, with {@code state_from},
+     * {@code state_to} and whether it was {@code endorsed_late}), or was refused: segregation of duties, or it is not
+     * Awaiting Endorsement (REFUSED, with a fixed reason). A refusal for want of a fresh sign-in is the
+     * {@code REQUEST_REFUSED} entry of every step-up. About the System and the VA Submission.
+     */
+    SUBMISSION_ENDORSED("submission-endorsed", "database");
 
     private final String ecs;
     private final String category;

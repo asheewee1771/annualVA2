@@ -59,7 +59,9 @@ public enum DetailKey {
      */
     STATE,
     /** What a review decided (ticket 28): {@code CONFIRMED} or {@code DISPUTED}, never the comment. */
-    DECISION;
+    DECISION,
+    /** Whether an endorsement came after the Quarter's last day (ticket 34): a flag, never a date. */
+    ENDORSED_LATE;
 
     /** The key as stored: lower-case with underscores. */
     String json() {

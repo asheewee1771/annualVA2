@@ -67,18 +67,6 @@ class PassToEndorsementTest extends ReturnSeam1 {
         assertThat(row.get("reviewed").get("current").asBoolean()).isFalse();
     }
 
-    /** SYS-x's row on the VA POC's Cycle matrix for the Cycle running today. */
-    private JsonNode matrixRow(String systemId) {
-        var response = vaPoc().get("/api/dashboards/cycle-matrix");
-        assertThat(response.status()).as(response.body()).isEqualTo(200);
-        for (JsonNode system : ApiClient.json(response).get("systems")) {
-            if (system.get("systemId").asString().equals(systemId)) {
-                return system;
-            }
-        }
-        throw new AssertionError("no " + systemId + " on the matrix");
-    }
-
     @Test
     void withAnythingUnconfirmedItIsRefusedListingWhatIsLeft() {
         Draft draft = inReview();

@@ -42,8 +42,8 @@ class ReviewMarkers {
     /**
      * The markers of these rows, by VA Submission; a row with no VA Submission is absent.
      *
-     * @param need what the caller reads the rows for; the conflicts marked are those of the step it acts at, and none
-     *     while no step records it (the VA POC's endorsing step, ticket 34)
+     * @param need what the caller reads the rows for; the conflicts marked are those of the step it acts at (the review,
+     *     or a VA POC's endorsement), and none for a need that acts at no step
      */
     Map<UUID, Marker> of(Collection<DashboardSystems.Row> rows, Need need) {
         List<UUID> ids = rows.stream().map(DashboardSystems.Row::submissionId).filter(Objects::nonNull).toList();
