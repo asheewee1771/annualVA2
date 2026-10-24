@@ -224,6 +224,8 @@ public class TestEndpoints {
                 jdbc.sql("DROP TRIGGER IF EXISTS test_fault ON report_file").update();
                 jdbc.sql("DROP TRIGGER IF EXISTS test_finding_fault ON finding_occurrence").update();
                 jdbc.sql("DROP TRIGGER IF EXISTS test_finding_late ON report_file").update();
+                // The notifications (V136) name the Systems and the VA Submissions, so they go before both.
+                jdbc.sql("DELETE FROM notification").update();
                 jdbc.sql("DELETE FROM finding_occurrence").update();
                 // The returns (V130) name the reviews, and the reviews (V21, V129) name the proposals, the batches and the
                 // Scan Reports, so they go first, a return before the reviews it names and a Finding's review before the
