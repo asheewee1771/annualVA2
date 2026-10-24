@@ -32,6 +32,7 @@ export interface StepUpOutcome {
 const ACTIONS: Readonly<Record<string, string>> = {
   "register-apply": "Applying the System Register",
   "submission-endorse": "Endorsing a VA Submission",
+  "submission-return": "Returning a VA Submission for rework",
   "cycle-close": "Closing a VA Cycle",
 };
 
@@ -79,9 +80,15 @@ function store(key: string, value: unknown): void {
 
 /** Reads and removes an entry; an unreadable, damaged or abandoned (too old) one counts as nothing saved. */
 function take(key: string): unknown {
+  const value = read(key);
+  clearKey(key);
+  return value;
+}
+
+/** Reads an entry and leaves it; an unreadable, damaged or abandoned (too old) one counts as nothing saved. */
+function read(key: string): unknown {
   try {
     const raw = window.sessionStorage.getItem(key);
-    window.sessionStorage.removeItem(key);
     if (raw === null) return undefined;
     const kept = JSON.parse(raw) as Partial<Kept<unknown>>;
     return typeof kept.savedAt === "number" && Date.now() - kept.savedAt <= MAX_AGE_MS ? kept.value : undefined;
@@ -111,12 +118,17 @@ export function clearStepUpState(): void {
   clearKey(DRAFT_KEY);
 }
 
-/** The draft saved for this action, read once and forgotten by the form that owns the action. */
+/**
+ * The draft saved for this action, read once and forgotten by the form that owns the action. A draft saved for another
+ * action is left for its own form, so two forms that each read theirs as they load never take each other's.
+ */
 export function takeRestoredDraft(intent: string): unknown {
-  const saved = take(DRAFT_KEY);
-  return typeof saved === "object" && saved !== null && "intent" in saved && saved.intent === intent && "draft" in saved
-    ? saved.draft
-    : undefined;
+  const saved = read(DRAFT_KEY);
+  const mine =
+    typeof saved === "object" && saved !== null && "intent" in saved && saved.intent === intent && "draft" in saved;
+  if (!mine) return undefined;
+  clearKey(DRAFT_KEY);
+  return saved.draft;
 }
 
 /** The outcome in the address bar, removed from it so a reload does not show it again. */

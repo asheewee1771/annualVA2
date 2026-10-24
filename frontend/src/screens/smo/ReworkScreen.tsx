@@ -43,7 +43,11 @@ function DisputedJustification({ submissionId, report }: { submissionId: string;
   );
 }
 
-/** The latest return: when, the Cyber Manager's comment, and the not-applicable justifications it Disputed. */
+/**
+ * The latest return: who returned it and when, their comment, and the not-applicable justifications it Disputed. A VA
+ * POC's return (story 63) Disputes nothing and confirmed Findings stay confirmed, so the queue may be empty: the comment
+ * says what to change, on the prepare screen, before resubmitting to the Cyber Manager.
+ */
 function ReturnSummary({
   submissionId,
   latest,
@@ -59,12 +63,23 @@ function ReturnSummary({
   return (
     <section className="card" aria-labelledby="return-summary">
       <h3 id="return-summary">Why it came back</h3>
-      <p className="muted">Returned for rework on {WHEN.format(new Date(latest.returnedAt))}.</p>
+      <p className="muted">
+        Returned for rework by {latest.step === "ENDORSE" ? "a VA POC" : "the Cyber Manager"} on{" "}
+        {WHEN.format(new Date(latest.returnedAt))}.
+      </p>
       {latest.comment !== null ? (
         <p className="finding-detail">{latest.comment}</p>
       ) : (
         <p className="muted">No comment on the return: each Dispute says why.</p>
       )}
+      {latest.step === "ENDORSE" ? (
+        <p className="muted">
+          The VA POC challenged something the Cyber Manager confirmed; nothing is Disputed, so the queue below may be
+          empty. Change what the comment asks for on{" "}
+          <AppLink path={submissionPath(submissionId)}>the prepare screen</AppLink>, then resubmit: the Cyber Manager
+          re-reviews what you changed before it goes back to the VA POCs.
+        </p>
+      ) : null}
       {disputed.length > 0 ? (
         <>
           <p>Not-applicable justifications Disputed:</p>
