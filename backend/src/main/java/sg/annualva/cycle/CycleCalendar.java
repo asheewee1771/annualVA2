@@ -9,6 +9,7 @@ import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
@@ -19,7 +20,8 @@ import sg.annualva.web.ResourceNotFoundException;
  * The calendar: every date in it is a business date in {@code Asia/Singapore}, derived from the {@link Clock} bean and
  * never from an instant's UTC date (ADR 0006). A Quarter starts on the first Monday of February, May, August or
  * November and ends the day before the next one starts, so it is 12 to 14 weeks long and "week 13" always means its
- * last day. Q4 ends the day before the next Cycle's Q1.
+ * last day. Q4 ends the day before the next Cycle's Q1. The one thing it reads besides the clock is a Cycle's close, which
+ * cannot be derived ({@link CycleStore}, ADR 0043).
  */
 @Service
 public class CycleCalendar {
@@ -34,11 +36,13 @@ public class CycleCalendar {
     private final Clock clock;
     private final ZoneId businessZone;
     private final CalendarProperties live;
+    private final CycleStore records;
 
-    CycleCalendar(Clock clock, AnnualVaProperties properties, CalendarProperties live) {
+    CycleCalendar(Clock clock, AnnualVaProperties properties, CalendarProperties live, CycleStore records) {
         this.clock = clock;
         this.businessZone = ZoneId.of(properties.timeZone());
         this.live = live;
+        this.records = records;
     }
 
     /** Today's business date. */
@@ -53,7 +57,7 @@ public class CycleCalendar {
 
     /** The VA Cycle of that year, or nothing for a year outside {@value #FIRST_YEAR} to {@value #LAST_YEAR}. */
     public Optional<VaCycle> cycle(int year) {
-        return year < FIRST_YEAR || year > LAST_YEAR ? Optional.empty() : Optional.of(build(year));
+        return year < FIRST_YEAR || year > LAST_YEAR ? Optional.empty() : Optional.of(build(year, records.closes()));
     }
 
     /**
@@ -71,9 +75,10 @@ public class CycleCalendar {
     public List<VaCycle> cyclesOn(LocalDate today) {
         int first = live.firstLiveCycle();
         int last = Math.max(first, runningYear(today));
+        Map<Integer, CycleStore.Close> closes = records.closes();
         var cycles = new ArrayList<VaCycle>();
         for (int year = first; year <= last; year++) {
-            cycles.add(build(year));
+            cycles.add(build(year, closes));
         }
         return cycles;
     }
@@ -93,18 +98,22 @@ public class CycleCalendar {
     /** The Cycle whose Quarters today falls in, if the app runs it yet. */
     public Optional<VaCycle> currentCycle() {
         int year = runningYear(today());
-        return year < live.firstLiveCycle() ? Optional.empty() : Optional.of(build(year));
+        return year < live.firstLiveCycle() ? Optional.empty() : Optional.of(build(year, records.closes()));
     }
 
-    private VaCycle build(int year) {
+    /** The Cycle of that year, with its close as recorded (an early close's date overrides the default). */
+    private VaCycle build(int year, Map<Integer, CycleStore.Close> closes) {
         var quarters = new ArrayList<Quarter>(QUARTER_MONTHS.size());
         for (int number = 1; number <= QUARTER_MONTHS.size(); number++) {
             LocalDate starts = startOf(year, number);
             LocalDate ends = (number == 4 ? startOf(year + 1, 1) : startOf(year, number + 1)).minusDays(1);
             quarters.add(new Quarter(year, number, starts, ends, handledOutsideApp(year, number)));
         }
-        LocalDate closesOn = quarters.getLast().endsOn().plusDays(CLOSE_AFTER_Q4_DAYS);
-        return new VaCycle(year, quarters, closesOn, firstLiveQuarter(year));
+        CycleStore.Close close = closes.get(year);
+        LocalDate closesOn = close != null && close.closesOn() != null
+                ? close.closesOn()
+                : quarters.getLast().endsOn().plusDays(CLOSE_AFTER_Q4_DAYS);
+        return new VaCycle(year, quarters, closesOn, firstLiveQuarter(year), close == null ? null : close.closedAt());
     }
 
     /** The first Monday of the Quarter's month. */

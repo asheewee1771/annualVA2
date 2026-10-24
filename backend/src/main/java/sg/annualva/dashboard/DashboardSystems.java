@@ -23,6 +23,8 @@ import sg.annualva.submission.Submissions;
  * dates and the flag the sweep set on the System. Which Systems are the caller's is the access guard's answer (ADR
  * 0013). The day each state's window ends comes from the one Overdue rule (ADR 0033 item 2), for Not Started too, and
  * Overdue is the stored flag, never a date compared here. Systems in Quarters Handled outside the app are listed apart.
+ * The Systems and their Quarters are the Cycle's own: an older Cycle keeps them as they were when a newer one opened (ADR
+ * 0043).
  */
 @Component
 class DashboardSystems {
@@ -67,7 +69,7 @@ class DashboardSystems {
     }
 
     private Rows rows(VaCycle cycle, Need need, @Nullable Integer onlyQuarter) {
-        List<RegisterSystems.ActiveSystem> mine = register.active(need).stream()
+        List<RegisterSystems.ActiveSystem> mine = register.active(need, cycle.year()).stream()
                 .filter(system -> onlyQuarter == null || system.quarter() == onlyQuarter)
                 .sorted(BY_QUARTER_THEN_ID)
                 .toList();

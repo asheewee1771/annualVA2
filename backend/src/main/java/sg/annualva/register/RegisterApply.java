@@ -36,7 +36,8 @@ import sg.annualva.web.ResourceNotFoundException;
  * is with the Register each row was classified against, and refuses with 409 when anything differs; applies take one
  * lock, so the second of two concurrent applies sees the first one's changes and is refused. The preview is applied at
  * most once and for an hour. All of it, the audit entries included, commits or rolls back together (ADR 0014). A VA
- * POC's scope is every System, so no ownership check applies (ADR 0013).
+ * POC's scope is every System, so no ownership check applies (ADR 0013). While two VA Cycles overlap it changes only
+ * the newer one: the older one keeps its Systems and Quarters as they were when the newer one opened (ADR 0043).
  */
 @Service
 public class RegisterApply {
@@ -55,9 +56,11 @@ public class RegisterApply {
     private final CurrentUser user;
     private final CycleCalendar calendar;
     private final Clock clock;
+    private final RegisterSystems systems;
 
     RegisterApply(RegisterStore store, RegisterRoles roles, StepUp stepUp, AuditLog audit, AuditActor actor,
-            CurrentUser user, CycleCalendar calendar, Clock clock) {
+            CurrentUser user, CycleCalendar calendar, Clock clock, RegisterSystems systems) {
+        this.systems = systems;
         this.store = store;
         this.roles = roles;
         this.stepUp = stepUp;
@@ -79,6 +82,8 @@ public class RegisterApply {
         store.lockApply();
         Preview preview = store.preview(previewId).orElseThrow(ResourceNotFoundException::new);
         Instant now = clock.instant();
+        // While two Cycles overlap the apply changes only the newer: the older keeps its Systems first (ADR 0043).
+        systems.keepOlderCycles(now);
         if (!Preview.WAITING.equals(preview.status())) {
             throw conflict("preview-applied", "This preview has already been applied. Upload the file again to change the Register.");
         }

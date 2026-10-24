@@ -209,7 +209,27 @@ public enum AuditAction {
      * Awaiting Endorsement (REFUSED, with a fixed reason). A refusal for want of a fresh sign-in is the
      * {@code REQUEST_REFUSED} entry of every step-up. About the System and the VA Submission.
      */
-    SUBMISSION_ENDORSED("submission-endorsed", "database");
+    SUBMISSION_ENDORSED("submission-endorsed", "database"),
+    /**
+     * The lifecycle job recorded that a VA Cycle's Q1 has started (ticket 41; SUCCESS, with the {@code cycle}). Written
+     * by the job, so it has no actor; once per Cycle.
+     */
+    CYCLE_OPENED("cycle-opened", "configuration"),
+    /**
+     * A VA Cycle was closed (stories 17 and 68; SUCCESS, with the {@code cycle} and the {@code count} of VA Submissions
+     * and Systems made Not Endorsed): by a VA POC, early, who is its actor, or by the lifecycle job the day after its close
+     * date, with no actor. A VA POC's close is refused while the Cycle's Q4 is still running or once it is closed
+     * (REFUSED, with the {@code cycle} and a fixed reason); a refusal for want of a fresh sign-in is the
+     * {@code REQUEST_REFUSED} entry of every step-up.
+     */
+    CYCLE_CLOSED("cycle-closed", "configuration"),
+    /**
+     * A VA Cycle's close made a VA Submission, or a System with none (Not Started, which gets a Not Endorsed row of its
+     * own), Not Endorsed (story 68; SUCCESS, with {@code state_from}, {@code NOT_STARTED} for a System with none,
+     * {@code state_to} and the {@code cycle}). Attributed to the VA POC who closed the Cycle, or to nobody for the
+     * lifecycle job. About the System and the VA Submission.
+     */
+    SUBMISSION_NOT_ENDORSED("submission-not-endorsed", "database");
 
     private final String ecs;
     private final String category;

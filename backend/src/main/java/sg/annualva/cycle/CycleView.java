@@ -1,5 +1,6 @@
 package sg.annualva.cycle;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
@@ -11,6 +12,9 @@ import org.jspecify.annotations.Nullable;
  *
  * @param firstLiveQuarter the Quarter from which the Cycle runs in this app; null when every Quarter is Handled outside it
  * @param phase where the Cycle stands today
+ * @param open whether it is open today, from its Q1 through its close; while two are open the shell offers a Cycle
+ *     selector
+ * @param closedAt when its close was recorded (UTC); null until it is
  * @param current today's Quarter, week and window; null when today is outside the Cycle's four Quarters
  */
 public record CycleView(
@@ -20,6 +24,8 @@ public record CycleView(
         LocalDate closesOn,
         @Nullable Integer firstLiveQuarter,
         CyclePhase phase,
+        boolean open,
+        @Nullable Instant closedAt,
         List<QuarterView> quarters,
         @Nullable CurrentView current) {
 
@@ -47,7 +53,7 @@ public record CycleView(
 
     static CycleView of(VaCycle cycle, LocalDate today) {
         return new CycleView(cycle.year(), cycle.startsOn(), cycle.endsOn(), cycle.closesOn(), cycle.firstLiveQuarter(),
-                cycle.phaseOn(today), cycle.quarters().stream().map(CycleView::of).toList(),
+                cycle.phaseOn(today), cycle.openOn(today), cycle.closedAt(), cycle.quarters().stream().map(CycleView::of).toList(),
                 cycle.quarterOn(today).map(quarter -> current(quarter, today)).orElse(null));
     }
 

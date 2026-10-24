@@ -52,7 +52,8 @@ public class OverdueSweep {
      * One pass: flags and audits whatever became Overdue since the last. Whether a window has passed is the store's one
      * Overdue rule (ADR 0033 item 4); this only says which VA Submissions and which Quarters are looked at. A VA
      * Submission is looked at whatever its Cycle's phase, because its windows all end before its Cycle closes and the
-     * close (ticket 41) moves what is left to a final state; a Not Started System only in a Cycle that has not closed.
+     * close (ticket 41) moves what is left to a final state; a Not Started System only in a Cycle that has not closed, by
+     * its Quarter in that Cycle (an older Cycle keeps its Systems as they were when a newer one opened, ADR 0043).
      */
     @Transactional
     public void sweep() {
@@ -65,9 +66,10 @@ public class OverdueSweep {
             if (cycle.phaseOn(today) == CyclePhase.CLOSED) {
                 continue;
             }
+            List<RegisterSystems.ActiveSystem> members = register.everyActive(cycle.year());
             for (Quarter quarter : cycle.quarters()) {
                 if (!quarter.handledOutsideApp()) {
-                    List<UUID> inQuarter = systems.stream().filter(system -> system.quarter() == quarter.number())
+                    List<UUID> inQuarter = members.stream().filter(system -> system.quarter() == quarter.number())
                             .map(RegisterSystems.ActiveSystem::id).toList();
                     flagged.addAll(store.flagNotStarted(quarter, inQuarter, today, now));
                 }

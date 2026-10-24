@@ -91,8 +91,8 @@ class SmoInboxStartedTest extends InboxSeam1 {
 
     @Test
     void aSubmissionIsShownInItsOwnCycleOnly() {
-        today("2028-02-07");
         registered(listed("SYS-D4", "Draft four", SMO_A, CM, "Q3"));
+        today("2028-02-07");
         ApiClient smo = signedInAs(SMO_A);
         var response = smo.postJson("/api/submissions",
                 "{\"systemId\":\"" + idOf(inbox(smo, 2027), "SYS-D4") + "\",\"cycle\":2027}");

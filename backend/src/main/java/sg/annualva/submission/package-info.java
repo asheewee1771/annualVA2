@@ -4,7 +4,9 @@
  * records the caller at the submitting step, and anyone who may see the System reads it
  * ({@code GET /api/submissions/{id}}). The SMO/Tech Lead submits it (ADR 0032); the Cyber Manager returns it for rework
  * or passes it to endorsement (ADR 0039); a VA POC endorses it, after a fresh sign-in (ADR 0042). The Overdue sweep
- * flags what passed its window (ADR 0033). It owns the state machine and the segregation-of-duties guard (ADR 0035). It answers the audit log's read scope: a Cyber Manager reads the
+ * flags what passed its window (ADR 0033). The VA Cycle lifecycle opens a Cycle when its Q1 starts and closes it, by the
+ * job after its close date or early by a VA POC ({@code POST /api/cycles/{year}/close}), making everything unfinished Not
+ * Endorsed (ADR 0043). It owns the state machine and the segregation-of-duties guard (ADR 0035). It answers the audit log's read scope: a Cyber Manager reads the
  * history of the VA Submissions they reviewed (ADR 0038). Depends on access, audit, cycle, register, web, and parser for
  * the one text rule only.
  */

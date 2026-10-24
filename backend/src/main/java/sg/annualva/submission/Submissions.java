@@ -29,6 +29,7 @@ import sg.annualva.audit.AuditLog;
 import sg.annualva.audit.AuditOutcome;
 import sg.annualva.audit.DetailKey;
 import sg.annualva.cycle.CycleCalendar;
+import sg.annualva.cycle.CyclePhase;
 import sg.annualva.cycle.Quarter;
 import sg.annualva.cycle.VaCycle;
 import sg.annualva.parser.ReportText;
@@ -70,7 +71,8 @@ public class Submissions {
      * @param quarter 1 to 4
      * @param overdue the Overdue flag: its current window passed without the next step (ADR 0033); nothing locks
      * @param endorsedLate whether it was endorsed after the Quarter's last day
-     * @param startedAt when it was started (UTC)
+     * @param startedAt when it was started (UTC); null for a System its VA Cycle's close found Not Started, whose Not
+     *     Endorsed VA Submission nobody started
      * @param submittedAt when it was last submitted for review (UTC); null until it is
      * @param overdueSince when the Overdue flag was set (UTC); null while it is clear
      * @param declaration the Declaration accepted at its latest submit; null until it is submitted
@@ -78,7 +80,7 @@ public class Submissions {
      */
     public record Submission(
             UUID id, UUID systemId, int cycle, int quarter, SubmissionState state, boolean overdue, boolean endorsedLate,
-            LocalDate submitDue, LocalDate reviewDue, LocalDate endorseDue, Instant startedAt,
+            LocalDate submitDue, LocalDate reviewDue, LocalDate endorseDue, @Nullable Instant startedAt,
             @Nullable Instant submittedAt, @Nullable Instant overdueSince, @Nullable AcceptedDeclaration declaration,
             List<Acted> acted) {}
 
@@ -292,16 +294,23 @@ public class Submissions {
      *     Cycle)
      * @throws ResourceNotFoundException for a System the caller may not submit for, or a Cycle the app does not run
      * @throws RejectedRequestException 403 {@code sod-conflict} when the caller is also the System's Cyber Manager (story
-     *     58: assigned to the reviewing step, so never its submitter); 409 {@code invalid-transition} when the System
-     *     already has a VA Submission in the Cycle, or its Quarter is Handled outside the app
+     *     58: assigned to the reviewing step, so never its submitter); 409 {@code invalid-transition} when the Cycle is
+     *     closed, the System was not in the Cycle (added after a newer Cycle opened, ADR 0043), it already has a VA
+     *     Submission in the Cycle, or its Quarter is Handled outside the app
      */
     @Transactional
     public Submission start(UUID systemId, @Nullable Integer cycleYear) {
-        RegisterSystems.ActiveSystem system = register.active(systemId, Need.SUBMIT);
-        sod.require(SubmissionStep.SUBMIT, systemId, null,
-                actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_STARTED, AuditOutcome.REFUSED)).onSystem(systemId));
+        register.active(systemId, Need.SUBMIT);
+        AuditEvent refused = actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_STARTED, AuditOutcome.REFUSED))
+                .onSystem(systemId);
+        sod.require(SubmissionStep.SUBMIT, systemId, null, refused);
         VaCycle cycle = calendar.running(cycleYear);
-        Quarter quarter = cycle.quarters().get(system.quarter() - 1);
+        store.holdCycle(cycle.year());
+        requireOpenCycle(cycle.year(), refused);
+        int inCycle = register.quarterIn(systemId, cycle.year()).orElseThrow(() -> refusedStart(systemId,
+                "not-in-cycle", "This System was not in the System Register when this VA Cycle's successor opened, so it "
+                + "has no VA Submission in this VA Cycle."));
+        Quarter quarter = cycle.quarters().get(inCycle - 1);
         if (quarter.handledOutsideApp()) {
             throw refusedStart(systemId, "quarter-handled-outside-app",
                     "This System's Quarter is handled outside the app, so no VA Submission is started for it here.");
@@ -339,6 +348,7 @@ public class Submissions {
         UUID systemId = owned(id).systemId();
         SubmissionStore.Located held = store.lockForMove(id).orElseThrow(ResourceNotFoundException::new);
         sod.require(SubmissionStep.SUBMIT, systemId, id, refusedSubmit(id, systemId));
+        requireOpenCycle(held.cycleYear(), refusedSubmit(id, systemId));
         requireEditable(held, id, systemId, this::notSubmittable);
         SubmissionState from = SubmissionState.valueOf(held.state());
         Declarations.Text declaration = store.currentDeclarationText();
@@ -569,6 +579,7 @@ public class Submissions {
                 .orElseThrow(ResourceNotFoundException::new);
         AuditEvent refused = refusedAs.onSystem(held.systemId()).onSubmission(id);
         sod.require(gate.step(), held.systemId(), id, refused);
+        requireOpenCycle(held.cycleYear(), refused);
         if (!gate.from().name().equals(held.state())) {
             audit.recordIndependently(refused.with(DetailKey.REASON, gate.refusedReason()));
             throw new RejectedRequestException(HttpStatus.CONFLICT, NOT_ALLOWED_NOW, gate.refusedSentence());
@@ -705,6 +716,22 @@ public class Submissions {
      */
     private static boolean editable(String state) {
         return SubmissionState.DRAFT.name().equals(state) || SubmissionState.RETURNED_FOR_REWORK.name().equals(state);
+    }
+
+    /**
+     * After its VA Cycle closes no transition is accepted (story 68, ADR 0043): neither once the close is recorded nor
+     * after the Cycle's close date before the lifecycle job records it. Audited in an entry of its own as {@code refused}
+     * with {@code reason} {@code cycle-closed}, then 409 {@code invalid-transition}. The one exception, a Q4 conditional
+     * Exemption's VA recorded, confirmed or lapsed after the close, is ticket 42's command, which does not ask this.
+     */
+    private void requireOpenCycle(int cycleYear, AuditEvent refused) {
+        boolean closed = calendar.cycle(cycleYear).map(cycle -> cycle.phaseOn(calendar.today()) == CyclePhase.CLOSED)
+                .orElse(true);
+        if (closed) {
+            audit.recordIndependently(refused.with(DetailKey.REASON, "cycle-closed"));
+            throw new RejectedRequestException(HttpStatus.CONFLICT, NOT_ALLOWED_NOW,
+                    "This VA Cycle is closed, so its VA Submissions take no more steps.");
+        }
     }
 
     /** Audits the refusal in a transaction of its own, then answers 409; the reason and sentence are fixed text. */
