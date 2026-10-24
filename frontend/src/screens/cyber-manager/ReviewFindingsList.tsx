@@ -99,8 +99,12 @@ function FindingsReviewTable({ findings, caption }: { findings: readonly Finding
   );
 }
 
-/** The list narrowed to a batch's members still in it, or, with no batch, to the Findings in no batch. */
-function filterOf(batchId: string | null): FindingFilter {
+/**
+ * The list narrowed to what changed since its last review, or else to a batch's members still in it, or, with no batch, to
+ * the Findings in no batch.
+ */
+function filterOf(batchId: string | null, changedOnly: boolean): FindingFilter {
+  if (changedOnly) return { changedSinceLastReview: true };
   return batchId === null ? { batched: false } : { batchId };
 }
 
@@ -133,15 +137,19 @@ function FindingsPageView({
 
 /**
  * A page at a time of Findings to review, the most severe first, each with its own Confirm and Dispute: the members still
- * in one Bulk-set batch, or, with no batch, every Finding whose current proposal was made alone (or that has none). It
- * is read again on every refresh of the review screen.
+ * in one Bulk-set batch, or, with no batch, every Finding whose current proposal was made alone (or that has none); or,
+ * with `changedOnly`, every Finding whose proposal changed since its last review, in a batch or not (story 56). It is
+ * read again on every refresh of the review screen.
  */
 export function ReviewFindingsList({
   batchId,
+  changedOnly = false,
   heading,
   caption,
 }: {
   batchId: string | null;
+  /** Only the Findings changed since their last review, whatever their batch. */
+  changedOnly?: boolean;
   /** The heading, followed by how many Findings there are. */
   heading: string;
   caption: string;
@@ -149,8 +157,8 @@ export function ReviewFindingsList({
   const { submissionId, refreshKey } = useReviewSession();
   const [page, setPage] = useState(0);
   const load = useCallback(
-    () => fetchFindings(submissionId, filterOf(batchId), page, PAGE_SIZE),
-    [submissionId, batchId, page],
+    () => fetchFindings(submissionId, filterOf(batchId, changedOnly), page, PAGE_SIZE),
+    [submissionId, batchId, changedOnly, page],
   );
   const findings = useResource(load, refreshKey);
   const result = findings.data;
