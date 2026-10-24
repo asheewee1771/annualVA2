@@ -1,5 +1,5 @@
 import type { PreviewRow, RegisterOutcome, RegisterPreview } from "../../api/systemRegister.ts";
-import { Group, InFlightEffects } from "./InFlightEffects.tsx";
+import { Group, InFlightEffects, Reasons } from "./InFlightEffects.tsx";
 import { REASON_TEXT, changedFields, rowKey, withdrawals } from "./registerPreviewText.ts";
 
 /** Business times are shown in Singapore time, whatever the browser's own zone is. */
@@ -66,6 +66,7 @@ function UpdateTable({ rows }: { rows: PreviewRow[] }) {
           <th scope="col">System ID</th>
           <th scope="col">What changes</th>
           <th scope="col">SMO/Tech Lead</th>
+          <th scope="col">Held back</th>
         </tr>
       </thead>
       <tbody>
@@ -85,6 +86,9 @@ function UpdateTable({ rows }: { rows: PreviewRow[] }) {
               </ul>
             </td>
             <td>{row.after ? <Smo row={row} email={row.after.smoEmail} /> : null}</td>
+            <td>
+              <Reasons row={row} />
+            </td>
           </tr>
         ))}
       </tbody>
@@ -103,6 +107,7 @@ function RetireTable({ rows }: { rows: PreviewRow[] }) {
           <th scope="col">SMO/Tech Lead</th>
           <th scope="col">Cyber Manager</th>
           <th scope="col">Quarter</th>
+          <th scope="col">Held back</th>
         </tr>
       </thead>
       <tbody>
@@ -113,6 +118,9 @@ function RetireTable({ rows }: { rows: PreviewRow[] }) {
             <td>{row.before?.smoEmail}</td>
             <td>{row.before?.cyberManagerEmail}</td>
             <td>{row.before?.quarter}</td>
+            <td>
+              <Reasons row={row} />
+            </td>
           </tr>
         ))}
       </tbody>
@@ -212,9 +220,8 @@ function ApplyControl({ preview, applying, confirmed, onApply }: RegisterPreview
  */
 export function RegisterPreviewPanel(props: RegisterPreviewPanelProps) {
   const { preview, confirmed, onConfirm } = props;
-  // The outcome groups list what the apply would do; a row its in-flight work holds back is listed under its effect.
-  const rows = (outcome: RegisterOutcome) =>
-    preview.rows.filter((row) => row.outcome === outcome && (outcome === "BLOCKED" || row.reasons.length === 0));
+  // Every row is listed by its outcome, a held-back one with what holds it back; the effect groups cut across them.
+  const rows = (outcome: RegisterOutcome) => preview.rows.filter((row) => row.outcome === outcome);
   const blocked = rows("BLOCKED");
   const { counts } = preview;
   return (

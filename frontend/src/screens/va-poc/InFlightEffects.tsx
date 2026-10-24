@@ -41,7 +41,7 @@ function InFlightList({ row }: { row: PreviewRow }) {
 }
 
 /** What holds a row back; nothing when nothing does. */
-function Reasons({ row }: { row: PreviewRow }) {
+export function Reasons({ row }: { row: PreviewRow }) {
   if (row.reasons.length === 0) return null;
   return (
     <ul className="plain-list">
