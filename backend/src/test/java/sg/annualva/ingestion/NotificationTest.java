@@ -97,6 +97,20 @@ class NotificationTest extends NotificationSeam1 {
     }
 
     @Test
+    void aNotificationThatCannotBeWrittenLeavesTheCommittedMoveAsItIs() {
+        Draft draft = readyDraft();
+        arrange.notificationFault("on");
+
+        var response = submitAccepting(draft.smo(), draft.submissionId());
+        arrange.notificationFault("off");
+
+        assertThat(response.status()).as(response.body()).isEqualTo(200);
+        assertThat(submission(draft.smo(), draft.submissionId()).get("state").asString()).isEqualTo("IN_REVIEW");
+        assertThat(entries("SUBMISSION_SUBMITTED", draft.systemId())).hasSize(1);
+        assertThat(notifications(signedInAs(CM))).as("the write failed after the commit").isEmpty();
+    }
+
+    @Test
     void aPersonMarksTheirOwnNotificationReadOnceAndAnotherPersonsIsNotFound() {
         Draft draft = inReview();
         ApiClient cm = signedInAs(CM);

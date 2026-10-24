@@ -225,6 +225,7 @@ public class TestEndpoints {
                 jdbc.sql("DROP TRIGGER IF EXISTS test_finding_fault ON finding_occurrence").update();
                 jdbc.sql("DROP TRIGGER IF EXISTS test_finding_late ON report_file").update();
                 // The notifications (V136) name the Systems and the VA Submissions, so they go before both.
+                jdbc.sql("DROP TRIGGER IF EXISTS test_notification_fault ON notification").update();
                 jdbc.sql("DELETE FROM notification").update();
                 jdbc.sql("DELETE FROM finding_occurrence").update();
                 // The returns (V130) name the reviews, and the reviews (V21, V129) name the proposals, the batches and the
@@ -332,6 +333,22 @@ public class TestEndpoints {
          * the Findings included: it proves the Findings are in that transaction and not in one of their own, which a
          * failure inside their own write cannot tell apart.
          */
+        /**
+         * Makes every write of a notification fail inside the database ("on"), so a test can prove that a notification
+         * that cannot be written leaves the committed move it reports as it is (ADR 0043 item 1); "off" removes it.
+         */
+        @PostMapping("/api/test/faults/notification/{mode}")
+        public Map<String, String> notificationFault(@PathVariable String mode) {
+            jdbc.sql("DROP TRIGGER IF EXISTS test_notification_fault ON notification").update();
+            if ("on".equals(mode)) {
+                jdbc.sql("CREATE OR REPLACE FUNCTION test_notification_fault() RETURNS trigger LANGUAGE plpgsql AS "
+                        + "$$ BEGIN RAISE EXCEPTION 'injected fault'; END $$").update();
+                jdbc.sql("CREATE TRIGGER test_notification_fault BEFORE INSERT ON notification FOR EACH ROW "
+                        + "EXECUTE FUNCTION test_notification_fault()").update();
+            }
+            return Map.of("fault", mode);
+        }
+
         @PostMapping("/api/test/faults/finding/{mode}")
         public Map<String, String> findingFault(@PathVariable String mode) {
             jdbc.sql("DROP TRIGGER IF EXISTS test_finding_fault ON finding_occurrence").update();
