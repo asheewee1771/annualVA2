@@ -1,4 +1,4 @@
--- A VA POC's return (ticket 35, stories 66 and 63, ADR 0045): a VA POC returns a VA Submission Awaiting Endorsement to
+-- A VA POC's return (ticket 35, stories 66 and 63, ADR 0046): a VA POC returns a VA Submission Awaiting Endorsement to
 -- its SMO/Tech Lead with a comment, to challenge something the Cyber Manager confirmed. The return is kept as the Cyber
 -- Manager's is (V130), at the endorsing step, and attaches nothing: nothing is Disputed Awaiting Endorsement.
 --

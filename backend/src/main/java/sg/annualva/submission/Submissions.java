@@ -471,7 +471,7 @@ public class Submissions {
      * Review (story 55, {@link #returnFromReview}) or a VA POC's from Awaiting Endorsement (story 66,
      * {@link #returnFromEndorsement}). A caller who holds one of the two roles returns at its step; one who holds both
      * returns as a VA POC, unless they are the System's Cyber Manager and it is not Awaiting Endorsement, so each meets the
-     * refusals of the step they act at (ADR 0045 item 1).
+     * refusals of the step they act at (ADR 0046 item 1).
      *
      * @throws ResourceNotFoundException for a VA Submission that does not exist or the caller may not return
      * @throws RejectedRequestException as each step's return says
