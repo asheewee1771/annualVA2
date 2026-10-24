@@ -62,8 +62,18 @@ public enum DetailKey {
     DECISION,
     /** Whether an endorsement came after the Quarter's last day (ticket 34): a flag, never a date. */
     ENDORSED_LATE,
-    /** The VA Cycle an entry is about (ticket 41): its year, never a date. */
-    CYCLE;
+    /** The VA Cycle an entry is about (tickets 41 and 44): its year, never a date. */
+    CYCLE,
+    /** The export an entry is about (ticket 44). */
+    EXPORT_ID,
+    /** What an export is: a fixed code such as {@code MGMT_SUMMARY}. */
+    EXPORT_TYPE,
+    /** The file an export is made as: a fixed code such as {@code XLSX}. */
+    FORMAT,
+    /** An export's classification: {@code CONFIDENTIAL} or {@code RESTRICTED} (assumption A-1). */
+    CLASSIFICATION,
+    /** The Quarter an export covers, 1 to 4, when it covers one Quarter only. */
+    QUARTER;
 
     /** The key as stored: lower-case with underscores. */
     String json() {

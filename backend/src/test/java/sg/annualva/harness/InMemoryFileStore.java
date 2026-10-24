@@ -8,13 +8,14 @@ import sg.annualva.boundary.BoundaryFailureException;
 import sg.annualva.boundary.FileStore;
 
 /**
- * The file-store fake: two zones held in memory. A test can ask what each zone holds (the quarantine zone must be empty
+ * The file-store fake: the three zones held in memory. A test can ask what each zone holds (the quarantine zone must be empty
  * once a file is clean or rejected) and make the store refuse writes or reads, as an object store that cannot be reached.
  */
 public final class InMemoryFileStore implements FileStore {
 
     private final Map<String, byte[]> quarantine = new ConcurrentHashMap<>();
     private final Map<String, byte[]> clean = new ConcurrentHashMap<>();
+    private final Map<String, byte[]> exports = new ConcurrentHashMap<>();
     private final AtomicBoolean refusingWrites = new AtomicBoolean();
     private final AtomicBoolean refusingReads = new AtomicBoolean();
     private final AtomicBoolean refusingDeletes = new AtomicBoolean();
@@ -75,12 +76,17 @@ public final class InMemoryFileStore implements FileStore {
     public void reset() {
         quarantine.clear();
         clean.clear();
+        exports.clear();
         refusingWrites.set(false);
         refusingReads.set(false);
         refusingDeletes.set(false);
     }
 
     private Map<String, byte[]> zone(Zone zone) {
-        return zone == Zone.QUARANTINE ? quarantine : clean;
+        return switch (zone) {
+            case QUARANTINE -> quarantine;
+            case CLEAN -> clean;
+            case EXPORT -> exports;
+        };
     }
 }

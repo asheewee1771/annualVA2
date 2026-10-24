@@ -230,6 +230,20 @@ public class Findings {
     }
 
     /**
+     * How many open Deviations each of these VA Submissions has (Findings whose current proposal is Risk Accepted or
+     * Remediation Planned), for the management summary (story 81). Only the VA Submissions of Systems the caller may see
+     * are answered, and one with none is absent. They are counts, not report content.
+     */
+    @Transactional(readOnly = true)
+    public Map<UUID, Long> deviationCounts(Collection<UUID> submissionIds) {
+        var scope = guard.scope(Need.VIEW);
+        return store.deviationCounts(List.copyOf(submissionIds)).stream()
+                .filter(tally -> scope.contains(tally.systemId()))
+                .collect(Collectors.toUnmodifiableMap(FindingStore.DeviationTally::submissionId,
+                        FindingStore.DeviationTally::deviations));
+    }
+
+    /**
      * Proposes a Finding Status for a Finding of a System the caller is SMO/Tech Lead of (story 35). The proposal is a new
      * row, never a change to an earlier one: it becomes the Finding's current proposal and the review state goes back to
      * PENDING. Each command checks, in this order: ownership (so a Finding of a System the caller may not reach is "not

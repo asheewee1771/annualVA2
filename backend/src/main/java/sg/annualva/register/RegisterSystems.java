@@ -53,8 +53,9 @@ public class RegisterSystems {
      * @param id the System's own id
      * @param systemId the System ID as the VA POC typed it
      * @param quarter 1 to 4
+     * @param smoEmail the SMO/Tech Lead the Register names for it
      */
-    public record ActiveSystem(UUID id, String systemId, String name, int quarter) {}
+    public record ActiveSystem(UUID id, String systemId, String name, int quarter, String smoEmail) {}
 
     /**
      * A System with the people the Register names for it, for a consumer that tells them something.
@@ -155,7 +156,8 @@ public class RegisterSystems {
         return activeWhere(id -> include.test(id) && kept.map(quarters -> quarters.containsKey(id)).orElse(true))
                 .stream()
                 .map(system -> kept.map(quarters -> quarters.get(system.id()))
-                        .map(quarter -> new ActiveSystem(system.id(), system.systemId(), system.name(), quarter))
+                        .map(quarter -> new ActiveSystem(system.id(), system.systemId(), system.name(), quarter,
+                                system.smoEmail()))
                         .orElse(system))
                 .toList();
     }
@@ -175,7 +177,8 @@ public class RegisterSystems {
     private List<ActiveSystem> activeWhere(Predicate<UUID> include) {
         return store.systems().stream()
                 .filter(system -> !system.retired() && include.test(system.id()))
-                .map(system -> new ActiveSystem(system.id(), system.code(), system.name(), system.quarter()))
+                .map(system -> new ActiveSystem(system.id(), system.code(), system.name(), system.quarter(),
+                        system.smoEmail()))
                 .toList();
     }
 
@@ -188,7 +191,8 @@ public class RegisterSystems {
         guard.requireSystem(systemId, need);
         return store.systems().stream()
                 .filter(system -> !system.retired() && system.id().equals(systemId))
-                .map(system -> new ActiveSystem(system.id(), system.code(), system.name(), system.quarter()))
+                .map(system -> new ActiveSystem(system.id(), system.code(), system.name(), system.quarter(),
+                        system.smoEmail()))
                 .findFirst()
                 .orElseThrow(ResourceNotFoundException::new);
     }

@@ -12,11 +12,11 @@ import tools.jackson.databind.JsonNode;
  * HTTP API, a VA Submission started by its SMO/Tech Lead, and Findings entered by hand and proposed, so a test can count
  * what the Cyber Manager has confirmed and what awaits them. The clock defaults to the first day of Q3 of VA Cycle 2027.
  */
-abstract class CyberManagerSeam1 extends InboxSeam1 {
+public abstract class CyberManagerSeam1 extends InboxSeam1 {
 
-    static final String CM_INBOX = "/api/dashboards/cm-inbox";
-    static final String BOARD = "/api/dashboards/quarter-board";
-    static final String CM_OTHER = "inbox.cm.other@ci.annualva.test";
+    protected static final String CM_INBOX = "/api/dashboards/cm-inbox";
+    protected static final String BOARD = "/api/dashboards/quarter-board";
+    protected static final String CM_OTHER = "inbox.cm.other@ci.annualva.test";
 
     protected static JsonNode cmInbox(ApiClient client) {
         return ok(client, CM_INBOX);
