@@ -9,8 +9,8 @@ import {
 } from "../../api/scanReports.ts";
 import { ClassifiedField } from "../../components/ClassifiedField.tsx";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
-import { REVIEW_LABELS } from "./findingStatuses.ts";
-import type { ScanReport } from "./scanReports.ts";
+import { REVIEW_LABELS } from "../shared/findingStatuses.ts";
+import type { ScanReport } from "../shared/scanReports.ts";
 
 const UNREACHABLE: Problem = { type: "about:blank", title: "The server could not be reached", status: 0 };
 

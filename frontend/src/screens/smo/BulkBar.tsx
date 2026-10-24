@@ -3,7 +3,7 @@ import { MAX_BATCH_SIZE, proposeInBulk, type FindingStatus } from "../../api/fin
 import { ApiError, type Problem } from "../../api/problem.ts";
 import type { ReportFile } from "../../api/reportFiles.ts";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
-import { inputFor, statusSpec, STATUSES, type FieldName } from "./findingStatuses.ts";
+import { inputFor, statusSpec, STATUSES, type FieldName } from "../shared/findingStatuses.ts";
 import { ProposalFieldInput } from "./ProposalFieldInput.tsx";
 
 const UNREACHABLE: Problem = { type: "about:blank", title: "The server could not be reached", status: 0 };

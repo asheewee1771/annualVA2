@@ -1,11 +1,13 @@
 import { useCallback, useState } from "react";
 import { dayLabel } from "../../api/cycles.ts";
 import { fetchCmInbox, type CmInboxSystem, type InboxGroup } from "../../api/dashboards.ts";
+import { AppLink } from "../../app/AppLink.tsx";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { useResource } from "../../hooks/useResource.ts";
 import { CycleSelector } from "../shared/CycleSelector.tsx";
 import { HandledOutsideSection } from "../shared/HandledOutsideSection.tsx";
 import { STATE_LABELS } from "../shared/systemStates.ts";
+import { reviewPath } from "./paths.ts";
 import { findingsLabel, ReviewFlags } from "./ReviewFlags.tsx";
 
 const GROUPS: readonly { group: InboxGroup; title: string; empty: string }[] = [
@@ -20,6 +22,15 @@ function InboxRow({ system }: { system: CmInboxSystem }) {
       <td>
         <span className="mono">{system.systemId}</span> {system.name}
         <ReviewFlags overdue={system.overdue} sodConflict={system.sodConflict} />
+        {system.submissionId ? (
+          <>
+            <br />
+            <AppLink path={reviewPath(system.submissionId)}>
+              {system.state === "IN_REVIEW" ? "Review" : "Open"}
+              <span className="visually-hidden"> {system.systemId}</span>
+            </AppLink>
+          </>
+        ) : null}
       </td>
       <td>Q{system.quarter}</td>
       <td>{STATE_LABELS[system.state]}</td>

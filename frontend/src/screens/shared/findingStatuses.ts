@@ -111,3 +111,8 @@ const DETAILS: Readonly<Record<FindingStatus, (proposal: Proposal) => string>> =
 export function proposalDetail(proposal: Proposal): string {
   return DETAILS[proposal.status](proposal);
 }
+
+/** A Critical or High Finding is flagged as a danger. */
+export function severityClass(severity: Severity): string {
+  return severity === "CRITICAL" || severity === "HIGH" ? "flag flag--danger" : "flag";
+}

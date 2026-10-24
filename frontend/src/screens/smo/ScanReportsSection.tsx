@@ -4,7 +4,7 @@ import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { usePolling } from "../../hooks/usePolling.ts";
 import type { Resource } from "../../hooks/useResource.ts";
 import { ScanReportCard } from "./ScanReportCard.tsx";
-import { inProgress, SCAN_REPORTS } from "./scanReports.ts";
+import { inProgress, SCAN_REPORTS } from "../shared/scanReports.ts";
 
 /**
  * The three Scan Report cards of a VA Submission with how each is provided and their files. A file moves through the

@@ -3,8 +3,8 @@ import { enterManualFinding, MANUAL_LIMITS, type Severity } from "../../api/find
 import { ApiError, type Problem } from "../../api/problem.ts";
 import { ClassifiedField } from "../../components/ClassifiedField.tsx";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
-import { SEVERITY_LABELS } from "./findingStatuses.ts";
-import type { ScanReport } from "./scanReports.ts";
+import { SEVERITY_LABELS } from "../shared/findingStatuses.ts";
+import type { ScanReport } from "../shared/scanReports.ts";
 
 const UNREACHABLE: Problem = { type: "about:blank", title: "The server could not be reached", status: 0 };
 

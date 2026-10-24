@@ -1,31 +1,36 @@
 import { AppLink } from "../../app/AppLink.tsx";
 import type { AreaProps } from "../shared/AreaProps.ts";
 import { CmInboxScreen } from "./CmInboxScreen.tsx";
+import { CM_BOARD_PATH, CM_INBOX_PATH, reviewedSubmissionOf } from "./paths.ts";
 import { QuarterBoardScreen } from "./QuarterBoardScreen.tsx";
+import { ReviewScreen } from "./ReviewScreen.tsx";
 
-const INBOX_PATH = "/cyber-manager";
-const BOARD_PATH = "/cyber-manager/quarter-board";
-
-/** The Cyber Manager's working area (stories 48 and 49): two tabs, the action inbox and the Quarter board. */
+/**
+ * The Cyber Manager's working area (stories 48 to 50 and 58): two tabs, the action inbox and the Quarter board, and,
+ * beneath the inbox, the screen where a VA Submission is reviewed.
+ */
 export function CyberManagerArea({ path, classification }: AreaProps) {
-  const onBoard = path === BOARD_PATH;
+  const onBoard = path === CM_BOARD_PATH;
+  const reviewing = reviewedSubmissionOf(path);
   return (
     <>
       <nav className="tabs" aria-label="Cyber Manager views">
         <ul>
           <li>
-            <AppLink path={INBOX_PATH} current={!onBoard}>
+            <AppLink path={CM_INBOX_PATH} current={!onBoard}>
               Inbox
             </AppLink>
           </li>
           <li>
-            <AppLink path={BOARD_PATH} current={onBoard}>
+            <AppLink path={CM_BOARD_PATH} current={onBoard}>
               Quarter board
             </AppLink>
           </li>
         </ul>
       </nav>
-      {onBoard ? (
+      {reviewing ? (
+        <ReviewScreen key={reviewing} submissionId={reviewing} classification={classification} />
+      ) : onBoard ? (
         <QuarterBoardScreen classification={classification} />
       ) : (
         <CmInboxScreen classification={classification} />

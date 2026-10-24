@@ -18,7 +18,7 @@ import { Editable } from "./Editable.tsx";
 import { ManualFindingForm } from "./ManualFindingForm.tsx";
 import { ScanDateForm } from "./ScanDateForm.tsx";
 import { ScanReportModeForm } from "./ScanReportModeForm.tsx";
-import { inProgress, type ScanReport } from "./scanReports.ts";
+import { inProgress, type ScanReport } from "../shared/scanReports.ts";
 
 const UNREACHABLE: Problem = { type: "about:blank", title: "The server could not be reached", status: 0 };
 

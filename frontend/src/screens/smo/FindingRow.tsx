@@ -8,18 +8,17 @@ import {
   proposalDetail,
   REVIEW_LABELS,
   SEVERITY_LABELS,
+  severityClass,
   statusSpec,
   STATUSES,
   type FieldName,
-} from "./findingStatuses.ts";
+} from "../shared/findingStatuses.ts";
 import { saveFile } from "../shared/saveFile.ts";
 import { Editable } from "./Editable.tsx";
 import { ProposalFieldInput } from "./ProposalFieldInput.tsx";
-import { SCAN_REPORTS } from "./scanReports.ts";
+import { reportTitle } from "../shared/scanReports.ts";
 
 const UNREACHABLE: Problem = { type: "about:blank", title: "The server could not be reached", status: 0 };
-
-const REPORT_TITLES = new Map(SCAN_REPORTS.map((report) => [report.type, report.title]));
 
 type Values = Partial<Record<FieldName, string>>;
 
@@ -142,11 +141,6 @@ function StatusCell({ submissionId, finding }: { submissionId: string; finding: 
   );
 }
 
-/** A Critical or High Finding is flagged as a danger. */
-function severityClass(finding: Finding): string {
-  return finding.severity === "CRITICAL" || finding.severity === "HIGH" ? "flag flag--danger" : "flag";
-}
-
 /**
  * One Finding as a row of the list, and the control to propose a status for it (stories 28 and 35): the severity, what the
  * report called it, where it was found, the status proposed so far with the review of it, and a select of the four statuses
@@ -187,7 +181,7 @@ export function FindingRow({
           </Editable>
         </td>
         <td>
-          <span className={severityClass(finding)}>{SEVERITY_LABELS[finding.severity]}</span>
+          <span className={severityClass(finding.severity)}>{SEVERITY_LABELS[finding.severity]}</span>
         </td>
         <td className="mono">
           {finding.identifier}
@@ -212,7 +206,7 @@ export function FindingRow({
           ) : null}
         </td>
         <td className="mono">{finding.packageOrRule}</td>
-        <td>{REPORT_TITLES.get(finding.reportType) ?? finding.reportType}</td>
+        <td>{reportTitle(finding.reportType)}</td>
         <td>
           {finding.occurrenceCount}
           <span className="visually-hidden"> places</span>

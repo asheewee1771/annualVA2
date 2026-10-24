@@ -1,7 +1,7 @@
 import type { ChangeEvent } from "react";
 import type { ReportFile } from "../../api/reportFiles.ts";
 import { ClassifiedField } from "../../components/ClassifiedField.tsx";
-import type { FieldName, FieldSpec } from "./findingStatuses.ts";
+import type { FieldName, FieldSpec } from "../shared/findingStatuses.ts";
 
 /**
  * One input of a status's fields, with its classification label beside it (IM8 dp-8): a long text, a one-line text, a

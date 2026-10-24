@@ -17,8 +17,9 @@ import { ProgressBar } from "../../components/ProgressBar.tsx";
 import { useResource, type Resource } from "../../hooks/useResource.ts";
 import { Editable } from "./Editable.tsx";
 import { BulkBar } from "./BulkBar.tsx";
-import { FindingsTable, Pager } from "./FindingsTable.tsx";
-import { SCAN_REPORTS } from "./scanReports.ts";
+import { Pager } from "../shared/Pager.tsx";
+import { FindingsTable } from "./FindingsTable.tsx";
+import { SCAN_REPORTS } from "../shared/scanReports.ts";
 
 const PAGE_SIZE = 100;
 

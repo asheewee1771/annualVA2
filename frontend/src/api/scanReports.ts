@@ -1,5 +1,5 @@
 import { request } from "./client.ts";
-import type { ReviewState } from "./findings.ts";
+import type { Review, ReviewInput, ReviewState } from "./findings.ts";
 import type { ReportType } from "./reportFiles.ts";
 
 /**
@@ -20,6 +20,33 @@ export interface ScanReportMode {
   justification: string | null;
   /** The Cyber Manager's review of a not-applicable justification; null for any other mode. */
   reviewState: ReviewState | null;
+  /**
+   * The version of the justification as read now: it goes up whenever the justification or the mode changes. A review
+   * names it, so a screen read before a rewrite cannot confirm the rewrite.
+   */
+  justificationVersion: number;
+  /**
+   * For a not-applicable Scan Report, the Cyber Manager's latest review of its justification with the wording it was about:
+   * after a Dispute and a rewrite it still shows what was Disputed. Null for any other mode, and until the first review.
+   */
+  latestReview: Review | null;
+}
+
+/**
+ * POST /api/submissions/{id}/reports/{type}/review: the Cyber Manager confirms or Disputes the justification of a Scan
+ * Report marked not applicable, naming the version of it they read; the server refuses it when the justification has
+ * changed since.
+ */
+export function reviewScanReport(
+  submissionId: string,
+  reportType: ReportType,
+  justificationVersion: number,
+  input: ReviewInput,
+): Promise<Review> {
+  return request<Review>("POST", `${reports(submissionId)}/${encodeURIComponent(reportType)}/review`, {
+    ...input,
+    justificationVersion: String(justificationVersion),
+  });
 }
 
 const reports = (submissionId: string): string => `/api/submissions/${encodeURIComponent(submissionId)}/reports`;

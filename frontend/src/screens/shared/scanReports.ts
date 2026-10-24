@@ -40,3 +40,10 @@ export function inProgress(file: ReportFile): boolean {
     file.status === "TYPE_OK"
   );
 }
+
+const TITLES = new Map(SCAN_REPORTS.map((report) => [report.type, report.title]));
+
+/** How a Scan Report is named on screen. */
+export function reportTitle(type: ReportType): string {
+  return TITLES.get(type) ?? type;
+}

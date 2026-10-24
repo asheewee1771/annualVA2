@@ -22,7 +22,7 @@ import { EditableContext } from "./Editable.tsx";
 import { FindingsSection } from "./FindingsSection.tsx";
 import { SMO_AREA_PATH } from "./paths.ts";
 import { ScanReportsSection } from "./ScanReportsSection.tsx";
-import { SCAN_REPORTS } from "./scanReports.ts";
+import { SCAN_REPORTS } from "../shared/scanReports.ts";
 
 const WHEN = new Intl.DateTimeFormat("en-SG", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Singapore" });
 

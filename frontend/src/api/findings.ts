@@ -75,6 +75,50 @@ export interface Finding {
   sourceFiles: SourceFile[];
   reviewState: ReviewState | null;
   currentProposal: Proposal | null;
+  /**
+   * The Cyber Manager's latest review of this Finding, of whichever proposal it was: it is about the current proposal only
+   * when its `proposalId` is the current proposal's id. Null until the first review.
+   */
+  latestReview: Review | null;
+}
+
+/** What the Cyber Manager decides about a proposal or a not-applicable justification. */
+export type ReviewDecision = "CONFIRMED" | "DISPUTED";
+
+/** The longest a review comment may be: the server's limit. */
+export const MAX_COMMENT_LENGTH = 4000;
+
+/** One review by a Cyber Manager. The comment and the justification are what a person typed: text only. */
+export interface Review {
+  id: string;
+  decision: ReviewDecision;
+  /** Always present on a Dispute; null on a confirmation without one. */
+  comment: string | null;
+  /** For a Finding, the proposal reviewed; null for a not-applicable justification. */
+  proposalId: string | null;
+  /** For a not-applicable Scan Report, the justification as it was when reviewed; null for a Finding. */
+  justification: string | null;
+  /** For a not-applicable Scan Report, the version of the justification reviewed; null for a Finding. */
+  justificationVersion: number | null;
+  /** A user id, never a name or email. */
+  reviewedBy: string;
+  /** An instant (UTC). */
+  reviewedAt: string;
+}
+
+/** What a review sends: the decision and a comment, which a Dispute requires. */
+export interface ReviewInput {
+  decision: ReviewDecision;
+  comment?: string;
+}
+
+/**
+ * POST /api/findings/{id}/reviews: the Cyber Manager confirms or Disputes the Finding's current proposal, naming the
+ * proposal they read; the server refuses it when that is no longer the current one, and when segregation of duties does
+ * not allow the caller to review this VA Submission.
+ */
+export function reviewFinding(findingId: string, proposalId: string, input: ReviewInput): Promise<Review> {
+  return request<Review>("POST", `/api/findings/${encodeURIComponent(findingId)}/reviews`, { ...input, proposalId });
 }
 
 export interface FindingPage {

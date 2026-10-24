@@ -513,3 +513,22 @@ body {
   align-items: center;
   gap: 12px;
 }
+
+/* The Cyber Manager's review screen (ticket 28): one block per reviewed item, and its Confirm and Dispute controls. */
+.review-item {
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.review-form {
+  min-width: 16rem;
+}
+
+.review-form__actions {
+  margin: 0.25rem 0 0;
+}
+
+.latest-review {
+  margin: 0.25rem 0;
+}

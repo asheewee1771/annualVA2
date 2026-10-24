@@ -76,7 +76,10 @@ interface ReviewMarkers {
   confirmed: number;
   /** The Findings whose current proposal awaits the Cyber Manager's review. */
   awaitingReview: number;
-  /** Segregation of duties will refuse the caller's review: they acted on this VA Submission at another step. */
+  /**
+   * Segregation of duties refuses the caller's review: they acted on this VA Submission at another step, or are assigned to
+   * another step of its System (its SMO/Tech Lead, say).
+   */
   sodConflict: boolean;
 }
 
