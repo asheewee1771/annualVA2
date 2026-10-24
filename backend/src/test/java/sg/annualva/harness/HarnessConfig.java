@@ -44,6 +44,12 @@ public class HarnessConfig {
         return new CapturingMailRelay();
     }
 
+    /** What the VA Cycle closes published, as a consumer after the commit sees it. */
+    @Bean
+    RecordedCycleEvents recordedCycleEvents() {
+        return new RecordedCycleEvents();
+    }
+
     /** The malware scanner: clean, sanitised, blocked or never finishes, by keyword in the file name. */
     @Bean
     @Primary

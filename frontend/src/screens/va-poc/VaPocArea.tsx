@@ -74,7 +74,7 @@ export function VaPocArea({ path, classification }: AreaProps) {
         </ul>
       </nav>
       {onMatrix ? (
-        <CycleMatrixScreen classification={classification} />
+        <CycleMatrixScreen />
       ) : (
         <QuarterBoardScreen classification={classification} whose="every System" boardFor={ENDORSE_BOARD} />
       )}

@@ -39,4 +39,15 @@ public enum SubmissionState {
     public String label() {
         return label;
     }
+
+    /**
+     * Endorsed, Exempted, Withdrawn and Not Endorsed are final: nothing more is done (spec state table). Every other state
+     * becomes Not Endorsed when its VA Cycle closes, Exemption Requested included (ADR 0044).
+     */
+    public boolean isFinal() {
+        return switch (this) {
+            case ENDORSED, EXEMPTED, WITHDRAWN, NOT_ENDORSED -> true;
+            case DRAFT, IN_REVIEW, RETURNED_FOR_REWORK, AWAITING_ENDORSEMENT, EXEMPTION_REQUESTED -> false;
+        };
+    }
 }

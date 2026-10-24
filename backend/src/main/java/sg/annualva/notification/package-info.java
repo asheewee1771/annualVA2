@@ -6,7 +6,7 @@
  * link, so no Finding detail can reach a notification. Items for the VA POCs go to both as a pair that clears for both,
  * marked "handled by (name)", once either makes the decision it awaits. A required message also goes out by email: it is
  * queued with the notification and sent through the mail-relay port by {@link sg.annualva.notification.MailOutbox} with
- * allow-listed values only (ADR 0044). It sits above the modules it listens to and nothing reads it. Depends on access,
+ * allow-listed values only (ADR 0045). It sits above the modules it listens to and nothing reads it. Depends on access,
  * boundary, cycle, register, submission and web only.
  */
 package sg.annualva.notification;

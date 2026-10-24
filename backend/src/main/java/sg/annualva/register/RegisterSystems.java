@@ -1,17 +1,25 @@
 package sg.annualva.register;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import sg.annualva.access.AccessGuard;
 import sg.annualva.access.Need;
 import sg.annualva.access.SystemScope;
+import sg.annualva.cycle.CycleCalendar;
+import sg.annualva.cycle.CyclePhase;
+import sg.annualva.cycle.VaCycle;
 import sg.annualva.web.ResourceNotFoundException;
 
 /**
@@ -20,6 +28,10 @@ import sg.annualva.web.ResourceNotFoundException;
  * System; an SMO/Tech Lead or Cyber Manager sees only the Systems their roles name (ADR 0013). The Unlinked SMO flag is
  * read when asked, so it clears the moment the person signs in (ADR 0017), and is shown to the VA POCs only: it is
  * theirs to fix. A read of the list is not audited: it names no one System's reports and changes nothing.
+ *
+ * <p>The Register is one standing list whose Quarter column applies to every VA Cycle, so a Cycle's Systems are the
+ * Register's, until a newer Cycle opens: from then on the older Cycle keeps its Systems and their Quarters as they were,
+ * and an apply changes only the newer one (story 17, ADR 0044). Every reader of a Cycle's Systems asks here.
  */
 @Service
 public class RegisterSystems {
@@ -56,10 +68,12 @@ public class RegisterSystems {
 
     private final RegisterStore store;
     private final AccessGuard guard;
+    private final CycleCalendar calendar;
 
-    RegisterSystems(RegisterStore store, AccessGuard guard) {
+    RegisterSystems(RegisterStore store, AccessGuard guard, CycleCalendar calendar) {
         this.store = store;
         this.guard = guard;
+        this.calendar = calendar;
     }
 
     @Transactional(readOnly = true)
@@ -76,13 +90,6 @@ public class RegisterSystems {
         return visible.stream().map(system -> view(system, scope.all(), linked)).toList();
     }
 
-    /** The Systems still in the Register that the caller may reach for this need, in System ID order. */
-    @Transactional(readOnly = true)
-    public List<ActiveSystem> active(Need need) {
-        SystemScope scope = guard.scope(need);
-        return activeWhere(scope::contains);
-    }
-
     /**
      * Every System still in the Register, in System ID order, for a scheduled job, which acts for nobody (the Overdue
      * sweep, ADR 0033). It skips the access guard, so it is never for a request: the architecture test names its callers.
@@ -90,6 +97,67 @@ public class RegisterSystems {
     @Transactional(readOnly = true)
     public List<ActiveSystem> everyActive() {
         return activeWhere(id -> true);
+    }
+
+    /**
+     * The Systems of one VA Cycle that the caller may reach for this need, in System ID order, each with its Quarter in
+     * that Cycle: the Register's, or the ones the Cycle kept when a newer Cycle opened. A System retired since is left out,
+     * as everywhere.
+     */
+    @Transactional(readOnly = true)
+    public List<ActiveSystem> active(Need need, int cycleYear) {
+        SystemScope scope = guard.scope(need);
+        return inCycle(cycleYear, scope::contains);
+    }
+
+    /**
+     * The same for every System, for a scheduled job, which acts for nobody (the Overdue sweep, the lifecycle). It skips
+     * the access guard, so it is never for a request: the architecture test names its callers.
+     */
+    @Transactional(readOnly = true)
+    public List<ActiveSystem> everyActive(int cycleYear) {
+        return inCycle(cycleYear, id -> true);
+    }
+
+    /**
+     * The Quarter of a System in one VA Cycle, for a command that has already asked the access guard about it; nothing
+     * when the System is not in that Cycle (added to the Register after a newer Cycle opened, or retired).
+     */
+    @Transactional(readOnly = true)
+    public Optional<Integer> quarterIn(UUID systemId, int cycleYear) {
+        return inCycle(cycleYear, systemId::equals).stream().findFirst().map(ActiveSystem::quarter);
+    }
+
+    /**
+     * Keeps the Systems of every VA Cycle that is no longer the newest to have started, as the Register holds them now,
+     * unless they are kept already, so that an apply from now on changes only the newest Cycle (ADR 0044). The lifecycle
+     * job calls it when a Cycle opens, and every apply calls it first, so the Cycles are kept even when the apply comes
+     * before the job's pass. It takes the apply lock (re-entrant, so an apply that holds it already passes), so an apply
+     * never lands between the two.
+     *
+     * @param now the instant the caller read from the clock; the Cycles are those the app runs on its business date
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void keepOlderCycles(Instant now) {
+        store.lockApply();
+        LocalDate today = calendar.dateOf(now);
+        List<VaCycle> older = new ArrayList<>(calendar.cyclesOn(today).stream()
+                .filter(cycle -> cycle.phaseOn(today) != CyclePhase.UPCOMING).toList());
+        if (!older.isEmpty()) {
+            older.removeLast();
+        }
+        older.forEach(cycle -> store.freeze(cycle.year(), now));
+    }
+
+    /** The Systems of the Cycle whose id passes the test, with their Quarters in it, in System ID order. */
+    private List<ActiveSystem> inCycle(int cycleYear, Predicate<UUID> include) {
+        Optional<Map<UUID, Integer>> kept = store.frozen(cycleYear);
+        return activeWhere(id -> include.test(id) && kept.map(quarters -> quarters.containsKey(id)).orElse(true))
+                .stream()
+                .map(system -> kept.map(quarters -> quarters.get(system.id()))
+                        .map(quarter -> new ActiveSystem(system.id(), system.systemId(), system.name(), quarter))
+                        .orElse(system))
+                .toList();
     }
 
     /**

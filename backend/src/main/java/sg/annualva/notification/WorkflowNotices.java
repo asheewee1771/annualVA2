@@ -12,6 +12,7 @@ import sg.annualva.cycle.Quarter;
 import sg.annualva.cycle.VaCycle;
 import sg.annualva.register.RegisterSystems;
 import sg.annualva.register.SystemChangeEvent;
+import sg.annualva.submission.CycleClosed;
 import sg.annualva.submission.OverdueEvent;
 import sg.annualva.submission.SubmissionEvent;
 import sg.annualva.submission.SubmissionState;
@@ -30,7 +31,9 @@ import sg.annualva.submission.Submissions;
  *   <li>passed to endorsement: both VA POCs, as a pair; a VA POC's endorsement or return clears it for both;
  *   <li>Overdue: the person whose step it is (the SMO/Tech Lead while it is Not Started, a Draft or Returned for Rework,
  *       the Cyber Manager In Review, both VA POCs Awaiting Endorsement);
- *   <li>moved to another Quarter or transferred by the Register: the SMO/Tech Lead, and on a transfer the former one too.
+ *   <li>moved to another Quarter or transferred by the Register: the SMO/Tech Lead, and on a transfer the former one too;
+ *   <li>made Not Endorsed by its VA Cycle's close: the SMO/Tech Lead; a VA POC's close also clears the endorsement pair of
+ *       a VA Submission that was Awaiting Endorsement, as an endorsement would (ticket 41, ADR 0044).
  * </ul>
  */
 @Component
@@ -85,6 +88,24 @@ class WorkflowNotices {
                     overdue(event, NoticeAction.ENDORSE_OVERDUE, Links.endorse(id)), Awaits.ENDORSEMENT);
             // The Overdue rule (V20) flags no other state: a final or frozen one waits on no window.
             default -> { }
+        }
+    }
+
+    /**
+     * One notice per VA Submission the close made Not Endorsed, to its SMO/Tech Lead, linked to the VA Submission (read
+     * only now). The lifecycle job's close acts for nobody, so it handles no endorsement pair: a pair can be marked handled
+     * only by a VA POC.
+     */
+    @TransactionalEventListener
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    void on(CycleClosed event) {
+        for (CycleClosed.NotEndorsed item : event.notEndorsed()) {
+            UUID closedBy = event.closedBy();
+            if (closedBy != null && item.from() == SubmissionState.AWAITING_ENDORSEMENT) {
+                notifications.handled(item.submissionId(), Awaits.ENDORSEMENT, closedBy, event.at());
+            }
+            notifications.toSmo(new Notice(item.systemId(), item.submissionId(), SubmissionState.NOT_ENDORSED.name(),
+                    NoticeAction.NOT_ENDORSED, null, Links.prepare(item.submissionId()), event.at()));
         }
     }
 

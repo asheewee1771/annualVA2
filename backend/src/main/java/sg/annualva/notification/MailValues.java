@@ -9,7 +9,7 @@ import sg.annualva.register.RegisterText;
 import sg.annualva.submission.SubmissionState;
 
 /**
- * The values a mail carries, and the allow-list they pass before the relay is called (story 91, ADR 0044): the System's
+ * The values a mail carries, and the allow-list they pass before the relay is called (story 91, ADR 0045): the System's
  * ID and name, the state, the action, the due date, the link and, for a Register change, what changed. There is no other
  * key, so nothing a person types into a VA Submission and nothing read from a report can reach a mail. The action, the
  * change and the due date are built from typed fields in the app's own words. Of the values read from the database as

@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review &mdash; 41-va-cycle-lifecycle</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall: PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">build WARN &middot; C0 H0 M0 L3</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN &middot; C0 H0 M5 L11</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN &middot; C0 H0 M0 L9</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">semgrep WARN &middot; C0 H0 M0 L3</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN &middot; C0 H0 M0 L4</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react WARN &middot; C0 H0 M2 L6</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN &middot; C0 H0 M2 L11</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">impl/41-va-cycle-lifecycle</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report</h1>
+          <p class="text-sm text-slate-500 mt-1">Ticket 41, the VA Cycle lifecycle: a VA Cycle opens when its Q1 starts, the older Cycle keeps its Systems while two Cycles overlap, and the close (by the job, or early by a VA POC) makes every unfinished VA Submission and every Not Started System Not Endorsed. Diff <span class="font-mono text-xs">integration/annual-va-r1...HEAD</span> on <span class="font-mono text-xs">impl/41-va-cycle-lifecycle</span>, now at HEAD <span class="font-mono text-xs">ea24f5c</span> (51 files, +1683 / -178).</p>
+        </div>
+        <div class="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 space-y-2">
+          <p><strong>What the checks saw.</strong> Six checks (<span class="font-mono text-xs">thermo-nuclear</span>, <span class="font-mono text-xs">code-review</span>, <span class="font-mono text-xs">semgrep</span>, <span class="font-mono text-xs">im8</span>, <span class="font-mono text-xs">react</span>, <span class="font-mono text-xs">springboot</span>) reviewed the branch at its first HEAD <span class="font-mono text-xs">0b7592b</span> against <span class="font-mono text-xs">integration/annual-va-r1</span> (3 commits, 49 files, +1628 / -175). Only <span class="font-mono text-xs">build</span> ran on the current HEAD <span class="font-mono text-xs">ea24f5c</span>.</p>
+          <p><strong>What changed after the review.</strong> Two reviewer Mediums were addressed and the commits rewritten (now <span class="font-mono text-xs">eb35acb</span>, <span class="font-mono text-xs">c5ed21e</span>, <span class="font-mono text-xs">697784d</span>): the deletion of <span class="font-mono text-xs">screens/shared/CycleSelector.tsx</span> moved into the front-end commit (code-review S1), and <span class="font-mono text-xs">RegisterSystems.keepOlderCycles</span> now takes only the instant (thermo-nuclear M2). The ArchitectureTest <span class="font-mono text-xs">because</span> text was corrected as well (code-review S2). Then the branch merged integration (ticket 36&rsquo;s in-app notifications) in <span class="font-mono text-xs">1b7786c</span>, renumbered its ADR from 0043 to <strong>0044</strong> (ticket 36 took 0043), and added <span class="font-mono text-xs">ea24f5c</span>, which wires the <span class="font-mono text-xs">CycleClosed</span> event to a <span class="font-mono text-xs">NOT_ENDORSED</span> notification for each System&rsquo;s SMO/Tech Lead. That resolves code-review P1 (nobody notified the SMOs).</p>
+          <p>The aggregator checked each resolved item against the code at <span class="font-mono text-xs">ea24f5c</span>; they are listed under &ldquo;Resolved since the review&rdquo; and not counted. Carried-over findings that cite ADR 0043 mean what is now ADR 0044, and their line numbers refer to <span class="font-mono text-xs">0b7592b</span>. The notification wiring in <span class="font-mono text-xs">ea24f5c</span> (<span class="font-mono text-xs">WorkflowNotices</span>, <span class="font-mono text-xs">NoticeAction</span>, the V141 notification check) was covered by the build (923 tests pass, both classes at 100 % instructions) but was not reviewed by the other six checks.</p>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Executive Summary</h2>
+          <p class="text-xs text-slate-500 mt-1">Overall status across all active checks. <strong>Overall PASS:</strong> no check has a Critical or High finding, and the build is green at HEAD (923 tests, JaCoCo line and branch thresholds met, <span class="font-mono">npm run check</span> clean). Every check is WARN because Medium or Low findings remain. Nine Mediums are open: five maintainability items from thermo-nuclear, two front-end behaviours from react, and two from springboot (one transaction for the whole lifecycle pass, and no concurrent Seam 1 test of the close). None blocks the merge.</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Check</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Status</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">C / H / M / L</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Summary of gaps</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">build <span class="text-xs text-slate-400">(HEAD ea24f5c)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 3</td>
+              <td class="px-4 py-2">Back end <span class="font-mono text-xs">clean verify</span> BUILD SUCCESS: 923 tests, 0 failures; bundle lines 97.6 %, branches 91 %. Front end <span class="font-mono text-xs">npm run check</span> passes every step. Lows: a pre-existing deprecation warning, <span class="font-mono text-xs">CycleLifecycleJob</span> at 0 % coverage (like <span class="font-mono text-xs">OverdueSweepJob</span>), and a fallow hotspot note on <span class="font-mono text-xs">Shell.tsx</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">thermo-nuclear</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 5 / 11</td>
+              <td class="px-4 py-2">M2 is resolved. Five Mediums remain: the VA POC&rsquo;s close does the job&rsquo;s &ldquo;open&rdquo; work, a two-mode <span class="font-mono text-xs">Optional&lt;Map&gt;</span> for Cycle membership, <span class="font-mono text-xs">CycleCalendar</span> now reads the database on every call, <span class="font-mono text-xs">closeNow</span>&rsquo;s nullable mode parameters, and no ArchUnit fence on <span class="font-mono text-xs">CycleStore</span>&rsquo;s writers. Eleven Lows.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">code-review</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 9</td>
+              <td class="px-4 py-2">All three Mediums are resolved: S1 (a commit that did not build), S2 (the ArchUnit <span class="font-mono text-xs">because</span> text) and P1 (no SMO notification). Every acceptance criterion is implemented. Nine Lows remain: seven smells and two Spec gaps (no submit-after-close test; edits still accepted between the close date and the job&rsquo;s pass).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">semgrep</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 3</td>
+              <td class="px-4 py-2">Semgrep 1.179.0, <span class="font-mono text-xs">p/security-audit</span> and <span class="font-mono text-xs">p/default</span>, all 48 surviving files of the reviewed diff (test files in a second pass). Zero findings in ticket 41&rsquo;s code. Three pre-existing Lows in test or local-mock code, none exploitable.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">im8</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 4</td>
+              <td class="px-4 py-2">Every touched control passes (as-2, as-3, as-7, as-8, as-13, lm-4, lm-19, ac-2, dp-8, pm-6). Lows: the close&rsquo;s year is validated in the service only, the guard-bypassing System list is reachable from the close and <span class="font-mono text-xs">quarterIn</span> is unfenced, the Cycle choice is lost over step-up, and one VA POC can make an irreversible mass change (provisional ADR item). Two tracked deferrals to ticket 52 (OpenAPI, job meter).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">react</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 2 / 6</td>
+              <td class="px-4 py-2">Mediums: the chosen Cycle is lost over the step-up round trip, so the VA POC does not land back on the close panel; a 409 on close leaves a stale panel that offers the close again. Six Lows (provider remount, context value identity, a repeat fetch, a double step-up message, setState after unmount, a lingering &ldquo;closed&rdquo; line).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">springboot</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 2 / 11</td>
+              <td class="px-4 py-2">All seven sub-reviews ran. Mediums: the whole lifecycle pass is one transaction, so one bad close blocks every other Cycle&rsquo;s open and close; and the close&rsquo;s concurrency promises have no concurrent Seam 1 test. Eleven Lows, mostly I/O inside <span class="font-mono text-xs">CycleCalendar</span>, missing edge tests and logging.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-600">None. No check reports a Critical or High finding.</p>
+          <p class="text-sm text-slate-600">Open Mediums most worth a decision before or soon after the merge:</p>
+          <ul class="list-disc pl-6 text-sm text-slate-600 space-y-1">
+            <li>springboot M1: <span class="font-mono text-xs">backend/src/main/java/sg/annualva/submission/CycleLifecycle.java</span> (<span class="font-mono text-xs">run()</span>). One deterministic failure in one Cycle&rsquo;s close rolls back the whole hourly pass, including another Cycle&rsquo;s opening, and repeats every hour.</li>
+            <li>react M1 / im8 L-3: <span class="font-mono text-xs">frontend/src/app/CycleChoice.tsx</span>. During the overlap the closable Cycle is the older one, but the shell&rsquo;s choice is lost over the step-up redirect, so the close panel is hidden on return.</li>
+            <li>react M2: <span class="font-mono text-xs">frontend/src/screens/va-poc/CloseCyclePanel.tsx</span>. A 409 (closed elsewhere or by the job) keeps offering the close; <span class="font-mono text-xs">EndorsePanel</span> reloads on 409 and this should too.</li>
+            <li>springboot M2: <span class="font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/CycleCloseTest.java</span>. No concurrent test proves close-versus-start or close-versus-endorse locking.</li>
+            <li>thermo-nuclear M1, M3 to M6: design simplifications in <span class="font-mono text-xs">CycleLifecycle</span>, <span class="font-mono text-xs">RegisterSystems</span>, <span class="font-mono text-xs">CycleCalendar</span> and <span class="font-mono text-xs">CycleStore</span>.</li>
+          </ul>
+          <p class="text-sm text-slate-600">For human decision (not counted): ADR 0044 item 4, that a single VA POC may close a Cycle once its Q4 has ended, with no second approver (code-review note, im8 L-4).</p>
+          <p class="text-sm text-slate-600">Resolved since the review (verified at <span class="font-mono text-xs">ea24f5c</span>):</p>
+          <ul class="list-disc pl-6 text-sm text-slate-600 space-y-1">
+            <li>code-review S1 (Medium): the back-end commit <span class="font-mono text-xs">eb35acb</span> no longer touches <span class="font-mono text-xs">frontend/</span>; the deletion of <span class="font-mono text-xs">screens/shared/CycleSelector.tsx</span> is in <span class="font-mono text-xs">c5ed21e</span>.</li>
+            <li>thermo-nuclear M2 (Medium): <span class="font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterSystems.java:141</span> is now <span class="font-mono text-xs">keepOlderCycles(Instant now)</span> and derives the date and the older Cycles itself; both callers pass only <span class="font-mono text-xs">now</span>.</li>
+            <li>code-review S2 (Medium): <span class="font-mono text-xs">backend/src/test/java/sg/annualva/arch/ArchitectureTest.java</span>. The Javadoc and <span class="font-mono text-xs">because</span> text now name the VA POC&rsquo;s close, whose scope is every System, beside the jobs.</li>
+            <li>code-review P1 (Medium): <span class="font-mono text-xs">backend/src/main/java/sg/annualva/notification/WorkflowNotices.java:100</span>. A <span class="font-mono text-xs">@TransactionalEventListener</span> on <span class="font-mono text-xs">CycleClosed</span> sends a <span class="font-mono text-xs">NOT_ENDORSED</span> notice to each System&rsquo;s SMO/Tech Lead, and a VA POC&rsquo;s close clears the endorsement pair of what was Awaiting Endorsement.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- build -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build <span class="text-xs text-slate-400">(HEAD ea24f5c)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-600 space-y-1">
+          <p>Fast mode (approved by the user): the tree was clean at <span class="font-mono text-xs">ea24f5c</span>, so the implementer&rsquo;s logs were reused. The back-end log started at about 02:41:36, after the HEAD commit at 02:41:18, and finished at 03:00:48 (SGT). The front-end log finished at 02:42:03, and <span class="font-mono text-xs">ea24f5c</span> changes no <span class="font-mono text-xs">frontend/</span> file.</p>
+          <p>Back end: <span class="font-mono text-xs">./mvnw -B -ntp clean verify</span> BUILD SUCCESS. 923 tests, 0 failures, 0 errors, 0 skipped (Seam 1 on Testcontainers, ArchUnit). JaCoCo checks met: instructions 98 %, branches 91 %, lines 97.6 %. Changed classes are at 94 to 100 % instructions, except <span class="font-mono text-xs">CycleLifecycleJob</span>.</p>
+          <p>Front end: <span class="font-mono text-xs">npm run check</span> passes Prettier, <span class="font-mono text-xs">tsc -b</span>, <span class="font-mono text-xs">vite build</span> (105 modules), the no-raw-HTML check, dependency-cruiser (0 violations) and fallow dead-code (0 issues) and health (score 78, maintainability 91.2). Vitest is not applicable by convention.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/adapters/oidc/MccHttp.java</td>
+              <td class="px-4 py-2">51</td>
+              <td class="px-4 py-2">L1. Compile-time deprecation warning: <span class="font-mono text-xs">RestClient.Builder.messageConverters(Consumer)</span> is marked for removal. Pre-existing; the file is not in the diff. A Spring upgrade will break it.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/CycleLifecycleJob.java</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">L2. The new scheduled-trigger wrapper has 0 % coverage (5 lines). It follows <span class="font-mono text-xs">OverdueSweepJob</span>, also at 0 %, and the logic it calls (<span class="font-mono text-xs">CycleLifecycle</span>) is at 99 %. Bundle thresholds are met.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/app/Shell.tsx</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">L3. Fallow names it an &ldquo;untested risk&rdquo; refactoring target (2 complex functions, hotspot score 28.0). Below the threshold; information only, since the repo has no front-end unit tests by design.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-400">Info</td>
+              <td class="px-4 py-2 font-mono text-xs">backend (test log)</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">L4 (noise only). Expected <span class="font-mono text-xs">ERROR</span>/<span class="font-mono text-xs">WARN</span> lines from <span class="font-mono text-xs">ErrorResponseTest</span> and the register-upload rejection tests. Nothing failed. Not counted.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <!-- thermo-nuclear -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear <span class="text-xs text-slate-400">(reviewed at 0b7592b)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-500">Well bounded: &ldquo;closed&rdquo; is defined once in <span class="font-mono text-xs">VaCycle.phaseOn</span>, the closed-Cycle refusal is one helper on the shared <span class="font-mono text-xs">atStep</span> path, three screen selectors became one shell context (a net deletion), and <span class="font-mono text-xs">SubmissionState.isFinal</span> is the one rule for final states. No touched file crosses 1000 lines (largest: <span class="font-mono text-xs">Submissions.java</span>, 767).</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/CycleLifecycle.java; cycle/CycleStore.java</td>
+              <td class="px-4 py-2"><span class="font-mono text-xs">close</span>, <span class="font-mono text-xs">open</span></td>
+              <td class="px-4 py-2">M1. A VA POC&rsquo;s close first runs the job&rsquo;s <span class="font-mono text-xs">open(...)</span>: it records every started Cycle&rsquo;s opening with unattributed <span class="font-mono text-xs">CYCLE_OPENED</span> entries, takes the Register apply lock and keeps the older Cycles&rsquo; Systems, only because <span class="font-mono text-xs">CycleStore.close</span> needs an existing row. Fix: make the close an upsert (<span class="font-mono text-xs">INSERT ... ON CONFLICT (year) DO UPDATE ... WHERE closed_at IS NULL</span>) and check the row count.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterSystems.java; RegisterStore.java</td>
+              <td class="px-4 py-2"><span class="font-mono text-xs">inCycle</span>, <span class="font-mono text-xs">frozen</span></td>
+              <td class="px-4 py-2">M3. Cycle membership is an <span class="font-mono text-xs">Optional&lt;Map&lt;UUID,Integer&gt;&gt;</span> whose emptiness means &ldquo;follows the live Register&rdquo;: two queries, then stitched in Java. <span class="font-mono text-xs">quarterIn</span> loads every System to answer about one, and a start reads the Register twice. Fix: one SQL statement with a <span class="font-mono text-xs">LEFT JOIN</span> on <span class="font-mono text-xs">cycle_register_system</span> and <span class="font-mono text-xs">COALESCE</span> of the Quarter.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/cycle/CycleCalendar.java</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">M4. The calendar became a hidden database reader: <span class="font-mono text-xs">cycle()</span>, <span class="font-mono text-xs">cyclesOn()</span>, <span class="font-mono text-xs">currentCycle()</span> and <span class="font-mono text-xs">running()</span> load every closed Cycle on each call (twice for <span class="font-mono text-xs">running()</span>), on hot paths that treat it as pure. Fix: keep <span class="font-mono text-xs">build</span> pure and have <span class="font-mono text-xs">requireOpenCycle</span> ask <span class="font-mono text-xs">CycleStore</span> directly, or at least document the I/O.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/CycleLifecycle.java</td>
+              <td class="px-4 py-2"><span class="font-mono text-xs">closeNow</span>, <span class="font-mono text-xs">attributed</span></td>
+              <td class="px-4 py-2">M5. <span class="font-mono text-xs">closeNow</span> takes two nullable mode parameters (<span class="font-mono text-xs">by</span> and <span class="font-mono text-xs">closesOn</span>). The audit actor comes from the request user while <span class="font-mono text-xs">closed_by</span> and <span class="font-mono text-xs">CycleClosed.closedBy</span> come from <span class="font-mono text-xs">by</span>, agreeing only by convention; the answer re-implements the calendar&rsquo;s override rule. Fix: a sealed <span class="font-mono text-xs">Closer</span> value (Job / VaPoc(id)) driving both, and re-read the Cycle after the close.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/cycle/CycleStore.java; arch/ArchitectureTest.java</td>
+              <td class="px-4 py-2"><span class="font-mono text-xs">open</span>, <span class="font-mono text-xs">close</span></td>
+              <td class="px-4 py-2">M6. <span class="font-mono text-xs">CycleStore</span>&rsquo;s public writers are called across modules by <span class="font-mono text-xs">submission.CycleLifecycle</span>, but no ArchUnit rule fences them, so any module could record a close and skip the Not Endorsed moves and audit. Fix: an ArchUnit rule limiting callers to <span class="font-mono text-xs">CycleLifecycle</span>, or a narrow port.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">submission/SubmissionStore.java, CycleLifecycle.java, CycleClosed.java</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">L1. &ldquo;Not Started&rdquo; has three representations in one flow (nullable <span class="font-mono text-xs">String</span>, the <span class="font-mono text-xs">"NOT_STARTED"</span> sentinel, nullable <span class="font-mono text-xs">SubmissionState</span> via <span class="font-mono text-xs">valueOf</span>). Pick one boundary type.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/SystemState.java</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">L2. <span class="font-mono text-xs">isFinal</span> bridges the two enums by name (<span class="font-mono text-xs">SubmissionState.valueOf(name())</span>), bypassing the compile-checked <span class="font-mono text-xs">of</span> switch beside it. Give each constant its <span class="font-mono text-xs">SubmissionState</span> or add a reverse switch.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/CycleLifecycle.java</td>
+              <td class="px-4 py-2"><span class="font-mono text-xs">closeNow</span></td>
+              <td class="px-4 py-2">L3. Two rules for &ldquo;the Quarters the app runs&rdquo; in one method (<span class="font-mono text-xs">quarter &gt;= :firstLive</span> versus <span class="font-mono text-xs">!handledOutsideApp()</span>), plus one INSERT per Quarter. Compute the live Quarters once; consider one <span class="font-mono text-xs">INSERT ... SELECT FROM unnest(...)</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/CycleLifecycle.java</td>
+              <td class="px-4 py-2"><span class="font-mono text-xs">run</span>, <span class="font-mono text-xs">close</span></td>
+              <td class="px-4 py-2">L4. Both repeat &ldquo;lock, re-read, check <span class="font-mono text-xs">closedAt</span>&rdquo;. Extract a <span class="font-mono text-xs">heldOpen(year)</span> helper.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td>
+              <td class="px-4 py-2"><span class="font-mono text-xs">start</span>, <span class="font-mono text-xs">refusedStart</span></td>
+              <td class="px-4 py-2">L5. The same REFUSED event is built twice; <span class="font-mono text-xs">register.active(systemId, Need.SUBMIT)</span> is now called only for its guard side effect. Reuse the prepared event; consider a <span class="font-mono text-xs">requireActive</span> name.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td>
+              <td class="px-4 py-2"><span class="font-mono text-xs">requireOpenCycle</span></td>
+              <td class="px-4 py-2">L6. <span class="font-mono text-xs">.orElse(true)</span> treats an unknown year as closed, where <span class="font-mono text-xs">orElseThrow</span> would state the invariant; it also reads <span class="font-mono text-xs">today</span> separately from the command&rsquo;s clock read.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterSystems.java</td>
+              <td class="px-4 py-2"><span class="font-mono text-xs">active</span></td>
+              <td class="px-4 py-2">L7. <span class="font-mono text-xs">active(UUID, Need)</span> and <span class="font-mono text-xs">active(Need, int)</span> differ only by argument order and return arity. Rename the list form, e.g. <span class="font-mono text-xs">activeInCycle</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/app/CycleChoice.tsx, CycleStatus.tsx</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">L8. <span class="font-mono text-xs">useCycleChoice()</span> may return <span class="font-mono text-xs">undefined</span>, and &ldquo;no provider&rdquo; shows as &ldquo;The calendar could not be loaded&rdquo;. <span class="font-mono text-xs">select</span> wraps an already stable setter; the context value is rebuilt each render. Throw outside the provider, pass <span class="font-mono text-xs">setChosen</span>, memoise the value.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SmoInboxScreen.tsx</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">L9. Branches on <span class="font-mono text-xs">state === "NOT_ENDORSED"</span> in two places, against the screen&rsquo;s &ldquo;server decides&rdquo; contract. Put per-state flags in one map beside <span class="font-mono text-xs">STATE_LABELS</span>, or have the server answer. Same as code-review S8.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/CloseCyclePanel.tsx</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">L10. The &ldquo;closed&rdquo; message is not keyed to the year and persists across Cycle changes; visibility and the matrix come from two fetches. Key by year; align the file name with the exported <span class="font-mono text-xs">CloseCycleSection</span>. Same as react L6.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">several</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">L11. Smaller items: another copy of the <span class="font-mono text-xs">UNREACHABLE</span> problem literal (<span class="font-mono text-xs">CloseCyclePanel.tsx</span>); the <span class="font-mono text-xs">MatrixTable</span> extraction changes the empty-matrix rendering; double reflection in the ArchUnit rule; two &ldquo;once per Cycle&rdquo; headers (<span class="font-mono text-xs">va_cycle.opened_at</span>, <span class="font-mono text-xs">cycle_register.frozen_at</span>) not explained in the ADR; <span class="font-mono text-xs">SmoInboxStartedTest</span> reordered without a comment saying why.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-3 text-sm text-slate-600 border-t border-slate-100">
+          <p class="font-medium text-slate-700">Resolved since the review</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li>M2 (Medium): <span class="font-mono text-xs">keepOlderCycles</span> was driven by its callers. It is now <span class="font-mono text-xs">keepOlderCycles(Instant now)</span> (<span class="font-mono text-xs">RegisterSystems.java:141</span>), asks <span class="font-mono text-xs">CycleCalendar</span> itself for the older Cycles, and its Javadoc states the re-entrant apply lock. <span class="font-mono text-xs">RegisterApply.java:90</span> and <span class="font-mono text-xs">CycleLifecycle.java:142</span> pass only <span class="font-mono text-xs">now</span>.</li>
+          </ul>
+        </div>
+      </details>
+
+      <!-- code-review -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review <span class="text-xs text-slate-400">(reviewed at 0b7592b)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-500">Two axes, Standards and Spec, both with no Critical or High findings. Verified clean: time only through <span class="font-mono text-xs">Clock</span>, audit entries and 409 bodies carry ids and fixed codes only, V141 keeps the earlier detail keys, the close endpoint is VA POC only with step-up first and <span class="font-mono text-xs">no-store</span>, and every acceptance criterion is implemented with no scope creep. For human decision: ADR 0044 item 4, a VA POC may close only after Q4 ends (provisional).</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/CycleLifecycle.java; OverdueSweep.java</td>
+              <td class="px-4 py-2">160-166; 70-75</td>
+              <td class="px-4 py-2">S3 (Duplicated Code). Both walk the Quarters, skip <span class="font-mono text-xs">handledOutsideApp</span>, filter members by Quarter and map to ids. Extract one helper.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">submission/CycleLifecycle.java; SubmissionStore.java; CycleClosed.java</td>
+              <td class="px-4 py-2">46; 51; 29</td>
+              <td class="px-4 py-2">S4 (Mysterious Name). <span class="font-mono text-xs">CycleLifecycle.Closed</span> beside <span class="font-mono text-xs">CycleClosed</span>, and two <span class="font-mono text-xs">NotEndorsed</span> records of nearly the same shape.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterStore.java</td>
+              <td class="px-4 py-2">58, 195, 204</td>
+              <td class="px-4 py-2">S5 (glossary drift). The store says &ldquo;freeze&rdquo; / &ldquo;frozen&rdquo; while the API and ADR say &ldquo;keep&rdquo;; CONTEXT.md already uses &ldquo;frozen&rdquo; for Exemption Requested.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/CycleLifecycle.java</td>
+              <td class="px-4 py-2">171, 178</td>
+              <td class="px-4 py-2">S6 (Primitive Obsession). <span class="font-mono text-xs">String from</span> (null = Not Started) is remapped to a sentinel and back through <span class="font-mono text-xs">valueOf</span>. Same as thermo-nuclear L1.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">submission/CycleLifecycle.java; register/RegisterSystems.java</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">S7 (Data Clumps). <span class="font-mono text-xs">(LocalDate today, Instant now)</span> travel together in differing order. Partly eased since: <span class="font-mono text-xs">keepOlderCycles</span> now takes only the instant; <span class="font-mono text-xs">open</span> and <span class="font-mono text-xs">closeNow</span> still take both.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SmoInboxScreen.tsx</td>
+              <td class="px-4 py-2">34, 93</td>
+              <td class="px-4 py-2">S8 (Repeated Switches / glossary casing). Two branches on <span class="font-mono text-xs">NOT_ENDORSED</span>; the flag repeats the State column; line 34 writes &ldquo;Not endorsed&rdquo; where CONTEXT.md says &ldquo;Not Endorsed&rdquo;.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/CycleLifecycle.java</td>
+              <td class="px-4 py-2">155, 159</td>
+              <td class="px-4 py-2">S9 (inconsistency). Systems are selected by Cycle (<span class="font-mono text-xs">everyActive(year)</span>) but unfinished VA Submissions by the Register&rsquo;s <span class="font-mono text-xs">everyActive()</span>, against the ADR&rsquo;s &ldquo;ask by Cycle&rdquo;. Equivalent today.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/CycleCloseTest.java; Submissions.java</td>
+              <td class="px-4 py-2">170, 184; 351</td>
+              <td class="px-4 py-2">P2 (Spec, missing test). AC 3 &ldquo;no transition after the close&rdquo;: submit has its own <span class="font-mono text-xs">requireOpenCycle</span> call and no <span class="font-mono text-xs">cycle-closed</span> test covers it. Same as springboot L7.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td>
+              <td class="px-4 py-2">438-443, 636</td>
+              <td class="px-4 py-2">P3 (Spec). <span class="font-mono text-xs">lockForEdit</span> / <span class="font-mono text-xs">precheckEdit</span> do not call <span class="font-mono text-xs">requireOpenCycle</span>, so for up to an hour after <span class="font-mono text-xs">closes_on</span> an SMO can still edit a Draft. ADR 0044 item 6 accepts this; one line would make &ldquo;final&rdquo; exact. Same as springboot L11.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-3 text-sm text-slate-600 border-t border-slate-100">
+          <p class="font-medium text-slate-700">Resolved since the review</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li>S1 (Medium, one logical change per commit): the back-end commit deleted <span class="font-mono text-xs">frontend/src/screens/shared/CycleSelector.tsx</span> while three screens still imported it. The rewritten back-end commit <span class="font-mono text-xs">eb35acb</span> touches no <span class="font-mono text-xs">frontend/</span> file; the deletion is in <span class="font-mono text-xs">c5ed21e</span>.</li>
+            <li>S2 (Medium): the ArchUnit rule allowlisted <span class="font-mono text-xs">CycleLifecycle</span> while its <span class="font-mono text-xs">because</span> still said only a job may list every System. The Javadoc and <span class="font-mono text-xs">because</span> text of <span class="font-mono text-xs">onlyTheScheduledJobsListSystemsPastTheAccessGuard</span> now name the VA POC&rsquo;s close and why it may (ADR 0013, 0044).</li>
+            <li>P1 (Medium): &ldquo;notify the SMOs&rdquo; was only an internal event. <span class="font-mono text-xs">ea24f5c</span> adds <span class="font-mono text-xs">WorkflowNotices.on(CycleClosed)</span> (line 100), a <span class="font-mono text-xs">NOT_ENDORSED</span> <span class="font-mono text-xs">NoticeAction</span>, the V141 notification check and a Seam 1 assertion in <span class="font-mono text-xs">CycleCloseTest</span>.</li>
+          </ul>
+        </div>
+      </details>
+
+      <!-- semgrep -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep <span class="text-xs text-slate-400">(reviewed at 0b7592b)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-500">Semgrep 1.179.0 (Docker image, repo mounted read-only), <span class="font-mono text-xs">p/security-audit</span> and <span class="font-mono text-xs">p/default</span> (1087 rules). Pass 1 scanned 513 tracked files; pass 2 named the 9 changed test files that <span class="font-mono text-xs">.semgrepignore</span> skips. All 48 surviving changed files were scanned. <strong>Zero findings in ticket 41&rsquo;s code.</strong> The three Lows below are pre-existing and out of scope. <span class="font-mono text-xs">ea24f5c</span> was not rescanned.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/harness/TestEndpoints.java</td>
+              <td class="px-4 py-2">331-333</td>
+              <td class="px-4 py-2"><span class="font-mono text-xs">java.spring.security.injection.tainted-sql-string</span> (CWE-89) in <span class="font-mono text-xs">reportFileFault</span>. The prefix is checked against <span class="font-mono text-xs">[A-Z_]+</span> first, the code is test-only, and ticket 41 did not change this method. Pre-existing.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/arch/ArchitectureTest.java</td>
+              <td class="px-4 py-2">118</td>
+              <td class="px-4 py-2"><span class="font-mono text-xs">unsafe-reflection</span> (CWE-470): <span class="font-mono text-xs">Class.forName</span> on hard-coded literals. False positive, test-only, not changed by ticket 41. Pre-existing.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">scripts/mock-mockpass-assertions.js</td>
+              <td class="px-4 py-2">11</td>
+              <td class="px-4 py-2"><span class="font-mono text-xs">path-join-resolve-traversal</span>: <span class="font-mono text-xs">path.resolve(__dirname, p)</span> in a development-only mock with fixed callers. Last changed in the scaffold commit. Pre-existing.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <!-- im8 -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8 <span class="text-xs text-slate-400">(reviewed at 0b7592b)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-500">Risk column MR, diff-scoped. Passes: as-2 (constant SQL with named parameters), as-3, as-7 (<span class="font-mono text-xs">@PreAuthorize("hasRole('VA_POC')")</span>), as-8, as-13, lm-4 (<span class="font-mono text-xs">CYCLE_OPENED</span>, <span class="font-mono text-xs">CYCLE_CLOSED</span>, one <span class="font-mono text-xs">SUBMISSION_NOT_ENDORSED</span> per change, ids and fixed codes only), lm-19, ac-2 (step-up before any read), dp-8 and pm-6. Tracked deferrals to ticket 52, not blocking: D-1 no OpenAPI entry for <span class="font-mono text-xs">POST /api/cycles/{year}/close</span>; D-2 no meter for <span class="font-mono text-xs">CycleLifecycleJob</span>. Manual checklist: confirm ADR 0044 items 4 and 7; in SIT confirm <span class="font-mono text-xs">prompt=login</span>/<span class="font-mono text-xs">max_age=0</span> for the <span class="font-mono text-xs">cycle-close</span> intent; decide whether the <span class="font-mono text-xs">cycle_register</span> snapshot needs its own audit entry.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/CycleCloseController.java</td>
+              <td class="px-4 py-2">29-31</td>
+              <td class="px-4 py-2">L-1 (as-1). <span class="font-mono text-xs">@PathVariable int year</span> has no <span class="font-mono text-xs">@Min</span>/<span class="font-mono text-xs">@Max</span>; the range is enforced in <span class="font-mono text-xs">CycleCalendar</span> (404). Same pattern as <span class="font-mono text-xs">GET /api/cycles/{year}</span>. Optional: <span class="font-mono text-xs">@Validated</span> plus <span class="font-mono text-xs">@Min(2000) @Max(2099)</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/arch/ArchitectureTest.java; submission/CycleLifecycle.java; register/RegisterSystems.java</td>
+              <td class="px-4 py-2">216; 155, 159; 113</td>
+              <td class="px-4 py-2">L-2 (ac-1). A request path (the VA POC&rsquo;s close) now lists every System past the access guard, and the public <span class="font-mono text-xs">quarterIn</span> skips the guard with no ArchUnit rule. No exposure today (a VA POC&rsquo;s scope is every System). Partly addressed: the rule&rsquo;s <span class="font-mono text-xs">because</span> text is now correct. Still open: fence <span class="font-mono text-xs">quarterIn</span>&rsquo;s callers, or pass an explicit all-Systems scope on the close.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/app/CycleChoice.tsx; screens/va-poc/CloseCyclePanel.tsx; api/stepUp.ts</td>
+              <td class="px-4 py-2">27-29; 102</td>
+              <td class="px-4 py-2">L-3 (ac-2, usability). After the fresh sign-in the shell&rsquo;s Cycle choice is lost, so the VA POC does not return to the close panel. No partial state is written. Keep the chosen Cycle in the route or the step-up draft. Same as react M1.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">docs/adr/0044-a-cycle-opens-and-closes-by-a-stored-record-and-its-close-makes-the-unfinished-not-endorsed.md; CycleLifecycle.java</td>
+              <td class="px-4 py-2">item 4; 114-128</td>
+              <td class="px-4 py-2">L-4 (ac-2 / lm-4 process). One VA POC with a fresh sign-in can close a Cycle up to 28 days early, irreversibly. Role, step-up, a confirm dialog and per-change audit are in place, but no second approver; the ADR marks this provisional. A human confirms item 4. No code change needed for IM8.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <!-- react -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react <span class="text-xs text-slate-400">(reviewed at 0b7592b)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-500">Front end only (16 files). Sound: one <span class="font-mono text-xs">CycleChoiceProvider</span> replaces four selector copies and their fetches; <span class="font-mono text-xs">selected</span> is derived during render rather than synced by an effect; stable keys; report text rendered as text only; <span class="font-mono text-xs">MatrixTable</span> is a clean extraction. ADR 0002 (no router/query libraries) and ADR 0009 (no React unit tests) respected. <span class="font-mono text-xs">ea24f5c</span> changes no front-end file.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/app/CycleChoice.tsx</td>
+              <td class="px-4 py-2">27</td>
+              <td class="px-4 py-2">M1. The Cycle choice is lost across the step-up round trip. During the overlap the closable Cycle is the older one, reachable only by choosing it; the full-page redirect resets <span class="font-mono text-xs">chosen</span>, so the close button is not on screen on return and nothing says so. Fix: carry the year in the route (e.g. <span class="font-mono text-xs">?cycle=2026</span>) and seed the provider&rsquo;s state from it, or keep it in <span class="font-mono text-xs">sessionStorage</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/CloseCyclePanel.tsx</td>
+              <td class="px-4 py-2">36-38</td>
+              <td class="px-4 py-2">M2. A 409 (closed by another VA POC or the job) shows the problem but keeps the stale <span class="font-mono text-xs">CLOSING</span> Cycle, so &ldquo;Close VA Cycle&rdquo; stays live and the matrix stays stale. Fix: on 409 reload the shell&rsquo;s Cycles and the matrix, as <span class="font-mono text-xs">EndorsePanel</span> does.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/app/Shell.tsx</td>
+              <td class="px-4 py-2">53</td>
+              <td class="px-4 py-2">L1. The root toggles between a Fragment and the provider on <span class="font-mono text-xs">roleHolder</span>, which would remount the whole subtree. No visible effect today; always render the provider and gate the fetch, or document it.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/app/CycleChoice.tsx</td>
+              <td class="px-4 py-2">31</td>
+              <td class="px-4 py-2">L2. The context value is a new object every render and mixes the year with the list resource, so every consumer re-renders on each load-state change. Memoise or split the context.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/app/CycleSelector.tsx; CycleChoice.tsx</td>
+              <td class="px-4 py-2">17; 29</td>
+              <td class="px-4 py-2">L3. Picking the already-shown Cycle refetches the dashboard; the select shows <span class="font-mono text-xs">currentCycle</span> while the dashboard shows the server default. Normalise in <span class="font-mono text-xs">select</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/CloseCyclePanel.tsx</td>
+              <td class="px-4 py-2">36-38</td>
+              <td class="px-4 py-2">L4. A <span class="font-mono text-xs">403 step-up-required</span> shows both the interstitial and an <span class="font-mono text-xs">ErrorPanel</span>. <span class="font-mono text-xs">RegisterScreen</span> suppresses it; pick one pattern.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/CloseCyclePanel.tsx</td>
+              <td class="px-4 py-2">30-41</td>
+              <td class="px-4 py-2">L5. <span class="font-mono text-xs">finally { setBusy(false) }</span> runs after a successful close has unmounted the panel. Harmless; set <span class="font-mono text-xs">busy</span> only in the <span class="font-mono text-xs">catch</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/CloseCyclePanel.tsx</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">L6. &ldquo;VA Cycle 2025 is closed&hellip;&rdquo; stays above the next Cycle&rsquo;s matrix. Key the section by year or lift <span class="font-mono text-xs">closed</span> into the screen. Same as thermo-nuclear L10.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <!-- springboot -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot <span class="text-xs text-slate-400">(reviewed at 0b7592b)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-500">All seven sub-reviews ran (core, web, data, batch, security, logging, test) on the back end (31 files). Sound: constructor injection, no <span class="font-mono text-xs">@Transactional</span> self-invocation, command sub-resource convention, RFC 9457 refusals, constant SQL, transaction-scoped advisory locks in a consistent order, an idempotent pass, step-up before any read, the refused-close audit in its own transaction, no new log statements, and Seam 1 tests without new context-cache keys.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/CycleLifecycle.java</td>
+              <td class="px-4 py-2">85</td>
+              <td class="px-4 py-2">M1 (batch, data). <span class="font-mono text-xs">run()</span> opens, keeps the older Cycles and closes every due Cycle in one transaction. A deterministic failure in one close rolls back everything, including another Cycle&rsquo;s opening, and recurs every hour. Fix: one transaction per Cycle step (<span class="font-mono text-xs">TransactionTemplate</span> or a separate bean), with open/keep separate from each close.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/CycleCloseTest.java</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">M2 (test). The ADR&rsquo;s concurrency promises (start shared vs close exclusive, close waits on an in-flight move, job and VA POC never both close) have no concurrent test. <span class="font-mono text-xs">SubmissionStartTest</span> already has a two-thread pattern; add close-vs-start or close-vs-endorse.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/cycle/CycleCalendar.java</td>
+              <td class="px-4 py-2">60, 78, 101</td>
+              <td class="px-4 py-2">L1 (core, data). Every calendar read queries <span class="font-mono text-xs">va_cycle</span>, several times per request. Read the closes once per call chain or document it. Same as thermo-nuclear M4.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/CycleLifecycle.java</td>
+              <td class="px-4 py-2">115, 120</td>
+              <td class="px-4 py-2">L2 (core). The Javadoc says the clock is read once per close, but <span class="font-mono text-xs">calendar.running(year)</span> reads it again. Add <span class="font-mono text-xs">running(year, today)</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/CycleLifecycle.java</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">L3 (core). Ten constructor dependencies and two kinds of entry point (scheduled pass, VA POC command). Split if it grows.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/CycleLifecycle.java</td>
+              <td class="px-4 py-2">172</td>
+              <td class="px-4 py-2">L4 (data). One audit insert per moved submission inside the long close transaction. Acceptable at Register size; batch if it grows.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterStore.java</td>
+              <td class="px-4 py-2">204</td>
+              <td class="px-4 py-2">L5 (data). <span class="font-mono text-xs">frozen</span> makes two round trips on every dashboard read, start and sweep. One <span class="font-mono text-xs">LEFT JOIN</span> would do. Related to thermo-nuclear M3.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/CycleLifecycleJob.java</td>
+              <td class="px-4 py-2">27</td>
+              <td class="px-4 py-2">L6 (logging, batch). No INFO line per pass and no structured error line on failure. Matches <span class="font-mono text-xs">OverdueSweepJob</span>. Add an <span class="font-mono text-xs">event.action=cycle-lifecycle</span> line with counts only.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td>
+              <td class="px-4 py-2">351</td>
+              <td class="px-4 py-2">L7 (test). Submit&rsquo;s own <span class="font-mono text-xs">requireOpenCycle</span> call has no test; a mutant removing it would survive. Same as code-review P2.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/CycleCloseTest.java</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">L8 (test). Untested edges: a System retired between the keep and the close, a kept Cycle whose System was retired later, and a close with <span class="font-mono text-xs">firstLiveQuarter == null</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">L9 (test). <span class="font-mono text-xs">CycleCloseTest</span>, <span class="font-mono text-xs">CycleOverlapTest</span> and <span class="font-mono text-xs">CycleLifecycleSeam1</span> live in <span class="font-mono text-xs">ingestion</span> only because they extend <span class="font-mono text-xs">EndorseSeam1</span>. Move them with the base class later.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/SystemState.java</td>
+              <td class="px-4 py-2">37</td>
+              <td class="px-4 py-2">L10 (core). <span class="font-mono text-xs">isFinal</span> lost compile-time exhaustiveness (<span class="font-mono text-xs">valueOf(name())</span>). Same as thermo-nuclear L2.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">L11 (web, data). Between the close date and the job&rsquo;s pass, uploads and Finding edits are still accepted; only transitions are guarded. Confirm against story 68. Same as code-review P3.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+    </main>
+  </body>
+</html>

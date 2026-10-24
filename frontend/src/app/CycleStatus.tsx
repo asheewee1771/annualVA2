@@ -1,15 +1,15 @@
-import { fetchCycles, summarise } from "../api/cycles.ts";
-import { useResource } from "../hooks/useResource.ts";
+import { summarise } from "../api/cycles.ts";
+import { useCycleChoice } from "./CycleChoice.tsx";
 
 /**
  * The header's answer to "where are we in the year": VA Cycle, Quarter, week number and the current window, from
- * GET /api/cycles. A Quarter the manual process still runs says so. It is for people who hold a role; a failure to
- * load it says so in the header and never blocks the screen.
+ * GET /api/cycles as the shell read it. A Quarter the manual process still runs says so. It is for people who hold a role;
+ * a failure to load it says so in the header and never blocks the screen.
  */
 export function CycleStatus() {
-  const cycles = useResource(fetchCycles);
+  const cycles = useCycleChoice()?.cycles;
 
-  if (cycles.error) {
+  if (!cycles || cycles.error) {
     return <p className="cycle-status muted">The calendar could not be loaded.</p>;
   }
   if (!cycles.data) {

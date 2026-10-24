@@ -22,5 +22,5 @@ export function SmoArea({ path, classification }: AreaProps) {
       />
     );
   }
-  return <SmoInboxScreen classification={classification} />;
+  return <SmoInboxScreen />;
 }

@@ -33,11 +33,8 @@ public enum SystemState {
         };
     }
 
-    /** Endorsed, Exempted, Withdrawn and Not Endorsed are final: nothing more is done (spec state table). */
+    /** A VA Submission's state is final by the submissions' one rule (spec state table); Not Started is not. */
     boolean isFinal() {
-        return switch (this) {
-            case ENDORSED, EXEMPTED, WITHDRAWN, NOT_ENDORSED -> true;
-            case NOT_STARTED, DRAFT, IN_REVIEW, RETURNED_FOR_REWORK, AWAITING_ENDORSEMENT, EXEMPTION_REQUESTED -> false;
-        };
+        return this != NOT_STARTED && SubmissionState.valueOf(name()).isFinal();
     }
 }

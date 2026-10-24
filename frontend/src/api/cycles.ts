@@ -22,8 +22,13 @@ export interface Cycle {
   year: number;
   startsOn: string;
   endsOn: string;
+  /** Its last open day: Q4's end plus 28 days, or the day a VA POC closed it early. */
   closesOn: string;
   phase: CyclePhase;
+  /** Open from its Q1 through its close; while two are open the shell offers a Cycle selector. */
+  open: boolean;
+  /** When its close was recorded (an instant, UTC); null until it is. */
+  closedAt: string | null;
   current: CurrentPosition | null;
 }
 
@@ -36,6 +41,23 @@ export interface CycleList {
 
 export function fetchCycles(): Promise<CycleList> {
   return request<CycleList>("GET", "/api/cycles");
+}
+
+/** What a close answers: the Cycle's last open day, when it closed and how many it made Not Endorsed. */
+export interface ClosedCycle {
+  year: number;
+  closesOn: string;
+  closedAt: string;
+  notEndorsed: number;
+}
+
+/**
+ * POST /api/cycles/{year}/close: a VA POC closes the VA Cycle now, after a fresh sign-in. Every VA Submission that is
+ * neither Endorsed nor Exempted, and every System with none, becomes Not Endorsed. The server answers 409 while Q4 is
+ * still running or once the Cycle is closed.
+ */
+export function closeCycle(year: number): Promise<ClosedCycle> {
+  return request<ClosedCycle>("POST", `/api/cycles/${encodeURIComponent(String(year))}/close`, {});
 }
 
 const WINDOW_LABELS: Readonly<Record<WindowName, string>> = {

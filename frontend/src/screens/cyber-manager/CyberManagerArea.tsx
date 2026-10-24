@@ -79,7 +79,7 @@ export function CyberManagerArea({ path, classification }: AreaProps) {
       ) : onBoard ? (
         <QuarterBoardScreen classification={classification} whose="your Systems" boardFor={REVIEW_BOARD} />
       ) : (
-        <CmInboxScreen classification={classification} />
+        <CmInboxScreen />
       )}
     </>
   );

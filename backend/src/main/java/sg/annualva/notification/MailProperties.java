@@ -13,7 +13,7 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
 
 /**
- * How mail goes out through the relay (prefix {@code annualva.mail}, ADR 0044). The defaults are the production values;
+ * How mail goes out through the relay (prefix {@code annualva.mail}, ADR 0045). The defaults are the production values;
  * the application refuses to start without the app's address or a template id for every {@link MailTemplate}.
  *
  * @param appUrl the address a mailed link starts with (https, no trailing slash)

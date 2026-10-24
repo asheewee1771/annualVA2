@@ -23,7 +23,7 @@ import sg.annualva.web.ResourceNotFoundException;
  * either makes the decision it {@link Awaits}. Senders call it after the move they report has committed
  * ({@code WorkflowNotices}), so a refused or rolled-back command tells nobody. A person the Register names who has not
  * signed in yet is pre-registered by email and finds the notification at the first sign-in. A required message is also
- * queued for email in the same transaction ({@link MailOutbox}, ADR 0044), so the mail and the in-app item are one
+ * queued for email in the same transaction ({@link MailOutbox}, ADR 0045), so the mail and the in-app item are one
  * notification.
  */
 @Service

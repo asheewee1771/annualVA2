@@ -57,6 +57,22 @@ class RegisterStore {
     /** One apply at a time: the second waits, then finds the baseline its preview was made from has changed. */
     private static final String LOCK_APPLY = "SELECT pg_advisory_xact_lock(hashtext('annualva.register-apply'))";
 
+    /**
+     * Keeps a Cycle's Systems as the Register holds them now: the active Systems and their Quarters, once (ADR 0044). The
+     * caller holds the apply lock, so no apply lands between the two statements.
+     */
+    private static final String FREEZE =
+            "INSERT INTO cycle_register (cycle_year, frozen_at) VALUES (:cycle, :now) ON CONFLICT (cycle_year) DO NOTHING";
+
+    private static final String FREEZE_SYSTEMS =
+            "INSERT INTO cycle_register_system (cycle_year, system_id, quarter) "
+            + "SELECT :cycle, id, quarter FROM va_system WHERE retired_at IS NULL";
+
+    private static final String FROZEN = "SELECT 1 FROM cycle_register WHERE cycle_year = :cycle";
+
+    private static final String FROZEN_SYSTEMS =
+            "SELECT system_id, quarter FROM cycle_register_system WHERE cycle_year = :cycle";
+
     private static final String CODES_TAKEN =
             "SELECT code::text FROM va_system WHERE code = ANY(CAST(:codes AS citext[]))";
 
@@ -187,6 +203,28 @@ class RegisterStore {
     /** Marks the preview applied; false when it was not waiting any more. */
     boolean markApplied(UUID id, Instant now, UUID by) {
         return jdbc.sql(MARK_APPLIED).param("id", id).param("now", utc(now)).param("by", by).update() == 1;
+    }
+
+    /** Keeps the Cycle's Systems as the Register holds them now, unless they are kept already; whether this kept them. */
+    boolean freeze(int cycleYear, Instant now) {
+        if (jdbc.sql(FREEZE).param("cycle", cycleYear).param("now", utc(now)).update() == 0) {
+            return false;
+        }
+        jdbc.sql(FREEZE_SYSTEMS).param("cycle", cycleYear).update();
+        return true;
+    }
+
+    /** The Quarter of each System the Cycle kept, by System; nothing while the Cycle follows the Register as it is. */
+    Optional<Map<UUID, Integer>> frozen(int cycleYear) {
+        if (jdbc.sql(FROZEN).param("cycle", cycleYear).query().listOfRows().isEmpty()) {
+            return Optional.empty();
+        }
+        Map<UUID, Integer> quarters = new HashMap<>();
+        jdbc.sql(FROZEN_SYSTEMS).param("cycle", cycleYear)
+                .query(rs -> {
+                    quarters.put(rs.getObject("system_id", UUID.class), rs.getInt("quarter"));
+                });
+        return Optional.of(quarters);
     }
 
     private static OffsetDateTime utc(Instant instant) {

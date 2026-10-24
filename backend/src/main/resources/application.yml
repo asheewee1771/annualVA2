@@ -77,7 +77,7 @@ annualva:
   # IM8 ac-1, story 75: exactly two VA POC email addresses (comma-separated), set at deployment and changed only
   # through its change request. The application refuses to start with fewer or more; roles are synced at startup.
   va-pocs: ${ANNUALVA_VA_POCS}
-  # Email through the organisation's mail relay (stories 91 and 94, ADR 0044). The app's address starts every mailed
+  # Email through the organisation's mail relay (stories 91 and 94, ADR 0045). The app's address starts every mailed
   # link; each logical template is sent as the relay's onboarded template id (ticket 57). The application refuses to
   # start without either. A failed hand-over is tried again after 1, 2, 4 and 8 minutes, five attempts in all.
   mail:

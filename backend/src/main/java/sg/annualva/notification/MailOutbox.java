@@ -13,7 +13,7 @@ import sg.annualva.notification.MailOutboxStore.Claimed;
 import sg.annualva.notification.MailOutboxStore.Settled;
 
 /**
- * Email through the mail relay (stories 91 and 94, ADR 0044). A required notification is queued in the transaction that
+ * Email through the mail relay (stories 91 and 94, ADR 0045). A required notification is queued in the transaction that
  * writes it ({@link Notifications}), so a mail exists exactly when its in-app notification does. The dispatcher, run by
  * {@code MailDispatchJob} (or by hand in tests), first gives up on the claims whose dispatcher stopped after their last
  * attempt, then claims due mails one at a time, each leased just before its hand-over, so a slow relay never lets a lease
@@ -129,7 +129,7 @@ public class MailOutbox {
 
     /**
      * The lease ran out before the outcome was written, and another pass has claimed or given up on the mail since: the
-     * outcome is dropped, and the mail may go out twice (at least once, ADR 0044 item 4).
+     * outcome is dropped, and the mail may go out twice (at least once, ADR 0045 item 4).
      */
     private static void claimLost(Claimed mail) {
         log.atWarn().setMessage("A mail's claim was lost before its outcome was recorded")

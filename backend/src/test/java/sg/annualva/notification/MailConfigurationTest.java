@@ -7,7 +7,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 /**
- * ADR 0044 item 3: the application refuses to start without the app's https address or a relay template id for every
+ * ADR 0045 item 3: the application refuses to start without the app's https address or a relay template id for every
  * logical template, so a mail never goes out with a wrong link or an unknown template. Start up is not reachable over
  * HTTP, so this runs the configuration binding the way the application does at startup.
  */
