@@ -37,6 +37,13 @@ public class HarnessConfig {
         return new RecordedSubmissionEvents();
     }
 
+    /** The mail relay: captures every message, and can refuse an address or fail the next calls. */
+    @Bean
+    @Primary
+    CapturingMailRelay capturingMailRelay() {
+        return new CapturingMailRelay();
+    }
+
     /** The malware scanner: clean, sanitised, blocked or never finishes, by keyword in the file name. */
     @Bean
     @Primary

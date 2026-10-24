@@ -67,7 +67,8 @@ class ArchitectureTest {
                 .whereLayer("app").mayNotBeAccessedByAnyLayer()
                 .whereLayer("web").mayOnlyBeAccessedByLayers("app", "adapters", "access", "audit", "cycle", "register", "submission", "finding", "ingestion", "dashboard", "notification")
                 .whereLayer("config").mayOnlyBeAccessedByLayers("app", "web", "access", "adapters", "audit", "cycle")
-                .whereLayer("boundary").mayOnlyBeAccessedByLayers("app", "web", "access", "adapters", "scan", "ingestion")
+                .whereLayer("boundary").mayOnlyBeAccessedByLayers("app", "web", "access", "adapters", "scan", "ingestion",
+                        "notification")
                 // quarantine and malware scan: one module holds the upload steps both the Register upload and the pipeline use
                 .whereLayer("scan").mayOnlyBeAccessedByLayers("app", "register", "ingestion")
                 // the report readers are a leaf; the upload pipeline sniffs, checks and parses files with them, and the Findings keep what they read; the submissions clean a return's comment by the one text rule (ReportText)
@@ -296,6 +297,7 @@ class ArchitectureTest {
         noClasses().that().resideOutsideOfPackage("sg.annualva.adapters..")
                 .should().implement(sg.annualva.boundary.MalwareScanner.class)
                 .orShould().implement(sg.annualva.boundary.FileStore.class)
+                .orShould().implement(sg.annualva.boundary.MailRelay.class)
                 .because("production implementations of the boundary ports live under sg.annualva.adapters")
                 .check(main);
     }

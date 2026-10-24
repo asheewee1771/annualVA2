@@ -36,7 +36,8 @@ import sg.annualva.submission.Submissions;
 @Component
 class WorkflowNotices {
 
-    private static final String NOT_STARTED = "NOT_STARTED";
+    /** The state code of a System with no VA Submission in the Cycle. */
+    static final String NOT_STARTED = "NOT_STARTED";
 
     private final Notifications notifications;
     private final RegisterSystems register;

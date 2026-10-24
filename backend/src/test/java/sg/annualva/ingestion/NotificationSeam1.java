@@ -48,4 +48,21 @@ abstract class NotificationSeam1 extends EndorseSeam1 {
     protected static ApiClient.Response markRead(ApiClient client, String notificationId) {
         return client.post(NOTIFICATIONS + "/" + notificationId + "/read");
     }
+
+    /**
+     * Every identifying text of every Finding of the VA Submission: its key, identifier, package or rule and title, which
+     * no notification and no mail may carry (story 91).
+     */
+    protected static List<String> findingDetail(ApiClient reader, String submissionId) {
+        List<String> detail = new ArrayList<>();
+        for (JsonNode finding : findings(reader, submissionId).get("items")) {
+            for (String field : List.of("identityKey", "identifier", "packageOrRule", "title")) {
+                JsonNode value = finding.get(field);
+                if (value != null && !value.isNull()) {
+                    detail.add(value.asString());
+                }
+            }
+        }
+        return detail;
+    }
 }

@@ -63,6 +63,31 @@ public final class Arrange {
         assertThat(client.post("/api/test/faults/notification/" + mode).status()).isEqualTo(200);
     }
 
+    /** One pass of the mail dispatcher, which a test runs by hand because scheduling is off in tests. */
+    public void mailDispatch() {
+        assertThat(client.post("/api/test/jobs/mail").status()).isEqualTo(200);
+    }
+
+    /**
+     * Every queued mail, oldest first, as {@code recipient}, {@code action}, {@code template}, {@code status},
+     * {@code attempts}, {@code nextAttemptAt} and {@code relayMessageId}.
+     */
+    public JsonNode mailOutbox() {
+        var response = client.get("/api/test/mail-outbox");
+        assertThat(response.status()).isEqualTo(200);
+        return ApiClient.json(response);
+    }
+
+    /** Renames a System behind the Register's back, to a name the Register would refuse. */
+    public void renameSystem(String systemUuid, String name) {
+        StringBuilder json = new StringBuilder("{\"name\":\"");
+        name.chars().forEach(c -> json.append(c < 0x20 || c > 0x7e || c == '"' || c == '\\'
+                ? String.format("\\u%04x", c) : String.valueOf((char) c)));
+        json.append("\"}");
+        assertThat(client.postJson("/api/test/systems/" + systemUuid + "/name", json.toString()).status())
+                .isEqualTo(200);
+    }
+
     /** Rejects a file as another pass of the scan job would have, without touching its bytes. */
     public void rejectFile(String fileId) {
         assertThat(client.post("/api/test/report-files/" + fileId + "/rejected").status()).isEqualTo(200);

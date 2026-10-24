@@ -27,6 +27,13 @@ annualva:
     sync-poll-interval: 20ms
   # Two VA POCs for the role store; the tests sign in as them.
   va-pocs: poc.one@ci.annualva.test,poc.two@ci.annualva.test
+  # The capturing mail relay records these ids; the mail tests assert them (MailSeam1).
+  mail:
+    app-url: https://annualva.ci.test
+    templates:
+      returned-for-rework: ci-returned-for-rework
+      overdue: ci-overdue
+      register-change: ci-register-change
   mcc:
     login-client-id: app-appfw
     # Short, so the stalled-provider tests finish quickly; the fake answers normally in milliseconds.
