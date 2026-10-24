@@ -65,6 +65,9 @@ class CycleMatrixTest extends CyberManagerSeam1 {
         assertThat(next.get("counts").get("NOT_STARTED").asInt()).isEqualTo(1);
         assertThat(next.get("total").asInt()).isEqualTo(1);
         assertThat(systemIds(matrix.get("handledOutsideApp"))).containsExactly("SYS-C8");
+        assertThat(systemIds(matrix.get("systems"))).as("Withdrawn keeps its row; only the counts leave it out")
+                .containsExactly("SYS-C1", "SYS-C2", "SYS-C3", "SYS-C4", "SYS-C5", "SYS-C6", "SYS-C7");
+        assertThat(matrix.get("systems").get(5).get("state").asString()).isEqualTo("WITHDRAWN");
     }
 
     @Test
