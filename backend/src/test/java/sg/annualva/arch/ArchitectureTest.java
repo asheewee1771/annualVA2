@@ -79,8 +79,8 @@ class ArchitectureTest {
                 .whereLayer("register").mayOnlyBeAccessedByLayers("app", "submission", "dashboard")
                 // the submissions sit above the register and the calendar; the dashboards read them (the inbox shows a Draft) and the file pipeline and the Findings ask which System a VA Submission belongs to
                 .whereLayer("submission").mayOnlyBeAccessedByLayers("app", "dashboard", "finding", "ingestion")
-                // the Findings sit above the submissions and the parsers; the upload pipeline hands them what a parser read
-                .whereLayer("finding").mayOnlyBeAccessedByLayers("app", "ingestion")
+                // the Findings sit above the submissions and the parsers; the upload pipeline hands them what a parser read, and the dashboards count them
+                .whereLayer("finding").mayOnlyBeAccessedByLayers("app", "ingestion", "dashboard")
                 // the Scan Report upload pipeline sits above the submissions and the Findings; nothing reads it
                 .whereLayer("ingestion").mayOnlyBeAccessedByLayers("app")
                 // the dashboards are read models over the modules below them; nothing reads them

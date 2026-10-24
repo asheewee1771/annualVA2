@@ -116,6 +116,12 @@ class FindingStore {
             + "count(*) FILTER (WHERE f.review_state = 'DISPUTED') AS disputed "
             + "FROM finding f WHERE f.submission_id = :submission";
 
+    /** By VA Submission, with its System: the Findings the Cyber Manager confirmed and those awaiting their review. */
+    private static final String REVIEW_COUNTS =
+            "SELECT f.submission_id, f.system_id, count(*) FILTER (WHERE f.review_state = 'CONFIRMED') AS confirmed, "
+            + "count(*) FILTER (WHERE f.review_state = 'PENDING') AS awaiting_review FROM finding f "
+            + "WHERE f.submission_id = ANY(CAST(:submissions AS uuid[])) GROUP BY f.submission_id, f.system_id";
+
     private static final String LOCATE = "SELECT f.submission_id, f.system_id FROM finding f WHERE f.id = :id";
 
     /**
@@ -299,6 +305,21 @@ class FindingStore {
 
     /** How many Findings a VA Submission has, by proposal and review. */
     record Counts(long total, long proposed, long unproposed, long awaitingReview, long disputed) {}
+
+    /** The review counts of one VA Submission, with the System it belongs to. */
+    record ReviewTally(UUID submissionId, UUID systemId, ReviewCounts counts) {}
+
+    /** The review counts of these VA Submissions; one with no Finding is absent. */
+    List<ReviewTally> reviewCounts(List<UUID> submissionIds) {
+        if (submissionIds.isEmpty()) {
+            return List.of();
+        }
+        return jdbc.sql(REVIEW_COUNTS).param("submissions", ids(submissionIds))
+                .query((rs, row) -> new ReviewTally(rs.getObject("submission_id", UUID.class),
+                        rs.getObject("system_id", UUID.class),
+                        new ReviewCounts(rs.getLong("confirmed"), rs.getLong("awaiting_review"))))
+                .list();
+    }
 
     private JdbcClient.StatementSpec filtered(String sql, UUID submissionId, FindingFilter filter) {
         List<Severity> severities = filter.severities().isEmpty() ? List.of(Severity.values()) : filter.severities();

@@ -67,6 +67,8 @@ class SmoInboxStartedTest extends InboxSeam1 {
         JsonNode returned = item(inbox(smo), "systems", "SYS-D1");
         assertThat(returned.get("state").asString()).isEqualTo("RETURNED_FOR_REWORK");
         assertThat(returned.get("nextAction").asString()).isEqualTo("PREPARE_SUBMISSION");
+        assertThat(returned.get("nextActionDueOn").asString()).as("it waits on the Review Window, by the Overdue rule")
+                .isEqualTo("2027-08-29");
         assertThat(returned.get("group").asString()).isEqualTo("NEEDS_YOUR_ACTION");
     }
 
@@ -98,5 +100,32 @@ class SmoInboxStartedTest extends InboxSeam1 {
 
         assertThat(item(inbox(smo, 2027), "systems", "SYS-D4").get("state").asString()).isEqualTo("DRAFT");
         assertThat(item(inbox(smo, 2028), "systems", "SYS-D4").get("state").asString()).isEqualTo("NOT_STARTED");
+    }
+
+    @Test
+    void aSubmissionWithTheVaPocsWaitsOnThemAndAFinalOneIsDoneWithNothingNext() {
+        registerSystems();
+        ApiClient smo = signedInAs(SMO_A);
+        String submission = ApiClient.json(start(smo, idOf(inbox(smo), "SYS-D1"))).get("id").asString();
+
+        arrange.submissionState(submission, "AWAITING_ENDORSEMENT");
+        JsonNode awaiting = item(inbox(smo), "systems", "SYS-D1");
+        arrange.submissionState(submission, "EXEMPTION_REQUESTED");
+        JsonNode frozen = item(inbox(smo), "systems", "SYS-D1");
+        arrange.submissionState(submission, "ENDORSED");
+        JsonNode endorsed = item(inbox(smo), "systems", "SYS-D1");
+
+        assertThat(awaiting.get("state").asString()).isEqualTo("AWAITING_ENDORSEMENT");
+        assertThat(awaiting.get("nextAction").asString()).isEqualTo("AWAIT_ENDORSEMENT");
+        assertThat(awaiting.get("nextActionDueOn").asString()).isEqualTo("2027-10-31");
+        assertThat(awaiting.get("group").asString()).isEqualTo("WAITING_ON_OTHERS");
+        assertThat(frozen.get("state").asString()).isEqualTo("EXEMPTION_REQUESTED");
+        assertThat(frozen.get("nextAction").asString()).isEqualTo("AWAIT_EXEMPTION_DECISION");
+        assertThat(frozen.get("nextActionDueOn").isNull()).as("frozen: no window").isTrue();
+        assertThat(frozen.get("group").asString()).isEqualTo("WAITING_ON_OTHERS");
+        assertThat(endorsed.get("state").asString()).isEqualTo("ENDORSED");
+        assertThat(endorsed.get("nextAction").isNull()).isTrue();
+        assertThat(endorsed.get("nextActionDueOn").isNull()).isTrue();
+        assertThat(endorsed.get("group").asString()).isEqualTo("DONE");
     }
 }

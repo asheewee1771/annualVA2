@@ -1,0 +1,85 @@
+package sg.annualva.dashboard;
+
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.jspecify.annotations.Nullable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import sg.annualva.access.Need;
+import sg.annualva.cycle.CycleCalendar;
+import sg.annualva.cycle.VaCycle;
+
+/**
+ * The Quarter board (story 49): one Quarter of a VA Cycle at once, its Systems in one column per state, from Not Started
+ * to Not Endorsed in the order of the spec's state table, every column present even when it is empty. A Cyber Manager
+ * sees only the Systems assigned to them in the System Register: the one dashboard reader ({@link DashboardSystems}) for
+ * {@link Need#REVIEW}, reading that Quarter only, with the Cyber Manager's {@link ReviewMarkers}. In a Quarter Handled
+ * outside the app every column is empty and its Systems are listed apart, with nothing to do.
+ */
+@Service
+public class QuarterBoard {
+
+    /**
+     * One System on the board.
+     *
+     * @param submissionId its VA Submission in the Cycle, or null while it is Not Started
+     * @param overdue the Overdue flag the sweep set; nothing locks
+     * @param confirmed the Findings whose current proposal the Cyber Manager confirmed
+     * @param awaitingReview the Findings whose current proposal awaits the Cyber Manager's review
+     * @param sodConflict whether segregation of duties will refuse the caller's review: they acted on the VA Submission
+     *     at another step
+     */
+    public record Card(
+            UUID id, String systemId, String name, @Nullable UUID submissionId, boolean overdue, long confirmed,
+            long awaitingReview, boolean sodConflict) {}
+
+    /** The Systems in one state, in System ID order. */
+    public record Column(SystemState state, List<Card> systems) {}
+
+    /**
+     * @param cycle the VA Cycle's year
+     * @param quarter 1 to 4
+     */
+    public record Board(int cycle, int quarter, List<Column> columns, List<HandledOutside> handledOutsideApp) {}
+
+    private final CycleCalendar calendar;
+    private final DashboardSystems systems;
+    private final ReviewMarkers markers;
+
+    QuarterBoard(CycleCalendar calendar, DashboardSystems systems, ReviewMarkers markers) {
+        this.calendar = calendar;
+        this.systems = systems;
+        this.markers = markers;
+    }
+
+    /**
+     * @param requestedCycle the VA Cycle's year, or null for the one running today (before the first live Cycle starts,
+     *     that Cycle); a Cycle the app does not run is not found
+     * @param requestedQuarter 1 to 4, or null for the Quarter the Cycle shows today ({@link VaCycle#quarterShownOn})
+     */
+    @Transactional(readOnly = true)
+    public Board board(@Nullable Integer requestedCycle, @Nullable Integer requestedQuarter) {
+        VaCycle cycle = calendar.running(requestedCycle);
+        int quarter = requestedQuarter == null ? cycle.quarterShownOn(calendar.today()).number() : requestedQuarter;
+        DashboardSystems.Rows rows = systems.in(cycle, Need.REVIEW, quarter);
+        Map<UUID, ReviewMarkers.Marker> marked = markers.of(rows.live());
+        Map<SystemState, List<Card>> byState = new EnumMap<>(SystemState.class);
+        for (DashboardSystems.Row row : rows.live()) {
+            byState.computeIfAbsent(row.state(), state -> new ArrayList<>())
+                    .add(card(row, ReviewMarkers.of(marked, row)));
+        }
+        List<Column> columns = new ArrayList<>();
+        for (SystemState state : SystemState.values()) {
+            columns.add(new Column(state, List.copyOf(byState.getOrDefault(state, List.of()))));
+        }
+        return new Board(cycle.year(), quarter, List.copyOf(columns), rows.handledOutside());
+    }
+
+    private static Card card(DashboardSystems.Row row, ReviewMarkers.Marker marker) {
+        return new Card(row.system().id(), row.system().systemId(), row.system().name(), row.submissionId(),
+                row.overdue(), marker.confirmed(), marker.awaitingReview(), marker.sodConflict());
+    }
+}

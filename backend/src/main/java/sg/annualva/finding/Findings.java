@@ -5,11 +5,13 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -215,6 +217,21 @@ public class Findings {
                     .onSystem(systemId).onSubmission(submissionId));
         }
         return readiness;
+    }
+
+    /**
+     * How many Findings of each of these VA Submissions the Cyber Manager has confirmed and how many await their review,
+     * for a dashboard (story 48). Only the VA Submissions of Systems the caller may see are answered, and one with no
+     * Finding is absent. They are counts, not report content, so like the inbox that shows them (ADR 0019) the read is not
+     * audited.
+     */
+    @Transactional(readOnly = true)
+    public Map<UUID, ReviewCounts> reviewCounts(Collection<UUID> submissionIds) {
+        var scope = guard.scope(Need.VIEW);
+        return store.reviewCounts(List.copyOf(submissionIds)).stream()
+                .filter(tally -> scope.contains(tally.systemId()))
+                .collect(Collectors.toUnmodifiableMap(FindingStore.ReviewTally::submissionId,
+                        FindingStore.ReviewTally::counts));
     }
 
     /**

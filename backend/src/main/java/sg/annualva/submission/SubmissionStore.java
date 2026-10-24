@@ -27,7 +27,7 @@ class SubmissionStore {
     record Row(
             UUID id, UUID systemId, int cycleYear, int quarter, SubmissionState state, boolean overdue,
             boolean endorsedLate, LocalDate submitDue, LocalDate reviewDue, LocalDate endorseDue, Instant startedAt,
-            @Nullable Instant submittedAt, @Nullable Instant overdueSince) {}
+            @Nullable Instant submittedAt, @Nullable Instant overdueSince, @Nullable LocalDate dueOn) {}
 
     /**
      * What the Overdue sweep has just flagged: a VA Submission, or a System with none (Not Started, no {@code id}), with
@@ -85,6 +85,11 @@ class SubmissionStore {
             + " AND NOT EXISTS (SELECT 1 FROM va_submission s WHERE s.system_id = candidate AND s.cycle_year = :cycle) "
             + "ORDER BY candidate ON CONFLICT (system_id, cycle_year) DO NOTHING RETURNING system_id";
 
+    /** The last day of the window a Not Started System waits on in a Quarter, by the one rule (V20). */
+    private static final String NOT_STARTED_DUE =
+            "SELECT current_window_due('" + NOT_STARTED + "', CAST(:submitDue AS date), CAST(:reviewDue AS date), "
+            + "CAST(:endorseDue AS date))";
+
     private static final String NOT_STARTED_OVERDUE =
             "SELECT system_id FROM not_started_overdue WHERE cycle_year = :cycle "
             + "AND system_id = ANY(CAST(:systems AS uuid[]))";
@@ -93,9 +98,22 @@ class SubmissionStore {
             "INSERT INTO submission_participation (submission_id, user_id, step, first_at) "
             + "VALUES (:submission, :user, :step, :now) ON CONFLICT DO NOTHING";
 
+    /**
+     * The VA Submissions among these at which the person acted at a step other than this one: where segregation of duties
+     * will refuse them this step.
+     */
+    private static final String ACTED_AT_ANOTHER_STEP =
+            "SELECT DISTINCT submission_id FROM submission_participation WHERE user_id = :user AND step <> :step "
+            + "AND submission_id = ANY(CAST(:submissions AS uuid[]))";
+
+    /**
+     * A VA Submission's columns, with {@code due_on}: the last day of the window its state waits on, by the one rule
+     * (V20); null for a final or frozen state.
+     */
     private static final String COLUMNS =
             "SELECT id, system_id, cycle_year, quarter, state, overdue, endorsed_late, submit_due, review_due, "
-            + "endorse_due, started_at, submitted_at, overdue_since FROM va_submission ";
+            + "endorse_due, started_at, submitted_at, overdue_since, "
+            + "current_window_due(state, submit_due, review_due, endorse_due) AS due_on FROM va_submission ";
 
     private static final String FIND = COLUMNS + "WHERE id = :id";
 
@@ -240,6 +258,16 @@ class SubmissionStore {
                 .list();
     }
 
+    /** The last day of the window a Not Started System of this Quarter waits on. */
+    @Nullable LocalDate notStartedDueOn(Quarter quarter) {
+        return jdbc.sql(NOT_STARTED_DUE)
+                .param("submitDue", quarter.submitDue())
+                .param("reviewDue", quarter.reviewDue())
+                .param("endorseDue", quarter.endorseDue())
+                .query((rs, row) -> rs.getObject(1, LocalDate.class))
+                .single();
+    }
+
     /** The Systems among these the sweep flagged Overdue while they were Not Started in the Cycle. */
     Set<UUID> notStartedOverdue(Collection<UUID> systemIds, int cycleYear) {
         if (systemIds.isEmpty()) {
@@ -263,6 +291,15 @@ class SubmissionStore {
                 .param("systems", ids(systemIds))
                 .query((rs, row) -> row(rs))
                 .list();
+    }
+
+    /** The VA Submissions among these at which the person acted at a step other than this one. */
+    Set<UUID> actedAtAnotherStep(Collection<UUID> submissionIds, UUID userId, SubmissionStep step) {
+        if (submissionIds.isEmpty()) {
+            return Set.of();
+        }
+        return Set.copyOf(jdbc.sql(ACTED_AT_ANOTHER_STEP).param("user", userId).param("step", step.name())
+                .param("submissions", ids(submissionIds)).query(UUID.class).list());
     }
 
     List<Submissions.Acted> participation(UUID submissionId) {
@@ -308,7 +345,8 @@ class SubmissionStore {
                 rs.getInt("quarter"), SubmissionState.valueOf(rs.getString("state")), rs.getBoolean("overdue"),
                 rs.getBoolean("endorsed_late"), rs.getObject("submit_due", LocalDate.class),
                 rs.getObject("review_due", LocalDate.class), rs.getObject("endorse_due", LocalDate.class),
-                instant(rs, "started_at"), nullableInstant(rs, "submitted_at"), nullableInstant(rs, "overdue_since"));
+                instant(rs, "started_at"), nullableInstant(rs, "submitted_at"), nullableInstant(rs, "overdue_since"),
+                rs.getObject("due_on", LocalDate.class));
     }
 
     private static @Nullable Instant nullableInstant(ResultSet rs, String column) throws SQLException {

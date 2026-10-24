@@ -33,6 +33,17 @@ public record VaCycle(int year, List<Quarter> quarters, LocalDate closesOn, @Nul
         return quarters.stream().filter(quarter -> quarter.contains(day)).findFirst();
     }
 
+    /**
+     * The Quarter a dashboard opens on, on this day: the one the day falls in (even one Handled outside the app); before
+     * the Cycle starts its first live Quarter (Q1 for a Cycle the app never ran live); after its last day its Q4.
+     */
+    public Quarter quarterShownOn(LocalDate day) {
+        if (day.isAfter(endsOn())) {
+            return quarters.getLast();
+        }
+        return quarterOn(day).orElseGet(() -> quarters.get(firstLiveQuarter == null ? 0 : firstLiveQuarter - 1));
+    }
+
     /** The Cycle is open through its close date, as a Quarter's endorsement is due through its last day. */
     public CyclePhase phaseOn(LocalDate day) {
         if (day.isBefore(startsOn())) {

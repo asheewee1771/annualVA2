@@ -123,13 +123,15 @@ public class Submissions {
     }
 
     /**
-     * What the SMO inbox needs of a started VA Submission.
+     * What a dashboard needs of a started VA Submission.
      *
      * @param overdue the Overdue flag (ADR 0033)
+     * @param dueOn the last day of the window its state waits on, by the one Overdue rule (ADR 0033 item 2); null for a
+     *     final or frozen state, which waits on none
      */
     public record Summary(
             UUID id, SubmissionState state, LocalDate submitDue, LocalDate reviewDue, LocalDate endorseDue,
-            boolean overdue) {}
+            boolean overdue, @Nullable LocalDate dueOn) {}
 
     /**
      * What the SMO/Tech Lead says about the Declaration when submitting.
@@ -362,9 +364,18 @@ public class Submissions {
         for (SubmissionStore.Row row : store.inCycle(systemIds.stream().filter(scope::contains).toList(), cycleYear)) {
             started.put(row.systemId(),
                     new Summary(row.id(), row.state(), row.submitDue(), row.reviewDue(), row.endorseDue(),
-                            row.overdue()));
+                            row.overdue(), row.dueOn()));
         }
         return started;
+    }
+
+    /**
+     * The last day of the window a System with no VA Submission (Not Started) in this Quarter waits on, by the one Overdue
+     * rule (ADR 0033 item 2), for a read model; the same rule gives a started VA Submission's {@link Summary#dueOn}.
+     */
+    @Transactional(readOnly = true)
+    public @Nullable LocalDate notStartedDueOn(Quarter quarter) {
+        return store.notStartedDueOn(quarter);
     }
 
     /**
@@ -375,6 +386,16 @@ public class Submissions {
     public Set<UUID> overdueNotStarted(Collection<UUID> systemIds, int cycleYear) {
         var scope = guard.scope(Need.VIEW);
         return store.notStartedOverdue(systemIds.stream().filter(scope::contains).toList(), cycleYear);
+    }
+
+    /**
+     * The VA Submissions among these at which the caller acted at a step other than this one, for a read model that marks
+     * where segregation of duties will refuse them that step (story 58): a Cyber Manager who started or submitted a VA
+     * Submission as its SMO/Tech Lead may not review it. Only the caller's own record is read.
+     */
+    @Transactional(readOnly = true)
+    public Set<UUID> actedAtAnotherStep(Collection<UUID> submissionIds, SubmissionStep step) {
+        return store.actedAtAnotherStep(submissionIds, user.id(), step);
     }
 
     /**
