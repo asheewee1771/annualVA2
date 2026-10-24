@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review &mdash; 36-in-app-notifications</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall: PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">build WARN &middot; C0 H0 M0 L2</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN &middot; C0 H0 M4 L5</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN &middot; C0 H0 M2 L13</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">semgrep WARN &middot; C0 H0 M0 L2</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN &middot; C0 H0 M1 L2</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react WARN &middot; C0 H0 M2 L3</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN &middot; C0 H0 M2 L9</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">impl/36-in-app-notifications</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report</h1>
+          <p class="text-sm text-slate-500 mt-1">Ticket 36: in-app notifications and VA POC pair clearing. Reviewed: diff <span class="font-mono text-xs">integration/annual-va-r1...0081cc7</span> on <span class="font-mono text-xs">impl/36-in-app-notifications</span> (commits 391b0db, 2cadf5e, a5a691a and 0081cc7; 36 files, +1437 / &minus;37).</p>
+        </div>
+        <div class="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 space-y-2">
+          <p><strong>Addressed after the review.</strong> The implementer has since fixed these findings in commits 6e9a088, 34f8fbe, 40a430f and b548d6e. The checks were not rerun against b548d6e. The aggregator read the four commits and confirmed each change is there. Statuses and counts below stay as reported, and the fixed rows are marked &ldquo;Addressed&rdquo;.</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li><span class="font-mono text-xs">RegisterSystems.named</span> now reads one System by id through a new <span class="font-mono text-xs">RegisterStore.system(id)</span> query (6e9a088). This fixes code-review S1 and springboot 1.</li>
+            <li><span class="font-mono text-xs">SystemChangeEvent.toString</span> now leaves out the former SMO&rsquo;s email (6e9a088). This fixes im8 M-1 and springboot 3.</li>
+            <li>A Seam 1 test, <span class="font-mono text-xs">NotificationTest.aNotificationThatCannotBeWrittenLeavesTheCommittedMoveAsItIs</span>, injects a failing notification write. It proves the submit still answers 200, the VA Submission is In Review and the move is audited (34f8fbe). This fixes code-review S2 / P1 and springboot 2.</li>
+            <li>The Notifications screen now shows an unreachable server, and disables its row buttons while a mark-read is in flight (40a430f). This fixes react M1 and M2.</li>
+            <li>ADR 0043 item 1 now says what an event carries: ids, codes and dates, and the one email kept out of <span class="font-mono text-xs">toString</span> (b548d6e). This fixes code-review S4.</li>
+          </ul>
+          <p>Everything else stays as reported.</p>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Executive Summary</h2>
+          <p class="text-xs text-slate-500 mt-1">Overall status across all active checks. <strong>Overall PASS:</strong> no check reports a Critical or High finding, and every check is WARN. The build is green: 910 back-end tests, ArchUnit and JaCoCo pass, and <span class="font-mono">npm run check</span> exits 0. The design follows ADR 0043. Domain modules publish events inside their transaction, and one <span class="font-mono">notification</span> module listens after the commit in <span class="font-mono">REQUIRES_NEW</span>. A <span class="font-mono">Notice</span> has no free-text field, and rows are scoped to the recipient.</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Check</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Status</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">C / H / M / L</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Summary of gaps</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">build</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 2</td>
+              <td class="px-4 py-2">Every command passed. Back end: <span class="font-mono text-xs">clean verify</span> BUILD SUCCESS from a reused log at 0081cc7, 910 tests with 0 failures, and coverage checks met. Front end: <span class="font-mono text-xs">npm run check</span> exits 0. Two informational Lows: <span class="font-mono text-xs">Workspace.tsx</span> is a fallow churn hotspot, and a deprecation warning exists outside the diff.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">thermo-nuclear</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 4 / 5</td>
+              <td class="px-4 py-2">Four Mediums:
+                <ul class="list-disc pl-5">
+                  <li><span class="font-mono text-xs">WorkflowNotices.standing</span> copies the dashboards&rsquo; standing logic and has already lost the handled-outside-app branch.</li>
+                  <li>The listener depends on the request&rsquo;s signed-in scope.</li>
+                  <li>Overdue and notice state is a string with a sentinel.</li>
+                  <li><span class="font-mono text-xs">Links</span> keeps a second copy of the front-end route table.</li>
+                </ul>
+                Five Lows cover re-reads and small front-end type leaks.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">code-review</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 2 / 13</td>
+              <td class="px-4 py-2">Every acceptance criterion that applies today is met. Two Standards Mediums, both since addressed: S1, a whole-Register read per notice, and S2, the untested after-commit isolation. The Lows include:
+                <ul class="list-disc pl-5">
+                  <li>the guard-scope dependency (S3);</li>
+                  <li>the ADR wording (S4, addressed);</li>
+                  <li>stringly state and repeated switches;</li>
+                  <li>gaps that later tickets must carry: withdrawal and the VA POC return (P2), and the REWORK text (P4).</li>
+                </ul></td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">semgrep</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 2</td>
+              <td class="px-4 py-2"><span class="font-mono text-xs">p/security-audit</span> and <span class="font-mono text-xs">p/default</span> scanned 34 files with no errors. No findings in ticket 36 code. Two pre-existing false positives in test code, on lines this ticket did not touch.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">im8</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 2</td>
+              <td class="px-4 py-2">The MR column is used, and as-2, as-3, as-7/ac-1, as-13 and lm-4 pass. One lm-19 Medium, since addressed: the event&rsquo;s <span class="font-mono text-xs">toString</span> exposed the former SMO&rsquo;s email. Two Lows: responses are not checked at runtime (a project-wide pattern), and a failed write is only logged until ticket 37.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">react</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 2 / 3</td>
+              <td class="px-4 py-2">Effects, keys and state updates are sound, and report-like text is rendered only as text. Both Mediums are since addressed: network failures were swallowed (M1), and there was no in-flight guard (M2). Three Lows remain: floating promises without <span class="font-mono text-xs">void</span>, a dead Open button for a non-app link, and repeated button labels with no row context.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">springboot</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 2 / 9</td>
+              <td class="px-4 py-2">Core and web are clean. Two Mediums, both since addressed: the whole-Register read per notice (1), and no test of failure isolation (2). Nine Lows include:
+                <ul class="list-disc pl-5">
+                  <li>the email in <span class="font-mono text-xs">toString</span> (addressed);</li>
+                  <li>lost notifications that cannot be traced;</li>
+                  <li>the guard-scope dependency;</li>
+                  <li>FK indexes and connection fan-out;</li>
+                  <li>an ArchUnit rule that misses method references;</li>
+                  <li>missing edge-case tests.</li>
+                </ul></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-600">None. No check reports a Critical or High finding.</p>
+          <p class="text-sm text-slate-600">The most significant open Mediums:</p>
+          <ul class="list-disc pl-6 text-sm text-slate-600 space-y-1">
+            <li>thermo-nuclear 1: <span class="font-mono text-xs">backend/src/main/java/sg/annualva/notification/WorkflowNotices.java:114</span>. <span class="font-mono text-xs">standing()</span> copies <span class="font-mono text-xs">DashboardSystems</span> and has already drifted. A System moved into a Quarter handled outside the app is told it is Not Started, with a Submission Window due date. Fix or ticket this before ticket 37 builds on it.</li>
+            <li>thermo-nuclear 2, also code-review S3 and springboot 5: <span class="font-mono text-xs">WorkflowNotices.java:115-116</span> calls <span class="font-mono text-xs">Submissions.inCycle</span>, which is guarded by the current <span class="font-mono text-xs">SecurityContext</span>. Off the VA POC&rsquo;s request thread, the notice would quietly say Not Started.</li>
+            <li>thermo-nuclear 3 and 4: state is a <span class="font-mono text-xs">String</span> with a <span class="font-mono text-xs">"NOT_STARTED"</span> sentinel (<span class="font-mono text-xs">OverdueEvent.java:18</span>). <span class="font-mono text-xs">Links.java</span> repeats the front-end routes, with nothing that ties the two together.</li>
+          </ul>
+          <p class="text-sm text-slate-600">Addressed since the review: code-review S1 / springboot 1, code-review S2 / springboot 2, im8 M-1, and react M1 and M2.</p>
+        </div>
+      </div>
+
+      <!-- build -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-600 space-y-1">
+          <p>The check itself reports PASS: no command failed. It is WARN here only because of the severity mapping (Low findings).</p>
+          <p>Back end: <span class="font-mono text-xs">./mvnw -B -ntp clean verify</span>, in fast mode with the log reused at the same HEAD 0081cc7 and a clean tree. BUILD SUCCESS: 910 tests, 0 failures, 0 errors and 0 skipped. All coverage checks met.</p>
+          <p>Front end: <span class="font-mono text-xs">npm run check</span> exited 0. It covers Prettier, <span class="font-mono text-xs">tsc -b</span>, <span class="font-mono text-xs">vite build</span>, the no-raw-HTML check, dependency-cruiser with no violations, fallow dead-code with no issues, and fallow health (78, grade B). Vitest is not applicable by convention.</p>
+          <p>The ERROR line in <span class="font-mono text-xs">ErrorResponseTest</span> is deliberate and is not a defect.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/app/Workspace.tsx</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">fallow health lists this file as a churn hotspot: score 29.4, 6 commits, 106 churn, trend cooling. None of the new files appear in the triage list. Informational only.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/adapters/oidc/MccHttp.java</td>
+              <td class="px-4 py-2">51</td>
+              <td class="px-4 py-2">A deprecation warning for <span class="font-mono text-xs">messageConverters(...)</span>. It predates this ticket and the file is outside the diff. No action for ticket 36.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <!-- thermo-nuclear -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-500">The overall shape holds up and follows ADR 0043. No file crosses 1k lines: <span class="font-mono text-xs">Submissions.java</span> is 749 and <span class="font-mono text-xs">SubmissionStore.java</span> 526. <span class="font-mono text-xs">SubmissionStore.windowDue</span> is a good consolidation. Approval bar: no blocking structural regression. Finding 1 should be fixed or ticketed before ticket 37.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/WorkflowNotices.java</td>
+              <td class="px-4 py-2">114</td>
+              <td class="px-4 py-2">1. <span class="font-mono text-xs">standing()</span> copies the dashboards&rsquo; derivation (compare <span class="font-mono text-xs">DashboardSystems.java:80-95</span>) and leaves out <span class="font-mono text-xs">quarter.handledOutsideApp()</span>. A System moved into a Quarter before the first live Quarter is therefore told <span class="font-mono text-xs">SYSTEM_MOVED</span> as <span class="font-mono text-xs">NOT_STARTED</span>, with a due date. Fix: add one <span class="font-mono text-xs">Submissions.standing(systemId, cycle)</span> that returns a typed result, and have both callers use it.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/WorkflowNotices.java</td>
+              <td class="px-4 py-2">114 (and <span class="font-mono text-xs">Submissions.java:669</span>)</td>
+              <td class="px-4 py-2">2. The module &ldquo;acts for nobody&rdquo;, but <span class="font-mono text-xs">standing()</span> calls <span class="font-mono text-xs">Submissions.inCycle</span>, which filters by <span class="font-mono text-xs">guard.scope(Need.VIEW)</span> for the current user. Out of scope, it quietly falls back to Not Started. That happens for a job off the request thread, another role, or ticket 37&rsquo;s outbox replay. Fix: add an explicit unguarded read fenced by ArchUnit, or put the standing on <span class="font-mono text-xs">SystemChangeEvent</span> at publish time.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/OverdueEvent.java</td>
+              <td class="px-4 py-2">18 (and <span class="font-mono text-xs">WorkflowNotices.java:39, 73-78</span>; <span class="font-mono text-xs">Notice.java</span>)</td>
+              <td class="px-4 py-2">3. State is stringly typed. <span class="font-mono text-xs">"NOT_STARTED"</span> is declared twice, then parsed with <span class="font-mono text-xs">SubmissionState.valueOf</span>, and <span class="font-mono text-xs">requireNonNull</span> restores a nullability invariant the type does not express. Fix: move <span class="font-mono text-xs">SystemState</span> into <span class="font-mono text-xs">submission</span>, type the event and the notice with it, and use one exhaustive switch.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/Links.java</td>
+              <td class="px-4 py-2">1-35</td>
+              <td class="px-4 py-2">4. A second copy of the front end&rsquo;s routes (<span class="font-mono text-xs">/smo</span>, <span class="font-mono text-xs">/smo/submissions/{id}</span>, <span class="font-mono text-xs">/rework</span>, the Cyber Manager and VA POC paths). Nothing ties it to <span class="font-mono text-xs">paths.ts</span>, and stored rows keep old paths. Fix: store <span class="font-mono text-xs">(action, submissionId)</span> and derive the link in the front end, or add a check that keeps the two tables in step.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td>
+              <td class="px-4 py-2">604-607</td>
+              <td class="px-4 py-2">5. <span class="font-mono text-xs">publish</span> reads the row again only for <span class="font-mono text-xs">dueOn</span>, and <span class="font-mono text-xs">view(id)</span> then reads it a third time. Read it once and use it for both.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/Notifications.java</td>
+              <td class="px-4 py-2">70-74</td>
+              <td class="px-4 py-2">6. <span class="font-mono text-xs">toVaPocs</span> lowercases and de-duplicates a list that <span class="font-mono text-xs">VaPocProperties</span> and the <span class="font-mono text-xs">citext</span> column already guarantee is distinct. Iterate <span class="font-mono text-xs">vaPocs.vaPocs()</span> directly.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterSystems.java</td>
+              <td class="px-4 py-2">101 (and <span class="font-mono text-xs">Notifications.java:49-60</span>, <span class="font-mono text-xs">WorkflowNotices.java:97</span>)</td>
+              <td class="px-4 py-2">7. Each notice read the whole Register, and a transfer resolves the System two or more times. Fix: add a single-row query, and let the port take the <span class="font-mono text-xs">Named</span> the caller already resolved. <span class="text-emerald-700">Partly addressed: the whole-table read is gone in 6e9a088 (see code-review S1), but the System is still resolved more than once per event.</span></td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/app/Workspace.tsx</td>
+              <td class="px-4 py-2">36-62</td>
+              <td class="px-4 py-2">8. A one-off <span class="font-mono text-xs">onNotifications</span> boolean is threaded through the redirect, the nav and the render. <span class="font-mono text-xs">NOTIFICATIONS_PATH</span> lives in the <span class="font-mono text-xs">RoleNav</span> file rather than <span class="font-mono text-xs">roles.ts</span>. Model shared pages as data: <span class="font-mono text-xs">{ path, label, Screen }</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/shared/Pager.tsx</td>
+              <td class="px-4 py-2">7 (and <span class="font-mono text-xs">NotificationsScreen.tsx:49, 128</span>)</td>
+              <td class="px-4 py-2">9. Small type and contract leaks:
+                <ul class="list-disc pl-5">
+                  <li>the shared <span class="font-mono text-xs">Pager</span> defaults <span class="font-mono text-xs">noun</span> to <span class="font-mono text-xs">"Findings"</span>;</li>
+                  <li>the <span class="font-mono text-xs">STATE_LABELS[item.state] ?? item.state</span> fallback can never run;</li>
+                  <li>Open silently does nothing for a link that is not an app path.</li>
+                </ul></td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <!-- code-review -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-500 space-y-1">
+          <p>Standards: 2 Medium and 8 Low. Spec: 5 Low. Fixed point <span class="font-mono text-xs">integration/annual-va-r1</span> (merge base 1e60b3b). ADR 0043 items 6 and 7 were judged recorded provisional choices, so they are not findings.</p>
+          <p>No documented standard is hard-breached. Time comes only from <span class="font-mono text-xs">Clock</span>, a <span class="font-mono text-xs">Notice</span> has no free text, the Seam 1 tests use real PostgreSQL, ArchUnit is updated, and the commits follow Conventional Commits.</p>
+          <p>Every acceptance criterion that applies today is met:</p>
+          <ul class="list-disc pl-6">
+            <li>recipients for each move and Overdue state, each person told once per sweep;</li>
+            <li>exact due dates and matching links;</li>
+            <li>read state keeps the first read time, and another person&rsquo;s row is 404;</li>
+            <li>a VA POC pair clears for both;</li>
+            <li>a sentinel test proves no Finding, Dispute or return text reaches a notification;</li>
+            <li>the screen is reachable for every role.</li>
+          </ul>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterSystems.java</td>
+              <td class="px-4 py-2">101</td>
+              <td class="px-4 py-2">S1 (Standards, performance). <span class="font-mono text-xs">named(systemId)</span> loads the whole Register and filters it in memory. It runs once per notice, and twice for a System change, so the sweep and a bulk apply cost O(N&sup2;) rows. The response waits for this work. <span class="text-emerald-700">Addressed in 6e9a088: <span class="font-mono text-xs">RegisterStore.system(id)</span> reads one row.</span></td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/WorkflowNotices.java</td>
+              <td class="px-4 py-2">20-24</td>
+              <td class="px-4 py-2">S2 (Standards, test gap). The Javadoc and ADR 0043 item 1 promise that a notification that cannot be written leaves the committed move as it is. No Seam 1 test asserts this, although the <span class="font-mono text-xs">TestEndpoints</span> fault triggers could inject the failure. <span class="text-emerald-700">Addressed in 34f8fbe: <span class="font-mono text-xs">NotificationTest.aNotificationThatCannotBeWrittenLeavesTheCommittedMoveAsItIs</span>.</span></td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/WorkflowNotices.java</td>
+              <td class="px-4 py-2">115-116</td>
+              <td class="px-4 py-2">S3. A hidden dependency: <span class="font-mono text-xs">standing()</span> uses the guarded <span class="font-mono text-xs">submissions.inCycle</span>. The result is correct only because the caller is a VA POC. A narrower or empty scope would silently report Not Started. Same as thermo-nuclear 2.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">docs/adr/0043-notifications-are-written-after-the-commit-through-one-port-and-a-va-poc-pair-clears-for-both.md</td>
+              <td class="px-4 py-2">7</td>
+              <td class="px-4 py-2">S4. The ADR said &ldquo;the event carries ids only&rdquo;, but <span class="font-mono text-xs">SystemChangeEvent</span> carries <span class="font-mono text-xs">formerSmoEmail</span>. <span class="text-emerald-700">Addressed in b548d6e: the ADR now says an event carries ids, codes and dates, and that the one email is left out of <span class="font-mono text-xs">toString</span>.</span></td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/WorkflowNotices.java</td>
+              <td class="px-4 py-2">39, 79</td>
+              <td class="px-4 py-2">S5 (judgement, Primitive Obsession). The state is a <span class="font-mono text-xs">String</span>. The <span class="font-mono text-xs">"NOT_STARTED"</span> sentinel is defined twice (here and at <span class="font-mono text-xs">SubmissionStore.java:43</span>) and parsed back with <span class="font-mono text-xs">valueOf</span>. Same as thermo-nuclear 3.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/WorkflowNotices.java</td>
+              <td class="px-4 py-2">61-68, 79-87, 126, 131</td>
+              <td class="px-4 py-2">S6 (judgement, Repeated Switches). Two switches on <span class="font-mono text-xs">SubmissionState</span> repeat the same recipient and link mapping. <span class="font-mono text-xs">notice(...)</span> and <span class="font-mono text-xs">overdue(...)</span> are near-duplicate builders.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/access/AppUserStore.java</td>
+              <td class="px-4 py-2">91</td>
+              <td class="px-4 py-2">S7 (judgement, Mysterious Name). <span class="font-mono text-xs">known(email, now)</span> inserts a pre-registration but reads like a lookup. Consider <span class="font-mono text-xs">idOrPreRegister</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/NotificationController.java</td>
+              <td class="px-4 py-2">25</td>
+              <td class="px-4 py-2">S8 (judgement, Duplicated Code). <span class="font-mono text-xs">ANY_ROLE</span> copies <span class="font-mono text-xs">CycleController.java:19</span> exactly.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">README.md</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">S9 (glossary drift). A notification is called a &ldquo;VA POC item&rdquo; in the README, in commit 2cadf5e&rsquo;s subject and in the notification Javadoc. CONTEXT.md lists &ldquo;item&rdquo; as a synonym to avoid, so &ldquo;notification&rdquo; would be clearer.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/shared/NotificationsScreen.tsx</td>
+              <td class="px-4 py-2">90</td>
+              <td class="px-4 py-2">S10 (consistency). The <span class="font-mono text-xs">Pager</span> is always rendered, while <span class="font-mono text-xs">FindingsSection</span> hides it when there is only one page.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/NotificationTest.java</td>
+              <td class="px-4 py-2">89</td>
+              <td class="px-4 py-2">P1 (Spec: notifications after commit). <span class="font-mono text-xs">aRefusedMoveTellsNobody</span> is refused before any event is published, so it would also pass with a plain <span class="font-mono text-xs">@EventListener</span>. No test publishes an event and then rolls back. <span class="text-emerald-700">Addressed in 34f8fbe, together with S2: the injected write failure now proves the listener runs outside the move&rsquo;s transaction.</span></td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/register/SystemChangeEvent.java</td>
+              <td class="px-4 py-2">21</td>
+              <td class="px-4 py-2">P2 (Spec: Register changes and returns notify the SMO). Withdrawal and the VA POC return are not announced yet. ADR 0043 defers both until tickets 43 and 35, and the return path is already wired (<span class="font-mono text-xs">WorkflowNotices.java:58, 63</span>). Make sure tickets 35 and 43 carry this.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterApply.java</td>
+              <td class="px-4 py-2">191</td>
+              <td class="px-4 py-2">P3 (Spec: story 94). One upload that both moves and transfers a System publishes two events. That combination has no test.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/NoticeAction.java</td>
+              <td class="px-4 py-2">12</td>
+              <td class="px-4 py-2">P4 (latent). The <span class="font-mono text-xs">REWORK</span> text names a Dispute. That fits a Cyber Manager return, which always carries one (ADR 0039). The same action is wired for the VA POC return, which may carry none. Revisit with ticket 35.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/access/AppUserStore.java</td>
+              <td class="px-4 py-2">91</td>
+              <td class="px-4 py-2">P5 (acceptable scope). Register-named emails are pre-registered as <span class="font-mono text-xs">app_user</span> rows. Story 92 needs this, and ADR 0043 item 2 records it. Confirm a pre-registered row grants no access before the first sign-in.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <!-- semgrep -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-500 space-y-1">
+          <p>Run: the official <span class="font-mono text-xs">semgrep/semgrep</span> Docker image with <span class="font-mono text-xs">--metrics=off</span> and <span class="font-mono text-xs">p/security-audit</span> plus <span class="font-mono text-xs">p/default</span>. It scanned 34 changed files with 0 errors.</p>
+          <p>The check reports PASS, with 0 P0 and 0 P1. It is WARN here only because of the severity mapping. Both findings are P2, pre-existing, on lines ticket 36 did not change, and false positives in effect. There are no findings in the new notification code, V136, the event changes or the front-end files.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/harness/TestEndpoints.java</td>
+              <td class="px-4 py-2">319</td>
+              <td class="px-4 py-2"><span class="font-mono text-xs">tainted-sql-string</span> (pre-existing). <span class="font-mono text-xs">reportFileFault</span> builds DDL from a <span class="font-mono text-xs">{prefix}</span> path variable. The value is whitelisted to <span class="font-mono text-xs">[A-Z_]+</span>, and the endpoint is a test-only harness under <span class="font-mono text-xs">src/test</span>. No action.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/arch/ArchitectureTest.java</td>
+              <td class="px-4 py-2">121</td>
+              <td class="px-4 py-2"><span class="font-mono text-xs">unsafe-reflection</span> (pre-existing). <span class="font-mono text-xs">Class.forName</span> is fed from a hard-coded array in an architecture test, with no external input. No action.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <!-- im8 -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-500 space-y-1">
+          <p>Severity uses the MR column. These controls pass:</p>
+          <ul class="list-disc pl-6">
+            <li>as-2: constant SQL with named parameters;</li>
+            <li>as-3: text-only rendering and a DB CHECK on the link shape;</li>
+            <li>as-7 / ac-1: <span class="font-mono text-xs">@PreAuthorize</span> on the four roles, rows scoped to the recipient, 404 for another person&rsquo;s row, and ArchUnit fencing <span class="font-mono text-xs">RegisterSystems.named</span>;</li>
+            <li>as-13: no internal detail in responses;</li>
+            <li>lm-4: the moves are audited, and own-message reads are not, per ADR 0043 item 5;</li>
+            <li>ac-12 / as-11: unchanged session and CSRF.</li>
+          </ul>
+          <p>dp-8 is not applicable. For human review:</p>
+          <ul class="list-disc pl-6">
+            <li>ADR 0043 provisional items 6 and 7;</li>
+            <li>the IdP email claim must be verified and corporate, because <span class="font-mono text-xs">AppUserStore.known</span> pre-registers rows;</li>
+            <li>a former SMO sees the System&rsquo;s live name;</li>
+            <li>confirm the system&rsquo;s risk classification (under LR, lm-19 would be High).</li>
+          </ul>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/register/SystemChangeEvent.java</td>
+              <td class="px-4 py-2">16</td>
+              <td class="px-4 py-2">M-1 (lm-19, log sanitisation). The record&rsquo;s generated <span class="font-mono text-xs">toString()</span> includes <span class="font-mono text-xs">formerSmoEmail</span>. If the <span class="font-mono text-xs">@TransactionalEventListener</span> throws, Spring&rsquo;s <span class="font-mono text-xs">ApplicationListenerMethodAdapter</span> message lists the argument values and is logged at ERROR. <span class="font-mono text-xs">RegisterSystems.Named</span> has the same pattern but is never a listener argument. <span class="text-emerald-700">Addressed in 6e9a088: <span class="font-mono text-xs">toString</span> now prints only <span class="font-mono text-xs">systemId</span>, <span class="font-mono text-xs">change</span> and <span class="font-mono text-xs">at</span>.</span></td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/api/notifications.ts</td>
+              <td class="px-4 py-2">38-45</td>
+              <td class="px-4 py-2">L-1 (as-1). Responses are cast to <span class="font-mono text-xs">NotificationPage</span> / <span class="font-mono text-xs">AppNotification</span> without a runtime check. This is project-wide and not introduced here. The screen copes with unexpected values.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/WorkflowNotices.java</td>
+              <td class="px-4 py-2">54-108</td>
+              <td class="px-4 py-2">L-2 (lm-4 / availability; tracked deferral). A failed after-commit write is only logged by Spring and never retried. ADR 0043 item 1 gives the outbox and retry to ticket 37, whose gate must show a failed notification is retried or recorded.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <!-- react -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-500 space-y-1">
+          <p>Stack choices from ADR 0002 and the absence of front-end unit tests (ADR 0009) were not flagged. Sound:</p>
+          <ul class="list-disc pl-6">
+            <li>a pure render, with <span class="font-mono text-xs">useResource</span> ignoring stale results;</li>
+            <li>a stable <span class="font-mono text-xs">useCallback([page])</span> loader;</li>
+            <li>rows keyed by the server <span class="font-mono text-xs">id</span>;</li>
+            <li>updater-form state changes;</li>
+            <li>a complete redirect-effect dependency list;</li>
+            <li>explicit comparisons that avoid the <span class="font-mono text-xs">0 &amp;&amp;</span> pitfall;</li>
+            <li>text-only rendering;</li>
+            <li><span class="font-mono text-xs">navigate</span> limited to app paths;</li>
+            <li>a backward-compatible <span class="font-mono text-xs">Pager.noun</span>.</li>
+          </ul>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/shared/NotificationsScreen.tsx</td>
+              <td class="px-4 py-2">41-43</td>
+              <td class="px-4 py-2">M1. <span class="font-mono text-xs">markRead</span> set a failure only for an <span class="font-mono text-xs">ApiError</span>, so a rejected <span class="font-mono text-xs">fetch</span> made Open and Mark read do nothing, with no message. Sibling handlers map this case to <span class="font-mono text-xs">UNREACHABLE</span>. <span class="text-emerald-700">Addressed in 40a430f: the failure is now a <span class="font-mono text-xs">Problem</span>, and a non-<span class="font-mono text-xs">ApiError</span> shows <span class="font-mono text-xs">UNREACHABLE</span>.</span></td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/shared/NotificationsScreen.tsx</td>
+              <td class="px-4 py-2">36-55, 133-139</td>
+              <td class="px-4 py-2">M2. Open and Mark read had no in-flight guard, so a double click sent duplicate POSTs and could call <span class="font-mono text-xs">navigate</span> twice. The project&rsquo;s convention is a <span class="font-mono text-xs">busy</span> flag with <span class="font-mono text-xs">disabled</span>. <span class="text-emerald-700">Addressed in 40a430f: a <span class="font-mono text-xs">busy</span> flag, cleared in <span class="font-mono text-xs">finally</span>, disables the row buttons while a mark-read is in flight.</span></td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/shared/NotificationsScreen.tsx</td>
+              <td class="px-4 py-2">48, 53, 119-120, 133, 137</td>
+              <td class="px-4 py-2">L1. The async <span class="font-mono text-xs">open</span> and <span class="font-mono text-xs">read</span> are passed as void callbacks without <span class="font-mono text-xs">void</span>. The rest of the codebase writes <span class="font-mono text-xs">onClick={() =&gt; void ...}</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/shared/NotificationsScreen.tsx</td>
+              <td class="px-4 py-2">49-50, 133</td>
+              <td class="px-4 py-2">L2. Open is offered but does nothing for a non-app link. Hide it, or say why it cannot open. Same as thermo-nuclear 9.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/shared/NotificationsScreen.tsx</td>
+              <td class="px-4 py-2">133-139</td>
+              <td class="px-4 py-2">L3 (accessibility). Up to 50 identical Open and Mark read buttons have no row context. Add an <span class="font-mono text-xs">aria-label</span> naming the System code, as <span class="font-mono text-xs">SmoInboxScreen.tsx:62</span> does.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <!-- springboot -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-500 space-y-1">
+          <p>Seven sub-reviews ran. Core and web are clean. Data has findings 1, 6 and 7. Batch is not used (the sweep is <span class="font-mono text-xs">@Scheduled</span>) and has findings 1 and 8. Security has finding 9, logging findings 3 and 4, and test findings 2, 10 and 11.</p>
+          <p>Applied decisions: JdbcClient with no JPA (ADR 0001), Seam 1 only, and the ADR 0043 choices.</p>
+          <p>Sound:</p>
+          <ul class="list-disc pl-6">
+            <li>constructor injection;</li>
+            <li><span class="font-mono text-xs">Clock</span> as the only time source;</li>
+            <li><span class="font-mono text-xs">@TransactionalEventListener</span> with <span class="font-mono text-xs">REQUIRES_NEW</span>;</li>
+            <li>DTO responses with bounded <span class="font-mono text-xs">size</span> and <span class="font-mono text-xs">no-store</span>;</li>
+            <li>SQL paging with a deterministic order and an index;</li>
+            <li>a race-safe <span class="font-mono text-xs">known</span> upsert;</li>
+            <li>no IDOR;</li>
+            <li>no new log statements.</li>
+          </ul>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterSystems.java</td>
+              <td class="px-4 py-2">101-103</td>
+              <td class="px-4 py-2">1 (data, batch). <span class="font-mono text-xs">named(UUID)</span> loads every <span class="font-mono text-xs">va_system</span> row to find one. It runs once per notification and two or three times per Register change, so a sweep that flags N Systems reads N &times; the whole Register. <span class="text-emerald-700">Addressed in 6e9a088: a single-row query by id.</span></td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/NotificationTest.java</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">2 (test). No test covers ADR 0043 item 1&rsquo;s guarantee that a failed notification write leaves the committed move as it is. Losing <span class="font-mono text-xs">REQUIRES_NEW</span> or the after-commit phase would go unnoticed. <span class="text-emerald-700">Addressed in 34f8fbe: a fault trigger on <span class="font-mono text-xs">notification</span>. The submit answers 200, the VA Submission is In Review, the move is audited, and there is no notification.</span></td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/register/SystemChangeEvent.java</td>
+              <td class="px-4 py-2">16</td>
+              <td class="px-4 py-2">3 (logging). The generated <span class="font-mono text-xs">toString()</span> includes <span class="font-mono text-xs">formerSmoEmail</span>, while the Javadoc promises it is never logged. Same as im8 M-1. <span class="text-emerald-700">Addressed in 6e9a088.</span></td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/WorkflowNotices.java</td>
+              <td class="px-4 py-2">56, 73, 96</td>
+              <td class="px-4 py-2">4 (logging). Until ticket 37, a failed listener loses the notification. The only trace is Spring&rsquo;s generic <span class="font-mono text-xs">afterCompletion</span> ERROR, which does not say which event was dropped. Catch at the listener boundary and log one ERROR with ids only, so the loss is alertable.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/WorkflowNotices.java</td>
+              <td class="px-4 py-2">115-116</td>
+              <td class="px-4 py-2">5 (core, security). <span class="font-mono text-xs">standing(...)</span> depends on the current <span class="font-mono text-xs">SecurityContext</span> through <span class="font-mono text-xs">Submissions.inCycle</span>. With <span class="font-mono text-xs">@Async</span> or a scheduled publisher (ticket 43), the notice would silently claim <span class="font-mono text-xs">NOT_STARTED</span>. Same as thermo-nuclear 2 and code-review S3.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td>
+              <td class="px-4 py-2">604-607</td>
+              <td class="px-4 py-2">6 (data). An extra <span class="font-mono text-xs">store.find(id)</span> after every move only to read <span class="font-mono text-xs">dueOn</span>, then <span class="font-mono text-xs">view(id)</span> reads the row again. Use <span class="font-mono text-xs">RETURNING current_window_due(...)</span> or the view. Same as thermo-nuclear 5.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V136__notification.sql</td>
+              <td class="px-4 py-2">25, 36</td>
+              <td class="px-4 py-2">7 (data). <span class="font-mono text-xs">system_id</span> and <span class="font-mono text-xs">handled_by</span> are FKs with no index, and <span class="font-mono text-xs">submission_id</span> has only a partial index. Parent deletes will scan <span class="font-mono text-xs">notification</span>. Consider adding indexes when ticket 49 (retention) lands.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/OverdueSweep.java</td>
+              <td class="px-4 py-2">80 (and <span class="font-mono text-xs">WorkflowNotices.java:73</span>)</td>
+              <td class="px-4 py-2">8 (batch). One after-commit <span class="font-mono text-xs">REQUIRES_NEW</span> per flag holds two pool connections each, and could starve a small Hikari pool on a busy day. Acceptable at today&rsquo;s scale (ADR 0043). Ticket 37&rsquo;s outbox should take this off the commit path.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/arch/ArchitectureTest.java</td>
+              <td class="px-4 py-2">236</td>
+              <td class="px-4 py-2">9 (security). <span class="font-mono text-xs">onlyTheNotificationsReadTheNamedPeoplePastTheAccessGuard</span> uses <span class="font-mono text-xs">callMethod</span>, so a method reference (<span class="font-mono text-xs">register::named</span>) would pass. Add <span class="font-mono text-xs">referenceMethod</span>. Consider limiting the callers of <span class="font-mono text-xs">AppUserStore.known</span> to <span class="font-mono text-xs">notification</span> as well.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/NotificationTest.java</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">10 (test). These cases are untested:
+                <ul class="list-disc pl-5">
+                  <li>a 400 for an out-of-range <span class="font-mono text-xs">size</span> or <span class="font-mono text-xs">page</span>;</li>
+                  <li>a 400 for a malformed <span class="font-mono text-xs">{id}</span>;</li>
+                  <li>an apply that both moves and transfers one System;</li>
+                  <li>a recipient with no <span class="font-mono text-xs">app_user</span> row, who goes through the <span class="font-mono text-xs">known</span> insert and then signs in.</li>
+                </ul></td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/NotificationContentTest.java</td>
+              <td class="px-4 py-2">46-49</td>
+              <td class="px-4 py-2">11 (test). The ticket 36 tests sit in the <span class="font-mono text-xs">ingestion</span> test package because of the <span class="font-mono text-xs">EndorseSeam1</span> chain. The sentinel sweep asserts inside nested loops. A single <span class="font-mono text-xs">allSatisfy</span> would report which reader leaked.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+    </main>
+  </body>
+</html>
