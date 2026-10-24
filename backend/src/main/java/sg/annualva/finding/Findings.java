@@ -189,12 +189,7 @@ public class Findings {
         UUID systemId = submissions.systemOf(submissionId);
         List<FindingStore.Row> rows = store.page(submissionId, filter, size, (long) page * size);
         Map<UUID, List<FindingView.SourceFile>> sources = store.sources(rows.stream().map(FindingStore.Row::id).toList());
-        List<FindingView> items = rows.stream()
-                .map(row -> new FindingView(row.id(), row.systemId(), row.reportType(), row.identityKey(),
-                        row.identifier(), row.packageOrRule(), row.severity(), row.didNotComplete(), row.confidence(),
-                        row.occurrenceCount(), sources.getOrDefault(row.id(), List.of()), row.reviewState(),
-                        row.currentProposal(), row.source(), row.title(), row.latestReview()))
-                .toList();
+        List<FindingView> items = rows.stream().map(row -> FindingView.of(row, sources)).toList();
         audit.record(actor.attribute(AuditEvent.of(AuditAction.FINDINGS_VIEWED, AuditOutcome.SUCCESS))
                 .onSystem(systemId).onSubmission(submissionId).with(DetailKey.COUNT, items.size()));
         return new Page<>(items, page, size, store.count(submissionId, filter));

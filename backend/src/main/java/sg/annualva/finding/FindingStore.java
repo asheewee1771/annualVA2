@@ -39,7 +39,7 @@ class FindingStore {
     record Located(UUID submissionId, UUID systemId) {}
 
     /** The worst severity first, so that a smaller position is a worse one: the order of the enum, written once. */
-    private static final String SEVERITY_ORDER = Arrays.stream(Severity.values())
+    static final String SEVERITY_ORDER = Arrays.stream(Severity.values())
             .map(severity -> "'" + severity.name() + "'").collect(Collectors.joining(", ", "ARRAY[", "]"));
 
     /**
@@ -82,6 +82,12 @@ class FindingStore {
             "LEFT JOIN finding_status_proposal p ON p.id = f.current_proposal_id ";
 
     /**
+     * A Finding the SMO/Tech Lead still has to act on: no proposal yet, or a Disputed one. The list's "needs attention" and
+     * the rework queue (story 60) both read it.
+     */
+    static final String NEEDS_ATTENTION = "(f.current_proposal_id IS NULL OR f.review_state = 'DISPUTED')";
+
+    /**
      * What the list is narrowed to, the same for the page and the count (it reads the Finding and its current proposal,
      * {@link #CURRENT_PROPOSAL}, only). Each part that is not given matches everything: the Scan Report (no value), the severities (all five are
      * passed), the review state (no value), "needs attention" (false), which is a Finding with no proposal yet or a
@@ -92,7 +98,7 @@ class FindingStore {
             + "AND (CAST(:type AS text) IS NULL OR f.report_type = :type) "
             + "AND f.severity = ANY(CAST(:severities AS text[])) "
             + "AND (CAST(:review AS text) IS NULL OR f.review_state = :review) "
-            + "AND (NOT :attention OR f.current_proposal_id IS NULL OR f.review_state = 'DISPUTED') "
+            + "AND (NOT :attention OR " + NEEDS_ATTENTION + ") "
             + "AND (CAST(:batch AS uuid) IS NULL OR p.batch_id = CAST(:batch AS uuid)) "
             + "AND (CAST(:batched AS boolean) IS NULL OR (p.batch_id IS NOT NULL) = CAST(:batched AS boolean)) ";
 
@@ -108,19 +114,25 @@ class FindingStore {
      * A Finding did not complete only if it did at every place it was reported (never for a Finding with no place); its
      * confidence is the most sure of its places (none when no place has one).
      */
-    private static final String PAGE =
-            "SELECT f.id, f.system_id, f.report_type, f.identity_key, f.identifier, f.package_or_rule, f.severity, "
+    static final String FINDING_COLUMNS =
+            "f.id, f.system_id, f.report_type, f.identity_key, f.identifier, f.package_or_rule, f.severity, "
             + "(SELECT COALESCE(bool_and(o.did_not_complete), false) FROM finding_occurrence o WHERE o.finding_id = f.id) "
             + "AS did_not_complete, "
             + "(SELECT o.confidence FROM finding_occurrence o WHERE o.finding_id = f.id AND o.confidence IS NOT NULL "
             + "ORDER BY array_position(" + CONFIDENCE_ORDER + ", o.confidence) LIMIT 1) AS confidence, "
             + "(SELECT count(*) FROM finding_occurrence o WHERE o.finding_id = f.id) AS occurrences, "
             + "f.review_state, f.source, f.title, r.proposal_id AS review_proposal_id, " + ReviewStore.REVIEW_COLUMNS + ", "
-            + PROPOSAL_COLUMNS
-            + "FROM finding f " + CURRENT_PROPOSAL + REPLACED_FILE
-            + LATEST_REVIEW
-            + FILTERED
-            + "ORDER BY array_position(" + SEVERITY_ORDER + ", f.severity), f.identifier, f.package_or_rule, f.seq "
+            + PROPOSAL_COLUMNS;
+
+    /** The tables {@link #FINDING_COLUMNS} reads: the Finding, its current proposal and its latest review. */
+    static final String FINDING_TABLES = "FROM finding f " + CURRENT_PROPOSAL + REPLACED_FILE + LATEST_REVIEW;
+
+    /** The most severe first, then by what the report called it, then in the order the Findings came. */
+    static final String SEVERITY_FIRST =
+            "array_position(" + SEVERITY_ORDER + ", f.severity), f.identifier, f.package_or_rule, f.seq";
+
+    private static final String PAGE =
+            "SELECT " + FINDING_COLUMNS + FINDING_TABLES + FILTERED + "ORDER BY " + SEVERITY_FIRST + " "
             + "LIMIT :limit OFFSET :offset";
 
     private static final String COUNT = "SELECT count(*) FROM finding f " + CURRENT_PROPOSAL + FILTERED;
@@ -318,16 +330,21 @@ class FindingStore {
         return filtered(PAGE, submissionId, filter)
                 .param("limit", limit)
                 .param("offset", offset)
-                .query((rs, row) -> new Row(rs.getObject("id", UUID.class), rs.getObject("system_id", UUID.class),
-                        ReportType.valueOf(rs.getString("report_type")),
-                        rs.getString("identity_key"), rs.getString("identifier"), rs.getString("package_or_rule"),
-                        Severity.valueOf(rs.getString("severity")), rs.getBoolean("did_not_complete"),
-                        confidenceOf(rs.getString("confidence")), rs.getInt("occurrences"),
-                        reviewStateOf(rs.getString("review_state")),
-                        rs.getObject("proposal_id") == null ? null : proposal(rs),
-                        FindingSource.valueOf(rs.getString("source")), rs.getString("title"),
-                        ReviewStore.review(rs, rs.getObject("review_proposal_id", UUID.class), null, null)))
+                .query((rs, row) -> row(rs))
                 .list();
+    }
+
+    /** A Finding read through {@link #FINDING_COLUMNS} and {@link #FINDING_TABLES}. */
+    static Row row(ResultSet rs) throws SQLException {
+        return new Row(rs.getObject("id", UUID.class), rs.getObject("system_id", UUID.class),
+                ReportType.valueOf(rs.getString("report_type")),
+                rs.getString("identity_key"), rs.getString("identifier"), rs.getString("package_or_rule"),
+                Severity.valueOf(rs.getString("severity")), rs.getBoolean("did_not_complete"),
+                confidenceOf(rs.getString("confidence")), rs.getInt("occurrences"),
+                reviewStateOf(rs.getString("review_state")),
+                rs.getObject("proposal_id") == null ? null : proposal(rs),
+                FindingSource.valueOf(rs.getString("source")), rs.getString("title"),
+                ReviewStore.review(rs, rs.getObject("review_proposal_id", UUID.class), null, null));
     }
 
     long count(UUID submissionId, FindingFilter filter) {
