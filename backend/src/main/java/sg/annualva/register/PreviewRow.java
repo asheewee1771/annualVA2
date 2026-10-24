@@ -14,7 +14,8 @@ import org.jspecify.annotations.Nullable;
  * @param existingSystemId the Register's id of the System this row matches, or null when there is none (an ADD, or a
  *     row whose System ID cannot be used)
  * @param outcome the one thing this row does
- * @param reasons why the row is BLOCKED, as fixed codes; empty for every other outcome
+ * @param reasons why the row cannot be applied, as fixed codes: for a BLOCKED row what is wrong in the file; for a RETIRE
+ *     or an UPDATE what its in-flight work holds it back by (ADR 0048); empty otherwise
  * @param unlinkedSmo the SMO/Tech Lead's email matches no sign-in yet (Unlinked SMO, story 12)
  * @param before the System as the Register has it now; null when there is none
  * @param after the System as the file would make it, or as typed (sanitised) for a BLOCKED row; null for a RETIRE

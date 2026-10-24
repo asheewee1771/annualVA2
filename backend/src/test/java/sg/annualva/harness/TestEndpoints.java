@@ -487,7 +487,6 @@ public class TestEndpoints {
             return Map.of("state", state);
         }
 
-        /** A VA Submission in a state no command enters yet (the tables accept all nine), for the tests of the file rules. */
         /**
          * Stands every in-flight VA Submission (not in a final state) aside as Endorsed and answers the state each was in,
          * by id, so a test can apply a Register change that Release 1 blocks or withdraws (ADR 0048) and put them back.
@@ -504,6 +503,7 @@ public class TestEndpoints {
             return states;
         }
 
+        /** A VA Submission in a state no command enters yet (the tables accept all nine), for the tests of the file rules. */
         @PostMapping("/api/test/submissions/{id}/state/{state}")
         public Map<String, String> submissionState(@PathVariable UUID id, @PathVariable String state) {
             jdbc.sql("UPDATE va_submission SET state = :state WHERE id = :id").param("state", state).param("id", id)

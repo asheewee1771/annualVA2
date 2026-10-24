@@ -592,12 +592,21 @@ class SubmissionStore {
         jdbc.sql(LOCK_CYCLE).param("cycle", cycleYear).query().singleRow();
     }
 
-    /** The in-flight VA Submissions of these Systems; held as a move holds them when {@code hold} says so. */
-    List<Unfinished> unfinished(Collection<UUID> systemIds, boolean hold) {
+    /** The in-flight VA Submissions of these Systems. */
+    List<Unfinished> unfinished(Collection<UUID> systemIds) {
+        return unfinished(UNFINISHED, systemIds);
+    }
+
+    /** The same, each held as a move holds it until the transaction ends. */
+    List<Unfinished> holdUnfinished(Collection<UUID> systemIds) {
+        return unfinished(HOLD_UNFINISHED, systemIds);
+    }
+
+    private List<Unfinished> unfinished(String sql, Collection<UUID> systemIds) {
         if (systemIds.isEmpty()) {
             return List.of();
         }
-        return jdbc.sql(hold ? HOLD_UNFINISHED : UNFINISHED).param("systems", ids(systemIds))
+        return jdbc.sql(sql).param("systems", ids(systemIds))
                 .param("unfinished", unfinishedStates())
                 .query((rs, row) -> new Unfinished(rs.getObject("id", UUID.class), rs.getObject("system_id", UUID.class),
                         rs.getInt("cycle_year"), rs.getString("state")))

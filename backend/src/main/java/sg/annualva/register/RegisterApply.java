@@ -43,7 +43,7 @@ import sg.annualva.web.ResourceNotFoundException;
  *
  * <p>In-flight work (stories 5 to 7, ADR 0048): the apply holds the VA Submissions its rows touch and classifies the rows
  * again ({@link WorkEffects}), refusing when that differs from what the preview showed, and withdraws a retired System's
- * in-flight VA Submissions only when the VA POC confirmed each one ({@link InFlightWork}).
+ * in-flight VA Submissions only when the VA POC confirmed each one.
  */
 @Service
 public class RegisterApply {
@@ -56,7 +56,7 @@ public class RegisterApply {
     public record Applied(UUID previewId, Instant appliedAt, int added, int updated, int retired, int unchanged,
             int rolesGranted, int rolesRevoked, int withdrawn) {}
 
-    private final InFlightWork work;
+    private final WorkEffects effects;
     private final RegisterStore store;
     private final RegisterRoles roles;
     private final StepUp stepUp;
@@ -70,8 +70,8 @@ public class RegisterApply {
 
     RegisterApply(RegisterStore store, RegisterRoles roles, StepUp stepUp, AuditLog audit, AuditActor actor,
             CurrentUser user, CycleCalendar calendar, Clock clock, RegisterSystems systems,
-            ApplicationEventPublisher events, InFlightWork work) {
-        this.work = work;
+            ApplicationEventPublisher events, WorkEffects effects) {
+        this.effects = effects;
         this.systems = systems;
         this.store = store;
         this.roles = roles;
@@ -114,9 +114,7 @@ public class RegisterApply {
             throw conflict("register-changed", "The Register has changed since this preview was made. Upload the file again.");
         }
         // The in-flight work as it is now, held until the commit, must be what the preview showed and the VA POC confirmed.
-        Map<UUID, List<InFlightWork.Work>> held = work.hold(WorkEffects.systemsOf(preview.rows()), now);
-        if (!WorkEffects.sameEffects(preview.rows(),
-                WorkEffects.classify(preview.rows(), held, systems.olderCycles(calendar.dateOf(now))))) {
+        if (!WorkEffects.sameEffects(preview.rows(), effects.held(preview.rows(), now))) {
             throw conflict("work-changed",
                     "VA Submissions this preview touches have changed since it was made. Upload the file again.");
         }
@@ -128,6 +126,7 @@ public class RegisterApply {
         int added = 0;
         int updated = 0;
         int unchanged = 0;
+        int withdrawn = 0;
         List<UUID> retiredSystems = new ArrayList<>();
         for (PreviewRow row : preview.rows()) {
             switch (row.outcome()) {
@@ -141,17 +140,13 @@ public class RegisterApply {
                     SystemSnapshot after = row.after();
                     store.updateSystem(row.existingSystemId(), after.name(), after.smoEmail(), after.cyberManagerEmail(),
                             quarter(after));
-                    if (!row.before().quarter().equals(after.quarter())) {
-                        work.moved(row.existingSystemId(), now);
-                    }
                     announce(row.existingSystemId(), row.before(), after, now);
                     updated++;
                 }
                 case RETIRE -> {
                     store.retireSystem(row.existingSystemId(), now);
                     retiredSystems.add(row.existingSystemId());
-                    work.withdraw(row.inFlight().stream().map(PreviewRow.InFlight::submissionId).toList(), previewId,
-                            now);
+                    withdrawn += effects.withdraw(row, previewId, now);
                 }
                 case NO_CHANGE -> unchanged++;
                 case BLOCKED -> throw new IllegalStateException("A blocked row cannot be applied");
@@ -179,7 +174,7 @@ public class RegisterApply {
                 .with(DetailKey.ROLES_GRANTED, changes.granted())
                 .with(DetailKey.ROLES_REVOKED, changes.revoked()));
         return new Applied(previewId, now, added, updated, retiredSystems.size(), unchanged, changes.granted(),
-                changes.revoked(), preview.withdrawals().size());
+                changes.revoked(), withdrawn);
     }
 
     /**
@@ -220,13 +215,14 @@ public class RegisterApply {
 
     /**
      * Publishes what an updated System's SMO/Tech Lead is told about (story 94): a move to another Quarter, and a transfer
-     * to another SMO/Tech Lead, each heard by the notifications after the commit (ADR 0043).
+     * to another SMO/Tech Lead, each heard by the notifications after the commit (ADR 0043). The submissions hear a move
+     * inside the apply's transaction too, and let a Not Started System's Overdue flag follow its new Quarter (ADR 0048).
      */
     private void announce(UUID systemId, SystemSnapshot before, SystemSnapshot after, Instant now) {
-        if (!before.quarter().equals(after.quarter())) {
+        if (before.movesIn(after)) {
             events.publishEvent(new SystemChangeEvent(systemId, SystemChangeEvent.Change.MOVED, null, now));
         }
-        if (!before.smoEmail().equals(after.smoEmail())) {
+        if (before.changesSmoIn(after)) {
             events.publishEvent(
                     new SystemChangeEvent(systemId, SystemChangeEvent.Change.TRANSFERRED, before.smoEmail(), now));
         }

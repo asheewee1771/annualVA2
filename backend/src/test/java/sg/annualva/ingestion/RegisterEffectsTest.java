@@ -148,9 +148,11 @@ class RegisterEffectsTest extends MailSeam1 {
         JsonNode scanning = preview(poc, file(List.of(F2)));
 
         JsonNode row = rowOf(scanning, "SYS-F1");
-        assertThat(row.get("outcome").asString()).isEqualTo("BLOCKED");
+        assertThat(row.get("outcome").asString()).as("still a retirement, held back").isEqualTo("RETIRE");
         assertThat(texts(row.get("effects"))).containsExactly("WILL_WITHDRAW");
         assertThat(texts(row.get("reasons"))).containsExactly("FILES_SCANNING");
+        assertThat(scanning.get("counts").get("heldBack").asInt()).isEqualTo(1);
+        assertThat(scanning.get("counts").get("blocked").asInt()).as("nothing is wrong in the file").isZero();
         assertThat(scanning.get("canApply").asBoolean()).isFalse();
         var refused = applyConfirming(poc, scanning, List.of(draft.submissionId()));
         assertThat(refused.status()).isEqualTo(409);
@@ -159,8 +161,19 @@ class RegisterEffectsTest extends MailSeam1 {
         pass();
         pass();
         JsonNode settled = preview(poc, file(List.of(F2)));
-        assertThat(rowOf(settled, "SYS-F1").get("outcome").asString()).isEqualTo("RETIRE");
+        assertThat(texts(rowOf(settled, "SYS-F1").get("reasons"))).isEmpty();
         assertThat(applyConfirming(poc, settled, List.of(draft.submissionId())).status()).isEqualTo(200);
+    }
+
+    @Test
+    void aRescanStillBeingCheckedHoldsTheRetirementBackToo() {
+        Draft draft = draft();
+        String first = settled(draft, SECURE_CONFIGURATION, "results.xml", Samples.xccdfResults()).get("id").asString();
+        replaced(draft, first, "rescan.xml", Samples.xccdfResults());
+
+        JsonNode row = rowOf(preview(vaPoc(), file(List.of(F2))), "SYS-F1");
+
+        assertThat(texts(row.get("reasons"))).containsExactly("FILES_SCANNING");
     }
 
     @Test
@@ -202,18 +215,18 @@ class RegisterEffectsTest extends MailSeam1 {
                 listed("SYS-F1", "File one", SMO_A, CM, "Q4"),
                 listed("SYS-F2", "File two", SMO_A, CM, "Q4"))));
         JsonNode moved = rowOf(preview, "SYS-F1");
-        assertThat(moved.get("outcome").asString()).isEqualTo("BLOCKED");
+        assertThat(moved.get("outcome").asString()).isEqualTo("UPDATE");
         assertThat(texts(moved.get("effects"))).containsExactly("WILL_MOVE");
         assertThat(texts(moved.get("reasons"))).containsExactly("MOVE_IN_FLIGHT");
         assertThat(moved.get("before").get("quarter").asString()).isEqualTo("Q3");
         assertThat(moved.get("after").get("quarter").asString()).isEqualTo("Q4");
-        assertThat(rowOf(preview, "SYS-F2").get("outcome").asString()).as("Not Started: an ordinary update")
-                .isEqualTo("UPDATE");
+        assertThat(texts(rowOf(preview, "SYS-F2").get("reasons"))).as("Not Started: an ordinary update").isEmpty();
+        assertThat(preview.get("canApply").asBoolean()).isFalse();
 
         JsonNode transfers = preview(poc, file(List.of(
                 listed("SYS-F1", "File one", SMO_B, CM, "Q3"), F2)));
         JsonNode transferred = rowOf(transfers, "SYS-F1");
-        assertThat(transferred.get("outcome").asString()).isEqualTo("BLOCKED");
+        assertThat(transferred.get("outcome").asString()).isEqualTo("UPDATE");
         assertThat(texts(transferred.get("effects"))).containsExactly("WILL_TRANSFER");
         assertThat(texts(transferred.get("reasons"))).containsExactly("TRANSFER_IN_FLIGHT");
         assertThat(transfers.get("counts").get("willTransfer").asInt()).isEqualTo(1);
@@ -246,6 +259,22 @@ class RegisterEffectsTest extends MailSeam1 {
         assertThat(texts(submitterReviews.get("reasons"))).as("who submitted it would review it")
                 .containsExactly("TRANSFER_IN_FLIGHT", "SEGREGATION_OF_DUTIES");
         assertThat(texts(independent.get("reasons"))).containsExactly("TRANSFER_IN_FLIGHT");
+    }
+
+    @Test
+    void aVaPocWhoReturnedTheVaSubmissionMayNotBecomeItsSmoOrCyberManager() {
+        Draft draft = awaitingEndorsement();
+        ApiClient poc = vaPoc();
+        returned(poc, draft.submissionId(), "Show me the evidence.");
+
+        JsonNode asSmo = rowOf(preview(poc, file(List.of(listed("SYS-F1", "File one", POC_ONE, CM, "Q3"), F2))),
+                "SYS-F1");
+        JsonNode asManager = rowOf(preview(poc, file(List.of(listed("SYS-F1", "File one", SMO_A, POC_ONE, "Q3"), F2))),
+                "SYS-F1");
+
+        assertThat(texts(asSmo.get("reasons"))).as("they acted at the endorsing step")
+                .containsExactly("TRANSFER_IN_FLIGHT", "SEGREGATION_OF_DUTIES");
+        assertThat(texts(asManager.get("reasons"))).containsExactly("TRANSFER_IN_FLIGHT", "SEGREGATION_OF_DUTIES");
     }
 
     @Test

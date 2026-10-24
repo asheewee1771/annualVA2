@@ -24,7 +24,6 @@ import sg.annualva.audit.AuditEvent;
 import sg.annualva.audit.AuditLog;
 import sg.annualva.audit.AuditOutcome;
 import sg.annualva.audit.DetailKey;
-import sg.annualva.cycle.CycleCalendar;
 import sg.annualva.scan.MalwareScan;
 import sg.annualva.web.RejectedRequestException;
 import sg.annualva.web.ResourceNotFoundException;
@@ -53,16 +52,11 @@ public class RegisterUploads {
     private final CurrentUser user;
     private final Clock clock;
     private final TransactionTemplate transaction;
-    private final InFlightWork work;
-    private final RegisterSystems systems;
-    private final CycleCalendar calendar;
+    private final WorkEffects effects;
 
     RegisterUploads(RegisterStore store, MalwareScan scan, AuditLog audit, AuditActor actor, CurrentUser user,
-            Clock clock, TransactionTemplate transaction, InFlightWork work, RegisterSystems systems,
-            CycleCalendar calendar) {
-        this.work = work;
-        this.systems = systems;
-        this.calendar = calendar;
+            Clock clock, TransactionTemplate transaction, WorkEffects effects) {
+        this.effects = effects;
         this.store = store;
         this.scan = scan;
         this.audit = audit;
@@ -121,8 +115,7 @@ public class RegisterUploads {
         existing.forEach(system -> ids.add(system.code()));
         Map<String, String> keys = store.foldedIds(ids);
         List<PreviewRow> built = PreviewBuilder.build(rows, existing, signedIn, id -> keys.getOrDefault(id, id));
-        List<PreviewRow> changes = WorkEffects.classify(built, work.of(WorkEffects.systemsOf(built)),
-                systems.olderCycles(calendar.dateOf(now)));
+        List<PreviewRow> changes = effects.preview(built, now);
         Instant expiresAt = now.plus(PREVIEW_LIFETIME);
         UUID id = store.insertUpload(user.id(), now, expiresAt, changes);
         audit.record(actor.attribute(AuditEvent.of(AuditAction.REGISTER_PREVIEWED, AuditOutcome.SUCCESS)

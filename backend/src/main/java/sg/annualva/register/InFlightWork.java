@@ -29,15 +29,10 @@ public interface InFlightWork {
      * Withdraws these VA Submissions, of Systems the apply has just retired (story 7): each becomes Withdrawn, is audited
      * as the apply's caller's with the preview, and is announced to the notifications. One that has reached a final state
      * meanwhile is left alone (the caller holds them, so none can).
+     *
+     * @return how many it withdrew
      */
-    void withdraw(Collection<UUID> submissionIds, UUID previewId, Instant now);
-
-    /**
-     * The apply has just moved a System to another Quarter: a Not Started System's Overdue flag follows the window of its
-     * new Quarter (reviewer decisions, 2026-10-23), so it is cleared in each Cycle whose new Submission Window has not
-     * passed, and set again by the sweep when it does.
-     */
-    void moved(UUID systemId, Instant now);
+    int withdraw(Collection<UUID> submissionIds, UUID previewId, Instant now);
 
     /**
      * A VA Submission that is not in a final state.
@@ -45,17 +40,17 @@ public interface InFlightWork {
      * @param cycle its VA Cycle's year
      * @param state its state as the table holds it
      * @param filesScanning whether any of its files is still on its way through the checks (decision 2026-10-18)
-     * @param submitters the lower-case emails of the people who acted at its submitting step (started or submitted it)
-     * @param reviewers the same for its reviewing step
-     * @param endorsers the same for its endorsing step
+     * @param actedAtSubmit the lower-case emails of the people who acted at its submitting step (started or submitted it)
+     * @param actedAtReview the same for its reviewing step
+     * @param actedAtEndorse the same for its endorsing step (endorsed or returned it as a VA POC)
      */
-    record Work(UUID submissionId, int cycle, String state, boolean filesScanning, Set<String> submitters,
-            Set<String> reviewers, Set<String> endorsers) {
+    record Work(UUID submissionId, int cycle, String state, boolean filesScanning, Set<String> actedAtSubmit,
+            Set<String> actedAtReview, Set<String> actedAtEndorse) {
 
         public Work {
-            submitters = Set.copyOf(submitters);
-            reviewers = Set.copyOf(reviewers);
-            endorsers = Set.copyOf(endorsers);
+            actedAtSubmit = Set.copyOf(actedAtSubmit);
+            actedAtReview = Set.copyOf(actedAtReview);
+            actedAtEndorse = Set.copyOf(actedAtEndorse);
         }
 
         /**

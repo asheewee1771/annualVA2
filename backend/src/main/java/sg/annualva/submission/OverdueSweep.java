@@ -7,7 +7,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import sg.annualva.audit.AuditAction;
 import sg.annualva.audit.AuditEvent;
@@ -19,6 +21,7 @@ import sg.annualva.cycle.CyclePhase;
 import sg.annualva.cycle.Quarter;
 import sg.annualva.cycle.VaCycle;
 import sg.annualva.register.RegisterSystems;
+import sg.annualva.register.SystemChangeEvent;
 
 /**
  * The Overdue sweep (stories 42 and 71, ADR 0033). Overdue is a flag, not a state: once a window passes without the next
@@ -50,6 +53,29 @@ public class OverdueSweep {
         this.audit = audit;
         this.clock = clock;
         this.events = events;
+    }
+
+    /**
+     * A Register apply moved a System to another Quarter (ADR 0048): a Not Started System's flag follows the window of its
+     * new Quarter (reviewer decisions, 2026-10-23), so in each Cycle that is not closed it is cleared while that Quarter's
+     * Submission Window has not passed, by the System's Quarter in that Cycle (an older Cycle keeps its own, so nothing
+     * changes there), and the next pass sets it again once it does. Heard inside the apply's transaction, so it commits or
+     * rolls back with the move. The {@code SUBMISSION_OVERDUE} entry stays as the record.
+     */
+    @EventListener
+    @Transactional(propagation = Propagation.MANDATORY)
+    void on(SystemChangeEvent event) {
+        if (event.change() != SystemChangeEvent.Change.MOVED) {
+            return;
+        }
+        UUID systemId = event.systemId();
+        LocalDate today = calendar.dateOf(event.at());
+        for (VaCycle cycle : calendar.cyclesOn(today)) {
+            if (cycle.phaseOn(today) != CyclePhase.CLOSED) {
+                register.quarterIn(systemId, cycle.year()).map(quarter -> cycle.quarters().get(quarter - 1))
+                        .ifPresent(quarter -> store.clearNotStartedOverdue(systemId, quarter, today));
+            }
+        }
     }
 
     /**

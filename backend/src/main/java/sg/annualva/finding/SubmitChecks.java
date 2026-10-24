@@ -44,6 +44,12 @@ class SubmitChecks implements SubmitReadiness {
         return readiness(submissionId).blockers();
     }
 
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public boolean filesScanning(UUID submissionId) {
+        return !files.of(submissionId).scanning().isEmpty();
+    }
+
     /**
      * The progress counts, the files whose age stands in the way, every reason it cannot be submitted now, and, from the
      * same counts and Scan Reports with no further query, what the Cyber Manager's return and pass to endorsement judge
@@ -56,7 +62,7 @@ class SubmitChecks implements SubmitReadiness {
         FindingStore.Counts counts = findings.counts(submissionId);
         List<Blocker> blockers = new ArrayList<>();
         if (!files.scanning().isEmpty()) {
-            blockers.add(new Blocker(FILES_SCANNING,
+            blockers.add(new Blocker("files-scanning",
                     "These files are still being checked. Wait until every one has finished.", null, files.scanning()));
         }
         for (ReportType type : ReportType.values()) {
