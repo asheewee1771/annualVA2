@@ -101,6 +101,25 @@ class ExemptionDecisionTest extends ExemptionSeam1 {
     }
 
     @Test
+    void whileFrozenFromInReviewTheCyberManagerCannotReviewAndARejectionKeepsWhatWasConfirmed() {
+        Draft draft = inReview();
+        String sub = draft.submissionId();
+        ApiClient cm = signedInAs(CM);
+        List<String> ids = findingIds(cm, sub);
+        reviewed(cm, sub, ids.get(0), CONFIRMED, null);
+        String id = requested(draft.smo(), draft.systemId(), priorVa()).get("id").asString();
+
+        assertConflict(reviewFinding(cm, ids.get(1), review(CONFIRMED, null, currentProposalId(cm, sub, ids.get(1)))),
+                "invalid-transition");
+        assertConflict(returnForRework(cm, sub, "Look again."), "invalid-transition");
+        rejected(vaPoc(), id);
+
+        assertThat(submission(draft.smo(), sub).get("state").asString()).isEqualTo("IN_REVIEW");
+        assertThat(findingById(cm, sub, ids.get(0)).get("reviewState").asString()).isEqualTo(CONFIRMED);
+        assertThat(findingById(cm, sub, ids.get(1)).get("reviewState").asString()).isEqualTo("PENDING");
+    }
+
+    @Test
     void aRejectionPutsBackTheOverdueFlagItFroze() {
         Draft draft = draft();
         String sub = draft.submissionId();

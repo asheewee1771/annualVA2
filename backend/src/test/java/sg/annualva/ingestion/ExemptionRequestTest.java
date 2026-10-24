@@ -205,6 +205,60 @@ class ExemptionRequestTest extends ExemptionSeam1 {
     }
 
     @Test
+    void aRequestIsRefusedWhileARescanIsStillScanning() {
+        Draft draft = draft();
+        String sub = draft.submissionId();
+        String report = settled(draft, DEPENDENCY_CHECK, "dc.json", dcReportAt(SCANNED)).get("id").asString();
+        var sent = ReplaceSeam1.replace(draft.smo(), sub, report, "dc-rescan.json",
+                dcReportAt("2027-07-27T10:00:00+08:00"));
+        assertThat(sent.status()).as(sent.body()).isEqualTo(202);
+        String rescan = ApiClient.json(sent).get("id").asString();
+
+        var refused = request(draft.smo(), draft.systemId(), priorVa());
+
+        assertConflict(refused, "files-scanning");
+        assertThat(ApiClient.json(refused).get("reasons").get(0).get("files").get(0).get("fileId").asString())
+                .isEqualTo(rescan);
+        assertThat(entries("EXEMPTION_REQUESTED", draft.systemId()).get(0).get("detail").get("reason").asString())
+                .isEqualTo("files-scanning");
+        assertThat(submission(draft.smo(), sub).get("state").asString()).isEqualTo("DRAFT");
+        pass();
+        pass();
+        assertThat(requested(draft.smo(), draft.systemId(), priorVa()).get("previousState").asString())
+                .isEqualTo("DRAFT");
+    }
+
+    @Test
+    void aPriorVaCannotBeDatedAfterToday() {
+        today("2027-07-01");
+        Draft draft = draft();
+
+        assertInvalidField(request(draft.smo(), draft.systemId(), priorVa()), "vaDate");
+        assertThat(requested(draft.smo(), draft.systemId(),
+                exemption(PRIOR_VA, "2027-06-30", "Acme VA, report AC-0.", null)).get("vaDate").asString())
+                .isEqualTo("2027-06-30");
+    }
+
+    @Test
+    void theSystemsCyberManagerMayNotRequestAnExemptionAndNoVaSubmissionIsLeftBehind() {
+        Draft draft = draft();
+        String other = idOf("SYS-F2");
+        arrange.grant("CYBER_MANAGER", SMO_A, draft.systemId());
+        arrange.grant("SMO", CM_OTHER, other);
+
+        assertSodConflict(request(draft.smo(), draft.systemId(), priorVa()));
+        assertSodConflict(request(signedInAs(CM_OTHER), other, priorVa()));
+
+        assertThat(submission(draft.smo(), draft.submissionId()).get("state").asString()).isEqualTo("DRAFT");
+        JsonNode refused = entries("EXEMPTION_REQUESTED", other).get(0);
+        assertThat(refused.get("outcome").asString()).isEqualTo("REFUSED");
+        assertThat(refused.get("detail").get("reason").asString()).isEqualTo("sod-conflict");
+        JsonNode untouched = inboxRow(signedInAs(SMO_B), "SYS-F2");
+        assertThat(untouched.get("state").asString()).isEqualTo("NOT_STARTED");
+        assertThat(untouched.get("submissionId").isNull()).as("the refused request created nothing").isTrue();
+    }
+
+    @Test
     void theEvidenceFileMustBeAReadySupportingEvidenceFileOfTheSameVaSubmission() {
         Draft draft = draft();
         String sub = draft.submissionId();
