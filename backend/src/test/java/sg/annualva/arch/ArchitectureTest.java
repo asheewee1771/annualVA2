@@ -61,11 +61,12 @@ class ArchitectureTest {
                 .layer("finding").definedBy("sg.annualva.finding..")
                 .layer("ingestion").definedBy("sg.annualva.ingestion..")
                 .layer("dashboard").definedBy("sg.annualva.dashboard..")
+                .layer("notification").definedBy("sg.annualva.notification..")
                 .layer("export").definedBy("sg.annualva.export..")
                 .layer("adapters").definedBy("sg.annualva.adapters..")
                 // app is the composition root: it may import everything and nothing imports it
                 .whereLayer("app").mayNotBeAccessedByAnyLayer()
-                .whereLayer("web").mayOnlyBeAccessedByLayers("app", "adapters", "access", "audit", "cycle", "register", "submission", "finding", "ingestion", "dashboard", "export")
+                .whereLayer("web").mayOnlyBeAccessedByLayers("app", "adapters", "access", "audit", "cycle", "register", "submission", "finding", "ingestion", "dashboard", "notification", "export")
                 .whereLayer("config").mayOnlyBeAccessedByLayers("app", "web", "access", "adapters", "audit", "cycle")
                 // the exports keep the files they make in the file store's export zone
                 .whereLayer("boundary").mayOnlyBeAccessedByLayers("app", "web", "access", "adapters", "scan", "ingestion", "export")
@@ -76,22 +77,24 @@ class ArchitectureTest {
                 // the audit log is written by the modules that act (access, the register and the submissions today)
                 .whereLayer("audit").mayOnlyBeAccessedByLayers("app", "access", "register", "submission", "finding", "ingestion", "export")
                 // the domain modules ask access who is acting and whether they may reach a System
-                .whereLayer("access").mayOnlyBeAccessedByLayers("app", "register", "submission", "finding", "ingestion", "dashboard", "export")
-                // the register is a domain module: the submissions start from its Systems and the dashboards list them
-                .whereLayer("register").mayOnlyBeAccessedByLayers("app", "submission", "dashboard")
-                // the submissions sit above the register and the calendar; the dashboards read them (the inbox shows a Draft) and the file pipeline and the Findings ask which System a VA Submission belongs to
-                .whereLayer("submission").mayOnlyBeAccessedByLayers("app", "dashboard", "finding", "ingestion")
+                .whereLayer("access").mayOnlyBeAccessedByLayers("app", "register", "submission", "finding", "ingestion", "dashboard", "notification", "export")
+                // the register is a domain module: the submissions start from its Systems, the dashboards list them and the notifications address the people it names
+                .whereLayer("register").mayOnlyBeAccessedByLayers("app", "submission", "dashboard", "notification")
+                // the submissions sit above the register and the calendar; the dashboards read them (the inbox shows a Draft), the file pipeline and the Findings ask which System a VA Submission belongs to, and the notifications listen to their events
+                .whereLayer("submission").mayOnlyBeAccessedByLayers("app", "dashboard", "finding", "ingestion", "notification")
                 // the Findings sit above the submissions and the parsers; the upload pipeline hands them what a parser read, and the dashboards count them
                 .whereLayer("finding").mayOnlyBeAccessedByLayers("app", "ingestion", "dashboard", "export")
                 // the Scan Report upload pipeline sits above the submissions and the Findings; nothing reads it
                 .whereLayer("ingestion").mayOnlyBeAccessedByLayers("app")
                 // the dashboards are read models over the modules below them; only the exports read them (the management summary is the Cycle matrix's rows)
                 .whereLayer("dashboard").mayOnlyBeAccessedByLayers("app", "export")
+                // the notifications listen to the modules below them after each commit; nothing reads them
+                .whereLayer("notification").mayOnlyBeAccessedByLayers("app")
                 // the exports sit on top: nothing reads them
                 .whereLayer("export").mayOnlyBeAccessedByLayers("app")
                 // the calendar is a leaf below the domain modules (the register dates a System by it, a submission and the inbox by its Quarter, the Findings and the upload pipeline's age check read today's business date from it); nothing it reads reads back
                 .whereLayer("cycle").mayOnlyBeAccessedByLayers("app", "register", "submission", "finding", "ingestion",
-                        "dashboard", "export")
+                        "dashboard", "notification", "export")
                 // production adapters are wired by Spring type only; no module imports them
                 .whereLayer("adapters").mayNotBeAccessedByAnyLayer()
                 .check(main);
@@ -222,6 +225,20 @@ class ArchitectureTest {
         noClasses().that().doNotHaveFullyQualifiedName(sg.annualva.submission.OverdueSweep.class.getName())
                 .should().callMethod(sg.annualva.register.RegisterSystems.class, method)
                 .because("it skips the access guard, so only a scheduled job, which acts for nobody, may list every System")
+                .check(main);
+    }
+
+    /**
+     * ADR 0043: {@code RegisterSystems.named} reads a System and the people it names without asking the access guard,
+     * because the notifications address whoever acts next after a move has committed, for nobody. Only the notification
+     * module may call it, so no request can read the Register past the guard (ADR 0013).
+     */
+    @Test
+    void onlyTheNotificationsReadTheNamedPeoplePastTheAccessGuard() throws Exception {
+        String method = sg.annualva.register.RegisterSystems.class.getMethod("named", java.util.UUID.class).getName();
+        noClasses().that().resideOutsideOfPackage("sg.annualva.notification..")
+                .should().callMethod(sg.annualva.register.RegisterSystems.class, method, java.util.UUID.class)
+                .because("it skips the access guard, so only the notifications, which act for nobody, may read it")
                 .check(main);
     }
 

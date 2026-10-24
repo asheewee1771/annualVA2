@@ -37,6 +37,12 @@ public class AppUserStore {
 
     private static final String FIND_BY_ID = "SELECT " + COLUMNS + " FROM app_user WHERE id = :id";
 
+    /** Pre-registers a person by email unless someone holds it already, whether signed in or not. */
+    private static final String KNOW =
+            "INSERT INTO app_user (email, created_at) VALUES (CAST(:email AS citext), :now) ON CONFLICT (email) DO NOTHING";
+
+    private static final String ID_BY_EMAIL = "SELECT id FROM app_user WHERE email = CAST(:email AS citext)";
+
     private final JdbcClient jdbc;
 
     AppUserStore(JdbcClient jdbc) {
@@ -75,6 +81,16 @@ public class AppUserStore {
                 .query(UUID.class)
                 .single();
         return byId(id);
+    }
+
+    /**
+     * The user id of the person with this email: the one who signed in with it, or the one pre-registered by it, and when
+     * there is neither, a new pre-registration that their first sign-in links (as {@link #preRegister} makes). For
+     * something addressed to a person the System Register names before they have signed in (a notification).
+     */
+    public UUID known(String email, Instant now) {
+        jdbc.sql(KNOW).param("email", email).param("now", utc(now)).update();
+        return jdbc.sql(ID_BY_EMAIL).param("email", email).query(UUID.class).single();
     }
 
     AppUser link(UUID id, String ssoId, @Nullable String displayName, Instant now) {

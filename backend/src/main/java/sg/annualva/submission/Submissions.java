@@ -357,7 +357,7 @@ public class Submissions {
                 .with(DetailKey.STATE_FROM, from.name())
                 .with(DetailKey.STATE_TO, SubmissionState.IN_REVIEW.name())
                 .with(DetailKey.DECLARATION_VERSION, declaration.version()));
-        events.publishEvent(new SubmissionEvent(id, systemId, from, SubmissionState.IN_REVIEW, caller, now));
+        publish(id, systemId, from, SubmissionState.IN_REVIEW, now);
         return view(id);
     }
 
@@ -593,8 +593,17 @@ public class Submissions {
         AuditEvent success = write.apply(calendar.dateOf(now));
         audit.record(actor.attribute(success).onSystem(target.systemId()).onSubmission(id)
                 .with(DetailKey.STATE_FROM, from.name()).with(DetailKey.STATE_TO, to.name()));
-        events.publishEvent(new SubmissionEvent(id, target.systemId(), from, to, user.id(), now));
+        publish(id, target.systemId(), from, to, now);
         return view(id);
+    }
+
+    /**
+     * Publishes the move for the notifications, which listen after the commit (ADR 0043), with the caller as the actor
+     * and the last day of the window the new state waits on as the row now reads it (the one rule, V20).
+     */
+    private void publish(UUID id, UUID systemId, SubmissionState from, SubmissionState to, Instant now) {
+        LocalDate dueOn = store.find(id).map(SubmissionStore.Row::dueOn).orElse(null);
+        events.publishEvent(new SubmissionEvent(id, systemId, from, to, user.id(), now, dueOn));
     }
 
     /**

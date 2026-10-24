@@ -2,6 +2,7 @@ package sg.annualva.register;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
@@ -44,6 +45,16 @@ public class RegisterSystems {
      */
     public record ActiveSystem(UUID id, String systemId, String name, int quarter, String smoEmail) {}
 
+    /**
+     * A System with the people the Register names for it, for a consumer that tells them something.
+     *
+     * @param id the System's own id
+     * @param systemId the System ID as the VA POC typed it
+     * @param quarter 1 to 4
+     */
+    public record Named(UUID id, String systemId, String name, String smoEmail, String cyberManagerEmail,
+            int quarter) {}
+
     private final RegisterStore store;
     private final AccessGuard guard;
 
@@ -80,6 +91,17 @@ public class RegisterSystems {
     @Transactional(readOnly = true)
     public List<ActiveSystem> everyActive() {
         return activeWhere(id -> true);
+    }
+
+    /**
+     * One System as the Register holds it now, retired or not, with the people it names, for the notifications, which
+     * address whoever acts next after a move has committed and act for nobody (ADR 0043). It skips the access guard, so
+     * it is never for a request: the architecture test names its callers.
+     */
+    @Transactional(readOnly = true)
+    public Optional<Named> named(UUID systemId) {
+        return store.system(systemId).map(system -> new Named(system.id(), system.code(), system.name(),
+                system.smoEmail(), system.cyberManagerEmail(), system.quarter()));
     }
 
     /** The Systems still in the Register whose id passes the test, in System ID order. */

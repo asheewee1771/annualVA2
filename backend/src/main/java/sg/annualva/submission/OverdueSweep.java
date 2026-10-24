@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sg.annualva.audit.AuditAction;
@@ -39,13 +40,16 @@ public class OverdueSweep {
     private final CycleCalendar calendar;
     private final AuditLog audit;
     private final Clock clock;
+    private final ApplicationEventPublisher events;
 
-    OverdueSweep(SubmissionStore store, RegisterSystems register, CycleCalendar calendar, AuditLog audit, Clock clock) {
+    OverdueSweep(SubmissionStore store, RegisterSystems register, CycleCalendar calendar, AuditLog audit, Clock clock,
+            ApplicationEventPublisher events) {
         this.store = store;
         this.register = register;
         this.calendar = calendar;
         this.audit = audit;
         this.clock = clock;
+        this.events = events;
     }
 
     /**
@@ -73,14 +77,18 @@ public class OverdueSweep {
                 }
             }
         }
-        flagged.forEach(this::audit);
+        flagged.forEach(flag -> recorded(flag, now));
     }
 
-    /** One entry per flag, about the System and, when there is one, the VA Submission. */
-    private void audit(SubmissionStore.Flagged flagged) {
+    /**
+     * One entry per flag, about the System and, when there is one, the VA Submission; and an {@link OverdueEvent} for the
+     * notification of whoever's step it is, sent after the commit.
+     */
+    private void recorded(SubmissionStore.Flagged flagged, Instant now) {
         AuditEvent event = AuditEvent.of(AuditAction.SUBMISSION_OVERDUE, AuditOutcome.SUCCESS)
                 .onSystem(flagged.systemId()).with(DetailKey.STATE, flagged.state());
         UUID submission = flagged.id();
         audit.record(submission == null ? event : event.onSubmission(submission));
+        events.publishEvent(new OverdueEvent(submission, flagged.systemId(), flagged.state(), flagged.dueOn(), now));
     }
 }
