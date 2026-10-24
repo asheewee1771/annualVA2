@@ -73,7 +73,17 @@ public enum DetailKey {
     /** An export's classification: {@code CONFIDENTIAL} or {@code RESTRICTED} (assumption A-1). */
     CLASSIFICATION,
     /** The Quarter an export covers, 1 to 4, when it covers one Quarter only. */
-    QUARTER;
+    QUARTER,
+    /** The disposal list an entry is about (ticket 49). */
+    DISPOSAL_LIST_ID,
+    /** What a disposal deleted: VA Submissions, Scan Report files (rows and content), superseded files' content only. */
+    SUBMISSIONS,
+    FILES,
+    SUPERSEDED_FILES,
+    /** What a disposal deleted: export rows, retired Systems and audit entries before its cutoff. */
+    EXPORTS,
+    SYSTEMS,
+    AUDIT_ENTRIES;
 
     /** The key as stored: lower-case with underscores. */
     String json() {

@@ -44,6 +44,8 @@ import sg.annualva.access.RoleGrantStore;
 import sg.annualva.export.ExportWorker;
 import sg.annualva.ingestion.ScanPoller;
 import sg.annualva.notification.MailOutbox;
+import sg.annualva.retention.DisposalExecutor;
+import sg.annualva.retention.DisposalPlanner;
 import sg.annualva.submission.CycleLifecycle;
 import sg.annualva.submission.OverdueSweep;
 import sg.annualva.web.ProblemResponses;
@@ -116,11 +118,15 @@ public class TestEndpoints {
         private final MailOutbox mailOutbox;
         private final CycleLifecycle cycleLifecycle;
         private final ExportWorker exportWorker;
+        private final DisposalExecutor disposalExecutor;
+        private final DisposalPlanner disposalPlanner;
 
         public TestController(AppUserStore users, RoleGrantStore grants, AccessGuard guard, StepUp stepUp, JdbcClient jdbc,
                 Clock clock, AuditLog audit, TransactionTemplate transaction, ScanPoller scanPoller,
                 OverdueSweep overdueSweep, MailOutbox mailOutbox, CycleLifecycle cycleLifecycle,
-                ExportWorker exportWorker) {
+                ExportWorker exportWorker, DisposalExecutor disposalExecutor, DisposalPlanner disposalPlanner) {
+            this.disposalExecutor = disposalExecutor;
+            this.disposalPlanner = disposalPlanner;
             this.cycleLifecycle = cycleLifecycle;
             this.scanPoller = scanPoller;
             this.overdueSweep = overdueSweep;
@@ -285,6 +291,9 @@ public class TestEndpoints {
                 jdbc.sql("DELETE FROM role_grant WHERE system_id IS NOT NULL").update();
                 jdbc.sql("DELETE FROM register_upload").update();
                 jdbc.sql("DELETE FROM export_request").update();
+                // The disposal lists (V149) name no other row by key; at most one may wait at a time.
+                jdbc.sql("DELETE FROM disposal_item").update();
+                jdbc.sql("DELETE FROM disposal_list").update();
                 jdbc.sql("DELETE FROM va_system").update();
             });
             systems.clear();
@@ -380,6 +389,39 @@ public class TestEndpoints {
         public Map<String, String> exports() {
             exportWorker.run();
             return Map.of("ran", "exports");
+        }
+
+        /**
+         * One pass of the retention job, which {@code annualva.scheduling.enabled=false} keeps from running by itself in
+         * tests: the executor disposes of an approved list, then the listing writes what is due.
+         */
+        @PostMapping("/api/test/jobs/retention")
+        public Map<String, String> retention() {
+            disposalExecutor.execute();
+            disposalPlanner.plan();
+            return Map.of("ran", "retention");
+        }
+
+        /** The tables a disposal removes rows from, in the order the rows test reports them. */
+        private static final List<String> DISPOSED_TABLES = List.of("va_submission", "report_file", "report_file_stage",
+                "report_slot", "finding", "finding_occurrence", "finding_status_proposal", "bulk_batch", "finding_review",
+                "batch_review", "report_review", "submission_return", "submission_return_item", "declaration",
+                "submission_participation", "notification", "mail_outbox", "not_started_overdue", "cycle_register",
+                "cycle_register_system", "register_upload", "role_grant", "va_system", "export_request");
+
+        /**
+         * Observation of what a disposal leaves in the database: how many rows each table holds. The suite resets these
+         * tables before every test, so a test that disposes of everything it made expects the counts it can name. There is
+         * no read of the append-only history tables (the proposals, batches, reviews and returns) once their VA
+         * Submission is gone, so only the tables themselves can show that they are empty.
+         */
+        @GetMapping("/api/test/rows")
+        public Map<String, Long> rows() {
+            Map<String, Long> rows = new java.util.LinkedHashMap<>();
+            for (String table : DISPOSED_TABLES) {
+                rows.put(table, jdbc.sql("SELECT count(*) FROM " + table).query(Long.class).single());
+            }
+            return rows;
         }
 
         /** Makes what a queued export will hold unreadable, as a row written before its shape changed would be. */

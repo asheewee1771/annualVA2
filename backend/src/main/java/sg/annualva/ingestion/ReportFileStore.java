@@ -45,7 +45,7 @@ class ReportFileStore {
             @Nullable String scanTicket, int scanAttempts, @Nullable Instant scanSubmittedAt, UUID uploadedBy,
             Instant uploadedAt, @Nullable Instant scanDateFromFile, @Nullable String targetFromFile,
             @Nullable UUID replacesId, @Nullable UUID supersededBy, @Nullable LocalDate scanDateConfirmed,
-            @Nullable String targetConfirmed) {}
+            @Nullable String targetConfirmed, @Nullable Instant contentDisposedAt) {}
 
     /** One entry of the order a file went through. */
     record Stage(UUID fileId, PipelineStatus status, Instant at) {}
@@ -75,7 +75,8 @@ class ReportFileStore {
             "SELECT f.id, f.submission_id, s.system_id, f.report_type, f.kind, f.display_name, f.size_bytes, "
             + "f.upload_sha256, f.detected_format, f.quarantine_key, f.clean_key, f.pipeline_status, f.reject_code, "
             + "f.scan_ticket, f.scan_attempts, f.scan_submitted_at, f.uploaded_by, f.uploaded_at, f.scan_date_from_file, "
-            + "f.target_from_file, f.replaces_id, f.superseded_by, f.scan_date_confirmed, f.target_confirmed "
+            + "f.target_from_file, f.replaces_id, f.superseded_by, f.scan_date_confirmed, f.target_confirmed, "
+            + "f.content_disposed_at "
             + "FROM report_file f JOIN va_submission s ON s.id = f.submission_id ";
 
     private static final String FIND = COLUMNS + "WHERE f.id = :id";
@@ -311,6 +312,7 @@ class ReportFileStore {
         String code = rs.getString("reject_code");
         OffsetDateTime submitted = rs.getObject("scan_submitted_at", OffsetDateTime.class);
         OffsetDateTime scanned = rs.getObject("scan_date_from_file", OffsetDateTime.class);
+        OffsetDateTime disposed = rs.getObject("content_disposed_at", OffsetDateTime.class);
         return new Row(rs.getObject("id", UUID.class), rs.getObject("submission_id", UUID.class),
                 rs.getObject("system_id", UUID.class), ReportType.valueOf(rs.getString("report_type")),
                 FileKind.valueOf(rs.getString("kind")), rs.getString("display_name"), rs.getLong("size_bytes"),
@@ -321,7 +323,8 @@ class ReportFileStore {
                 rs.getObject("uploaded_by", UUID.class), rs.getObject("uploaded_at", OffsetDateTime.class).toInstant(),
                 scanned == null ? null : scanned.toInstant(), rs.getString("target_from_file"),
                 rs.getObject("replaces_id", UUID.class), rs.getObject("superseded_by", UUID.class),
-                rs.getObject("scan_date_confirmed", LocalDate.class), rs.getString("target_confirmed"));
+                rs.getObject("scan_date_confirmed", LocalDate.class), rs.getString("target_confirmed"),
+                disposed == null ? null : disposed.toInstant());
     }
 
     private static OffsetDateTime utc(Instant instant) {

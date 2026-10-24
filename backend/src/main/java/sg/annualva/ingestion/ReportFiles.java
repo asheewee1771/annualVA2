@@ -276,6 +276,14 @@ public class ReportFiles {
         if (!row.status().viewable() || cleanKey == null) {
             throw new ResourceNotFoundException();
         }
+        if (row.contentDisposedAt() != null) {
+            audit.recordIndependently(actor.attribute(AuditEvent.of(AuditAction.FILE_DOWNLOADED, AuditOutcome.REFUSED))
+                    .onSystem(target.systemId()).onSubmission(submissionId).with(DetailKey.FILE_ID, fileId)
+                    .with(DetailKey.REASON, "disposed"));
+            throw new RejectedRequestException(HttpStatus.GONE, "disposed",
+                    "This file was superseded and its content has been disposed of under the retention rules. Its "
+                            + "record is kept; download the file that replaced it.");
+        }
         audit.record(actor.attribute(AuditEvent.of(AuditAction.FILE_DOWNLOADED, AuditOutcome.SUCCESS))
                 .onSystem(target.systemId()).onSubmission(submissionId).with(DetailKey.FILE_ID, fileId));
         return new Grant(downloadName(row), cleanKey);
@@ -379,7 +387,7 @@ public class ReportFiles {
         RejectCode code = row.rejectCode();
         return new ReportFileView(row.id(), row.submissionId(), row.reportType(), row.kind(), row.displayName(),
                 row.sizeBytes(), row.uploadSha256(), row.status(), code, code == null ? null : code.message(), row.scanAttempts(),
-                row.detectedFormat(), row.uploadedAt(), row.replacesId(), row.supersededBy(),
+                row.detectedFormat(), row.uploadedAt(), row.replacesId(), row.supersededBy(), row.contentDisposedAt(),
                 stages.stream().map(stage -> new ReportFileView.Stage(stage.status(), stage.at())).toList());
     }
 

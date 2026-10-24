@@ -243,7 +243,24 @@ public enum AuditAction {
      * {@code format} and {@code classification}), or was refused because it is not made yet, failed or has expired
      * (REFUSED, with the {@code export_id} and a fixed reason). About no one System.
      */
-    EXPORT_DOWNLOADED("export-downloaded", "file");
+    EXPORT_DOWNLOADED("export-downloaded", "file"),
+    /**
+     * The retention job wrote a disposal list of what is due (ticket 49, story 87; SUCCESS, with the
+     * {@code disposal_list_id} and the {@code count} of its items). Attributed to nobody; about no one System.
+     */
+    DISPOSAL_LISTED("disposal-listed", "database"),
+    /**
+     * A VA POC approved a disposal list with a fresh sign-in (SUCCESS, with the {@code disposal_list_id}), or was refused
+     * because it is no longer the list waiting for approval (REFUSED, with the {@code disposal_list_id} and a fixed
+     * reason). A refusal for want of a fresh sign-in is the {@code REQUEST_REFUSED} entry of every step-up.
+     */
+    DISPOSAL_APPROVED("disposal-approved", "database"),
+    /**
+     * The tombstone of an approved disposal list, written in the transaction that deleted its records (SUCCESS, with the
+     * {@code disposal_list_id} and the counts deleted: {@code submissions}, {@code files}, {@code superseded_files},
+     * {@code exports}, {@code systems} and {@code audit_entries}). Attributed to nobody: the approval is its own entry.
+     */
+    DISPOSAL_EXECUTED("disposal-executed", "database");
 
     private final String ecs;
     private final String category;

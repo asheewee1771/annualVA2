@@ -155,6 +155,11 @@ public final class ApiClient {
         return JSON.readTree(response.body());
     }
 
+    /** The JSON of a download's body, such as the problem a refused download answers with. */
+    public static JsonNode json(Download download) {
+        return JSON.readTree(new String(download.body(), java.nio.charset.StandardCharsets.UTF_8));
+    }
+
     /** A value as a JSON body, escaped by the JSON library, for input that is not plain ASCII. */
     public static String toJson(Object value) {
         return JSON.writeValueAsString(value);
