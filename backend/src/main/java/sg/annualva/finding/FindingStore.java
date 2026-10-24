@@ -77,13 +77,13 @@ class FindingStore {
     /** The file a rescan proposal names as the one it replaced, for its name. */
     private static final String REPLACED_FILE = "LEFT JOIN report_file rp ON rp.id = p.replaced_file_id ";
 
-    /** The Bulk-set batch the Finding's current proposal was made in: null for one made alone, or none. */
-    private static final String CURRENT_BATCH =
-            "(SELECT bp.batch_id FROM finding_status_proposal bp WHERE bp.id = f.current_proposal_id)";
+    /** The Finding's current proposal as {@code p}, for the page, the count and their filters; none when it has none. */
+    private static final String CURRENT_PROPOSAL =
+            "LEFT JOIN finding_status_proposal p ON p.id = f.current_proposal_id ";
 
     /**
-     * What the list is narrowed to, the same for the page and the count (it reads the Finding and its current proposal
-     * only). Each part that is not given matches everything: the Scan Report (no value), the severities (all five are
+     * What the list is narrowed to, the same for the page and the count (it reads the Finding and its current proposal,
+     * {@link #CURRENT_PROPOSAL}, only). Each part that is not given matches everything: the Scan Report (no value), the severities (all five are
      * passed), the review state (no value), "needs attention" (false), which is a Finding with no proposal yet or a
      * Disputed one, the batch (no value) and whether the current proposal was made in a batch at all (no value).
      */
@@ -93,8 +93,8 @@ class FindingStore {
             + "AND f.severity = ANY(CAST(:severities AS text[])) "
             + "AND (CAST(:review AS text) IS NULL OR f.review_state = :review) "
             + "AND (NOT :attention OR f.current_proposal_id IS NULL OR f.review_state = 'DISPUTED') "
-            + "AND (CAST(:batch AS uuid) IS NULL OR " + CURRENT_BATCH + " = CAST(:batch AS uuid)) "
-            + "AND (CAST(:batched AS boolean) IS NULL OR (" + CURRENT_BATCH + " IS NOT NULL) = CAST(:batched AS boolean)) ";
+            + "AND (CAST(:batch AS uuid) IS NULL OR p.batch_id = CAST(:batch AS uuid)) "
+            + "AND (CAST(:batched AS boolean) IS NULL OR (p.batch_id IS NOT NULL) = CAST(:batched AS boolean)) ";
 
     /**
      * The Finding's latest review, of whichever proposal it was (ticket 28): it says what the Cyber Manager last decided and
@@ -117,13 +117,13 @@ class FindingStore {
             + "(SELECT count(*) FROM finding_occurrence o WHERE o.finding_id = f.id) AS occurrences, "
             + "f.review_state, f.source, f.title, r.proposal_id AS review_proposal_id, " + ReviewStore.REVIEW_COLUMNS + ", "
             + PROPOSAL_COLUMNS
-            + "FROM finding f LEFT JOIN finding_status_proposal p ON p.id = f.current_proposal_id " + REPLACED_FILE
+            + "FROM finding f " + CURRENT_PROPOSAL + REPLACED_FILE
             + LATEST_REVIEW
             + FILTERED
             + "ORDER BY array_position(" + SEVERITY_ORDER + ", f.severity), f.identifier, f.package_or_rule, f.seq "
             + "LIMIT :limit OFFSET :offset";
 
-    private static final String COUNT = "SELECT count(*) FROM finding f " + FILTERED;
+    private static final String COUNT = "SELECT count(*) FROM finding f " + CURRENT_PROPOSAL + FILTERED;
 
     /** The progress counts of one VA Submission; Carried Over and Target Date Missed have no column before Release 2. */
     private static final String READINESS =

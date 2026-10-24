@@ -24,6 +24,11 @@ CREATE TRIGGER batch_review_append_only
     BEFORE UPDATE OR DELETE OR TRUNCATE ON batch_review
     FOR EACH STATEMENT EXECUTE FUNCTION declaration_append_only();
 
+-- A batch makes one proposal per Finding (ADR 0028 item 1), so "the batch's proposal of a Finding" is one row: the batch
+-- review's "still in the batch" (the current proposal is that row) and the list's (the current proposal's batch is the
+-- batch) are then the same rule. A proposal made alone has no batch and is not constrained.
+ALTER TABLE finding_status_proposal ADD CONSTRAINT finding_status_proposal_batch_finding_key UNIQUE (batch_id, finding_id);
+
 -- A review made in a batch review names it; one made for a single Finding has none. Adding a nullable column changes no
 -- row, so the append-only trigger of V21 is not involved.
 ALTER TABLE finding_review ADD COLUMN batch_review_id uuid REFERENCES batch_review (id);
