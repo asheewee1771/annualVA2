@@ -24,15 +24,6 @@ class QuarterBoardTest extends CyberManagerSeam1 {
         return states;
     }
 
-    private static JsonNode column(JsonNode board, String state) {
-        for (JsonNode column : board.get("columns")) {
-            if (column.get("state").asString().equals(state)) {
-                return column.get("systems");
-            }
-        }
-        throw new AssertionError("no column " + state + " in " + board);
-    }
-
     @Test
     void theQuarterRunningTodayShowsTheCallersSystemsInOneColumnPerState() {
         registered(listed("SYS-B1", "Not started", SMO_A, CM, "Q3"), listed("SYS-B2", "Draft", SMO_A, CM, "Q3"),
@@ -156,18 +147,15 @@ class QuarterBoardTest extends CyberManagerSeam1 {
     }
 
     @Test
-    void anSmoAVaPocAnAuditorAndAPersonWithNoRoleAreForbiddenAndAnonymousIsUnauthenticated() {
+    void anSmoAnAuditorAndAPersonWithNoRoleAreForbiddenAndAnonymousIsUnauthenticated() {
         registered(listed("SYS-X1", "Access", SMO_A, CM, "Q3"));
         ApiClient auditor = signedInAs("board.auditor@ci.annualva.test");
         arrange.grant("AUDITOR", "board.auditor@ci.annualva.test", null, "GRANT", "2027-12-31T00:00:00Z");
 
         var smo = signedInAs(SMO_A).get(BOARD);
-        var poc = vaPoc().get(BOARD);
 
         assertThat(smo.status()).isEqualTo(403);
         assertThat(smo.body()).doesNotContain("SYS-X1");
-        assertThat(poc.status()).as("until the VA POC's board, ticket 33").isEqualTo(403);
-        assertThat(poc.body()).doesNotContain("SYS-X1");
         assertThat(signedInAs("board.nobody@ci.annualva.test").get(BOARD).status()).isEqualTo(403);
         assertThat(auditor.get(BOARD).status()).isEqualTo(403);
         assertThat(anotherBrowser().get(BOARD).status()).isEqualTo(401);

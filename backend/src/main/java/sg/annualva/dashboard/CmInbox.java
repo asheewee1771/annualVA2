@@ -67,7 +67,7 @@ public class CmInbox {
     public Inbox inbox(@Nullable Integer requested) {
         VaCycle cycle = calendar.running(requested);
         DashboardSystems.Rows rows = systems.in(cycle, Need.REVIEW);
-        Map<UUID, ReviewMarkers.Marker> marked = markers.of(rows.live());
+        Map<UUID, ReviewMarkers.Marker> marked = markers.of(rows.live(), Need.REVIEW);
         List<Item> items = rows.live().stream()
                 .map(row -> item(row, ReviewMarkers.of(marked, row)))
                 .sorted(OVERDUE_FIRST_THEN_DUE)

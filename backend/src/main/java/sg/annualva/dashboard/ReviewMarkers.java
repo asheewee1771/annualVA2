@@ -9,16 +9,18 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
+import sg.annualva.access.Need;
 import sg.annualva.finding.Findings;
 import sg.annualva.finding.ReviewCounts;
 import sg.annualva.submission.SubmissionStep;
 import sg.annualva.submission.Submissions;
 
 /**
- * What the Cyber Manager's dashboards add to each System (stories 48 and 58): how many Findings of its VA Submission they
- * confirmed and how many await their review, and whether segregation of duties refuses their review: they acted on that
- * VA Submission at another step (as its SMO/Tech Lead, say) or are assigned to another step of its System. It is the
- * rule the review itself is refused by (ticket 28), read through {@link Submissions#conflictedAt}.
+ * What the Quarter board and the Cyber Manager's inbox add to each System (stories 48, 58 and 64): how many Findings of
+ * its VA Submission the Cyber Manager confirmed and how many await their review, and whether segregation of duties
+ * refuses the caller the step the dashboard is for: they acted on that VA Submission at another step (as its SMO/Tech
+ * Lead, say) or are assigned to another step of its System. It is the rule the step itself is refused by (ticket 28),
+ * read through {@link Submissions#conflictedAt}.
  */
 @Component
 class ReviewMarkers {
@@ -37,11 +39,17 @@ class ReviewMarkers {
         this.submissions = submissions;
     }
 
-    /** The markers of these rows, by VA Submission; a row with no VA Submission is absent. */
-    Map<UUID, Marker> of(Collection<DashboardSystems.Row> rows) {
+    /**
+     * The markers of these rows, by VA Submission; a row with no VA Submission is absent.
+     *
+     * @param need what the caller reads the rows for; the conflicts marked are those of the step it acts at, and none
+     *     while no step records it (the VA POC's endorsing step, ticket 34)
+     */
+    Map<UUID, Marker> of(Collection<DashboardSystems.Row> rows, Need need) {
         List<UUID> ids = rows.stream().map(DashboardSystems.Row::submissionId).filter(Objects::nonNull).toList();
         Map<UUID, ReviewCounts> counts = findings.reviewCounts(ids);
-        Set<UUID> conflicted = submissions.conflictedAt(ids, SubmissionStep.REVIEW);
+        Set<UUID> conflicted = SubmissionStep.actingFor(need).map(step -> submissions.conflictedAt(ids, step))
+                .orElse(Set.of());
         return ids.stream().collect(Collectors.toUnmodifiableMap(Function.identity(), id -> {
             ReviewCounts count = counts.getOrDefault(id, ReviewCounts.NONE);
             return new Marker(count.confirmed(), count.awaitingReview(), conflicted.contains(id));

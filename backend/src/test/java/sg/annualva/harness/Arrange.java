@@ -79,6 +79,28 @@ public final class Arrange {
         assertThat(client.post("/api/test/submissions/" + submissionId + "/state/" + state).status()).isEqualTo(200);
     }
 
+    /** Marks a VA Submission endorsed after its Quarter's last day, as the endorse command (ticket 34) will. */
+    public void endorsedLate(String submissionId) {
+        assertThat(client.postJson("/api/test/submissions/" + submissionId + "/milestones", "{\"endorsedLate\":true}")
+                .status()).isEqualTo(200);
+    }
+
+    /**
+     * Sets when a VA Submission reached its milestones (instants such as {@code 2027-08-10T02:00:00Z}), as submit, pass
+     * to endorsement (ticket 30) and endorse (ticket 34) write them; a null one is left as it is.
+     */
+    public void milestones(String submissionId, @Nullable String submittedAt, @Nullable String passedToEndorsementAt,
+            @Nullable String endorsedAt) {
+        String body = "{\"submittedAt\":" + quoted(submittedAt) + ",\"passedToEndorsementAt\":"
+                + quoted(passedToEndorsementAt) + ",\"endorsedAt\":" + quoted(endorsedAt) + "}";
+        assertThat(client.postJson("/api/test/submissions/" + submissionId + "/milestones", body).status())
+                .isEqualTo(200);
+    }
+
+    private static String quoted(@Nullable String value) {
+        return value == null ? "null" : "\"" + value + "\"";
+    }
+
     /** Adds the next version of the Declaration wording, not a placeholder, as a later migration will; returns it. */
     public int declarationVersion() {
         var response = client.post("/api/test/declaration-text");

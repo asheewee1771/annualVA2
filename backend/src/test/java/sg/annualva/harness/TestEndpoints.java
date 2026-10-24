@@ -387,6 +387,28 @@ public class TestEndpoints {
             return Map.of("state", state);
         }
 
+        /**
+         * When a VA Submission reached its milestones, and whether it was endorsed late, as the commands that write them
+         * will (submit, pass to endorsement in ticket 30, endorse in ticket 34); a null field is left as it is.
+         */
+        @PostMapping("/api/test/submissions/{id}/milestones")
+        public Map<String, String> milestones(@PathVariable UUID id, @RequestBody MilestonesRequest body) {
+            jdbc.sql("UPDATE va_submission SET submitted_at = coalesce(CAST(:submitted AS timestamptz), submitted_at), "
+                    + "submitted_by = CASE WHEN CAST(:submitted AS timestamptz) IS NULL THEN submitted_by "
+                    + "ELSE started_by END, "
+                    + "passed_to_endorsement_at = coalesce(CAST(:passed AS timestamptz), passed_to_endorsement_at), "
+                    + "endorsed_at = coalesce(CAST(:endorsed AS timestamptz), endorsed_at), "
+                    + "endorsed_late = coalesce(CAST(:late AS boolean), endorsed_late) WHERE id = :id")
+                    .param("submitted", body.submittedAt()).param("passed", body.passedToEndorsementAt())
+                    .param("endorsed", body.endorsedAt()).param("late", body.endorsedLate()).param("id", id).update();
+            return Map.of("id", id.toString());
+        }
+
+        /** Instants such as {@code 2027-08-10T02:00:00Z}. */
+        public record MilestonesRequest(
+                @Nullable String submittedAt, @Nullable String passedToEndorsementAt, @Nullable String endorsedAt,
+                @Nullable Boolean endorsedLate) {}
+
         /** What configuration and the later Auditor grant will do, and a state the apply never makes: write a role grant. */
         @PostMapping("/api/test/grants")
         public Map<String, String> grant(@Valid @RequestBody GrantRequest body) {
