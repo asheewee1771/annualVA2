@@ -200,6 +200,10 @@ class ReplaceFileTest extends ReplaceSeam1 {
         assertThat(entry.get("detail").get("file_id").asString()).isEqualTo(againFile);
         assertThat(entry.get("detail").get("proposed_as").asString()).isEqualTo("RESCAN");
         assertThat(entry.get("detail").propertyNames()).containsExactlyInAnyOrder("file_id", "proposed_as");
+        // The suite shares one audit log and other tests write entries dated later, so this System's entries are read
+        // by System to be sure they are there; the newest page of the whole log is checked as well.
+        assertThat(otherVaPoc().get("/api/audit-entries?size=200&system=" + draft.systemId()).body()).doesNotContain(SENTINEL)
+                .contains("PROPOSAL_WITHDRAWN");
         assertThat(otherVaPoc().get("/api/audit-entries?size=200").body()).doesNotContain(SENTINEL);
         assertThat(output.getAll()).doesNotContain(SENTINEL);
     }

@@ -174,6 +174,10 @@ class ReplaceFileRulesTest extends ReplaceSeam1 {
         assertThat(finding(draft.smo(), draft.submissionId(), "CVE-2027-0003").get("currentProposal").get("evidence")
                 .asString()).as("the rescan's name is data in the proposal").contains(SENTINEL);
 
+        // The suite shares one audit log and other tests write entries dated later, so this System's entries are read
+        // by System to be sure they are there; the newest page of the whole log is checked as well.
+        assertThat(otherVaPoc().get("/api/audit-entries?size=200&system=" + draft.systemId()).body()).doesNotContain(SENTINEL)
+                .contains("FILE_REPLACED");
         assertThat(otherVaPoc().get("/api/audit-entries?size=200").body()).doesNotContain(SENTINEL);
         assertThat(output.getAll()).doesNotContain(SENTINEL);
     }

@@ -155,12 +155,16 @@ class FindingsListTest extends DependencyCheckSeam1 {
         List<String> bodies = List.of(stranger.body(), rejected.toString(), draft.smo().get(filesOf(draft.submissionId())).body(),
                 draft.smo().get(fileAt(draft.submissionId(), id)).body(),
                 draft.smo().get(findingsOf(draft.submissionId()) + "?size=0").body());
-        String audit = otherVaPoc().get("/api/audit-entries?size=200").body();
+        // The suite shares one audit log and other tests write entries dated later, so this System's entries are read
+        // by System to be sure they are there; the newest page of the whole log is checked as well.
+        String audit = otherVaPoc().get("/api/audit-entries?size=200&system=" + draft.systemId()).body();
 
         assertThat(page.toString()).as("Findings are data, so they are returned").contains(SENTINEL);
         assertThat(metadata.toString()).contains(SENTINEL);
         assertThat(output.getAll()).as("the log").doesNotContain(SENTINEL).contains("PARSED").contains("REJECTED_SCHEMA");
-        assertThat(audit).as("the audit log").doesNotContain(SENTINEL);
+        assertThat(audit).as("the System's audit entries").doesNotContain(SENTINEL).contains("FILE_UPLOADED")
+                .contains("FILE_REJECTED").contains("FILE_METADATA_VIEWED").contains("FINDINGS_VIEWED");
+        assertThat(otherVaPoc().get("/api/audit-entries?size=200").body()).as("the audit log").doesNotContain(SENTINEL);
         assertThat(String.join("\n", bodies)).as("error bodies, statuses and lists").doesNotContain(SENTINEL);
     }
 
