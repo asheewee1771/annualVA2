@@ -23,8 +23,6 @@ import org.jspecify.annotations.Nullable;
  */
 final class PreviewBuilder {
 
-    static final int SYSTEM_ID_MAX = 64;
-    static final int NAME_MAX = 200;
     static final int EMAIL_MAX = 254;
     private static final int REPLACEMENT = 0xFFFD;
     /** A value shown back in the preview is clipped to this many code points, so an oversized cell cannot bloat the response. */
@@ -138,7 +136,7 @@ final class PreviewBuilder {
         }
         if (row.name().isEmpty()) {
             reasons.add(BlockReason.SYSTEM_NAME_MISSING);
-        } else if (row.name().codePointCount(0, row.name().length()) > NAME_MAX || !plain(row.name())) {
+        } else if (!RegisterText.systemName(row.name())) {
             reasons.add(BlockReason.SYSTEM_NAME_INVALID);
         }
         String smo = lower(row.smoEmail());
@@ -169,7 +167,7 @@ final class PreviewBuilder {
     }
 
     private static boolean matchable(String systemId) {
-        return !systemId.isEmpty() && systemId.codePointCount(0, systemId.length()) <= SYSTEM_ID_MAX && plain(systemId);
+        return RegisterText.systemId(systemId);
     }
 
     private static String lower(String value) {
@@ -188,23 +186,9 @@ final class PreviewBuilder {
         for (int count = 0; index < value.length() && count < SHOWN_MAX; count++) {
             int codePoint = value.codePointAt(index);
             index += Character.charCount(codePoint);
-            shown.appendCodePoint(plainCodePoint(codePoint) ? codePoint : REPLACEMENT);
+            shown.appendCodePoint(RegisterText.plainCodePoint(codePoint) ? codePoint : REPLACEMENT);
         }
         return shown.toString();
-    }
-
-    /** No control, format, private-use, surrogate, unassigned or separator characters other than a plain space. */
-    private static boolean plain(String value) {
-        return value.codePoints().allMatch(PreviewBuilder::plainCodePoint);
-    }
-
-    private static boolean plainCodePoint(int codePoint) {
-        return switch (Character.getType(codePoint)) {
-            case Character.CONTROL, Character.FORMAT, Character.PRIVATE_USE, Character.SURROGATE,
-                    Character.UNASSIGNED, Character.LINE_SEPARATOR, Character.PARAGRAPH_SEPARATOR -> false;
-            case Character.SPACE_SEPARATOR -> codePoint == ' ';
-            default -> true;
-        };
     }
 
     /**
