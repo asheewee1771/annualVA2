@@ -161,20 +161,26 @@ class SubmissionStore {
             + "ORDER BY id FOR NO KEY UPDATE SKIP LOCKED) due WHERE s.id = due.id RETURNING s.id, s.system_id, s.state";
 
     /**
-     * A move out of In Review or Awaiting Endorsement takes the flag with it ({@link #OVERDUE_AFTER_MOVE}) and records the
-     * milestone it reaches (V133, the Cycle matrix): a pass to endorsement when the review ended
-     * ({@code passed_to_endorsement_at}); an endorsement when it was endorsed ({@code endorsed_at}) and whether that was
-     * late, which is whether the window the old state waited on, the Quarter's last day, had passed by the Overdue rule
-     * (V20; an {@code UPDATE} reads the old state). A return leaves both as they were.
+     * A move that reaches no milestone (a return for rework): the state, and the flag with it ({@link #OVERDUE_AFTER_MOVE}).
      */
-    private static final String MOVED =
-            "UPDATE va_submission SET state = :state, "
-            + "passed_to_endorsement_at = CASE WHEN :state = '" + SubmissionState.AWAITING_ENDORSEMENT.name()
-            + "' THEN :now ELSE passed_to_endorsement_at END, "
-            + "endorsed_at = CASE WHEN :state = '" + SubmissionState.ENDORSED.name() + "' THEN :now ELSE endorsed_at END, "
-            + "endorsed_late = CASE WHEN :state = '" + SubmissionState.ENDORSED.name() + "' THEN " + windowPassed("state")
-            + " ELSE endorsed_late END, "
-            + OVERDUE_AFTER_MOVE + " WHERE id = :id";
+    private static final String MOVED = "UPDATE va_submission SET state = :state, " + OVERDUE_AFTER_MOVE + " WHERE id = :id";
+
+    /**
+     * A pass to endorsement: Awaiting Endorsement, the flag with it, and when the review ended
+     * ({@code passed_to_endorsement_at}, V133, the Cycle matrix's "reviewed").
+     */
+    private static final String PASSED =
+            "UPDATE va_submission SET state = :state, passed_to_endorsement_at = :now, " + OVERDUE_AFTER_MOVE
+            + " WHERE id = :id";
+
+    /**
+     * An endorsement: Endorsed, the flag with it, when (V133, the Cycle matrix's "endorsed"), and whether it was late:
+     * whether the window the old state waited on, the Quarter's last day, had passed by the Overdue rule (V20; an
+     * {@code UPDATE} reads the old state).
+     */
+    private static final String ENDORSED =
+            "UPDATE va_submission SET state = :state, endorsed_at = :now, endorsed_late = " + windowPassed("state") + ", "
+            + OVERDUE_AFTER_MOVE + " WHERE id = :id RETURNING endorsed_late";
 
     private static final String INSERT_RETURN =
             "INSERT INTO submission_return (submission_id, step, comment, returned_by, returned_at) "
@@ -284,13 +290,21 @@ class SubmissionStore {
                 .param("today", today).update();
     }
 
-    /**
-     * Moves a VA Submission whose row the caller holds ({@link #lockForMove}) out of In Review or Awaiting Endorsement now,
-     * on this business date.
-     */
-    void moved(UUID id, SubmissionState state, Instant now, LocalDate today) {
-        jdbc.sql(MOVED).param("id", id).param("state", state.name()).param("now", utc(now)).param("today", today)
-                .update();
+    /** Moves a VA Submission whose row the caller holds ({@link #lockForMove}) to a state with no milestone of its own. */
+    void moved(UUID id, SubmissionState state, LocalDate today) {
+        jdbc.sql(MOVED).param("id", id).param("state", state.name()).param("today", today).update();
+    }
+
+    /** Passes a VA Submission whose row the caller holds ({@link #lockForMove}) to endorsement now. */
+    void passedToEndorsement(UUID id, Instant now, LocalDate today) {
+        jdbc.sql(PASSED).param("id", id).param("state", SubmissionState.AWAITING_ENDORSEMENT.name())
+                .param("now", utc(now)).param("today", today).update();
+    }
+
+    /** Endorses a VA Submission whose row the caller holds ({@link #lockForMove}) now; whether it was Endorsed Late. */
+    boolean endorsed(UUID id, Instant now, LocalDate today) {
+        return jdbc.sql(ENDORSED).param("id", id).param("state", SubmissionState.ENDORSED.name())
+                .param("now", utc(now)).param("today", today).query(Boolean.class).single();
     }
 
     /** Keeps a return of the VA Submission with what was Disputed when it was returned. */

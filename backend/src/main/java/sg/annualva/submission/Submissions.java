@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
@@ -126,14 +127,11 @@ public class Submissions {
         private final UUID submissionId;
         private final UUID systemId;
         private final AuditEvent refused;
-        /** How the row is held; only a VA Submission held exclusively may be moved to another state. */
-        private final Hold hold;
 
-        private ReviewTarget(UUID submissionId, UUID systemId, AuditEvent refused, Hold hold) {
+        private ReviewTarget(UUID submissionId, UUID systemId, AuditEvent refused) {
             this.submissionId = submissionId;
             this.systemId = systemId;
             this.refused = refused;
-            this.hold = hold;
         }
 
         public UUID submissionId() {
@@ -155,14 +153,38 @@ public class Submissions {
     }
 
     /**
-     * How a review-step command holds the VA Submission's row: shared for a review, so that reviews run side by side,
-     * exclusively for a move out of In Review, so that it waits for every review in progress and none starts until it
+     * How a step command holds the VA Submission's row: shared for a review, so that reviews run side by side,
+     * exclusively for a move to another state, so that it waits for every review in progress and none starts until it
      * commits (ADR 0035 item 3).
      */
     private enum Hold {
         SHARED,
         EXCLUSIVE
     }
+
+    /**
+     * What a step command checks beyond ownership and segregation of duties: the step it acts at, the one state it acts
+     * from, and the fixed reason and sentence of a refusal in any other state (ADR 0035 item 2, ADR 0040 item 1). The
+     * access guard's need is the step's own.
+     */
+    private record Gate(SubmissionStep step, SubmissionState from, String refusedReason, String refusedSentence) {}
+
+    /** Reviewing, returning and passing to endorsement: the Cyber Manager, In Review. */
+    private static final Gate REVIEWING = new Gate(SubmissionStep.REVIEW, SubmissionState.IN_REVIEW,
+            "state-not-reviewable",
+            "This VA Submission can be reviewed, returned or passed to endorsement only while it is In Review.");
+
+    /** Endorsing: a VA POC, Awaiting Endorsement. */
+    private static final Gate ENDORSING = new Gate(SubmissionStep.ENDORSE, SubmissionState.AWAITING_ENDORSEMENT,
+            "state-not-endorsable", "This VA Submission can be endorsed only while it is Awaiting Endorsement.");
+
+    /**
+     * A VA Submission that passed a {@link Gate}: its row held as {@code hold} says until the caller's transaction ends,
+     * and the caller recorded at the gate's step. Only {@link #atStep} makes one, and only one held exclusively is moved.
+     *
+     * @param refused the entry a later refusal of the same command is recorded as, before its reason
+     */
+    private record AtStep(UUID submissionId, UUID systemId, Gate gate, AuditEvent refused, Hold hold) {}
 
     /**
      * What a write answers when the VA Submission is not in Draft or Returned for Rework: it audits its own refusal (ADR
@@ -425,7 +447,8 @@ public class Submissions {
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public ReviewTarget lockForReview(UUID id, AuditEvent refusedAs) {
-        return atReviewStep(id, refusedAs, Hold.SHARED);
+        AtStep target = atStep(id, REVIEWING, refusedAs, Hold.SHARED);
+        return new ReviewTarget(target.submissionId(), target.systemId(), target.refused());
     }
 
     /**
@@ -444,7 +467,7 @@ public class Submissions {
      */
     @Transactional
     public Submission returnForRework(UUID id, ReturnRequest request) {
-        ReviewTarget target = atReviewStep(id,
+        AtStep target = atStep(id, REVIEWING,
                 actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_RETURNED, AuditOutcome.REFUSED)), Hold.EXCLUSIVE);
         String comment = returnComment(request.comment());
         if (!progress.outcome(id).returnable()) {
@@ -455,9 +478,11 @@ public class Submissions {
         ReviewProgress.Disputed disputed = progress.disputed(id);
         Instant now = clock.instant();
         store.insertReturn(id, SubmissionStep.REVIEW, comment, user.id(), now, disputed);
-        return movedOutOfReview(target, SubmissionState.RETURNED_FOR_REWORK, now,
-                AuditEvent.of(AuditAction.SUBMISSION_RETURNED, AuditOutcome.SUCCESS)
-                        .with(DetailKey.COUNT, disputed.count()));
+        return moved(target, SubmissionState.RETURNED_FOR_REWORK, now, today -> {
+            store.moved(id, SubmissionState.RETURNED_FOR_REWORK, today);
+            return AuditEvent.of(AuditAction.SUBMISSION_RETURNED, AuditOutcome.SUCCESS)
+                    .with(DetailKey.COUNT, disputed.count());
+        });
     }
 
     /**
@@ -473,7 +498,7 @@ public class Submissions {
      */
     @Transactional
     public Submission passToEndorsement(UUID id) {
-        ReviewTarget target = atReviewStep(id,
+        AtStep target = atStep(id, REVIEWING,
                 actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_PASSED, AuditOutcome.REFUSED)), Hold.EXCLUSIVE);
         List<SubmitReadiness.Blocker> unconfirmed = progress.outcome(id).endorsementBlockers();
         if (!unconfirmed.isEmpty()) {
@@ -483,8 +508,11 @@ public class Submissions {
                     "This VA Submission can pass to endorsement only once every Finding and justification is confirmed. "
                     + "Each reason says what is left.", unconfirmed);
         }
-        return movedOutOfReview(target, SubmissionState.AWAITING_ENDORSEMENT, clock.instant(),
-                AuditEvent.of(AuditAction.SUBMISSION_PASSED, AuditOutcome.SUCCESS));
+        Instant now = clock.instant();
+        return moved(target, SubmissionState.AWAITING_ENDORSEMENT, now, today -> {
+            store.passedToEndorsement(id, now, today);
+            return AuditEvent.of(AuditAction.SUBMISSION_PASSED, AuditOutcome.SUCCESS);
+        });
     }
 
     /**
@@ -504,21 +532,11 @@ public class Submissions {
     @Transactional
     public Submission endorse(UUID id) {
         stepUp.require(ENDORSE_INTENT);
-        SubmissionStore.Located located = store.locate(id).orElseThrow(ResourceNotFoundException::new);
-        guard.requireSystem(located.systemId(), Need.ENDORSE);
-        SubmissionStore.Located held = store.lockForMove(id).orElseThrow(ResourceNotFoundException::new);
-        AuditEvent refused = actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_ENDORSED, AuditOutcome.REFUSED))
-                .onSystem(held.systemId()).onSubmission(id);
-        sod.require(SubmissionStep.ENDORSE, held.systemId(), id, refused);
-        if (!SubmissionState.AWAITING_ENDORSEMENT.name().equals(held.state())) {
-            audit.recordIndependently(refused.with(DetailKey.REASON, "state-not-endorsable"));
-            throw new RejectedRequestException(HttpStatus.CONFLICT, NOT_ALLOWED_NOW,
-                    "This VA Submission can be endorsed only while it is Awaiting Endorsement.");
-        }
+        AtStep target = atStep(id, ENDORSING,
+                actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_ENDORSED, AuditOutcome.REFUSED)), Hold.EXCLUSIVE);
         Instant now = clock.instant();
-        store.recordParticipation(id, user.id(), SubmissionStep.ENDORSE, now);
-        return moved(id, held.systemId(), SubmissionState.AWAITING_ENDORSEMENT, SubmissionState.ENDORSED, now,
-                AuditEvent.of(AuditAction.SUBMISSION_ENDORSED, AuditOutcome.SUCCESS));
+        return moved(target, SubmissionState.ENDORSED, now, today -> AuditEvent.of(AuditAction.SUBMISSION_ENDORSED,
+                AuditOutcome.SUCCESS).with(DetailKey.ENDORSED_LATE, store.endorsed(id, now, today)));
     }
 
     /**
@@ -537,53 +555,46 @@ public class Submissions {
     }
 
     /**
-     * The reviewing step's checks, in order (ADR 0035 item 2): ownership (the Cyber Manager of the System; any other is
-     * "not found", ADR 0013); then, with the VA Submission's row held as {@code hold} says until the caller's transaction ends,
-     * segregation of duties (403 {@code sod-conflict}) and the state (In Review; 409 {@code invalid-transition}). Each
-     * refusal is audited in an entry of its own, as {@code refusedAs} about the System and the VA Submission with a fixed
-     * reason. The caller is then recorded at the reviewing step, kept only if their command commits.
+     * A step command's checks, in order (ADR 0035 item 2, ADR 0040 item 1): ownership (the step's need over the System;
+     * any other is "not found", ADR 0013); then, with the VA Submission's row held as {@code hold} says until the caller's
+     * transaction ends, segregation of duties (403 {@code sod-conflict}) and the gate's state (409
+     * {@code invalid-transition}). Each refusal is audited in an entry of its own, as {@code refusedAs} about the System
+     * and the VA Submission with a fixed reason. The caller is then recorded at the gate's step, kept only if their command
+     * commits.
      */
-    private ReviewTarget atReviewStep(UUID id, AuditEvent refusedAs, Hold hold) {
+    private AtStep atStep(UUID id, Gate gate, AuditEvent refusedAs, Hold hold) {
         SubmissionStore.Located located = store.locate(id).orElseThrow(ResourceNotFoundException::new);
-        guard.requireSystem(located.systemId(), Need.REVIEW);
+        guard.requireSystem(located.systemId(), gate.step().need());
         SubmissionStore.Located held = (hold == Hold.EXCLUSIVE ? store.lockForMove(id) : store.lockForEdit(id))
                 .orElseThrow(ResourceNotFoundException::new);
         AuditEvent refused = refusedAs.onSystem(held.systemId()).onSubmission(id);
-        sod.require(SubmissionStep.REVIEW, held.systemId(), id, refused);
-        if (!SubmissionState.IN_REVIEW.name().equals(held.state())) {
-            audit.recordIndependently(refused.with(DetailKey.REASON, "state-not-reviewable"));
-            throw new RejectedRequestException(HttpStatus.CONFLICT, NOT_ALLOWED_NOW,
-                    "This VA Submission can be reviewed, returned or passed to endorsement only while it is In Review.");
+        sod.require(gate.step(), held.systemId(), id, refused);
+        if (!gate.from().name().equals(held.state())) {
+            audit.recordIndependently(refused.with(DetailKey.REASON, gate.refusedReason()));
+            throw new RejectedRequestException(HttpStatus.CONFLICT, NOT_ALLOWED_NOW, gate.refusedSentence());
         }
-        store.recordParticipation(id, user.id(), SubmissionStep.REVIEW, clock.instant());
-        return new ReviewTarget(id, held.systemId(), refused, hold);
+        store.recordParticipation(id, user.id(), gate.step(), clock.instant());
+        return new AtStep(id, held.systemId(), gate, refused, hold);
     }
 
     /**
-     * Moves a VA Submission held by {@link #atReviewStep} out of In Review. Only a VA Submission held exclusively is
-     * moved, so a move never overtakes a review in progress.
+     * Moves a VA Submission that passed its gate from the gate's state to {@code to}. {@code write} runs the move's own
+     * statement on today's business date ({@link SubmissionStore}: the state, the Overdue flag and the milestone it
+     * reaches) and answers the success entry with what the move adds to it; this records that entry with the states and
+     * publishes the event the notifications listen for after the commit. Only a VA Submission held exclusively is moved,
+     * so a move never overtakes a review in progress (ADR 0039).
      */
-    private Submission movedOutOfReview(ReviewTarget target, SubmissionState to, Instant now, AuditEvent success) {
-        if (target.hold != Hold.EXCLUSIVE) {
-            throw new IllegalStateException("a move out of In Review holds the VA Submission exclusively (ADR 0039)");
+    private Submission moved(AtStep target, SubmissionState to, Instant now, Function<LocalDate, AuditEvent> write) {
+        if (target.hold() != Hold.EXCLUSIVE) {
+            throw new IllegalStateException("a move holds the VA Submission exclusively (ADR 0039)");
         }
-        return moved(target.submissionId(), target.systemId(), SubmissionState.IN_REVIEW, to, now, success);
-    }
-
-    /**
-     * Moves a VA Submission whose row the caller holds exclusively from one state to another: the state, with the
-     * Overdue flag and the milestone it reaches ({@link SubmissionStore#moved}); the audit entry {@code success} with the
-     * states (and, for an endorsement, whether it was late); and the event the notifications listen for after the commit.
-     */
-    private Submission moved(UUID id, UUID systemId, SubmissionState from, SubmissionState to, Instant now,
-            AuditEvent success) {
-        store.moved(id, to, now, calendar.dateOf(now));
-        Submission after = view(id);
-        AuditEvent entry = actor.attribute(success).onSystem(systemId).onSubmission(id)
-                .with(DetailKey.STATE_FROM, from.name()).with(DetailKey.STATE_TO, to.name());
-        audit.record(to == SubmissionState.ENDORSED ? entry.with(DetailKey.ENDORSED_LATE, after.endorsedLate()) : entry);
-        events.publishEvent(new SubmissionEvent(id, systemId, from, to, user.id(), now));
-        return after;
+        UUID id = target.submissionId();
+        SubmissionState from = target.gate().from();
+        AuditEvent success = write.apply(calendar.dateOf(now));
+        audit.record(actor.attribute(success).onSystem(target.systemId()).onSubmission(id)
+                .with(DetailKey.STATE_FROM, from.name()).with(DetailKey.STATE_TO, to.name()));
+        events.publishEvent(new SubmissionEvent(id, target.systemId(), from, to, user.id(), now));
+        return view(id);
     }
 
     /**

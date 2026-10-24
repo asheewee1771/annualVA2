@@ -26,6 +26,11 @@ public enum SubmissionStep {
         this.assignedInRegister = assignedInRegister;
     }
 
+    /** What a person needs over a System to act at the step (the access guard's ownership check). */
+    Need need() {
+        return need;
+    }
+
     /**
      * Who is assigned to the step of a System before they act: those the access guard gives this need over it; none for
      * the endorsing step.
