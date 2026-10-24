@@ -51,6 +51,14 @@ class MailConfigurationTest {
     }
 
     @Test
+    void aLeaseOrRetryWaitTooShortToKeepTwoPassesApartIsRefused() {
+        startup.withPropertyValues(URL, REWORK, OVERDUE, CHANGE, "annualva.mail.lease=0s")
+                .run(context -> assertThat(context).hasFailed());
+        startup.withPropertyValues(URL, REWORK, OVERDUE, CHANGE, "annualva.mail.first-retry=0s")
+                .run(context -> assertThat(context).hasFailed());
+    }
+
+    @Test
     void anAddressThatIsNotHttpsOrHasAPathIsRefused() {
         for (String url : new String[] {"http://annualva.ci.test", "https://annualva.ci.test/", "https://a.test/app"}) {
             startup.withPropertyValues("annualva.mail.app-url=" + url, REWORK, OVERDUE, CHANGE)

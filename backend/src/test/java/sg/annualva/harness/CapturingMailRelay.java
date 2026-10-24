@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import sg.annualva.boundary.BoundaryFailureException;
 import sg.annualva.boundary.MailRelay;
 
@@ -39,10 +40,15 @@ public final class CapturingMailRelay implements MailRelay {
     }
 
     private final AtomicInteger stops = new AtomicInteger();
+    private final AtomicReference<Runnable> beforeAnswer = new AtomicReference<>();
 
     @Override
     public Receipt send(String recipient, String templateId, Map<String, String> values) {
         calls.incrementAndGet();
+        Runnable hook = beforeAnswer.getAndSet(null);
+        if (hook != null) {
+            hook.run();
+        }
         if (stops.getAndUpdate(n -> Math.max(0, n - 1)) > 0) {
             throw new DispatcherStopped();
         }
@@ -67,6 +73,14 @@ public final class CapturingMailRelay implements MailRelay {
         failures.set(count);
     }
 
+    /**
+     * Runs this once, inside the next call and before the relay answers it: a test uses it to let a call outlast its lease
+     * while another pass claims the same mail.
+     */
+    public void beforeNextAnswer(Runnable hook) {
+        beforeAnswer.set(hook);
+    }
+
     /** The next call stops the dispatcher mid-call, before the relay answers ({@link DispatcherStopped}). */
     public void stopNext() {
         stops.set(1);
@@ -88,6 +102,7 @@ public final class CapturingMailRelay implements MailRelay {
         rejected.clear();
         failures.set(0);
         stops.set(0);
+        beforeAnswer.set(null);
         calls.set(0);
         counter.set(0);
     }

@@ -91,7 +91,16 @@ public final class Arrange {
 
     /** Renames a System behind the Register's back, to a name the Register would refuse. */
     public void renameSystem(String systemUuid, String name) {
-        String json = ApiClient.toJson(java.util.Map.of("name", name));
+        changeSystem(systemUuid, "name", name);
+    }
+
+    /** Changes a System's System ID behind the Register's back, to one the Register would refuse. */
+    public void recodeSystem(String systemUuid, String code) {
+        changeSystem(systemUuid, "code", code);
+    }
+
+    private void changeSystem(String systemUuid, String field, String value) {
+        String json = ApiClient.toJson(java.util.Map.of(field, value));
         assertThat(client.postJson("/api/test/systems/" + systemUuid + "/name", json).status()).isEqualTo(200);
     }
 

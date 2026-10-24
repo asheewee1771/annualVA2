@@ -344,12 +344,14 @@ public class TestEndpoints {
         }
 
         /**
-         * A System's name changed behind the Register's back to one the Register would refuse (a format character, say),
-         * so a test can prove the mail allow-list refuses whatever reaches it, whoever wrote it.
+         * A System's name or System ID ({@code name}, {@code code}; a missing one is kept) changed behind the Register's
+         * back to one the Register would refuse (a format character, say), so a test can prove the mail allow-list
+         * refuses whatever reaches it, whoever wrote it.
          */
         @PostMapping("/api/test/systems/{id}/name")
         public Map<String, String> renameSystem(@PathVariable UUID id, @RequestBody Map<String, String> body) {
-            jdbc.sql("UPDATE va_system SET name = :name WHERE id = :id").param("name", body.get("name")).param("id", id)
+            jdbc.sql("UPDATE va_system SET name = coalesce(:name, name), code = coalesce(CAST(:code AS citext), code) "
+                    + "WHERE id = :id").param("name", body.get("name")).param("code", body.get("code")).param("id", id)
                     .update();
             return Map.of("id", id.toString());
         }

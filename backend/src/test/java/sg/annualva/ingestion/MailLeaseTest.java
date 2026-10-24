@@ -40,6 +40,24 @@ class MailLeaseTest extends MailSeam1 {
     }
 
     @Test
+    void aHandOverThatOutlastsItsLeaseKeepsTheOutcomeOfTheClaimThatHoldsTheMail(CapturedOutput output) {
+        returnedForRework();
+        mailRelay.beforeNextAnswer(() -> {
+            clock.advance(Duration.ofMinutes(6));
+            dispatched();
+        });
+
+        dispatched();
+
+        JsonNode sent = onlyMailOf(SMO_A);
+        assertThat(mailTo(SMO_A)).as("delivery is at least once").hasSize(2);
+        assertThat(sent.get("status").asString()).isEqualTo("SENT");
+        assertThat(sent.get("attempts").asInt()).as("the second claim's outcome").isEqualTo(2);
+        assertThat(sent.get("relayMessageId").asString()).isEqualTo(mailTo(SMO_A).getFirst().messageId());
+        assertThat(output.getAll()).contains("mail-claim-lost").doesNotContainIgnoringCase(SMO_A);
+    }
+
+    @Test
     void aLastAttemptWhoseDispatcherStoppedIsGivenUpOnWithoutAnotherHandOver(CapturedOutput output) {
         returnedForRework();
         mailRelay.failNext(4);

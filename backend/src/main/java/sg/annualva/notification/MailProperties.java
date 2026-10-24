@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Pattern;
 import java.time.Duration;
 import java.util.EnumSet;
 import java.util.Map;
+import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
@@ -31,8 +32,8 @@ public record MailProperties(
         @NotNull @Pattern(regexp = "https://[a-z0-9.-]+(:[0-9]{1,5})?") String appUrl,
         @NotNull Map<MailTemplate, String> templates,
         @DefaultValue("5") @Min(1) @Max(10) int maxAttempts,
-        @DefaultValue("1m") @NotNull Duration firstRetry,
-        @DefaultValue("5m") @NotNull Duration lease,
+        @DefaultValue("1m") @NotNull @DurationMin(seconds = 1) Duration firstRetry,
+        @DefaultValue("5m") @NotNull @DurationMin(seconds = 30) Duration lease,
         @DefaultValue("50") @Min(1) int batchSize,
         @DefaultValue("30s") @NotNull Duration dispatchInterval) {
 

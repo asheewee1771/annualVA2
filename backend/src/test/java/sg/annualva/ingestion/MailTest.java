@@ -223,4 +223,19 @@ class MailTest extends MailSeam1 {
         assertThat(mailTo(SMO_B)).as("another System's mail is unaffected").hasSize(1);
         assertThat(only(signedInAs(SMO_A), "SUBMIT_OVERDUE")).as("the in-app item stays").isNotNull();
     }
+
+    @Test
+    void aSystemIdOutsideTheAllowListIsNeverHandedToTheRelayEither() {
+        draft();
+        // A line break and a header after it, which the Register refuses in a System ID.
+        arrange.recodeSystem(idOf("SYS-F2"), "SYS-F2" + (char) 0x0A + "Bcc: someone");
+        today("2027-08-16");
+        arrange.overdueSweep();
+
+        dispatched();
+
+        assertThat(onlyMailOf(SMO_B).get("status").asString()).isEqualTo("REFUSED");
+        assertThat(mailTo(SMO_B)).isEmpty();
+        assertThat(mailTo(SMO_A)).as("another System's mail is unaffected").hasSize(1);
+    }
 }
