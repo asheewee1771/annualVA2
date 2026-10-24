@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review &mdash; 34-endorse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall: PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">build PASS &middot; C0 H0 M0 L0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN &middot; C0 H0 M0 L8</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN &middot; C0 H0 M0 L4</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">semgrep PASS &middot; C0 H0 M0 L0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN &middot; C0 H0 M0 L1</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react WARN &middot; C0 H0 M0 L3</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN &middot; C0 H0 M0 L3</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">impl/34-endorse</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report (round 2)</h1>
+          <p class="text-sm text-slate-500 mt-1">Ticket 34, a VA POC endorses a VA Submission Awaiting Endorsement. Diff <span class="font-mono text-xs">integration/annual-va-r1...HEAD</span> on <span class="font-mono text-xs">impl/34-endorse</span> at HEAD <span class="font-mono text-xs">8e6d818</span> (8 commits, 34 files).</p>
+        </div>
+        <div class="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 space-y-2">
+          <p><strong>Fast mode (approved by the user).</strong> After the round-1 fixes only the failing check (<span class="font-mono text-xs">thermo-nuclear</span>) and <span class="font-mono text-xs">build</span> were rerun against HEAD 8e6d818. The other five artifacts (<span class="font-mono text-xs">code-review</span>, <span class="font-mono text-xs">semgrep</span>, <span class="font-mono text-xs">im8</span>, <span class="font-mono text-xs">react</span>, <span class="font-mono text-xs">springboot</span>) are carried over from round 1 (HEAD c4e7bbb). Their line numbers and some findings refer to code that has since changed.</p>
+          <p>Carried-over findings that have since been fixed are listed under &ldquo;Resolved since round 1&rdquo; in each card and are not counted. The aggregator checked each one against the code at 8e6d818. That includes every round-1 Medium: code-review P1 (and springboot L3), code-review S1, and react #1.</p>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Executive Summary</h2>
+          <p class="text-xs text-slate-500 mt-1">Overall status across all active checks. <strong>Overall PASS:</strong> no check has a Critical or High finding. The round-1 thermo-nuclear High, where the endorse command copied the review-step gate, is resolved: every step command now goes through <span class="font-mono">Submissions.atStep</span>. All three round-1 Mediums are resolved as well. Only Low findings remain, all of them follow-ups.</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Check</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Status</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">C / H / M / L</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Summary of gaps</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">build <span class="text-xs text-slate-400">(rerun)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 0</td>
+              <td class="px-4 py-2">Back end: <span class="font-mono text-xs">clean verify</span> BUILD SUCCESS, from a reused log that covers the current backend tree. 882 tests, 0 failures. ArchUnit 25/25. JaCoCo coverage checks met. Front end: <span class="font-mono text-xs">npm run check</span> was run fresh and exited 0. Two Info notes only.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">thermo-nuclear <span class="text-xs text-slate-400">(rerun)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 8</td>
+              <td class="px-4 py-2">Round-1 High and its three Mediums are resolved. One gate (<span class="font-mono text-xs">atStep</span>) now serves every step command, with one SQL statement per move and a shared <span class="font-mono text-xs">FindingsList</span> and <span class="font-mono text-xs">NotApplicableSection</span>. Eight Lows remain. Six were carried from round 1: the copied command handler, <span class="font-mono text-xs">ReviewFlags</span> defaults, an optional <span class="font-mono text-xs">linkOf</span>, a positional boolean, copied route helpers and long lines. Two are new: the target state is given twice for each move, and <span class="font-mono text-xs">Hold</span> is checked at runtime.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">code-review <span class="text-xs text-slate-400">(carried over)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 4</td>
+              <td class="px-4 py-2">Both Mediums are resolved: S1, the gate duplication, and P1, the missing submitting-step SoD test. S2 and S3 are resolved too. Four Lows remain open: the string type for the step, a commit that mixes changes, a data clump, and mild scope creep where the Cyber Manager's board cards now link to the review screen.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">semgrep <span class="text-xs text-slate-400">(carried over)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 0</td>
+              <td class="px-4 py-2">Semgrep 1.179.0 with <span class="font-mono text-xs">p/security-audit</span> and <span class="font-mono text-xs">p/default</span> over the round-1 diff (32 files). Zero results and no suppressions.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">im8 <span class="text-xs text-slate-400">(carried over)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 1</td>
+              <td class="px-4 py-2">Every touched control passes: as-1/2/3/7/8/13/14, lm-4, lm-19, ac-2, dp-8 and pm-6. One Low under ac-1: the Endorse button still shows for a VA POC with an SoD conflict, so they do a step-up only to be refused by the server.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">react <span class="text-xs text-slate-400">(carried over)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 3</td>
+              <td class="px-4 py-2">The Medium, a 409 lost when the panel unmounts, is resolved: the problem is now lifted to <span class="font-mono text-xs">EndorseScreen</span>. Lows #2 and #3 are resolved too. Three Lows remain open: no loading line for the submission and Scan Report reads, no success announcement or focus handling, and a duplicated <span class="font-mono text-xs">UNREACHABLE</span> literal.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">springboot <span class="text-xs text-slate-400">(carried over)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 3</td>
+              <td class="px-4 py-2">Six of the seven sub-reviews pass; batch is not applicable. L3, the submitting-step SoD test, is resolved. Three Lows remain open: 13 constructor collaborators, V134 re-validating the audit table, and the endorsement tests living in the <span class="font-mono text-xs">ingestion</span> test package.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-600">None. No check reports an open Critical or High finding at HEAD 8e6d818.</p>
+          <p class="text-sm text-slate-600">Resolved since round 1:</p>
+          <ul class="list-disc pl-6 text-sm text-slate-600 space-y-1">
+            <li>thermo-nuclear High #1: <span class="font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</span>. The endorse command copied the review-step gate. Now <span class="font-mono text-xs">lockForReview</span>, <span class="font-mono text-xs">returnForRework</span>, <span class="font-mono text-xs">passToEndorsement</span> and <span class="font-mono text-xs">endorse</span> all call the private <span class="font-mono text-xs">atStep(id, Gate, refusedAs, Hold)</span>.</li>
+            <li>code-review P1 / springboot L3 (Medium): <span class="font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/EndorseSegregationTest.java:45</span>. Now proven by <span class="font-mono text-xs">aVaPocWhoSubmittedItLeavesItToTheOtherVaPocAfterTheRegisterNamesAnotherSmo</span>.</li>
+            <li>react #1 (Medium): <span class="font-mono text-xs">frontend/src/screens/va-poc/EndorseScreen.tsx</span>. The refusal problem now lives in <span class="font-mono text-xs">EndorseScreen</span> and is rendered outside the conditional panel.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- build -->
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build <span class="text-xs text-slate-400">(rerun at 8e6d818)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-600 space-y-1">
+          <p>Back end: the reused <span class="font-mono text-xs">./mvnw -B -ntp clean verify</span> log started after the last backend commit, at about 00:04, and finished at 00:22:46 +08:00. The later commits d841a2c (front end) and 8e6d818 (docs) do not touch <span class="font-mono text-xs">backend/</span>. BUILD SUCCESS. 882 tests, 0 failures, 0 errors, 0 skipped. ArchitectureTest 15/15, ModuleConventionsArchTest 10/10. All JaCoCo coverage checks met (320 classes).</p>
+          <p>Front end: a fresh <span class="font-mono text-xs">npm run check</span> exited 0. It covers Prettier, <span class="font-mono text-xs">tsc -b</span>, <span class="font-mono text-xs">vite build</span>, the no-raw-HTML check, dependency-cruiser, and fallow dead-code (0 issues) and health (maintainability 91.6). Vitest is not applicable because the repo has no React unit tests by convention.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-400">Info</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/shared/QuarterBoardScreen.tsx</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">Advisory: <span class="font-mono text-xs">fallow health</span> lists this file among those of most triage concern (risk 156, health 85.1), and <span class="font-mono text-xs">ReviewFindingsList.tsx</span> as a stable hotspot. Both are below the failure threshold. Not counted.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-400">Info</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/adapters/oidc/MccHttp.java</td>
+              <td class="px-4 py-2">51</td>
+              <td class="px-4 py-2">A deprecated <span class="font-mono text-xs">messageConverters(...)</span> call warning. It predates this changeset and the file is not in the diff. Not counted.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <!-- thermo-nuclear -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear <span class="text-xs text-slate-400">(rerun at 8e6d818)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/EndorseScreen.tsx</td>
+              <td class="px-4 py-2">15, 57-69</td>
+              <td class="px-4 py-2">A. The endorse command handler is still a copy of <span class="font-mono text-xs">FinishReviewPanel.move</span>, with its own <span class="font-mono text-xs">UNREACHABLE</span>, and the two copies have already drifted. Fix: add a <span class="font-mono text-xs">useMoveCommand(onMoved, onProblem)</span> hook and export <span class="font-mono text-xs">UNREACHABLE</span> and <span class="font-mono text-xs">problemOf</span> once from <span class="font-mono text-xs">api/problem.ts</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/shared/ReviewFlags.tsx</td>
+              <td class="px-4 py-2">12, 30</td>
+              <td class="px-4 py-2">B. <span class="font-mono text-xs">step</span> has a hidden <span class="font-mono text-xs">"review"</span> default, and the type literal is interpolated into UI copy. Fix: make <span class="font-mono text-xs">step</span> required and map it to words with a label record. Optionally rename the component.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/shared/QuarterBoardScreen.tsx</td>
+              <td class="px-4 py-2">17, 21-28</td>
+              <td class="px-4 py-2">C. <span class="font-mono text-xs">BoardFor.linkOf</span> is optional, but both boards set it. Fix: declare it required and drop the <span class="font-mono text-xs">linkOf &amp;&amp;</span> branch.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionStep.java</td>
+              <td class="px-4 py-2">15-27</td>
+              <td class="px-4 py-2">D. A positional <span class="font-mono text-xs">boolean</span> in the enum constructor. Fix: store a nullable <span class="font-mono text-xs">Need assignedBy</span> and return it as an <span class="font-mono text-xs">Optional</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/paths.ts</td>
+              <td class="px-4 py-2">5-14</td>
+              <td class="px-4 py-2">E. Route helpers are copied per area (compare <span class="font-mono text-xs">cyber-manager/paths.ts:10-31</span>). Fix: add a shared <span class="font-mono text-xs">submissionRoute(base, suffix)</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/package-info.java</td>
+              <td class="px-4 py-2">6</td>
+              <td class="px-4 py-2">F. Added lines are over 120 characters. This line is 175, and the same applies to <span class="font-mono text-xs">VaPocBoardTest.java:36</span>, <span class="font-mono text-xs">EndorseTest.java:107,125</span> and <span class="font-mono text-xs">EndorseSegregationTest.java:11</span>. Fix: re-wrap them to 120.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td>
+              <td class="px-4 py-2">481-482, 514-515, 537</td>
+              <td class="px-4 py-2">G (new). Each move gives its target state twice: once to <span class="font-mono text-xs">moved</span>, which writes the audit entry and the event, and once to the store method, which writes the row. If the two drift, the audit entry and the event describe a move that did not happen. Fix: give the target state once, through a <span class="font-mono text-xs">Move</span> record passed to <span class="font-mono text-xs">write</span> and to the store.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td>
+              <td class="px-4 py-2">160-163, 187, 568, 588-590</td>
+              <td class="px-4 py-2">H (new). <span class="font-mono text-xs">Hold</span> plus a runtime <span class="font-mono text-xs">IllegalStateException</span> guard something a type could guarantee. Fix: pass the lock function, and add a <span class="font-mono text-xs">Moving</span> type that is the only type <span class="font-mono text-xs">moved</span> accepts.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-3 text-sm text-slate-600 border-t border-slate-100">
+          <p class="font-medium text-slate-700">Resolved since round 1</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li>High #1: <span class="font-mono text-xs">endorse()</span> copied the review gate. Every step command now goes through <span class="font-mono text-xs">atStep</span> (<span class="font-mono text-xs">Submissions.java:170-187, 565-578</span>).</li>
+            <li>Medium #2: <span class="font-mono text-xs">moved</span> special-cased Endorsed. <span class="font-mono text-xs">endorse</span> now adds <span class="font-mono text-xs">ENDORSED_LATE</span> itself.</li>
+            <li>Medium #3: the <span class="font-mono text-xs">CASE WHEN :state</span> SQL dispatch. <span class="font-mono text-xs">MOVED</span>, <span class="font-mono text-xs">PASSED</span> and <span class="font-mono text-xs">ENDORSED</span> are now separate statements (<span class="font-mono text-xs">SubmissionStore.java:164-183</span>).</li>
+            <li>Medium #4: EndorseScreen re-implemented the table and the not-applicable section. Both are now shared in <span class="font-mono text-xs">screens/shared</span>. The copied command handler remains and is tracked as Low A.</li>
+          </ul>
+        </div>
+      </details>
+
+      <!-- code-review -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review <span class="text-xs text-slate-400">(carried over from round 1, HEAD c4e7bbb)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-500">This review covered the round-1 diff of 4 commits and 32 files. Line numbers refer to that HEAD. Standards and Spec both PASS with no Critical or High findings. Verified: time is read only through the clock, audit details hold no report content, SoD and step-up come first, the Endorsed Late boundary is tested on both sides, and V134 edits no earlier migration.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/shared/ReviewFlags.tsx</td>
+              <td class="px-4 py-2">2</td>
+              <td class="px-4 py-2">S4 (Standards, Primitive Obsession). <span class="font-mono text-xs">DashboardStep</span> is a second lower-case string type for what <span class="font-mono text-xs">SubmissionStep</span> already names, and it is interpolated into the copy. Same issue as thermo-nuclear B.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/CyberManagerArea.tsx</td>
+              <td class="px-4 py-2">18</td>
+              <td class="px-4 py-2">S5 (Standards, one logical change per commit). Commit 4a16509 also makes the Cyber Manager's board cards open the review screen. Split it before merge if the branch is rebased, or note it for future tickets.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">S6 (Standards, Data Clumps). <span class="font-mono text-xs">(UUID id, UUID systemId)</span> travel together through <span class="font-mono text-xs">moved</span>, <span class="font-mono text-xs">ReviewTarget</span> and <span class="font-mono text-xs">EditTarget</span>. The round-2 <span class="font-mono text-xs">AtStep</span> record partly absorbs this. Not re-verified.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/CyberManagerArea.tsx</td>
+              <td class="px-4 py-2">18, 80</td>
+              <td class="px-4 py-2">P2 (Spec, scope creep). The Cyber Manager's Quarter board cards now link to the review screen. This is recorded only in ADR 0040 item 6. Keep it and note it in the ticket's Comments, or drop it.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-3 text-sm text-slate-600 border-t border-slate-100">
+          <p class="font-medium text-slate-700">Resolved since round 1</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li>S1 (Medium): <span class="font-mono text-xs">endorse</span> repeated the <span class="font-mono text-xs">atReviewStep</span> guard sequence. It is now the shared <span class="font-mono text-xs">Submissions.atStep</span>, which review, return, pass and endorse all call.</li>
+            <li>P1 (Medium): no test proved that a VA POC who acted at the submitting step is refused. Now covered by <span class="font-mono text-xs">EndorseSegregationTest.aVaPocWhoSubmittedItLeavesItToTheOtherVaPocAfterTheRegisterNamesAnotherSmo</span> (line 45).</li>
+            <li>S2 (Low): EndorseScreen repeated the not-applicable section and the table shell. Both are now in <span class="font-mono text-xs">screens/shared/NotApplicableSection.tsx</span> and <span class="font-mono text-xs">screens/shared/FindingsList.tsx</span>.</li>
+            <li>S3 (Low): <span class="font-mono text-xs">moved</span> branched on the target state. That branch is gone, and the SQL now has one statement per move.</li>
+          </ul>
+        </div>
+      </details>
+
+      <!-- semgrep -->
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep <span class="text-xs text-slate-400">(carried over from round 1, HEAD c4e7bbb)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-500">Semgrep 1.179.0 (OSS, Docker image) ran <span class="font-mono text-xs">p/security-audit</span> and <span class="font-mono text-xs">p/default</span> with metrics off. It scanned all 32 files of the round-1 diff and reported no parse or rule errors. The round-2 refactor commits were not rescanned.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <!-- im8 -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8 <span class="text-xs text-slate-400">(carried over from round 1, HEAD c4e7bbb)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-500">Risk column MR. Every control the diff touches passes: as-1, as-2, as-3, as-7, as-8, as-13, as-14, lm-4, lm-19, ac-2, dp-8 and pm-6. Other controls are unchanged or not applicable. Manual checklist: in SIT, confirm that MCC SSO honours <span class="font-mono text-xs">prompt=login</span> and <span class="font-mono text-xs">max_age=0</span> for the endorse intent, confirm the five-minute step-up freshness window, and confirm two VA POCs are always available. Line numbers below refer to the round-1 code.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/EndorseScreen.tsx</td>
+              <td class="px-4 py-2">175-177 (round 1)</td>
+              <td class="px-4 py-2">ac-1 (least privilege, UX). Endorse is offered even when the board flags an SoD conflict, and the step-up runs before SoD. A conflicted VA POC therefore signs in again only to get 403 <span class="font-mono text-xs">sod-conflict</span>. The server refuses and audits it, so this is not a bypass. Fix: expose a <span class="font-mono text-xs">canEndorse</span>/<span class="font-mono text-xs">sodConflict</span> flag on the submission read and hide Endorse, and/or run a read-only <span class="font-mono text-xs">sod.conflictedAt</span> pre-check before the step-up. Still open at 8e6d818.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <!-- react -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react <span class="text-xs text-slate-400">(carried over from round 1, HEAD c4e7bbb)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-500">Sound: stable domain keys, no mutation, no new effects, stable <span class="font-mono text-xs">useCallback</span> loaders, Rules of Hooks respected, <span class="font-mono text-xs">EndorseScreen</span> keyed by submission id, and report content rendered as text only. Line numbers refer to the round-1 code. EndorseScreen was restructured in d841a2c.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/EndorseScreen.tsx</td>
+              <td class="px-4 py-2">173-180 (round 1)</td>
+              <td class="px-4 py-2">#4. There is no loading state for the submission and Scan Report reads, so the summary, panel and not-applicable section render nothing while they load. Fix: add a <span class="font-mono text-xs">loading &amp;&amp; !data</span> line for each.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/EndorseScreen.tsx</td>
+              <td class="px-4 py-2">67-83 (round 1)</td>
+              <td class="px-4 py-2">#5 (accessibility). Success is not announced, and focus falls to <span class="font-mono text-xs">&lt;body&gt;</span> when the Endorse button is removed. Fix: render a <span class="font-mono text-xs">role="status"</span> line, or move focus to the summary.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/EndorseScreen.tsx</td>
+              <td class="px-4 py-2">15</td>
+              <td class="px-4 py-2">#6 (maintainability). The <span class="font-mono text-xs">UNREACHABLE</span> problem literal is now defined in 13 modules. Fix: export it once from <span class="font-mono text-xs">api/problem.ts</span>. Same issue as thermo-nuclear A.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-3 text-sm text-slate-600 border-t border-slate-100">
+          <p class="font-medium text-slate-700">Resolved since round 1</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li>#1 (Medium): a 409 refusal was lost when the refresh unmounted the Endorse panel. The problem now lives in <span class="font-mono text-xs">EndorseScreen</span> (<span class="font-mono text-xs">setProblem</span> is passed as <span class="font-mono text-xs">onProblem</span>) and is rendered outside the conditional panel.</li>
+            <li>#2 (Low): Endorse was re-enabled while the refresh after a success was in flight. <span class="font-mono text-xs">busy</span> is now cleared only on failure.</li>
+            <li>#3 (Low): the heading read &ldquo;Findings (0)&rdquo; while loading. The heading no longer shows a count, and the list now comes from the shared <span class="font-mono text-xs">FindingsList</span>.</li>
+          </ul>
+        </div>
+      </details>
+
+      <!-- springboot -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot <span class="text-xs text-slate-400">(carried over from round 1, HEAD c4e7bbb)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-500">Sub-reviews: core PASS (1 Low), web PASS, data PASS (1 Low), batch not applicable, security PASS, logging PASS, test PASS (1 Low still open after L3 was resolved). Sound: transaction boundaries, no self-invocation, named SQL parameters, an exclusive row lock before the SoD and state checks, refusals audited independently, step-up first, CSRF on, no new logging, and no new <span class="font-mono text-xs">@MockitoBean</span> or <span class="font-mono text-xs">@DirtiesContext</span>.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td>
+              <td class="px-4 py-2">248 (round 1)</td>
+              <td class="px-4 py-2">L1 (core). The constructor takes 13 collaborators. No change is needed now. When tickets 35 and 40 add the VA POC's commands, split them into a package-private service such as <span class="font-mono text-xs">EndorsementCommands</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V134__endorse.sql</td>
+              <td class="px-4 py-2">13-21</td>
+              <td class="px-4 py-2">L2 (data). Re-adding the CHECK scans all of <span class="font-mono text-xs">audit_entry</span> under an ACCESS EXCLUSIVE lock. This follows the V5 to V21 pattern and is harmless at current volumes. Optional: from the next key on, add the constraint <span class="font-mono text-xs">NOT VALID</span> and then <span class="font-mono text-xs">VALIDATE</span> it, or record the trade-off in an ADR.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/EndorseSeam1.java</td>
+              <td class="px-4 py-2">14</td>
+              <td class="px-4 py-2">L4 (test). The endorsement Seam 1 tests sit in the <span class="font-mono text-xs">ingestion</span> test package rather than <span class="font-mono text-xs">submission</span>. This is consistent with tickets 28 to 33. Move them in a later test-only refactor.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-3 text-sm text-slate-600 border-t border-slate-100">
+          <p class="font-medium text-slate-700">Resolved since round 1</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li>L3 (test): no test refused a VA POC who acted at the submitting step and is no longer the Register's SMO. Now covered by <span class="font-mono text-xs">EndorseSegregationTest.aVaPocWhoSubmittedItLeavesItToTheOtherVaPocAfterTheRegisterNamesAnotherSmo</span> (line 45).</li>
+          </ul>
+        </div>
+      </details>
+    </main>
+  </body>
+</html>
