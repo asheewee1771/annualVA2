@@ -1,5 +1,4 @@
 import type { Finding } from "../../api/findings.ts";
-import type { ScanReportMode } from "../../api/scanReports.ts";
 import { proposalDetail, REVIEW_LABELS, SEVERITY_LABELS, severityClass, statusSpec } from "./findingStatuses.ts";
 import { LatestReview } from "./LatestReview.tsx";
 import { reportTitle } from "./scanReports.ts";
@@ -50,23 +49,6 @@ export function FindingReview({ finding }: { finding: Finding }) {
     <>
       {finding.reviewState ? <strong>{REVIEW_LABELS[finding.reviewState]}</strong> : null}
       {latest ? <LatestReview review={latest} current={latest.proposalId === finding.currentProposal?.id} /> : null}
-    </>
-  );
-}
-
-/** A Scan Report marked not applicable, clearly marked: its justification, review state and latest review, as text. */
-export function JustificationSummary({ report }: { report: ScanReportMode }) {
-  const latest = report.latestReview;
-  return (
-    <>
-      <p>
-        <strong>{reportTitle(report.reportType)}</strong> <span className="flag flag--warning">Not applicable</span>
-        {report.reviewState ? <span className="muted"> · {REVIEW_LABELS[report.reviewState]}</span> : null}
-      </p>
-      <p className="finding-detail">{report.justification}</p>
-      {latest ? (
-        <LatestReview review={latest} current={latest.justificationVersion === report.justificationVersion} />
-      ) : null}
     </>
   );
 }

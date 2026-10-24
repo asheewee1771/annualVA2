@@ -4,7 +4,7 @@ import { fetchSubmission, type Submission } from "../../api/submissions.ts";
 import { AppLink } from "../../app/AppLink.tsx";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { useResource } from "../../hooks/useResource.ts";
-import { JustificationSummary } from "../shared/FindingCells.tsx";
+import { NotApplicableSection } from "../shared/NotApplicableSection.tsx";
 import { reportTitle } from "../shared/scanReports.ts";
 import { STATE_LABELS } from "../shared/systemStates.ts";
 import { BatchesSection } from "./BatchesSection.tsx";
@@ -14,29 +14,20 @@ import { ReviewForm } from "./ReviewForm.tsx";
 import { FinishReview } from "./FinishReview.tsx";
 import { ReviewSessionContext, useReviewSession, type ReviewSession } from "./reviewSession.ts";
 
-/** The Scan Reports marked not applicable: each justification, clearly marked, with its review. */
-function NotApplicableSection({ reports }: { reports: readonly ScanReportMode[] }) {
+/** The Scan Reports marked not applicable: each justification, clearly marked, with its review and Confirm and Dispute. */
+function ReviewedJustifications({ reports }: { reports: readonly ScanReportMode[] }) {
   const { submissionId, reviewable, classification, reviewed } = useReviewSession();
-  const notApplicable = reports.filter((report) => report.mode === "NOT_APPLICABLE");
+  const reviewForm = (report: ScanReportMode) => (
+    <ReviewForm
+      idPrefix={`review-${report.reportType}`}
+      subject={`the not-applicable justification of ${reportTitle(report.reportType)}`}
+      classification={classification}
+      send={(input) => reviewScanReport(submissionId, report.reportType, report.justificationVersion, input)}
+      onReviewed={reviewed}
+    />
+  );
   return (
-    <section className="card" aria-labelledby="review-not-applicable">
-      <h3 id="review-not-applicable">Scan Reports marked not applicable ({notApplicable.length})</h3>
-      {notApplicable.length === 0 ? <p className="muted">Every Scan Report was provided.</p> : null}
-      {notApplicable.map((report) => (
-        <div key={report.reportType} className="review-item">
-          <JustificationSummary report={report} />
-          {reviewable ? (
-            <ReviewForm
-              idPrefix={`review-${report.reportType}`}
-              subject={`the not-applicable justification of ${reportTitle(report.reportType)}`}
-              classification={classification}
-              send={(input) => reviewScanReport(submissionId, report.reportType, report.justificationVersion, input)}
-              onReviewed={reviewed}
-            />
-          ) : null}
-        </div>
-      ))}
-    </section>
+    <NotApplicableSection id="review-not-applicable" reports={reports} controls={reviewable ? reviewForm : undefined} />
   );
 }
 
@@ -88,7 +79,7 @@ export function ReviewScreen({ submissionId, classification }: { submissionId: s
         {submission.error ? <ErrorPanel problem={submission.error.problem} /> : null}
         {submission.data ? <SubmissionSummary submission={submission.data} /> : null}
         {reports.error ? <ErrorPanel problem={reports.error.problem} /> : null}
-        {reports.data ? <NotApplicableSection reports={reports.data} /> : null}
+        {reports.data ? <ReviewedJustifications reports={reports.data} /> : null}
         <BatchesSection />
         <section className="card" aria-labelledby="review-findings">
           <h3 id="review-findings">Findings proposed one by one</h3>

@@ -1,20 +1,18 @@
 import { useCallback, useState } from "react";
-import { fetchFindings, type FindingPage } from "../../api/findings.ts";
+import { fetchFindings } from "../../api/findings.ts";
 import { ApiError, type Problem } from "../../api/problem.ts";
-import { fetchScanReportModes, type ScanReportMode } from "../../api/scanReports.ts";
+import { fetchScanReportModes } from "../../api/scanReports.ts";
 import { endorseSubmission, fetchSubmission, type Submission } from "../../api/submissions.ts";
 import { AppLink } from "../../app/AppLink.tsx";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { useResource } from "../../hooks/useResource.ts";
-import { FindingCells, FindingReview, JustificationSummary } from "../shared/FindingCells.tsx";
-import { Pager } from "../shared/Pager.tsx";
+import { FindingReview } from "../shared/FindingCells.tsx";
+import { FINDINGS_PAGE_SIZE, FindingsList } from "../shared/FindingsList.tsx";
+import { NotApplicableSection } from "../shared/NotApplicableSection.tsx";
 import { STATE_LABELS } from "../shared/systemStates.ts";
 import { VA_POC_PATH } from "./paths.ts";
 
 const UNREACHABLE: Problem = { type: "about:blank", title: "The server could not be reached", status: 0 };
-
-/** How many Findings one page shows. */
-const PAGE_SIZE = 100;
 
 /** Which Quarter the VA Submission is in, its state, and its Overdue and Endorsed Late flags. */
 function SubmissionSummary({ submission }: { submission: Submission }) {
@@ -41,25 +39,32 @@ function SubmissionSummary({ submission }: { submission: Submission }) {
 /**
  * Endorse, for a VA Submission Awaiting Endorsement (stories 65, 67 and 70). It needs a sign-in from the last five
  * minutes: without one the app explains the fresh sign-in and brings the VA POC back here to press it again. The server
- * decides every refusal (segregation of duties included) and its problem is shown here; after a 409 the screen reads the
- * VA Submission again.
+ * decides every refusal (segregation of duties included); the screen shows its problem, which outlives this panel, and
+ * after a 409 reads the VA Submission again. After an endorsement the button stays disabled until the screen has read
+ * the new state, which removes the panel.
  */
-function EndorsePanel({ submissionId, onMoved }: { submissionId: string; onMoved: () => void }) {
+function EndorsePanel({
+  submissionId,
+  onMoved,
+  onProblem,
+}: {
+  submissionId: string;
+  onMoved: () => void;
+  onProblem: (problem: Problem | undefined) => void;
+}) {
   const [busy, setBusy] = useState(false);
-  const [problem, setProblem] = useState<Problem | undefined>(undefined);
 
   async function endorse() {
     setBusy(true);
-    setProblem(undefined);
+    onProblem(undefined);
     try {
       await endorseSubmission(submissionId);
       onMoved();
     } catch (failure) {
       const refused = failure instanceof ApiError ? failure.problem : UNREACHABLE;
-      setProblem(refused);
-      if (refused.status === 409) onMoved();
-    } finally {
+      onProblem(refused);
       setBusy(false);
+      if (refused.status === 409) onMoved();
     }
   }
 
@@ -72,81 +77,11 @@ function EndorsePanel({ submissionId, onMoved }: { submissionId: string; onMoved
         signed in within the last five minutes; if you acted at another step of it, or are its System&apos;s SMO/Tech
         Lead or Cyber Manager, the other VA POC endorses it.
       </p>
-      {problem ? <ErrorPanel problem={problem} /> : null}
       <p>
         <button type="button" className="button" disabled={busy} onClick={() => void endorse()}>
           Endorse
         </button>
       </p>
-    </section>
-  );
-}
-
-/** The Scan Reports marked not applicable, each justification with its review; read only. */
-function NotApplicableSection({ reports }: { reports: readonly ScanReportMode[] }) {
-  const notApplicable = reports.filter((report) => report.mode === "NOT_APPLICABLE");
-  return (
-    <section className="card" aria-labelledby="endorse-not-applicable">
-      <h3 id="endorse-not-applicable">Scan Reports marked not applicable ({notApplicable.length})</h3>
-      {notApplicable.length === 0 ? <p className="muted">Every Scan Report was provided.</p> : null}
-      {notApplicable.map((report) => (
-        <div key={report.reportType} className="review-item">
-          <JustificationSummary report={report} />
-        </div>
-      ))}
-    </section>
-  );
-}
-
-/** One page of the Findings, the most severe first, with what was proposed and its review; read only. */
-function FindingsTable({ result, onPage }: { result: FindingPage; onPage: (page: number) => void }) {
-  return (
-    <>
-      {result.items.length === 0 ? (
-        <p className="muted">There are none here.</p>
-      ) : (
-        <div className="table-scroll">
-          <table className="data-table">
-            <caption className="visually-hidden">Findings of the VA Submission, the most severe first</caption>
-            <thead>
-              <tr>
-                <th scope="col">Severity</th>
-                <th scope="col">Finding</th>
-                <th scope="col">Proposed status</th>
-                <th scope="col">Review</th>
-              </tr>
-            </thead>
-            <tbody>
-              {result.items.map((finding) => (
-                <tr key={finding.id}>
-                  <FindingCells finding={finding} />
-                  <td>
-                    <FindingReview finding={finding} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-      {result.total > PAGE_SIZE ? (
-        <Pager page={result.page} pages={Math.ceil(result.total / PAGE_SIZE)} total={result.total} onPage={onPage} />
-      ) : null}
-    </>
-  );
-}
-
-function FindingsSection({ submissionId, refreshKey }: { submissionId: string; refreshKey: number }) {
-  const [page, setPage] = useState(0);
-  const load = useCallback(() => fetchFindings(submissionId, {}, page, PAGE_SIZE), [submissionId, page]);
-  const findings = useResource(load, refreshKey);
-  const result = findings.data;
-  return (
-    <section className="card" aria-labelledby="endorse-findings">
-      <h3 id="endorse-findings">Findings ({result ? result.total : 0})</h3>
-      {findings.error ? <ErrorPanel problem={findings.error.problem} /> : null}
-      {findings.loading && !result ? <p className="muted">Loading the Findings…</p> : null}
-      {result ? <FindingsTable result={result} onPage={setPage} /> : null}
     </section>
   );
 }
@@ -158,8 +93,13 @@ function FindingsSection({ submissionId, refreshKey }: { submissionId: string; r
  */
 export function EndorseScreen({ submissionId }: { submissionId: string }) {
   const [refreshKey, setRefreshKey] = useState(0);
+  const [problem, setProblem] = useState<Problem | undefined>(undefined);
   const loadSubmission = useCallback(() => fetchSubmission(submissionId), [submissionId]);
   const loadReports = useCallback(() => fetchScanReportModes(submissionId), [submissionId]);
+  const loadFindings = useCallback(
+    (page: number) => fetchFindings(submissionId, {}, page, FINDINGS_PAGE_SIZE),
+    [submissionId],
+  );
   const submission = useResource(loadSubmission, refreshKey);
   const reports = useResource(loadReports, refreshKey);
   const moved = useCallback(() => setRefreshKey((n) => n + 1), []);
@@ -172,12 +112,22 @@ export function EndorseScreen({ submissionId }: { submissionId: string }) {
       <h2>Endorse VA Submission</h2>
       {submission.error ? <ErrorPanel problem={submission.error.problem} /> : null}
       {submission.data ? <SubmissionSummary submission={submission.data} /> : null}
+      {problem ? <ErrorPanel problem={problem} /> : null}
       {submission.data?.state === "AWAITING_ENDORSEMENT" ? (
-        <EndorsePanel submissionId={submissionId} onMoved={moved} />
+        <EndorsePanel submissionId={submissionId} onMoved={moved} onProblem={setProblem} />
       ) : null}
       {reports.error ? <ErrorPanel problem={reports.error.problem} /> : null}
-      {reports.data ? <NotApplicableSection reports={reports.data} /> : null}
-      <FindingsSection submissionId={submissionId} refreshKey={refreshKey} />
+      {reports.data ? <NotApplicableSection id="endorse-not-applicable" reports={reports.data} /> : null}
+      <section className="card" aria-labelledby="endorse-findings">
+        <h3 id="endorse-findings">Findings</h3>
+        <FindingsList
+          load={loadFindings}
+          refreshKey={refreshKey}
+          heading="Every Finding"
+          caption="Findings of the VA Submission, the most severe first"
+          reviewCell={(finding) => <FindingReview finding={finding} />}
+        />
+      </section>
     </div>
   );
 }
