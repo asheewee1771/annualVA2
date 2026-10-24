@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review &mdash; 31-guided-rework-queue</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall: PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">build PASS &middot; C0 H0 M0 L0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN &middot; C0 H0 M3 L6</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN &middot; C0 H0 M1 L12</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">semgrep PASS &middot; C0 H0 M0 L0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN &middot; C0 H0 M0 L3</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react WARN &middot; C0 H0 M1 L4</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN &middot; C0 H0 M0 L5</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">impl/31-guided-rework</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report</h1>
+          <p class="text-sm text-slate-500 mt-1">Ticket 31, the guided rework queue (stories 60, 61 and 62). Diff <span class="font-mono text-xs">integration/annual-va-r1...HEAD</span> on <span class="font-mono text-xs">impl/31-guided-rework</span> (HEAD efd8b18; commits 5c4569e, f7539f9, d3a48af, efd8b18; 25 files, +1348/-233). All seven checks reviewed the same range.</p>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Executive Summary</h2>
+          <p class="text-xs text-slate-500 mt-1">Overall compliance status across all active checks. <strong>Overall PASS:</strong> no check has a Critical or High finding. build and semgrep are clean. The other five checks have Medium or Low findings only, so each is WARN. Totals: 0 Critical, 0 High, 5 Medium, 30 Low.</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Check</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Status</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">C / H / M / L</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Summary of gaps</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">build</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 0</td>
+              <td class="px-4 py-2">Back end: the verify log at f7539f9 was reused (only a Javadoc change since): 879 tests, 0 failures, JaCoCo checks met, BUILD SUCCESS. Front end <span class="font-mono text-xs">npm run check</span> exit 0 (Prettier, <span class="font-mono text-xs">tsc -b</span>, <span class="font-mono text-xs">vite build</span>, no raw HTML, dependency-cruiser, fallow).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">thermo-nuclear</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 3 / 6</td>
+              <td class="px-4 py-2">ReworkFinding re-implements the proposal editor of FindingRow; ReworkQueueStore is built from five SQL fragments exported from FindingStore; a failed readiness read is silent on the rework screen. Lows on SQL literals, a duplicated Dispute rule, scattered state checks, listener churn and copied constants.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">code-review</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 12</td>
+              <td class="px-4 py-2">Standards: 1 Medium (the key race during and after a save) and 9 Lows. Spec: every acceptance line is implemented; 3 Lows (the return summary reads the latest review, no Auditor 403 test, "pick then Enter" needs Esc).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">semgrep</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 0</td>
+              <td class="px-4 py-2">Semgrep 1.179.0, <span class="font-mono text-xs">p/security-audit</span> + <span class="font-mono text-xs">p/default</span>, 328 rules on the 23 changed code files: 0 findings, 0 errors.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">im8</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 3</td>
+              <td class="px-4 py-2">Nothing ticket 31 owns fails. Lows: no runtime check of API responses (carried app-wide), the SMO-only rule in ADR 0041 item 3 is provisional, <span class="font-mono text-xs">page</span> has no upper bound.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">react</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 4</td>
+              <td class="px-4 py-2">Keys still act on the saved Finding while the queue reloads (Medium). Lows: keys bypass the disabled buttons while saving, listener re-added each render, readiness error not shown, no focus move or announcement on the next Finding.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">springboot</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 5</td>
+              <td class="px-4 py-2">All seven sub-reviews run. Lows: a NEW-stage item can carry an old Dispute, SQL literals for severity, page and counts read in two statements, a test reads the queue twice, no Auditor 403 test.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-700">No Critical or High finding in any check.</p>
+          <p class="text-xs text-slate-500">Notable Mediums, worth fixing before merge:</p>
+          <ul class="list-disc pl-5 text-xs text-slate-500 space-y-1">
+            <li><strong>Key race on the rework screen</strong> (react M1, code-review M1; react L2 is the same root): <span class="font-mono text-xs">frontend/src/screens/smo/ReworkFinding.tsx:241-264</span>. Keys 1 to 4 and Enter stay live while a save runs and after it, until the reloaded queue replaces the saved Finding, so the same Finding can be proposed twice (a second proposal and audit entry).</li>
+            <li><strong>Readiness error swallowed</strong> (thermo-nuclear M3; react L4 and code-review Low agree): <span class="font-mono text-xs">frontend/src/screens/smo/ReworkScreen.tsx:203</span> and <span class="font-mono text-xs">DeclarationForm.tsx:132-133</span>. If <span class="font-mono text-xs">/readiness</span> fails, Resubmit stays disabled with no message.</li>
+            <li><strong>Duplicated proposal editor</strong> (thermo-nuclear M1): <span class="font-mono text-xs">frontend/src/screens/smo/ReworkFinding.tsx:166-262</span> copies the <span class="font-mono text-xs">ProposalForm</span> state machine in <span class="font-mono text-xs">FindingRow.tsx:26-80</span>.</li>
+            <li><strong>Store coupling through SQL fragments</strong> (thermo-nuclear M2): <span class="font-mono text-xs">backend/src/main/java/sg/annualva/finding/ReworkQueueStore.java:23-41</span> depends on five package-private fragments and <span class="font-mono text-xs">row()</span> of <span class="font-mono text-xs">FindingStore</span>. code-review notes ADR 0041 item 1 endorses the reuse.</li>
+          </ul>
+          <p class="text-xs text-slate-500">Also for a human: ADR 0041 items 2, 3 and 6 are provisional (im8 L2, code-review Spec Low on "pick then Enter").</p>
+        </div>
+      </div>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS &middot; C0 H0 M0 L0</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100"><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td></tr>
+          </tbody>
+        </table>
+        <p class="px-5 py-3 text-xs text-slate-500 border-t border-slate-100">Informational: fallow lists ReworkScreen.tsx (242 LOC) and DeclarationForm.tsx (171 LOC) in its file-health triage (CRAP risk 132 and 156), both under every threshold.</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN &middot; C0 H0 M3 L6</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ReworkFinding.tsx</td><td class="px-4 py-2">166-214, 222-262</td><td class="px-4 py-2"><strong>M1.</strong> ReworkFinding re-implements the proposal editor of <span class="font-mono text-xs">FindingRow.tsx:26-80</span> (<span class="font-mono text-xs">ProposalForm</span>): the same values/busy/problem state, <span class="font-mono text-xs">proposeStatus</span>, <span class="font-mono text-xs">UNREACHABLE</span> fallback, field list and ErrorPanel; BulkBar.tsx has a third near-copy. Fix: extract a shared <span class="font-mono text-xs">ProposalEditor.tsx</span> with a <span class="font-mono text-xs">useProposalDraft(findingId, spec, initialValues)</span> hook and a <span class="font-mono text-xs">&lt;ProposalFields&gt;</span> component.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/ReworkQueueStore.java</td><td class="px-4 py-2">23-41</td><td class="px-4 py-2"><strong>M2.</strong> The store is built from five SQL fragments and the static <span class="font-mono text-xs">row()</span> widened to package-private in <span class="font-mono text-xs">FindingStore.java</span> (lines 42, 88, 117, 128, 131, 338): an implicit contract on aliases, column labels and fragment order. <span class="font-mono text-xs">SEVERITY_ORDER</span> was widened with no outside reader. Fix: move <span class="font-mono text-xs">queuePage</span> and <span class="font-mono text-xs">queueCounts</span> into FindingStore and make the fragments private again, or expose one narrow builder.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ReworkScreen.tsx</td><td class="px-4 py-2">203</td><td class="px-4 py-2"><strong>M3.</strong> The error list <span class="font-mono text-xs">[queue, returns, reports, files]</span> leaves out <span class="font-mono text-xs">readiness</span>, and <span class="font-mono text-xs">DeclarationForm.tsx:132-133</span> disables the button without showing <span class="font-mono text-xs">readiness.error</span>. A failed <span class="font-mono text-xs">/readiness</span> read leaves Resubmit disabled and silent. Fix: render <span class="font-mono text-xs">readiness.error</span> in DeclarationForm, or add <span class="font-mono text-xs">readiness</span> to the list.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/ReworkQueueStore.java</td><td class="px-4 py-2">23-30</td><td class="px-4 py-2"><strong>L1.</strong> <span class="font-mono text-xs">STAGE</span> hard-codes <span class="font-mono text-xs">'DISPUTED'</span>, <span class="font-mono text-xs">'CRITICAL'</span>, <span class="font-mono text-xs">'HIGH'</span> while <span class="font-mono text-xs">STAGE_ORDER</span> comes from the enum; the ARRAY idiom is copied a third time. Fix: derive from the enums and extract one <span class="font-mono text-xs">sqlArray(Enum&lt;?&gt;[])</span> helper.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/ReworkQueue.java</td><td class="px-4 py-2">33-37</td><td class="px-4 py-2"><strong>L2.</strong> Two rules decide "Disputed": the SQL stage and <span class="font-mono text-xs">Item.of</span>'s Java check on the latest review. Fix: <span class="font-mono text-xs">stage == ReworkStage.DISPUTED ? finding.latestReview() : null</span>.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SmoInboxScreen.tsx, SubmissionPrepareScreen.tsx, DeclarationForm.tsx, ReworkScreen.tsx</td><td class="px-4 py-2">49, 44, 22, 201</td><td class="px-4 py-2"><strong>L3.</strong> <span class="font-mono text-xs">state === "RETURNED_FOR_REWORK"</span> is scattered across four places. Fix: <span class="font-mono text-xs">isReturnedForRework(state)</span> in api/submissions.ts and <span class="font-mono text-xs">submissionHomePath(id, state)</span> in paths.ts.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ReworkFinding.tsx</td><td class="px-4 py-2">51-71, 264</td><td class="px-4 py-2"><strong>L4.</strong> The window key listener re-subscribes on every render because <span class="font-mono text-xs">pick</span> and <span class="font-mono text-xs">save</span> are new closures. Fix: hold them in a ref and subscribe once per <span class="font-mono text-xs">enabled</span>.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ReworkFinding.tsx, SubmissionSummary.tsx</td><td class="px-4 py-2">20, 7</td><td class="px-4 py-2"><strong>L5.</strong> Another copy of <span class="font-mono text-xs">UNREACHABLE</span> (about the 12th), and the Singapore formatter <span class="font-mono text-xs">WHEN</span> exported from a component module (same as LatestReview.tsx:3, RegisterPreviewPanel.tsx:6). Fix: export <span class="font-mono text-xs">UNREACHABLE</span> from api/problem.ts and move <span class="font-mono text-xs">WHEN</span> to a shared module.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ReworkScreen.tsx</td><td class="px-4 py-2">154-156</td><td class="px-4 py-2"><strong>L6.</strong> The ready-evidence memo filter duplicates <span class="font-mono text-xs">FindingsSection.tsx:316</span> and drops the <span class="font-mono text-xs">file.submissionId === submissionId</span> narrowing (harmless today). Fix: one shared <span class="font-mono text-xs">memosOf(files, submissionId)</span> helper.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN &middot; C0 H0 M1 L12</span>
+        </summary>
+        <p class="px-5 py-3 text-xs text-slate-500 border-t border-slate-100">Two axes, reported separately: Standards (1 Medium, 9 Low) and Spec (3 Low; every acceptance line of ticket 31 is implemented, no scope creep). The Spec axis was reviewed inline because the sub-agent limit stopped its sub-agent; the quality gates were not run by this check. Suppressed: the reuse of FindingStore's SQL constants, which ADR 0041 item 1 endorses.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ReworkFinding.tsx</td><td class="px-4 py-2">241, 264</td><td class="px-4 py-2"><strong>Standards.</strong> <span class="font-mono text-xs">pick()</span> does not check <span class="font-mono text-xs">busy</span>, so keys 1 to 4 change the status during a save. After a save, the stale Finding stays on screen with live keys until the reload lands, so it can be proposed again. Fix: return early from <span class="font-mono text-xs">pick</span> while busy, and turn the keys off from a successful save until the next item replaces this one.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/ReworkQueueStore.java</td><td class="px-4 py-2">23-26</td><td class="px-4 py-2"><strong>Standards.</strong> Severity and stage literals are hard-coded in the stage SQL (possible Primitive Obsession). Fix: build the list from <span class="font-mono text-xs">Severity</span>.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingStore.java</td><td class="px-4 py-2">42</td><td class="px-4 py-2"><strong>Standards.</strong> <span class="font-mono text-xs">SEVERITY_ORDER</span> was made package-private with no outside reader. Fix: make it private again.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ReworkQueueTest.java</td><td class="px-4 py-2">99-101</td><td class="px-4 py-2"><strong>Standards.</strong> One test reads the queue twice, writing two audit entries and asserting on two responses. Fix: read once and reuse the node.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ReworkScreen.tsx</td><td class="px-4 py-2">203</td><td class="px-4 py-2"><strong>Standards.</strong> A failed readiness read is never shown; Resubmit is disabled with no message. Fix: add <span class="font-mono text-xs">readiness</span> to the error list.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ReworkFinding.tsx</td><td class="px-4 py-2">51-72, 264</td><td class="px-4 py-2"><strong>Standards.</strong> The window key listener is re-attached on every render. Fix: keep the handlers in a ref, or wrap them in <span class="font-mono text-xs">useCallback</span>.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ReworkFinding.tsx, DeclarationForm.tsx</td><td class="px-4 py-2">20, 15</td><td class="px-4 py-2"><strong>Standards.</strong> One more copy of <span class="font-mono text-xs">UNREACHABLE</span> (about 14 files now; Duplicated Code). Fix: export one constant from api/problem.ts; can be a follow-up.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SubmissionSummary.tsx</td><td class="px-4 py-2">7</td><td class="px-4 py-2"><strong>Standards.</strong> The shared <span class="font-mono text-xs">WHEN</span> formatter lives in a component module and duplicates LatestReview.tsx:3 and RegisterPreviewPanel.tsx:6. Fix: move it to a shared module such as api/cycles.ts.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/ReworkQueue.java; frontend/src/api/findings.ts</td><td class="px-4 py-2">31</td><td class="px-4 py-2"><strong>Standards.</strong> The type names <span class="font-mono text-xs">Item</span> and <span class="font-mono text-xs">ReworkItem</span> use "item", a glossary synonym to avoid for Finding. Fix: consider <span class="font-mono text-xs">QueuedFinding</span>; the JSON field <span class="font-mono text-xs">items</span> is fine.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">commit d3a48af</td><td class="px-4 py-2">&mdash;</td><td class="px-4 py-2"><strong>Standards.</strong> The <span class="font-mono text-xs">feat(frontend)</span> commit also carries the extraction of DeclarationForm and SubmissionSummary (about 200 lines). Fix: separate refactor commits in future tickets; history is not rewritten.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ReworkScreen.tsx</td><td class="px-4 py-2">29, 35, 218</td><td class="px-4 py-2"><strong>Spec.</strong> The return summary ignores the return's <span class="font-mono text-xs">reviewId</span> and shows the report's latest review and state. Outside Returned for Rework (opened by URL later) a later Confirm is labelled "Why it was Disputed". Fix: render <span class="font-mono text-xs">ReturnSummary</span> only while editable, or match <span class="font-mono text-xs">review.id</span> to the return's <span class="font-mono text-xs">reviewId</span>.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ReworkQueueTest.java</td><td class="px-4 py-2">149-152</td><td class="px-4 py-2"><strong>Spec.</strong> ADR 0041 item 3 and the README say an Auditor gets 403, but only the Cyber Manager and VA POC are asserted. Fix: add an Auditor assertion.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ReworkFinding.tsx</td><td class="px-4 py-2">190</td><td class="px-4 py-2"><strong>Spec, for the ADR 0041 item 6 decision.</strong> Picking a status moves focus into its required field, so "1" then Enter never saves without Esc in between. Within the letter of story 62. Option: when the picked status is the one already proposed and pre-filled, keep focus on the status button.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS &middot; C0 H0 M0 L0</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100"><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td></tr>
+          </tbody>
+        </table>
+        <p class="px-5 py-3 text-xs text-slate-500 border-t border-slate-100">Official <span class="font-mono text-xs">semgrep/semgrep</span> Docker image, 1.179.0; 328 rules (java 118, ts 164, multilang 47) on 23 targets (11 Java, 11 TS/TSX, 1 CSS), 0 errors. A harmless <span class="font-mono text-xs">safe.directory</span> warning did not affect the explicit targets.</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN &middot; C0 H0 M0 L3</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/api/findings.ts; frontend/src/api/submissions.ts</td><td class="px-4 py-2">360-365; 131-133</td><td class="px-4 py-2"><strong>as-1, carried app-wide.</strong> <span class="font-mono text-xs">fetchReworkQueue</span> and <span class="font-mono text-xs">fetchReturns</span> trust the typed shape with no runtime check (no zod). Text-only rendering keeps the risk low; same carried item as ticket 30 L-2. Fix: none for this ticket; cover the new types if runtime parsing is added.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">docs/adr/0041-the-rework-queue-is-the-needs-attention-findings-in-stages-for-the-smo-alone.md; backend/src/main/java/sg/annualva/finding/FindingController.java</td><td class="px-4 py-2">3; 173-179</td><td class="px-4 py-2"><strong>ac-1 / as-7, governance.</strong> <span class="font-mono text-xs">GET /api/submissions/{id}/rework-queue</span> is SMO-only plus the System guard, and tested, but ADR 0041 item 3 is provisional. Fix: have a human confirm items 2, 3 and 6 and record it in reviewer-decisions.md before merge.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingController.java</td><td class="px-4 py-2">176</td><td class="px-4 py-2"><strong>as-1 back end, minor.</strong> <span class="font-mono text-xs">page</span> has <span class="font-mono text-xs">@Min(0)</span> only, so a huge value becomes a huge OFFSET (<span class="font-mono text-xs">ReworkQueues.java:54</span>); harmless and the house pattern. Fix: optional <span class="font-mono text-xs">@Max</span>.</td></tr>
+          </tbody>
+        </table>
+        <p class="px-5 py-3 text-xs text-slate-500 border-t border-slate-100">PASS on as-2, as-3, as-13, lm-4, lm-19, dp-8 and pm-6. Manual review: confirm ADR 0041 items 2, 3 and 6; the keyboard rules belong to the e2e rework scenario.</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN &middot; C0 H0 M1 L4</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ReworkFinding.tsx</td><td class="px-4 py-2">249-264</td><td class="px-4 py-2"><strong>1.</strong> Keys still act on the saved Finding while the queue reloads (with ReworkScreen.tsx 225-228). 1-4 then Enter in that window proposes again for a Finding that has left the queue: a second proposal and audit entry. Fix: a <span class="font-mono text-xs">saved</span> state that disables keys and buttons and shows "Saved. Loading the next Finding..." until the keyed component is replaced.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ReworkFinding.tsx</td><td class="px-4 py-2">241-247, 264</td><td class="px-4 py-2"><strong>2.</strong> The keyboard bypasses the disabled status buttons while saving; a failed save then shows its refusal against a different status's fields. Fix: <span class="font-mono text-xs">if (busy || ...) return;</span> in <span class="font-mono text-xs">pick</span>, or <span class="font-mono text-xs">useReworkKeys(editable &amp;&amp; !busy, ...)</span>.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ReworkFinding.tsx</td><td class="px-4 py-2">51-72, 264</td><td class="px-4 py-2"><strong>3.</strong> The global keydown listener is torn down and re-added on every render. Fix: <span class="font-mono text-xs">useEffectEvent</span> (React 19.3) or a ref.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ReworkScreen.tsx</td><td class="px-4 py-2">203</td><td class="px-4 py-2"><strong>4.</strong> A failed readiness read is never shown on the rework screen (DeclarationForm.tsx 132-133 treats missing data as "not ready"). Fix: add <span class="font-mono text-xs">readiness</span> to the list, or render <span class="font-mono text-xs">readiness.error</span> in DeclarationForm.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/ReworkFinding.tsx</td><td class="px-4 py-2">266-268</td><td class="px-4 py-2"><strong>5.</strong> No focus move or announcement when the next Finding replaces the saved one (ReworkScreen.tsx 178-186); screen-reader users hear nothing. Fix: focus the Finding heading on mount, or put "Finding X of Y" in a <span class="font-mono text-xs">role="status"</span> region.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN &middot; C0 H0 M0 L5</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/ReworkQueue.java</td><td class="px-4 py-2">33-36</td><td class="px-4 py-2"><strong>1. spring-core-review.</strong> <span class="font-mono text-xs">Item.of</span> attaches a latest Disputed review whatever the stage, so a NEW-stage Finding (pointer cleared by a rescan) can show a Dispute of a proposal it no longer has. Fix: attach only when <span class="font-mono text-xs">stage == DISPUTED</span>, or state it in ADR 0041 item 4; add a Seam 1 case.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/ReworkQueueStore.java</td><td class="px-4 py-2">23-26</td><td class="px-4 py-2"><strong>2. spring-data-review.</strong> The stage SQL hard-codes severity and review-state literals; a renamed constant would silently misplace Findings. Fix: build them from <span class="font-mono text-xs">Severity</span> and <span class="font-mono text-xs">ReviewState</span> names.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/ReworkQueues.java</td><td class="px-4 py-2">54, 60</td><td class="px-4 py-2"><strong>3. spring-data-review.</strong> The page and the stage counts come from two statements under READ COMMITTED, so they can briefly disagree; it heals on the next read. Fix (optional): a window-function count, or say so in the Javadoc. Do not make the transaction read-only.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ReworkQueueTest.java</td><td class="px-4 py-2">99, 101</td><td class="px-4 py-2"><strong>4. spring-test-review.</strong> One test reads the queue twice and checks the order on a different response. Fix: read once and reuse it.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ReworkQueueTest.java</td><td class="px-4 py-2">151</td><td class="px-4 py-2"><strong>5. spring-test-review.</strong> The Auditor 403 named in ADR 0041 item 3 is not tested. Fix: reuse the <span class="font-mono text-xs">arrange.grant("AUDITOR", ...)</span> arrangement from FindingReviewTest.</td></tr>
+          </tbody>
+        </table>
+        <p class="px-5 py-3 text-xs text-slate-500 border-t border-slate-100">No findings from spring-web-review, spring-batch-review (not applicable), spring-security-review or spring-logging-review.</p>
+      </details>
+    </main>
+  </body>
+</html>

@@ -82,6 +82,7 @@ const ACTION_LABELS: Readonly<Record<string, string>> = {
   FINDING_REVIEWED: "Finding reviewed",
   REPORT_REVIEWED: "Not-applicable justification reviewed",
   BATCH_REVIEWED: "Bulk-set batch reviewed",
+  REWORK_QUEUE_VIEWED: "Rework queue viewed",
 };
 
 export const AUDIT_ACTIONS: readonly string[] = Object.keys(ACTION_LABELS);

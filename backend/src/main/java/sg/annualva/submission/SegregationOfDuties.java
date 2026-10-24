@@ -76,7 +76,7 @@ class SegregationOfDuties {
      * The Systems the caller is assigned to at a step other than this one. A scope over every System (a VA POC's) is not an
      * assignment: holding the VA POC role does not assign a person to the endorsing step of any System; only endorsing,
      * returning or deciding an Exemption on a VA Submission counts, as {@code submission_participation} (ADR 0039 item 5,
-     * ADR 0041). So the endorsing step has no Register assignment ({@link SubmissionStep#assignedBy()}), and meeting such
+     * ADR 0042). So the endorsing step has no Register assignment ({@link SubmissionStep#assignedBy()}), and meeting such
      * a scope here is a programming error, not a silent "assigned to nothing".
      */
     private Set<UUID> assignedAtAnotherStep(SubmissionStep step) {

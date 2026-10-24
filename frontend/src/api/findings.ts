@@ -336,6 +336,42 @@ export function fetchReadiness(submissionId: string): Promise<Readiness> {
   return request<Readiness>("GET", `/api/submissions/${encodeURIComponent(submissionId)}/readiness`);
 }
 
+/**
+ * Where a Finding is in the rework queue, in the order the SMO/Tech Lead works through them: Disputed, then new
+ * Critical/High, then new Medium/Low/Informational (Target Date Missed and Carried Over arrive with Release 2).
+ */
+export type ReworkStage = "DISPUTED" | "NEW_CRITICAL_HIGH" | "NEW_MEDIUM_LOW";
+
+/** One Finding of the rework queue: its stage, the Finding with its current proposal, and the Dispute when there is one. */
+export interface ReworkItem {
+  stage: ReworkStage;
+  finding: Finding;
+  /** The Cyber Manager's latest review of the Finding when it Disputed: why it came back. Null otherwise. */
+  dispute: Review | null;
+}
+
+/** A page of the rework queue and how many Findings each stage holds, an empty stage included, in queue order. */
+export interface ReworkQueue {
+  stages: { stage: ReworkStage; count: number }[];
+  items: ReworkItem[];
+  page: number;
+  size: number;
+  /** How many Findings the whole queue holds. */
+  total: number;
+}
+
+/**
+ * GET /api/submissions/{id}/rework-queue: the first page of the Findings its SMO/Tech Lead still has to act on, in queue
+ * order. A Finding leaves the queue once a new proposal is made for it, so reading the first page again after each one
+ * gives what is left.
+ */
+export function fetchReworkQueue(submissionId: string): Promise<ReworkQueue> {
+  return request<ReworkQueue>(
+    "GET",
+    `/api/submissions/${encodeURIComponent(submissionId)}/rework-queue?size=${MAX_PAGE_SIZE}`,
+  );
+}
+
 /** The longest each text of a Finding entered by hand may be: the server's limits. */
 export const MANUAL_LIMITS = { title: 200, identifier: 200, packageOrRule: 500 } as const;
 

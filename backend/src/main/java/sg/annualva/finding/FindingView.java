@@ -1,6 +1,7 @@
 package sg.annualva.finding;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import sg.annualva.parser.Confidence;
@@ -44,4 +45,12 @@ public record FindingView(
 
     /** An uploaded Scan Report file a Finding was read from. */
     public record SourceFile(UUID id, String name) {}
+
+    /** A Finding as the table holds it, with the files it was read from (by Finding; one with none has no entry). */
+    static FindingView of(FindingStore.Row row, Map<UUID, List<SourceFile>> sources) {
+        return new FindingView(row.id(), row.systemId(), row.reportType(), row.identityKey(), row.identifier(),
+                row.packageOrRule(), row.severity(), row.didNotComplete(), row.confidence(), row.occurrenceCount(),
+                sources.getOrDefault(row.id(), List.of()), row.reviewState(), row.currentProposal(), row.source(),
+                row.title(), row.latestReview());
+    }
 }
