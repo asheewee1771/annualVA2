@@ -8,6 +8,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
+import sg.annualva.parser.Severity;
 
 /**
  * The rework queue's reads (story 60): the Findings that need the SMO/Tech Lead ({@link FindingStore#NEEDS_ATTENTION}),
@@ -21,8 +22,10 @@ class ReworkQueueStore {
 
     /** The stage of a Finding that needs attention: Disputed, else new and grouped by severity. */
     private static final String STAGE =
-            "(CASE WHEN f.review_state = 'DISPUTED' THEN '" + ReworkStage.DISPUTED.name() + "' "
-            + "WHEN f.severity IN ('CRITICAL', 'HIGH') THEN '" + ReworkStage.NEW_CRITICAL_HIGH.name() + "' "
+            "(CASE WHEN f.review_state = '" + ReviewState.DISPUTED.name() + "' "
+            + "THEN '" + ReworkStage.DISPUTED.name() + "' "
+            + "WHEN f.severity IN ('" + Severity.CRITICAL.name() + "', '" + Severity.HIGH.name() + "') "
+            + "THEN '" + ReworkStage.NEW_CRITICAL_HIGH.name() + "' "
             + "ELSE '" + ReworkStage.NEW_MEDIUM_LOW.name() + "' END)";
 
     /** The stages in queue order, the order of the enum, written once. */
