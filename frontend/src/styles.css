@@ -540,3 +540,17 @@ body {
 .latest-review {
   margin: 0.25rem 0;
 }
+
+/* The rework queue (ticket 31): the stages with the current one marked, and the keys it answers to. */
+.rework-stages li[aria-current="step"] {
+  font-weight: 600;
+}
+
+kbd {
+  font-family: ui-monospace, monospace;
+  font-size: 0.85em;
+  padding: 0 4px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+}

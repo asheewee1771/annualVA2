@@ -1,4 +1,5 @@
 import { request } from "./client.ts";
+import type { ReportType } from "./reportFiles.ts";
 
 /** Where a VA Submission is in its life: the nine states a VA Submission can be in (Not Started has none). */
 export type SubmissionState =
@@ -107,6 +108,28 @@ export function returnForRework(id: string, comment: string): Promise<Submission
  */
 export function passToEndorsement(id: string): Promise<Submission> {
   return request<Submission>("POST", `/api/submissions/${encodeURIComponent(id)}/pass-to-endorsement`, {});
+}
+
+/**
+ * A return for rework as kept: who returned it and when, what they wrote, and what was Disputed then, each item named by
+ * the review that Disputed it. The comment is what a person typed: text only.
+ */
+export interface SubmissionReturn {
+  id: string;
+  step: SubmissionStep;
+  /** Null when none was given: each Dispute carries its own comment. */
+  comment: string | null;
+  /** A user id, never a name or email. */
+  returnedBy: string;
+  /** An instant (UTC). */
+  returnedAt: string;
+  disputedFindings: { findingId: string; reviewId: string }[];
+  disputedReports: { reportType: ReportType; reviewId: string }[];
+}
+
+/** GET /api/submissions/{id}/returns: the returns of the VA Submission, the latest first. */
+export function fetchReturns(id: string): Promise<SubmissionReturn[]> {
+  return request<SubmissionReturn[]>("GET", `/api/submissions/${encodeURIComponent(id)}/returns`);
 }
 
 /**
