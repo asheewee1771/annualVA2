@@ -155,6 +155,12 @@ class SubmissionStore {
             + "AND system_id = ANY(CAST(:systems AS uuid[])) "
             + "ORDER BY id FOR NO KEY UPDATE SKIP LOCKED) due WHERE s.id = due.id RETURNING s.id, s.system_id, s.state";
 
+    /** The VA Submissions, of these Systems, where the person acted at this step. */
+    private static final String ACTED_AT =
+            "SELECT DISTINCT p.submission_id FROM submission_participation p "
+            + "JOIN va_submission s ON s.id = p.submission_id WHERE p.user_id = :user AND p.step = :step "
+            + "AND s.system_id = ANY(CAST(:systems AS uuid[]))";
+
     private static final String PARTICIPATION =
             "SELECT user_id, step, first_at FROM submission_participation WHERE submission_id = :id "
             + "ORDER BY first_at, step, user_id";
@@ -307,6 +313,15 @@ class SubmissionStore {
         return Set.copyOf(jdbc.sql(CONFLICTED).param("user", userId).param("step", step.name())
                 .param("submissions", ids(submissionIds)).param("assigned", ids(assignedElsewhere))
                 .query(UUID.class).list());
+    }
+
+    /** The VA Submissions of these Systems where the person acted at the step. */
+    Set<UUID> actedAt(UUID userId, SubmissionStep step, Collection<UUID> systemIds) {
+        if (systemIds.isEmpty()) {
+            return Set.of();
+        }
+        return Set.copyOf(jdbc.sql(ACTED_AT).param("user", userId).param("step", step.name())
+                .param("systems", ids(systemIds)).query(UUID.class).list());
     }
 
     List<Submissions.Acted> participation(UUID submissionId) {

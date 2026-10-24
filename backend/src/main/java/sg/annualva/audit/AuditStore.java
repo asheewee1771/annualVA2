@@ -7,6 +7,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -36,7 +37,8 @@ class AuditStore {
             + "AND (CAST(:systemId AS uuid) IS NULL OR system_id = CAST(:systemId AS uuid)) "
             + "AND (CAST(:submissionId AS uuid) IS NULL OR submission_id = CAST(:submissionId AS uuid)) "
             + "AND (CAST(:from AS timestamptz) IS NULL OR occurred_at >= CAST(:from AS timestamptz)) "
-            + "AND (CAST(:to AS timestamptz) IS NULL OR occurred_at < CAST(:to AS timestamptz))";
+            + "AND (CAST(:to AS timestamptz) IS NULL OR occurred_at < CAST(:to AS timestamptz)) "
+            + "AND (CAST(:within AS uuid[]) IS NULL OR submission_id = ANY(CAST(:within AS uuid[])))";
 
     private static final String PAGE = "SELECT " + COLUMNS + FILTERED
             + " ORDER BY occurred_at DESC, seq DESC LIMIT :limit OFFSET :offset";
@@ -84,7 +86,8 @@ class AuditStore {
                 .param("systemId", filter.systemId())
                 .param("submissionId", filter.submissionId())
                 .param("from", utc(filter.from()))
-                .param("to", utc(filter.to()));
+                .param("to", utc(filter.to()))
+                .param("within", ids(filter.within()));
     }
 
     private AuditEntry map(ResultSet rs, int row) throws SQLException {
@@ -100,6 +103,10 @@ class AuditStore {
                 rs.getObject("finding_id", UUID.class),
                 rs.getString("correlation_id"),
                 json.readValue(rs.getString("detail"), DETAIL));
+    }
+
+    private static String @Nullable [] ids(@Nullable Set<UUID> ids) {
+        return ids == null ? null : ids.stream().map(UUID::toString).toArray(String[]::new);
     }
 
     private static @Nullable OffsetDateTime utc(@Nullable Instant instant) {

@@ -30,6 +30,9 @@ public class AccessGuard {
             case SUBMIT -> new SystemScope(false, caller.systemsFor(Role.SMO));
             case REVIEW -> new SystemScope(false, caller.systemsFor(Role.CYBER_MANAGER));
             case ENDORSE -> caller.holds(Role.VA_POC) ? everything() : SystemScope.NONE;
+            case AUDIT -> caller.holds(Role.VA_POC)
+                    ? everything()
+                    : new SystemScope(false, caller.systemsFor(Role.CYBER_MANAGER));
         };
     }
 
