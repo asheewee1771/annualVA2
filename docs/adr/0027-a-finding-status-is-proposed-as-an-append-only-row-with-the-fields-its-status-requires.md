@@ -23,4 +23,4 @@ Amended by ADR 0030: a Finding has a `source` (`PARSED`, or `MANUAL` for one the
 
 Amended by ADR 0035: the review is a `finding_review` row naming the proposal it reviewed; the Finding is CONFIRMED or DISPUTED only while that proposal is its current one, and the list gives each Finding its `latestReview`.
 
-Amended by ADR 0048: the append-only trigger lets a DELETE through only inside the executor's transaction for an approved disposal list, after the Finding's pointer to its current proposal is cleared.
+Amended by ADR 0049: the append-only trigger lets a DELETE through only inside the executor's transaction for an approved disposal list, after the Finding's pointer to its current proposal is cleared.

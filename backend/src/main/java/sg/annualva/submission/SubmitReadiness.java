@@ -13,6 +13,12 @@ import org.jspecify.annotations.Nullable;
 public interface SubmitReadiness {
 
     /**
+     * The reason a file still on its way through the checks gives: it stands in the way of every route out of Draft or
+     * Returned for Rework, the submit and an Exemption request alike (reviewer decisions, 2026-10-18).
+     */
+    String FILES_SCANNING = "files-scanning";
+
+    /**
      * Every reason the VA Submission cannot be submitted now, in a fixed order; empty when nothing stands in the way. Must
      * run in the caller's transaction.
      */

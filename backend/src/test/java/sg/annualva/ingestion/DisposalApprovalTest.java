@@ -122,7 +122,7 @@ class DisposalApprovalTest extends DisposalSeam1 {
         String waitingId = waiting.get("id").asString();
         assertThat(items(waiting)).containsExactly("EXPORT " + first + " EXPORT_EXPIRED",
                 "EXPORT " + second + " EXPORT_EXPIRED");
-        assertThat(listIn(vaPoc(), "SUPERSEDED").get("id").asString()).isEqualTo(replaced);
+        assertThat(disposalLists(vaPoc())).as("a replaced list is shown nowhere").hasSize(1);
         retention();
         assertThat(listIn(vaPoc(), "DRAFT").get("id").asString()).as("the same records keep the same list")
                 .isEqualTo(waitingId);

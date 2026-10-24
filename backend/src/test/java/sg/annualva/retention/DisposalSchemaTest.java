@@ -12,7 +12,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import sg.annualva.harness.Seam1Test;
 
 /**
- * ADR 0048 as a gate on the schema the migrations build: the disposal deletes rows from many modules' tables in
+ * ADR 0049 as a gate on the schema the migrations build: the disposal deletes rows from many modules' tables in
  * foreign-key order, so a later table that names one of them, and is not disposed of first, would make every approved
  * list fail at execution. This reads every foreign key from the database and fails until the new table is added to
  * {@link DisposalStore#STEPS} in its place.

@@ -74,6 +74,10 @@ public enum DetailKey {
     CLASSIFICATION,
     /** The Quarter an export covers, 1 to 4, when it covers one Quarter only. */
     QUARTER,
+    /** The Exemption an entry is about (ticket 40): its id, never its evidence. */
+    EXEMPTION_ID,
+    /** What an Exemption rests on (ticket 40): {@code PRIOR_VA} or {@code SCHEDULED_VA}, never the date. */
+    BASIS,
     /** The disposal list an entry is about (ticket 49). */
     DISPOSAL_LIST_ID,
     /** What a disposal deleted: VA Submissions, Scan Report files (rows and content), superseded files' content only. */

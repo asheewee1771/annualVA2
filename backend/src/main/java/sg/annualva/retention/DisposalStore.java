@@ -38,7 +38,8 @@ class DisposalStore {
 
     private static final String OPEN = LIST_COLUMNS + "WHERE status IN ('DRAFT', 'APPROVED')";
 
-    private static final String NEWEST = LIST_COLUMNS + "ORDER BY seq DESC LIMIT :limit";
+    /** A superseded list was never approved and is shown nowhere; the newest of the others. */
+    private static final String NEWEST = LIST_COLUMNS + "WHERE status <> 'SUPERSEDED' ORDER BY seq DESC LIMIT :limit";
 
     private static final String FIND = LIST_COLUMNS + "WHERE id = :id";
 
@@ -144,7 +145,7 @@ class DisposalStore {
     private static final String RUNNING = "SELECT set_config('annualva.disposal_list', CAST(:list AS text), true)";
 
     /**
-     * The disposal, in foreign-key order (ADR 0048): what names a record goes before it, and a rescan and the file it
+     * The disposal, in foreign-key order (ADR 0049): what names a record goes before it, and a rescan and the file it
      * replaced go in one statement. The proposals, batches, reviews, returns, Declarations and audit entries are
      * append-only; V149 lets these deletes through only while the list named by {@link #RUNNING} is APPROVED. A schema test
      * checks that every table naming a table deleted from here is deleted from here too.
@@ -167,6 +168,7 @@ class DisposalStore {
             new Step("DELETE FROM finding WHERE submission_id IN " + LISTED_SUBMISSIONS, null),
             new Step("DELETE FROM report_file_stage WHERE file_id IN (SELECT id FROM report_file WHERE submission_id IN "
                     + LISTED_SUBMISSIONS + ")", null),
+            new Step("DELETE FROM exemption WHERE submission_id IN " + LISTED_SUBMISSIONS, null),
             new Step("DELETE FROM report_file WHERE submission_id IN " + LISTED_SUBMISSIONS, Counted.FILES),
             new Step("DELETE FROM report_slot WHERE submission_id IN " + LISTED_SUBMISSIONS, null),
             new Step("DELETE FROM declaration WHERE submission_id IN " + LISTED_SUBMISSIONS, null),

@@ -28,7 +28,6 @@ final class MailValues {
     static final String CHANGE_KIND = "change_kind";
 
     private static final DateTimeFormatter DUE = DateTimeFormatter.ofPattern("d MMMM uuuu", Locale.ENGLISH);
-    private static final String NOT_STARTED_LABEL = "Not Started";
 
     private MailValues() {}
 
@@ -64,6 +63,6 @@ final class MailValues {
 
     /** A state code (one V136's CHECK allows) as the screens name it. */
     private static String stateLabel(String code) {
-        return WorkflowNotices.NOT_STARTED.equals(code) ? NOT_STARTED_LABEL : SubmissionState.valueOf(code).label();
+        return SubmissionState.valueOf(code).label();
     }
 }

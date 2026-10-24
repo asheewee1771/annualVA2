@@ -53,6 +53,28 @@ function ReworkNotice({ submission }: { submission: Submission | undefined }) {
   );
 }
 
+/** While an Exemption request waits on a VA POC, the VA Submission is frozen (story 44); once approved, it is Exempted. */
+function ExemptionNotice({ submission }: { submission: Submission | undefined }) {
+  if (submission?.state === "EXEMPTION_REQUESTED") {
+    return (
+      <div className="notice" role="status">
+        <p>
+          Frozen: your Exemption request is waiting on a VA POC&apos;s decision. Nothing can be changed or submitted
+          until then. If it is rejected, this VA Submission goes back exactly as it was.
+        </p>
+      </div>
+    );
+  }
+  if (submission?.state === "EXEMPTED") {
+    return (
+      <div className="notice" role="status">
+        <p>Exempted: a VA POC approved the Exemption. The work below is kept for audit, read only.</p>
+      </div>
+    );
+  }
+  return null;
+}
+
 /**
  * Where the SMO/Tech Lead prepares a VA Submission (stories 19, 20, 23, 24, 25, 26, 28, 35, 40 and 41): the three Scan
  * Report cards with how each is provided, their files and each file's pipeline status (asked for again while a file is
@@ -95,6 +117,7 @@ export function SubmissionPrepareScreen({
       </p>
       <SubmissionSummary heading="Prepare the VA Submission" submission={submission} />
       <ReworkNotice submission={data} />
+      <ExemptionNotice submission={data} />
       {data ? (
         <EditableContext.Provider value={editable}>
           <ScanReportsSection

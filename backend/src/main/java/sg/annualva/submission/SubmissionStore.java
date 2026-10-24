@@ -51,7 +51,7 @@ class SubmissionStore {
     record NotEndorsed(UUID id, UUID systemId, @Nullable String from) {}
 
     /** How a System with no VA Submission is named to the Overdue rule and in an audit entry. */
-    static final String NOT_STARTED = "NOT_STARTED";
+    static final String NOT_STARTED = SubmissionState.NOT_STARTED.name();
 
     /**
      * The one Overdue rule every statement asks (ADR 0033 item 4, V20): whether the window the state waits on has passed
@@ -81,8 +81,15 @@ class SubmissionStore {
      * Every transition's UPDATE sets this, and nothing else touches {@code overdue_since}. An {@code UPDATE} reads the
      * row's old values, so the new state is the parameter.
      */
-    static final String OVERDUE_AFTER_MOVE =
-            "overdue_since = CASE WHEN " + windowPassed("CAST(:state AS text)") + " THEN overdue_since END";
+    static final String OVERDUE_AFTER_MOVE = overdueAfterMove("overdue_since");
+
+    /**
+     * The same rule for a move that puts back the flag's time from before (a rejected Exemption, ADR 0048): {@code since}
+     * is kept only if the window the new state waits on has passed.
+     */
+    private static String overdueAfterMove(String since) {
+        return "overdue_since = CASE WHEN " + windowPassed("CAST(:state AS text)") + " THEN " + since + " END";
+    }
 
     /**
      * One VA Submission per System and Cycle: a second start, even a concurrent one, inserts nothing. Starting is the move
@@ -96,6 +103,15 @@ class SubmissionStore {
                     "CAST(:endorseDue AS date)")
             + " THEN (SELECT overdue_since FROM not_started_overdue WHERE system_id = :system AND cycle_year = :cycle) "
             + "END) ON CONFLICT (system_id, cycle_year) DO NOTHING RETURNING id";
+
+    /**
+     * A start of a VA Submission that is Not Started (a rejected Exemption request created it, ADR 0048): the move from Not
+     * Started, with the windows the row has, and the flag with it ({@link #OVERDUE_AFTER_MOVE}). A row in any other state
+     * is left alone and nothing is answered.
+     */
+    private static final String TAKE_NOT_STARTED =
+            "UPDATE va_submission SET state = :state, started_at = :now, started_by = :by, " + OVERDUE_AFTER_MOVE
+            + " WHERE system_id = :system AND cycle_year = :cycle AND state = '" + NOT_STARTED + "' RETURNING id";
 
     /**
      * Flags the Systems among these that have no VA Submission in the Cycle and are not flagged yet, once the Quarter's
@@ -219,6 +235,13 @@ class SubmissionStore {
     private static final String MOVED = "UPDATE va_submission SET state = :state, " + OVERDUE_AFTER_MOVE + " WHERE id = :id";
 
     /**
+     * A rejected Exemption (ADR 0048): the state the request froze, and the flag's time from then if the window that
+     * state waits on has still passed; otherwise the flag stays clear until the sweep sets it.
+     */
+    private static final String RESTORED = "UPDATE va_submission SET state = :state, "
+            + overdueAfterMove("CAST(:overdueSince AS timestamptz)") + " WHERE id = :id";
+
+    /**
      * A pass to endorsement: Awaiting Endorsement, the flag with it, and when the review ended
      * ({@code passed_to_endorsement_at}, V133, the Cycle matrix's "reviewed").
      */
@@ -307,6 +330,19 @@ class SubmissionStore {
                 .optional();
     }
 
+    /** Starts the Not Started VA Submission of a System in a Cycle, if it has one; its id. */
+    Optional<UUID> takeNotStarted(UUID systemId, int cycleYear, Instant now, LocalDate today, UUID by) {
+        return jdbc.sql(TAKE_NOT_STARTED)
+                .param("system", systemId)
+                .param("cycle", cycleYear)
+                .param("state", SubmissionState.DRAFT.name())
+                .param("now", utc(now))
+                .param("today", today)
+                .param("by", by)
+                .query(UUID.class)
+                .optional();
+    }
+
     /** Records that the person acted at the step; the first time only, so the record keeps when they first did. */
     void recordParticipation(UUID submissionId, UUID userId, SubmissionStep step, Instant now) {
         jdbc.sql(INSERT_PARTICIPATION)
@@ -346,6 +382,15 @@ class SubmissionStore {
     /** Moves a VA Submission whose row the caller holds ({@link #lockForMove}) to a state with no milestone of its own. */
     void moved(UUID id, SubmissionState state, LocalDate today) {
         jdbc.sql(MOVED).param("id", id).param("state", state.name()).param("today", today).update();
+    }
+
+    /**
+     * Moves a VA Submission whose row the caller holds ({@link #lockForMove}) out of Exemption Requested: back to the state
+     * the request froze, with the Overdue flag's time from then, or to Exempted, which keeps no flag.
+     */
+    void restored(UUID id, SubmissionState state, @Nullable Instant overdueSince, LocalDate today) {
+        jdbc.sql(RESTORED).param("id", id).param("state", state.name())
+                .param("overdueSince", overdueSince == null ? null : utc(overdueSince)).param("today", today).update();
     }
 
     /** Passes a VA Submission whose row the caller holds ({@link #lockForMove}) to endorsement now. */

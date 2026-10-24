@@ -127,7 +127,7 @@ public class DisposalPlanner {
 
     /**
      * A Cycle's records are kept for the Cycle plus 3 years: through the third anniversary of the business date it closed
-     * on, and due the day after (ADR 0048, provisional).
+     * on, and due the day after (ADR 0049, provisional).
      */
     private boolean retentionEnded(Instant closedAt, LocalDate today) {
         return calendar.dateOf(closedAt).plusYears(3).isBefore(today);

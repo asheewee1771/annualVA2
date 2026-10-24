@@ -1,4 +1,4 @@
--- Retention and disposal (ticket 49, story 87, ADR 0048). Records are kept for the VA Cycle plus 3 years; a superseded
+-- Retention and disposal (ticket 49, story 87, ADR 0049). Records are kept for the VA Cycle plus 3 years; a superseded
 -- Scan Report file's content once its VA Submission is Endorsed; an export's row once its 24 hours are up. The retention
 -- job lists what is due on a disposal list, a VA POC approves the list with a fresh sign-in, and the executor hard-deletes
 -- exactly what it names and writes one tombstone audit entry. Nothing else removes a record: every other removal before
@@ -151,6 +151,7 @@ ALTER TABLE audit_entry ADD CONSTRAINT audit_entry_detail_check
                               'roles_revoked', 'finding_status', 'replaced_file_id', 'proposed_as',
                               'rescan_file_id', 'report_type', 'mode', 'date_changed', 'target_changed',
                               'declaration_version', 'state', 'decision', 'endorsed_late', 'export_id',
-                              'export_type', 'format', 'classification', 'cycle', 'quarter', 'disposal_list_id',
+                              'export_type', 'format', 'classification', 'cycle', 'quarter', 'exemption_id', 'basis',
+                              'disposal_list_id',
                               'submissions', 'files', 'superseded_files', 'exports', 'systems',
                               'audit_entries'] = '{}'::jsonb);

@@ -255,7 +255,7 @@ class ArchitectureTest {
     }
 
     /**
-     * ADR 0048: {@code RegisterSystems.retiredBefore} lists retired Systems without asking the access guard, because the
+     * ADR 0049: {@code RegisterSystems.retiredBefore} lists retired Systems without asking the access guard, because the
      * retention job lists them for disposal and acts for nobody. Only the job's listing may call it.
      */
     @Test

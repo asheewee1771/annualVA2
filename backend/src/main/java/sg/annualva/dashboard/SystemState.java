@@ -4,7 +4,8 @@ import sg.annualva.submission.SubmissionState;
 
 /**
  * How a System in a Quarter is shown on a dashboard: Not Started while it has no VA Submission, otherwise its VA
- * Submission's state. The order is the spec's state table, which is the order of the Quarter board's columns.
+ * Submission's state (Not Started too for one a rejected Exemption request created). The order is the spec's state
+ * table, which is the order of the Quarter board's columns.
  */
 public enum SystemState {
     NOT_STARTED,
@@ -21,6 +22,7 @@ public enum SystemState {
     /** Each VA Submission state by name, so a state added to one enum and not the other fails to compile. */
     static SystemState of(SubmissionState state) {
         return switch (state) {
+            case NOT_STARTED -> NOT_STARTED;
             case DRAFT -> DRAFT;
             case IN_REVIEW -> IN_REVIEW;
             case RETURNED_FOR_REWORK -> RETURNED_FOR_REWORK;
@@ -33,8 +35,8 @@ public enum SystemState {
         };
     }
 
-    /** A VA Submission's state is final by the submissions' one rule (spec state table); Not Started is not. */
+    /** Final by the submissions' one rule (spec state table); Not Started is not. */
     boolean isFinal() {
-        return this != NOT_STARTED && SubmissionState.valueOf(name()).isFinal();
+        return SubmissionState.valueOf(name()).isFinal();
     }
 }

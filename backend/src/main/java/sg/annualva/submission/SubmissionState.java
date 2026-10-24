@@ -1,12 +1,15 @@
 package sg.annualva.submission;
 
 /**
- * Where a VA Submission is in its life. A System with no VA Submission is Not Started and has no state of its own. The
- * table accepts all nine states a row can be in (with Not Started, the spec's ten) from the start. Every state is named
- * here, so a read (a dashboard, the VA Submission itself) can show a VA Submission whatever state it is in; the commands
- * that enter the later ones arrive with their tickets, and until then nothing but a test puts a VA Submission there.
+ * Where a VA Submission is in its life: the spec's ten states. A System with no VA Submission is Not Started; so is a VA
+ * Submission an Exemption request created once the request is rejected (ticket 40, ADR 0048), which a start then takes
+ * from there. Every state is named here, so a read (a dashboard, the VA Submission itself) can show a VA Submission
+ * whatever state it is in; the commands that enter the later ones arrive with their tickets, and until then nothing but a
+ * test puts a VA Submission there.
  */
 public enum SubmissionState {
+    /** Not started: created by an Exemption request that was then rejected; a start makes it a Draft. */
+    NOT_STARTED("Not Started"),
     /** Started by the SMO/Tech Lead, not yet submitted. */
     DRAFT("Draft"),
     /** Submitted by the SMO/Tech Lead; with the Cyber Manager. */
@@ -47,7 +50,7 @@ public enum SubmissionState {
     public boolean isFinal() {
         return switch (this) {
             case ENDORSED, EXEMPTED, WITHDRAWN, NOT_ENDORSED -> true;
-            case DRAFT, IN_REVIEW, RETURNED_FOR_REWORK, AWAITING_ENDORSEMENT, EXEMPTION_REQUESTED -> false;
+            case NOT_STARTED, DRAFT, IN_REVIEW, RETURNED_FOR_REWORK, AWAITING_ENDORSEMENT, EXEMPTION_REQUESTED -> false;
         };
     }
 }

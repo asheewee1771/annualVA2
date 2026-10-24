@@ -1,8 +1,12 @@
 import { request } from "./client.ts";
 import type { ReportType } from "./reportFiles.ts";
 
-/** Where a VA Submission is in its life: the nine states a VA Submission can be in (Not Started has none). */
+/**
+ * Where a VA Submission is in its life. A System with none is Not Started; so is one an Exemption request created once
+ * the request is rejected, which Start then takes.
+ */
 export type SubmissionState =
+  | "NOT_STARTED"
   | "DRAFT"
   | "IN_REVIEW"
   | "RETURNED_FOR_REWORK"
