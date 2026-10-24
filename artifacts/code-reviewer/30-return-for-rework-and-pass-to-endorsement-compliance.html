@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review — 30-return-for-rework-and-pass-to-endorsement</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall: PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">build WARN · C0 H0 M0 L3</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN · C0 H0 M3 L7 (2 H + 1 L fixed)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN · C0 H0 M3 L11 (3 fixed)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">semgrep WARN · C0 H0 M0 L3</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN · C0 H0 M1 L4</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react WARN · C0 H0 M1 L3 (1 fixed)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN · C0 H0 M1 L4 (4 fixed)</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">impl/30-return-and-pass</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report</h1>
+          <p class="text-sm text-slate-500 mt-1">Ticket 30, Return for rework and Pass to endorsement. Diff <span class="font-mono text-xs">integration/annual-va-r1...HEAD</span> on <span class="font-mono text-xs">impl/30-return-and-pass</span> (HEAD 89a1506). Counts in the badges and the table are open findings. Findings fixed after a check ran stay in that check's table, struck through and marked "Fixed".</p>
+        </div>
+        <div class="rounded-md border border-slate-100 bg-slate-50 p-4 text-sm text-slate-700 space-y-2">
+          <p class="font-semibold text-slate-900">When each check ran</p>
+          <ul class="list-disc pl-5 space-y-1">
+            <li><strong>code-review, semgrep, im8, react, springboot</strong> reviewed the first three commits (1e3aa34, 11f97ae, 7eb5a5b; 29 files, +1335/-63).</li>
+            <li><strong>thermo-nuclear</strong> is the second pass, at f9b68d5. It ran after ecac1ba and b57846e fixed its first pass's two High findings (H1, H2), and it confirms both are resolved.</li>
+            <li><strong>Commits after the checks ran:</strong> ecac1ba and b57846e (the thermo-nuclear fixes, a <span class="font-mono text-xs">uuid</span> primary key on <span class="font-mono text-xs">submission_return_item</span>, a test of two returns in order, and the corrected reviewer-decision citation raised by code-review and springboot); a merge of the integration branch with tickets 29 and 33 (the ADR became 0038; the review screen gained ticket 29's <span class="font-mono text-xs">ReviewSessionContext</span> and <span class="font-mono text-xs">refreshKey</span>); and 132f472, where a pass sets <span class="font-mono text-xs">passed_to_endorsement_at</span> (V133).</li>
+            <li><strong>build</strong> used the fast-mode logs from a run that finished after HEAD (back end) and matches HEAD's front end, so it covers every commit above.</li>
+            <li>The aggregator checked each "Fixed" mark against the code at HEAD. Line numbers and file names in the earlier artifacts may be stale: <span class="font-mono text-xs">ReviewOutcome.tsx</span> is now <span class="font-mono text-xs">FinishReview.tsx</span>, and ADR 0036 is now ADR 0038.</li>
+          </ul>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Executive Summary</h2>
+          <p class="text-xs text-slate-500 mt-1">Overall compliance status across all active checks. <strong>Overall PASS:</strong> no check has an open Critical or High finding. The only Highs (thermo-nuclear first pass, H1 and H2) were fixed in ecac1ba, and the second pass confirms the fix. Every check still has Medium or Low findings, so each check is WARN.</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Check</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Status</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">C / H / M / L</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Summary of gaps</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">build</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 3</td>
+              <td class="px-4 py-2"><span class="font-mono text-xs">./mvnw -B -ntp clean verify</span> BUILD SUCCESS: 868 tests, 0 failures, all JaCoCo checks met (97.52 % lines, 91.61 % branches). Front-end <span class="font-mono text-xs">npm run check</span> clean; fallow reports "0 above threshold". The Lows are an unreachable guard, a pre-existing uncovered guard and fallow health hints.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">thermo-nuclear</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 3 / 7</td>
+              <td class="px-4 py-2">Second pass: H1 and H2 resolved. Still open: the long-text rule is copied a fourth time and <span class="font-mono text-xs">submission</span> now depends on <span class="font-mono text-xs">parser</span> (M1, the presumptive blocker); there is no single transition point and <span class="font-mono text-xs">Submissions</span> keeps growing (M3); the front-end command code is duplicated (M4). L8 was fixed by the ticket 29 merge.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">code-review</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 3 / 11</td>
+              <td class="px-4 py-2">All seven acceptance criteria are implemented. Open Mediums: Flyway numbering follows ticket numbers; no screen shows the SMO the return comment; ADR 0038 items 3 and 5 still await a human decision. Fixed: the missing primary key (ADR 0010), the wrong decision citation, and the Middle Man.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">semgrep</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 3</td>
+              <td class="px-4 py-2">No findings in production code, migrations or the front end. Two false positives on pre-existing test lines. One test fixture contains raw bidi and zero-width characters.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">im8</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 4</td>
+              <td class="px-4 py-2">No control that ticket 30 owns fails. as-1: no <span class="font-mono text-xs">@Valid</span> on <span class="font-mono text-xs">ReturnRequest</span>, though service-layer validation is complete (carried from ticket 28). The Lows are carried app-wide items, the review panel ignoring <span class="font-mono text-xs">sodConflict</span>, and the provisional ADR items.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">react</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 3</td>
+              <td class="px-4 py-2">M1 narrowed by b57846e: readiness now loads only In Review, and its error shows only there. A reload, and so an audit entry, still follows every review. L4 (stale readiness shown beside an error) is fixed. The UX Lows remain.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">springboot</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 4</td>
+              <td class="px-4 py-2">Fixed: the missing primary key, the untested returns ordering, the extra disputed query on readiness, and the dependency on concrete <span class="font-mono text-xs">ReviewChecks</span>. Open: no test protects the exclusive lock of a move (M2, narrowed by <span class="font-mono text-xs">Hold</span>).</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-700">None open. The two earlier Highs from the thermo-nuclear first pass were fixed in ecac1ba:</p>
+          <ul class="list-disc pl-5 text-sm text-slate-700 space-y-1">
+            <li><strong>H1:</strong> the review outcome is now a pure function, <span class="font-mono text-xs">ReviewChecks.outcome(counts, slots)</span>, of data readiness already loads, so a submit runs no extra query.</li>
+            <li><strong>H2:</strong> <span class="font-mono text-xs">ReviewProgress.Disputed</span> is now two non-null lists.</li>
+          </ul>
+          <p class="text-sm text-slate-700">The second pass confirmed both fixes.</p>
+          <p class="text-xs text-slate-500">Notable open Mediums:</p>
+          <ul class="list-disc pl-5 text-xs text-slate-500 space-y-1">
+            <li>thermo-nuclear M1, the long-text rule copied plus <span class="font-mono text-xs">submission -&gt; parser</span>. The reviewer calls it the presumptive blocker: fix it or justify it before merge.</li>
+            <li>thermo-nuclear M3 and M4.</li>
+            <li>code-review: migration numbering, the return comment unseen by the SMO, and ADR 0038 items 3 and 5 awaiting sign-off.</li>
+            <li>im8 as-1 <span class="font-mono text-xs">@Valid</span>.</li>
+            <li>react: a readiness reload and an audit entry per review.</li>
+            <li>springboot: the lock contract is untested.</li>
+          </ul>
+        </div>
+      </div>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M0 L3</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td><td class="px-4 py-2">528-529</td><td class="px-4 py-2">The new <span class="font-mono text-xs">Hold.EXCLUSIVE</span> guard in <span class="font-mono text-xs">movedOutOfReview</span> is never run by a test. Both callers pass <span class="font-mono text-xs">EXCLUSIVE</span>, so no request can reach it. Accept it as an unreachable guard, or replace it with a type (see thermo-nuclear L1').</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SegregationOfDuties.java</td><td class="px-4 py-2">85-86</td><td class="px-4 py-2">This existing <span class="font-mono text-xs">IllegalStateException</span> guard, for a scope over every System, is still uncovered. Only its message changed here, and ADR 0038 item 5 assigns it to ticket 34.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/FinishReview.tsx, frontend/src/screens/smo/SubmissionPrepareScreen.tsx</td><td class="px-4 py-2">—</td><td class="px-4 py-2">fallow health hints, below the threshold. <span class="font-mono text-xs">FinishReviewPanel</span> is 98 lines, in the "very high" size band. <span class="font-mono text-xs">SubmissionPrepareScreen</span> is the top churn hotspot. Consider splitting the panel into its return and pass forms. Informational, outside the diff: a pre-existing deprecation warning in <span class="font-mono text-xs">MccHttp.java:51</span>.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear (second pass, at f9b68d5)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M3 L7</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-400 line-through">High</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/ReviewChecks.java, SubmitChecks.java</td><td class="px-4 py-2">—</td><td class="px-4 py-2"><strong>Fixed in ecac1ba (first-pass H1).</strong> The review outcome is now a pure function, <span class="font-mono text-xs">ReviewChecks.outcome(Counts, Map&lt;ReportType, Slot&gt;)</span>, of data readiness already loads. Submit adds no query, and the duplicated <span class="font-mono text-xs">UNCONFIRMED_*</span> count queries are gone.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-400 line-through">High</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/ReviewProgress.java, SubmissionStore.java</td><td class="px-4 py-2">—</td><td class="px-4 py-2"><strong>Fixed in ecac1ba (first-pass H2).</strong> <span class="font-mono text-xs">Disputed(List&lt;DisputedFinding&gt;, List&lt;DisputedReport&gt;)</span> has no nullable fields. Two plain <span class="font-mono text-xs">unnest</span> inserts replace the four-array insert.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java (with finding/ReviewFields.java:90-104, ScanReports.java, ProposalFields.java, arch/ArchitectureTest.java:72-73)</td><td class="px-4 py-2">530-543</td><td class="px-4 py-2">M1: <span class="font-mono text-xs">returnComment</span> copies <span class="font-mono text-xs">ReviewFields.comment</span>: clean, empty to null, bound, and the 400 problem. This makes four copies of the long-text rule. To share only the cleaning, <span class="font-mono text-xs">ArchitectureTest</span> now lets <span class="font-mono text-xs">submission</span> depend on <span class="font-mono text-xs">parser</span>, and the value 4000 now has five names. Remedy: one neutral helper (for example <span class="font-mono text-xs">PersonText.optional/required</span> next to <span class="font-mono text-xs">RejectedRequestException</span>). Delete the alias constants, revert the <span class="font-mono text-xs">parser</span> permission, and fix ADR item 3 and <span class="font-mono text-xs">package-info</span>. Fix or justify before merge.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td><td class="px-4 py-2">296-321, 427-527</td><td class="px-4 py-2">M3: <span class="font-mono text-xs">submit</span> and <span class="font-mono text-xs">movedOutOfReview</span> repeat the move tail: update, audit with from/to, publish the event, return the view. <span class="font-mono text-xs">movedOutOfReview</span> hard-codes <span class="font-mono text-xs">IN_REVIEW</span> as the from-state. <span class="font-mono text-xs">Submissions</span> grew from 509 to 665 lines. Remedy: one private <span class="font-mono text-xs">transition(...)</span> that takes the from-state off the held row, and a <span class="font-mono text-xs">ReviewMoves</span> service before tickets 34 and 35 land.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/FinishReview.tsx (with ReviewForm.tsx:36-50, api/submissions.ts:135-141)</td><td class="px-4 py-2">10, 66-80</td><td class="px-4 py-2">M4: <span class="font-mono text-xs">FinishReview.move</span> duplicates <span class="font-mono text-xs">ReviewForm.review</span>: busy, problem, try, catch with <span class="font-mono text-xs">ApiError</span> or <span class="font-mono text-xs">UNREACHABLE</span>, reload on 409. <span class="font-mono text-xs">UNREACHABLE</span> is now declared in 12 files, and blank comments are stripped on the client. Remedy: export <span class="font-mono text-xs">problemOf(...)</span> and add a <span class="font-mono text-xs">useCommand(onDone)</span> hook.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td><td class="px-4 py-2">129-135, 161-164, 493-517</td><td class="px-4 py-2">L1': <span class="font-mono text-xs">Hold</span> is a runtime flag with an <span class="font-mono text-xs">IllegalStateException</span>, guarding what a private type (for example <span class="font-mono text-xs">HeldForMove</span>) could make impossible to misuse.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td><td class="px-4 py-2">503</td><td class="px-4 py-2">L2: every review-step command shows the same catch-all refusal sentence. Pass each command's own sentence to <span class="font-mono text-xs">atReviewStep</span>.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/ReviewStore.java</td><td class="px-4 py-2">165-171</td><td class="px-4 py-2">L4: a <span class="font-mono text-xs">Map.Entry</span> is used as a tuple only to sort the Disputed justifications. Map each row straight to <span class="font-mono text-xs">DisputedReport</span> and sort with a comparator.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/SubmitChecks.java, Readiness.java</td><td class="px-4 py-2">13-14, 85-86</td><td class="px-4 py-2">L5 (what is left of M2): <span class="font-mono text-xs">SubmitChecks</span> is named and documented for submit but also builds the review outcome. Update the doc, or attach the outcome in <span class="font-mono text-xs">Findings.readiness</span>.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/SubmitChecks.java</td><td class="px-4 py-2">89-99</td><td class="px-4 py-2">L6: <span class="font-mono text-xs">missing()</span> repeats the titles that <span class="font-mono text-xs">ReportType.title()</span> holds.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td><td class="px-4 py-2">431-436</td><td class="px-4 py-2">L7: a return reads "is anything Disputed" twice: <span class="font-mono text-xs">outcome().returnable()</span>, then <span class="font-mono text-xs">disputed()</span>. Read <span class="font-mono text-xs">disputed</span> first and refuse when it is empty.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-400 line-through">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/FinishReview.tsx, ReviewScreen.tsx</td><td class="px-4 py-2">19-20</td><td class="px-4 py-2"><strong>Fixed by the integration merge (ticket 29), checked at HEAD.</strong> L8: a <span class="font-mono text-xs">reviews</span> counter sat in <span class="font-mono text-xs">useCallback</span> dependencies as a cache-buster. <span class="font-mono text-xs">FinishReview</span> now reads <span class="font-mono text-xs">refreshKey</span> from <span class="font-mono text-xs">useReviewSession()</span> and passes it to <span class="font-mono text-xs">useResource(load, refreshKey)</span>.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td><td class="px-4 py-2">211-213</td><td class="px-4 py-2">L9: the port records <span class="font-mono text-xs">DisputedFinding</span> and <span class="font-mono text-xs">DisputedReport</span> double as the HTTP shape of <span class="font-mono text-xs">GET /returns</span>. Acceptable today; add API records if ticket 31 needs more fields.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review (Standards and Spec)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M3 L11</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-400 line-through">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V130__submission_return.sql</td><td class="px-4 py-2">30</td><td class="px-4 py-2"><strong>Fixed in ecac1ba.</strong> S1: <span class="font-mono text-xs">submission_return_item</span> had no primary key, against ADR 0010. It now has <span class="font-mono text-xs">id uuid PRIMARY KEY DEFAULT gen_random_uuid()</span>.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V130__submission_return.sql</td><td class="px-4 py-2">1</td><td class="px-4 py-2">S3 (risk): migration versions follow ticket numbers. V129, V130 and V133 are now on this branch, the base stops at V21, and <span class="font-mono text-xs">outOfOrder</span> is off. If a later version reaches a long-lived database before an earlier one, Flyway validation fails. ADR 0001 does not record the scheme.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionController.java (with Submissions.java)</td><td class="px-4 py-2">83</td><td class="px-4 py-2">P1: the return comment, and any Disputed not-applicable justification, never reach the SMO/Tech Lead. <span class="font-mono text-xs">GET /returns</span> serves them, but no front-end code reads them, and no ticket plans to (ticket 31 shows only the latest Dispute comment). Add a line to ticket 31.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">docs/adr/0038-a-return-attaches-what-is-disputed-and-a-pass-needs-everything-confirmed.md</td><td class="px-4 py-2">3</td><td class="px-4 py-2">P2: items 3 (the return comment is optional, which departs from the AC's "stores the return with comment") and 5 (how a VA POC counts for segregation of duties) are still "provisional, awaiting a human decision". Checked at HEAD. <span class="font-mono text-xs">docs/agents/reviewer-decisions.md</span> has no entry for either.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-400 line-through">Low</td><td class="px-4 py-2 font-mono text-xs">docs/adr/0038-a-return-attaches-what-is-disputed-and-a-pass-needs-everything-confirmed.md</td><td class="px-4 py-2">11</td><td class="px-4 py-2"><strong>Fixed in ecac1ba/f9b68d5.</strong> S2: the ADR justified auditing the owner's reads by citing the owner-exemption decision. It now cites the 2026-10-14 decision that a successful content-bearing read is audited for every role.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td><td class="px-4 py-2">530</td><td class="px-4 py-2">S4, Duplicated Code: <span class="font-mono text-xs">returnComment</span> repeats <span class="font-mono text-xs">ReviewFields.comment</span>, although the ADR says the rule "is not copied". Same as thermo-nuclear M1.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/SubmitChecks.java</td><td class="px-4 py-2">91</td><td class="px-4 py-2">S5, Duplicated Code: <span class="font-mono text-xs">missing()</span> hard-codes the three Scan Report titles. Use <span class="font-mono text-xs">ReportType.title()</span>.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/ReviewProgress.java, Submissions.java</td><td class="px-4 py-2">—</td><td class="px-4 py-2">S6, Primitive Obsession. <em>Narrowed by ecac1ba:</em> the either/or nullable <span class="font-mono text-xs">Disputed</span> record is split into two non-null lists. The Scan Report type still crosses the port as a <span class="font-mono text-xs">String</span>, which is a documented layering choice.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/SubmitChecks.java, Readiness.java</td><td class="px-4 py-2">86</td><td class="px-4 py-2">S7, Divergent Change and Long Parameter List. <em>Narrowed by ecac1ba:</em> the wasted <span class="font-mono text-xs">disputed()</span> queries on every readiness read are gone, and the review part is nested as <span class="font-mono text-xs">Readiness.review</span>. The submit-named class still builds the review outcome (thermo-nuclear L5).</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-400 line-through">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/ReviewChecks.java</td><td class="px-4 py-2">62</td><td class="px-4 py-2"><strong>Fixed in ecac1ba.</strong> S8, Middle Man: <span class="font-mono text-xs">disputed()</span> only passed the call through. It now composes two store reads into the split <span class="font-mono text-xs">Disputed</span>, and thermo-nuclear L3 accepts it.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/audit/AuditAction.java</td><td class="px-4 py-2">183</td><td class="px-4 py-2">S9, Mysterious Name: the enum name <span class="font-mono text-xs">SUBMISSION_PASSED</span> drops the "to endorsement" that its code <span class="font-mono text-xs">submission-passed-to-endorsement</span> keeps.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/FinishReview.tsx</td><td class="px-4 py-2">11</td><td class="px-4 py-2">S10, Duplicated Code: a twelfth identical <span class="font-mono text-xs">UNREACHABLE: Problem</span> constant. Same as thermo-nuclear M4.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ReturnAndPassRulesTest.java</td><td class="px-4 py-2">—</td><td class="px-4 py-2">P3: concurrency is not tested. No test covers a return or pass racing a review, a second return, or a submit. ADR 0038 item 1 relies on the exclusive lock. Same gap as springboot M2.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td><td class="px-4 py-2">471</td><td class="px-4 py-2">P4, scope creep (harmless): <span class="font-mono text-xs">GET /returns</span> and <span class="font-mono text-xs">SUBMISSION_RETURNS_VIEWED</span> have no front-end user yet. Also small refactors: <span class="font-mono text-xs">ReportType.title()</span>, <span class="font-mono text-xs">MAX_LONG_TEXT</span>, and <span class="font-mono text-xs">ReasonList</span> moved to a shared file.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/FinishReview.tsx</td><td class="px-4 py-2">19-20</td><td class="px-4 py-2">P5: readiness reloads after every review, and each reload writes a <span class="font-mono text-xs">READINESS_VIEWED</span> audit entry for the Cyber Manager. Reviewing 100 to 200 Findings adds that many entries. This is correct under story 84 but noisy.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java</td><td class="px-4 py-2">530</td><td class="px-4 py-2">P6: an over-limit return comment is refused with 400 and leaves no audit entry, although lm-4 asks for "every refused request" to be audited. Ticket 28's reviews behave the same, so the gap is project-wide.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">.scratch/annual-va/issues/30-return-for-rework-and-pass-to-endorsement.md</td><td class="px-4 py-2">—</td><td class="px-4 py-2">P7: the AC wording "at least one DISPUTED Finding or not-applicable justification" is ambiguous. ADR 0038 item 2's reading is reasonable, but whoever signs off P2 should confirm it.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M0 L3</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ReturnForReworkTest.java</td><td class="px-4 py-2">124, 149 (was 95)</td><td class="px-4 py-2"><span class="font-mono text-xs">generic.unicode.security.bidi.contains-bidirectional-characters</span>: the comment-cleaning fixture uses a raw U+202E and U+200B. They are inside a string literal, so there is no Trojan Source risk, but they are invisible in diffs. Write them as <span class="font-mono text-xs">‮</span> and <span class="font-mono text-xs">​</span>, as the same line already does for <span class="font-mono text-xs">\u0007</span>. Still present at HEAD.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/harness/TestEndpoints.java</td><td class="px-4 py-2">316</td><td class="px-4 py-2"><span class="font-mono text-xs">tainted-sql-string</span> on a pre-existing line of the test-only harness. The prefix is checked against <span class="font-mono text-xs">[A-Z_]+</span> first. False positive; a justified <span class="font-mono text-xs">// nosemgrep</span> is optional.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/arch/ArchitectureTest.java</td><td class="px-4 py-2">118</td><td class="px-4 py-2"><span class="font-mono text-xs">unsafe-reflection</span> on <span class="font-mono text-xs">Class.forName</span>, fed by a hard-coded array of literals in an ArchUnit test. Pre-existing line. False positive.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M1 L4</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionController.java</td><td class="px-4 py-2">68-69</td><td class="px-4 py-2">as-1 M-1 (carried from ticket 28): <span class="font-mono text-xs">ReturnRequest</span> has no Bean Validation and no <span class="font-mono text-xs">@Valid</span>. The service cleans and bounds the comment and a DB CHECK backs it, so this is a defence-in-depth gap. Record a reviewer decision that <span class="font-mono text-xs">ReportText</span> service-layer validation is the house rule (cheaper, and it stops the finding recurring), or add <span class="font-mono text-xs">@Valid</span> and <span class="font-mono text-xs">@Size(max = 4000)</span>.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">(app-wide)</td><td class="px-4 py-2">—</td><td class="px-4 py-2">as-1 L-1 (carried): JSON request bodies have no size cap. A very long comment is deserialised and cleaned before the bound rejects it.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/FinishReview.tsx</td><td class="px-4 py-2">—</td><td class="px-4 py-2">as-1 L-2 (carried, app-wide): the front end does not check responses at runtime. The readiness <span class="font-mono text-xs">review</span> fields are trusted as typed. The back end is authoritative.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/ReviewScreen.tsx</td><td class="px-4 py-2">111</td><td class="px-4 py-2">ac-1 L-3 (carried, extended): the review screen mounts the finish panel on state alone and ignores <span class="font-mono text-xs">sodConflict</span>. A conflicted Cyber Manager sees Return and Pass enabled and learns of the conflict only from the audited 403. UX only; the back end enforces the rule.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">docs/adr/0038-a-return-attaches-what-is-disputed-and-a-pass-needs-everything-confirmed.md</td><td class="px-4 py-2">3</td><td class="px-4 py-2">Governance (manual): items 3 and 5 are provisional. Confirm item 5 (a VA POC counts at the endorsing step only by acting) before ticket 34 builds on it.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M1 L3</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/FinishReview.tsx (was ReviewScreen.tsx)</td><td class="px-4 py-2">17-22</td><td class="px-4 py-2">M1: readiness is re-fetched after every review, and each Cyber Manager read is an audit entry. <em>Narrowed by b57846e and the ticket 29 merge:</em> <span class="font-mono text-xs">FinishReview</span> now loads readiness only while In Review and shows its error only there. A reload, and its audit entry, still follows every Confirm or Dispute. Either drop the per-review reload, or record the audit-volume trade-off in <span class="font-mono text-xs">reviewer-decisions.md</span>.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/FinishReview.tsx</td><td class="px-4 py-2">—</td><td class="px-4 py-2">L1: a 409 <span class="font-mono text-xs">invalid-transition</span> problem is announced and then unmounted with the panel when the reload flips the state. This matches <span class="font-mono text-xs">ReviewForm</span>. Lift the problem into the screen, or accept it.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/FinishReview.tsx</td><td class="px-4 py-2">—</td><td class="px-4 py-2">L2: a successful move shows no confirmation. Add a <span class="font-mono text-xs">role="status"</span> message such as "Passed to endorsement" or "Returned for rework".</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/FinishReview.tsx</td><td class="px-4 py-2">121</td><td class="px-4 py-2">L3: a stale <span class="font-mono text-xs">not-confirmed</span> refusal stays on screen after the blockers clear. The comment's <span class="font-mono text-xs">aria-describedby</span> also points at a problem that may have come from the Pass button. Clear the problem when readiness changes, and link the comment only to a Return problem.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-400 line-through">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/cyber-manager/FinishReview.tsx</td><td class="px-4 py-2">21</td><td class="px-4 py-2"><strong>Fixed in b57846e, checked at HEAD.</strong> L4: stale readiness could be rendered beside a readiness error. <span class="font-mono text-xs">FinishReview</span> now returns only the <span class="font-mono text-xs">ErrorPanel</span> when <span class="font-mono text-xs">readiness.error</span> is set.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot (core, web, data, batch, security, logging, test)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN · C0 H0 M1 L4</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-400 line-through">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V130__submission_return.sql</td><td class="px-4 py-2">30</td><td class="px-4 py-2"><strong>Fixed in ecac1ba.</strong> M1: <span class="font-mono text-xs">submission_return_item</span> had no primary key (ADR 0010). V130 was edited in place to add <span class="font-mono text-xs">id uuid PRIMARY KEY DEFAULT gen_random_uuid()</span>.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/Submissions.java (with arch/ArchitectureTest.java:159)</td><td class="px-4 py-2">506-529</td><td class="px-4 py-2">M2: no test protects the exclusive lock that return and pass rely on (ADR 0038 item 1). If the move took the shared lock, a return could miss an uncommitted Dispute, and the review would then commit onto a Returned VA Submission. <em>Narrowed by ecac1ba:</em> <span class="font-mono text-xs">Hold.EXCLUSIVE</span> now picks <span class="font-mono text-xs">lockForMove</span>, and <span class="font-mono text-xs">movedOutOfReview</span> refuses any other hold. There is still no ArchUnit rule and no two-thread Seam 1 test of the lock itself.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-400 line-through">Medium</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ReturnForReworkTest.java</td><td class="px-4 py-2">—</td><td class="px-4 py-2"><strong>Fixed in ecac1ba.</strong> M3: the ordering and per-return grouping of the returns were untested. A test of two returns in order was added.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionStore.java</td><td class="px-4 py-2">312-332</td><td class="px-4 py-2">L1: <span class="font-mono text-xs">returns()</span> reads the items first and the returns second, in two READ COMMITTED statements. A return that commits in between is listed with no items. Read the returns first, or use one statement. Still in this order at HEAD.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-400 line-through">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/SubmitChecks.java</td><td class="px-4 py-2">85</td><td class="px-4 py-2"><strong>Fixed in ecac1ba.</strong> L2: readiness loaded the full Disputed list only to compute a boolean, on every submit too. The outcome is now <span class="font-mono text-xs">ReviewChecks.outcome(counts, slots)</span> over data already loaded.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionController.java</td><td class="px-4 py-2">—</td><td class="px-4 py-2">L3: <span class="font-mono text-xs">GET /api/submissions/{id}/returns</span> is unbounded and lists every attached Finding id, while ADR 0038 item 4 avoids exactly that for the pass. Record a decision, or cap the items per return.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V130__submission_return.sql</td><td class="px-4 py-2">—</td><td class="px-4 py-2">L4: the attachment FK columns (<span class="font-mono text-xs">finding_id</span>, <span class="font-mono text-xs">finding_review_id</span>, <span class="font-mono text-xs">report_review_id</span>) have no index, so retention deletes (ticket 49) will scan the table. Add the indexes, or add an acceptance line to ticket 49.</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/ReturnForReworkTest.java, ReturnAndPassRulesTest.java</td><td class="px-4 py-2">—</td><td class="px-4 py-2">L5: role and not-found gaps on the new endpoints. Untested: a VA POC calling <span class="font-mono text-xs">POST /return</span> (403), <span class="font-mono text-xs">GET /returns</span> and <span class="font-mono text-xs">POST /pass-to-endorsement</span> for an unknown id (404), and <span class="font-mono text-xs">POST /return</span> with no body (400).</td></tr>
+            <tr class="border-t border-slate-100"><td class="px-4 py-2 text-slate-400 line-through">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/SubmitChecks.java</td><td class="px-4 py-2">85</td><td class="px-4 py-2"><strong>Fixed in ecac1ba, checked at HEAD.</strong> L6: <span class="font-mono text-xs">SubmitChecks</span> injected the concrete <span class="font-mono text-xs">ReviewChecks</span>. It now calls the static, pure <span class="font-mono text-xs">ReviewChecks.outcome(...)</span> and injects nothing for it.</td></tr>
+          </tbody>
+        </table>
+      </details>
+    </main>
+  </body>
+</html>
