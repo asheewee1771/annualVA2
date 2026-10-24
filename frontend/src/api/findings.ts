@@ -156,6 +156,11 @@ export interface FindingFilter {
   batchId?: string;
   /** Only the Findings whose current proposal was made in a batch (true), or only the others (false). */
   batched?: boolean;
+  /**
+   * Only the Findings the Cyber Manager reviewed whose proposal has changed since their latest review (true), or only the
+   * others (false).
+   */
+  changedSinceLastReview?: boolean;
 }
 
 /** The most a page of the list may hold: the server's limit. */
@@ -168,6 +173,9 @@ function findingsPath(submissionId: string, filter: FindingFilter, page: number,
   if (filter.needsAttention) query.set("needsAttention", "true");
   if (filter.batchId) query.set("batchId", filter.batchId);
   if (filter.batched !== undefined) query.set("batched", String(filter.batched));
+  if (filter.changedSinceLastReview !== undefined) {
+    query.set("changedSinceLastReview", String(filter.changedSinceLastReview));
+  }
   return `/api/submissions/${encodeURIComponent(submissionId)}/findings?${query.toString()}`;
 }
 

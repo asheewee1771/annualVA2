@@ -88,10 +88,16 @@ class FindingStore {
     static final String NEEDS_ATTENTION = "(f.current_proposal_id IS NULL OR f.review_state = 'DISPUTED')";
 
     /**
-     * What the list is narrowed to, the same for the page and the count (it reads the Finding and its current proposal,
-     * {@link #CURRENT_PROPOSAL}, only). Each part that is not given matches everything: the Scan Report (no value), the severities (all five are
-     * passed), the review state (no value), "needs attention" (false), which is a Finding with no proposal yet or a
-     * Disputed one, the batch (no value) and whether the current proposal was made in a batch at all (no value).
+     * What the list is narrowed to, the same for the page and the count (it reads the Finding, its current proposal,
+     * {@link #CURRENT_PROPOSAL}, and its latest review, {@link #LATEST_REVIEW}, only). Each part that is not given matches
+     * everything: the Scan Report (no value), the severities (all five are passed), the review state (no value), "needs
+     * attention" (false), which is a Finding with no proposal yet or a Disputed one, the batch (no value), whether the
+     * current proposal was made in a batch at all (no value), and whether it changed since its last review (no value).
+     *
+     * <p>A Finding changed since its last review when it has a review and its latest review is not of its current proposal
+     * (ticket 32): the SMO/Tech Lead proposed again since, or a rescan left it with none. The latest review is enough,
+     * since a review of the current proposal is always later than any review of an earlier one. A Finding never reviewed
+     * has not changed since a review; it is awaiting its first one ({@code reviewState=PENDING}).
      */
     private static final String FILTERED =
             "WHERE f.submission_id = :submission "
@@ -100,7 +106,9 @@ class FindingStore {
             + "AND (CAST(:review AS text) IS NULL OR f.review_state = :review) "
             + "AND (NOT :attention OR " + NEEDS_ATTENTION + ") "
             + "AND (CAST(:batch AS uuid) IS NULL OR p.batch_id = CAST(:batch AS uuid)) "
-            + "AND (CAST(:batched AS boolean) IS NULL OR (p.batch_id IS NOT NULL) = CAST(:batched AS boolean)) ";
+            + "AND (CAST(:batched AS boolean) IS NULL OR (p.batch_id IS NOT NULL) = CAST(:batched AS boolean)) "
+            + "AND (CAST(:changed AS boolean) IS NULL OR (r.proposal_id IS NOT NULL "
+            + "AND r.proposal_id IS DISTINCT FROM f.current_proposal_id) = CAST(:changed AS boolean)) ";
 
     /**
      * The Finding's latest review, of whichever proposal it was (ticket 28): it says what the Cyber Manager last decided and
@@ -135,7 +143,7 @@ class FindingStore {
             "SELECT " + FINDING_COLUMNS + FINDING_TABLES + FILTERED + "ORDER BY " + SEVERITY_FIRST + " "
             + "LIMIT :limit OFFSET :offset";
 
-    private static final String COUNT = "SELECT count(*) FROM finding f " + CURRENT_PROPOSAL + FILTERED;
+    private static final String COUNT = "SELECT count(*) FROM finding f " + CURRENT_PROPOSAL + LATEST_REVIEW + FILTERED;
 
     /** The progress counts of one VA Submission; Carried Over and Target Date Missed have no column before Release 2. */
     private static final String READINESS =
@@ -387,7 +395,8 @@ class FindingStore {
                 .param("review", filter.reviewState() == null ? null : filter.reviewState().name())
                 .param("attention", filter.needsAttention())
                 .param("batch", filter.batchId())
-                .param("batched", filter.batched());
+                .param("batched", filter.batched())
+                .param("changed", filter.changedSinceLastReview());
     }
 
     private static ProposalView proposal(ResultSet rs) throws SQLException {

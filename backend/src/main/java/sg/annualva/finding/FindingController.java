@@ -81,8 +81,9 @@ public class FindingController {
      * the files it was read from, how many places it was reported, its current proposal and the review state of it. The
      * filters {@code reportType}, {@code severity} (repeat it or separate the values with commas), {@code reviewState} and
      * {@code needsAttention} (no proposal yet, or a Disputed one), {@code batchId} (the members whose current proposal
-     * was made in that Bulk-set batch) and {@code batched} (whether the current proposal was made in a batch at all) narrow
-     * the list; the total is the number that match. The read is audited, with the count and no content.
+     * was made in that Bulk-set batch), {@code batched} (whether the current proposal was made in a batch at all) and
+     * {@code changedSinceLastReview} (the Findings the Cyber Manager reviewed whose proposal has changed since) narrow the
+     * list; the total is the number that match. The read is audited, with the count and no content.
      */
     @GetMapping("/api/submissions/{id}/findings")
     @PreAuthorize("hasAnyRole('SMO','CYBER_MANAGER','VA_POC')")
@@ -93,10 +94,11 @@ public class FindingController {
             @RequestParam(defaultValue = "false") boolean needsAttention,
             @RequestParam(required = false) @Nullable UUID batchId,
             @RequestParam(required = false) @Nullable Boolean batched,
+            @RequestParam(required = false) @Nullable Boolean changedSinceLastReview,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "" + DEFAULT_PAGE_SIZE) @Min(1) @Max(MAX_PAGE_SIZE) int size) {
         FindingFilter filter = new FindingFilter(reportType, severity == null ? List.of() : severity, reviewState,
-                needsAttention, batchId, batched);
+                needsAttention, batchId, batched, changedSinceLastReview);
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(findings.list(id, filter, page, size));
     }
 

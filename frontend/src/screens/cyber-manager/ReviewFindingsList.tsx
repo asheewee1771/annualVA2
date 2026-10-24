@@ -99,10 +99,11 @@ function FindingsReviewTable({ findings, caption }: { findings: readonly Finding
   );
 }
 
-/** The list narrowed to a batch's members still in it, or, with no batch, to the Findings in no batch. */
-function filterOf(batchId: string | null): FindingFilter {
-  return batchId === null ? { batched: false } : { batchId };
-}
+/** The Findings proposed one by one: those whose current proposal was made in no batch (or that have none). */
+export const NOT_IN_A_BATCH: FindingFilter = { batched: false };
+
+/** The Findings whose proposal changed since their last review, in a batch or not (story 56). */
+export const CHANGED_SINCE_LAST_REVIEW: FindingFilter = { changedSinceLastReview: true };
 
 /**
  * One page of the list: the table, or that this page has none, and the pager whenever there is more than one page (so a
@@ -132,26 +133,24 @@ function FindingsPageView({
 }
 
 /**
- * A page at a time of Findings to review, the most severe first, each with its own Confirm and Dispute: the members still
- * in one Bulk-set batch, or, with no batch, every Finding whose current proposal was made alone (or that has none). It
- * is read again on every refresh of the review screen.
+ * A page at a time of Findings to review, the most severe first, each with its own Confirm and Dispute, narrowed by the
+ * server to the filter: a batch's members still in it, the Findings not in a batch, or those changed since their last
+ * review. It is read again on every refresh of the review screen.
  */
 export function ReviewFindingsList({
-  batchId,
+  filter,
   heading,
   caption,
 }: {
-  batchId: string | null;
+  /** What the list is narrowed to; kept the same object between renders, so the list is read only when it changes. */
+  filter: FindingFilter;
   /** The heading, followed by how many Findings there are. */
   heading: string;
   caption: string;
 }) {
   const { submissionId, refreshKey } = useReviewSession();
   const [page, setPage] = useState(0);
-  const load = useCallback(
-    () => fetchFindings(submissionId, filterOf(batchId), page, PAGE_SIZE),
-    [submissionId, batchId, page],
-  );
+  const load = useCallback(() => fetchFindings(submissionId, filter, page, PAGE_SIZE), [submissionId, filter, page]);
   const findings = useResource(load, refreshKey);
   const result = findings.data;
   return (
