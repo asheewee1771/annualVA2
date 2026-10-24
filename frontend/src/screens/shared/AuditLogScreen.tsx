@@ -89,9 +89,10 @@ function AuditFilterForm({
     onApply(draft);
   }
 
+  /** Back to the filters the screen opened with, so a VA Submission's own history stays that VA Submission's. */
   function clear() {
-    setDraft(NO_FILTERS);
-    onApply(NO_FILTERS);
+    setDraft(initial);
+    onApply(initial);
   }
 
   return (

@@ -31,7 +31,7 @@ function AuditHistory({ submissionId, classification }: { submissionId: string |
       <AuditLogScreen
         classification={classification}
         title="Audit history of this VA Submission"
-        intro={HISTORY_INTRO}
+        intro={`${HISTORY_INTRO} A VA Submission's history opens to you once you have confirmed or Disputed something in it.`}
         initial={{ ...NO_FILTERS, submission: submissionId }}
       />
     </>
