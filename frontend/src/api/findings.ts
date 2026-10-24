@@ -253,7 +253,13 @@ export interface Readiness {
   undated: NamedFile[];
   /** Every reason it cannot be submitted now, apart from the Declaration ticked on the screen; empty when ready. */
   blockers: Reason[];
-  /** Something is Disputed, so the Cyber Manager may return it for rework. */
+  /** Where the Cyber Manager's review stands, by the rule the return and the pass to endorsement refuse by. */
+  review: ReviewOutcome;
+}
+
+/** Whether the Cyber Manager may return the VA Submission for rework, and what stands in the way of passing it on. */
+export interface ReviewOutcome {
+  /** Something is Disputed, so it may be returned for rework. */
   returnable: boolean;
   /** What is not yet confirmed, in the server's words; empty once it may pass to endorsement. */
   endorsementBlockers: Reason[];

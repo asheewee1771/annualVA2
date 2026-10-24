@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { fetchFindings, fetchReadiness, reviewFinding, type Finding } from "../../api/findings.ts";
+import { fetchFindings, reviewFinding, type Finding } from "../../api/findings.ts";
 import { fetchScanReportModes, reviewScanReport, type ScanReportMode } from "../../api/scanReports.ts";
 import { fetchSubmission, type Submission } from "../../api/submissions.ts";
 import { AppLink } from "../../app/AppLink.tsx";
@@ -18,7 +18,7 @@ import { STATE_LABELS } from "../shared/systemStates.ts";
 import { LatestReview } from "./LatestReview.tsx";
 import { CM_INBOX_PATH } from "./paths.ts";
 import { ReviewForm } from "./ReviewForm.tsx";
-import { ReviewOutcome } from "./ReviewOutcome.tsx";
+import { FinishReview } from "./FinishReview.tsx";
 
 /** How many Findings one page shows. */
 const PAGE_SIZE = 100;
@@ -218,19 +218,17 @@ function SubmissionSummary({ submission }: { submission: Submission }) {
 export function ReviewScreen({ submissionId, classification }: { submissionId: string; classification: string }) {
   const loadSubmission = useCallback(() => fetchSubmission(submissionId), [submissionId]);
   const loadReports = useCallback(() => fetchScanReportModes(submissionId), [submissionId]);
-  const loadReadiness = useCallback(() => fetchReadiness(submissionId), [submissionId]);
   const submission = useResource(loadSubmission);
   const reports = useResource(loadReports);
-  const readiness = useResource(loadReadiness);
+  const [reviews, setReviews] = useState(0);
   const reviewable = submission.data?.state === "IN_REVIEW";
   const reloadReports = reports.reload;
   const reloadSubmission = submission.reload;
-  const reloadReadiness = readiness.reload;
   const reviewed = useCallback(() => {
     reloadReports();
     reloadSubmission();
-    reloadReadiness();
-  }, [reloadReports, reloadSubmission, reloadReadiness]);
+    setReviews((count) => count + 1);
+  }, [reloadReports, reloadSubmission]);
 
   return (
     <div className="card">
@@ -256,11 +254,10 @@ export function ReviewScreen({ submissionId, classification }: { submissionId: s
         classification={classification}
         onReviewed={reviewed}
       />
-      {readiness.error ? <ErrorPanel problem={readiness.error.problem} /> : null}
-      {reviewable && readiness.data ? (
-        <ReviewOutcome
+      {reviewable ? (
+        <FinishReview
           submissionId={submissionId}
-          readiness={readiness.data}
+          reviews={reviews}
           classification={classification}
           onMoved={reviewed}
         />
