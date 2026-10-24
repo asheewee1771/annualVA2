@@ -102,11 +102,18 @@ class CmAuditHistoryTest extends ReviewSeam1 {
         ApiClient cm = signedInAs(CM);
         Draft draft = reviewedBy(cm);
         String cmId = userId(cm);
+        // SYS-F2 becomes the Cyber Manager's too, and its SMO/Tech Lead starts its VA Submission: it has a history, on a
+        // System assigned to them, that they have not reviewed.
+        registered(List.of(listed("SYS-F1", "File one", SMO_A, CM, "Q3"),
+                listed("SYS-F2", "File two", SMO_B, CM, "Q3")), List.of());
+        String unreviewed = started(signedInAs(SMO_B), idOf("SYS-F2")).get("id").asString();
+        assertThat(items(history(otherVaPoc(), "submission=" + unreviewed))).isNotEmpty();
 
         List<JsonNode> everything = items(history(cm, ""));
         assertThat(everything).isNotEmpty().allSatisfy(entry -> assertThat(entry.get("submissionId").asString())
-                .as("no entry about another VA Submission, nor about the System alone")
+                .as("no entry about a VA Submission not reviewed, nor about a System alone")
                 .isEqualTo(draft.submissionId()));
+        assertNotFound(history(cm, "submission=" + unreviewed));
 
         assertThat(actionsOf(items(history(cm, "action=FINDING_REVIEWED")))).containsExactly("FINDING_REVIEWED");
         assertThat(items(history(cm, "actor=" + cmId))).isNotEmpty()
