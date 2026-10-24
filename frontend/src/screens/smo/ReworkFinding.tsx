@@ -237,10 +237,13 @@ export function ReworkFinding({
   const [values, setValues] = useState<Values>({});
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<Problem | undefined>(undefined);
+  // Once saved, the Finding has left the queue: nothing more is picked or saved for it while the next one loads.
+  const [saved, setSaved] = useState(false);
+  const open = editable && !saved;
 
   function pick(index: number) {
     const spec = STATUSES[index];
-    if (!spec || spec.value === chosen?.value) return;
+    if (!spec || busy || spec.value === chosen?.value) return;
     setChosen(spec);
     setValues(valuesOf(spec, finding.currentProposal));
     setProblem(undefined);
@@ -252,7 +255,7 @@ export function ReworkFinding({
     setProblem(undefined);
     try {
       await proposeStatus(finding.id, inputFor(chosen, values));
-      setChosen(undefined);
+      setSaved(true);
       onSaved();
     } catch (failure) {
       setProblem(failure instanceof ApiError ? failure.problem : UNREACHABLE);
@@ -261,15 +264,16 @@ export function ReworkFinding({
     }
   }
 
-  useReworkKeys(editable, pick, () => void save());
+  useReworkKeys(open, pick, () => void save());
 
   return (
     <section className="card" aria-labelledby="rework-finding">
       <h3 id="rework-finding">This Finding</h3>
       <FindingFacts item={item} />
       <DisputeNote item={item} />
-      {editable ? <StatusButtons chosen={chosen} busy={busy} onPick={pick} /> : null}
-      {editable && chosen ? (
+      {saved ? <p role="status">Saved. Loading the next Finding…</p> : null}
+      {open ? <StatusButtons chosen={chosen} busy={busy} onPick={pick} /> : null}
+      {open && chosen ? (
         <StatusFields
           idPrefix={`rework-${finding.id}`}
           chosen={chosen}
