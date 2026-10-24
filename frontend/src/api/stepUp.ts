@@ -33,6 +33,7 @@ const ACTIONS: Readonly<Record<string, string>> = {
   "register-apply": "Applying the System Register",
   "submission-endorse": "Endorsing a VA Submission",
   "cycle-close": "Closing a VA Cycle",
+  "exemption-decide": "Deciding an Exemption",
 };
 
 export function describeAction(intent: string): string {

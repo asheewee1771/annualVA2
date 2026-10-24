@@ -1,6 +1,12 @@
 import { useCallback, useState } from "react";
 import { dayLabel } from "../../api/cycles.ts";
-import { fetchSmoInbox, type InboxGroup, type InboxSystem, type NextAction } from "../../api/dashboards.ts";
+import {
+  fetchSmoInbox,
+  type InboxGroup,
+  type InboxSystem,
+  type NextAction,
+  type SystemState,
+} from "../../api/dashboards.ts";
 import { ApiError, type Problem } from "../../api/problem.ts";
 import { startSubmission } from "../../api/submissions.ts";
 import { AppLink } from "../../app/AppLink.tsx";
@@ -10,7 +16,7 @@ import { useResource } from "../../hooks/useResource.ts";
 import { useSelectedCycle } from "../../app/CycleChoice.tsx";
 import { HandledOutsideSection } from "../shared/HandledOutsideSection.tsx";
 import { STATE_LABELS } from "../shared/systemStates.ts";
-import { reworkPath, submissionPath } from "./paths.ts";
+import { exemptionRequestPath, reworkPath, submissionPath } from "./paths.ts";
 
 const GROUPS: readonly { group: InboxGroup; title: string; empty: string }[] = [
   { group: "NEEDS_YOUR_ACTION", title: "Needs your action", empty: "Nothing needs your action." },
@@ -39,7 +45,32 @@ function nextLabel({ state, nextAction, nextActionDueOn }: InboxSystem): string 
 
 const UNREACHABLE: Problem = { type: "about:blank", title: "The server could not be reached", status: 0 };
 
-/** What a System's row offers: Start while it is Not Started, a way back into the Draft once it is started. */
+/** The states an Exemption can be requested in: any before Endorsed with no request pending (story 43). */
+const EXEMPTIBLE: ReadonlySet<SystemState> = new Set<SystemState>([
+  "NOT_STARTED",
+  "DRAFT",
+  "IN_REVIEW",
+  "RETURNED_FOR_REWORK",
+  "AWAITING_ENDORSEMENT",
+]);
+
+/** A way to request an Exemption, while the System can take one; the server decides. */
+function ExemptionAction({ system }: { system: InboxSystem }) {
+  if (!EXEMPTIBLE.has(system.state)) return null;
+  return (
+    <>
+      {" "}
+      <AppLink path={exemptionRequestPath(system.id)}>
+        Request Exemption<span className="visually-hidden"> for {system.systemId}</span>
+      </AppLink>
+    </>
+  );
+}
+
+/**
+ * What a System's row offers: Start while it is Not Started (a VA Submission a rejected Exemption request made
+ * included), a way back into the VA Submission once it is started.
+ */
 function RowAction({
   system,
   starting,
@@ -49,7 +80,7 @@ function RowAction({
   starting: boolean;
   onStart: (system: InboxSystem) => void;
 }) {
-  if (system.submissionId) {
+  if (system.submissionId && system.state !== "NOT_STARTED") {
     const rework = system.state === "RETURNED_FOR_REWORK";
     return (
       <AppLink path={rework ? reworkPath(system.submissionId) : submissionPath(system.submissionId)}>
@@ -105,6 +136,7 @@ function InboxRow({
       <td>{dayLabel(system.endorseDue)}</td>
       <td>
         <RowAction system={system} starting={starting} onStart={onStart} />
+        <ExemptionAction system={system} />
       </td>
     </tr>
   );
