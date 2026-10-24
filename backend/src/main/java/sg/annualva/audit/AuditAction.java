@@ -254,7 +254,20 @@ public enum AuditAction {
      * A VA POC read the pending Exemption requests (story 45), which carry the evidence an SMO/Tech Lead wrote, so every
      * read is audited, with the {@code count} of requests listed; never their text.
      */
-    EXEMPTIONS_VIEWED("exemptions-viewed", "database");
+    EXEMPTIONS_VIEWED("exemptions-viewed", "database"),
+    /**
+     * A VA POC asked for an export (ticket 44, stories 81 and 84; SUCCESS, with the {@code export_id}, the
+     * {@code export_type}, the {@code format}, the {@code classification}, the {@code cycle}, the {@code quarter} when it
+     * covers one, and the {@code count} of Systems it lists). A refusal for want of a fresh sign-in is the
+     * {@code REQUEST_REFUSED} entry of every step-up. About no one System; never a System's name or an email.
+     */
+    EXPORT_REQUESTED("export-requested", "file"),
+    /**
+     * The person who asked for an export downloaded it (SUCCESS, with the {@code export_id}, {@code export_type},
+     * {@code format} and {@code classification}), or was refused because it is not made yet, failed or has expired
+     * (REFUSED, with the {@code export_id} and a fixed reason). About no one System.
+     */
+    EXPORT_DOWNLOADED("export-downloaded", "file");
 
     private final String ecs;
     private final String category;

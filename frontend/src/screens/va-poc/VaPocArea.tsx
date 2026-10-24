@@ -6,6 +6,7 @@ import { QuarterBoardScreen, type BoardFor } from "../shared/QuarterBoardScreen.
 import { CycleMatrixScreen } from "./CycleMatrixScreen.tsx";
 import { EndorseScreen } from "./EndorseScreen.tsx";
 import { ExemptionQueueScreen } from "./ExemptionQueueScreen.tsx";
+import { ExportsScreen } from "./ExportsScreen.tsx";
 import { endorsedSubmissionOf, endorsePath, VA_POC_PATH } from "./paths.ts";
 import { RegisterScreen } from "./RegisterScreen.tsx";
 
@@ -17,6 +18,7 @@ const MATRIX_PATH = "/va-poc/cycle-matrix";
 const EXEMPTIONS_PATH = "/va-poc/exemptions";
 const AUDIT_LOG_PATH = "/va-poc/audit-log";
 const REGISTER_PATH = "/va-poc/register";
+const EXPORTS_PATH = "/va-poc/exports";
 
 /** A page beneath the area, with the way back. */
 function SubPage({ children }: { children: ReactNode }) {
@@ -32,8 +34,8 @@ function SubPage({ children }: { children: ReactNode }) {
 
 /**
  * The VA POC's working area (stories 45, 64 and 65): three tabs, the Quarter board of every System, the Cycle matrix and
- * the Exemption requests waiting on a decision, and,
- * beneath the area, a VA Submission opened from the board (to endorse it), the System Register and the audit log.
+ * the Exemption requests waiting on a decision, and, beneath the area, a VA Submission opened from the board (to
+ * endorse it), the System Register, the exports and the audit log.
  */
 export function VaPocArea({ path, classification }: AreaProps) {
   const endorsing = endorsedSubmissionOf(path);
@@ -44,6 +46,13 @@ export function VaPocArea({ path, classification }: AreaProps) {
     return (
       <SubPage>
         <RegisterScreen classification={classification} />
+      </SubPage>
+    );
+  }
+  if (path === EXPORTS_PATH) {
+    return (
+      <SubPage>
+        <ExportsScreen classification={classification} />
       </SubPage>
     );
   }
@@ -77,6 +86,9 @@ export function VaPocArea({ path, classification }: AreaProps) {
           </li>
           <li>
             <AppLink path={REGISTER_PATH}>System Register</AppLink>
+          </li>
+          <li>
+            <AppLink path={EXPORTS_PATH}>Exports</AppLink>
           </li>
           <li>
             <AppLink path={AUDIT_LOG_PATH}>Audit log</AppLink>

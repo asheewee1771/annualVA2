@@ -18,12 +18,12 @@ import tools.jackson.databind.JsonNode;
  * the application clock). The default clock is 09:00 on Monday 2 August 2027, the first day of Q3 of VA Cycle 2027,
  * which is the first live Quarter: Q1 and Q2 of that Cycle are Handled outside the app.
  */
-abstract class InboxSeam1 extends RegisterSeam1 {
+public abstract class InboxSeam1 extends RegisterSeam1 {
 
-    static final String INBOX = "/api/dashboards/smo-inbox";
-    static final String SMO_A = "inbox.smo.a@ci.annualva.test";
-    static final String SMO_B = "inbox.smo.b@ci.annualva.test";
-    static final String CM = "inbox.cm@ci.annualva.test";
+    protected static final String INBOX = "/api/dashboards/smo-inbox";
+    protected static final String SMO_A = "inbox.smo.a@ci.annualva.test";
+    protected static final String SMO_B = "inbox.smo.b@ci.annualva.test";
+    protected static final String CM = "inbox.cm@ci.annualva.test";
     private static final ZoneId SINGAPORE = ZoneId.of("Asia/Singapore");
 
     /** Puts the clock at 09:00 Singapore time on this business day. */

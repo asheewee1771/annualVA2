@@ -41,6 +41,7 @@ import sg.annualva.audit.AuditLog;
 import sg.annualva.audit.AuditOutcome;
 import sg.annualva.audit.DetailKey;
 import sg.annualva.access.RoleGrantStore;
+import sg.annualva.export.ExportWorker;
 import sg.annualva.ingestion.ScanPoller;
 import sg.annualva.submission.CycleLifecycle;
 import sg.annualva.submission.OverdueSweep;
@@ -112,13 +113,15 @@ public class TestEndpoints {
         private final ScanPoller scanPoller;
         private final OverdueSweep overdueSweep;
         private final CycleLifecycle cycleLifecycle;
+        private final ExportWorker exportWorker;
 
         public TestController(AppUserStore users, RoleGrantStore grants, AccessGuard guard, StepUp stepUp, JdbcClient jdbc,
                 Clock clock, AuditLog audit, TransactionTemplate transaction, ScanPoller scanPoller,
-                OverdueSweep overdueSweep, CycleLifecycle cycleLifecycle) {
+                OverdueSweep overdueSweep, CycleLifecycle cycleLifecycle, ExportWorker exportWorker) {
             this.cycleLifecycle = cycleLifecycle;
             this.scanPoller = scanPoller;
             this.overdueSweep = overdueSweep;
+            this.exportWorker = exportWorker;
             this.users = users;
             this.grants = grants;
             this.guard = guard;
@@ -277,6 +280,7 @@ public class TestEndpoints {
                 jdbc.sql("DELETE FROM va_submission").update();
                 jdbc.sql("DELETE FROM role_grant WHERE system_id IS NOT NULL").update();
                 jdbc.sql("DELETE FROM register_upload").update();
+                jdbc.sql("DELETE FROM export_request").update();
                 jdbc.sql("DELETE FROM va_system").update();
             });
             systems.clear();
@@ -318,6 +322,21 @@ public class TestEndpoints {
         public Map<String, String> cycleLifecycle() {
             cycleLifecycle.run();
             return Map.of("ran", "cycle-lifecycle");
+        }
+
+        /** One pass of the export job, which {@code annualva.scheduling.enabled=false} keeps from running by itself in tests. */
+        @PostMapping("/api/test/jobs/exports")
+        public Map<String, String> exports() {
+            exportWorker.run();
+            return Map.of("ran", "exports");
+        }
+
+        /** Makes what a queued export will hold unreadable, as a row written before its shape changed would be. */
+        @PostMapping("/api/test/exports/{id}/unreadable")
+        public Map<String, String> unreadableExport(@PathVariable UUID id) {
+            jdbc.sql("UPDATE export_request SET content = '{\"cycle\": \"not a year\"}'::jsonb WHERE id = :id")
+                    .param("id", id).update();
+            return Map.of("unreadable", id.toString());
         }
 
         /**
