@@ -11,3 +11,5 @@ IM8 lm-4 and story 84 want every sign-in, sign-out, failed sign-in and refused r
 Entries carry ids and fixed codes only. `detail` keys are an allow-list in `DetailKey` and in a CHECK constraint, and a value must be a short code, an id or a number, so free text and report content cannot reach an entry by construction (lm-19).
 
 Consequences: every unauthenticated request to a protected path writes a row, so throttling at the edge matters (tickets 52 and 55); a failed independent write is logged as `audit-write-failed` (exception type only) and does not block the refusal or the sign-in; a new detail key needs a migration as well as an enum constant.
+
+Amended by ADR 0048: the trigger lets a DELETE through only inside the executor's transaction for a disposal list a VA POC approved, and only for entries before that list's cutoff; UPDATE and TRUNCATE are still refused for every connection.

@@ -22,3 +22,5 @@ Amended by ADR 0029: `Proposals.write` takes an explicit proposer (the caller, o
 Amended by ADR 0031: the readiness read also names, by `fileId`, `name` and `reportType`, the report files more than 90 days old at today's business date (`tooOld`) and those with no scan date to judge (`undated`).
 
 Amended by ADR 0032: the readiness read also lists `blockers`, every reason the VA Submission cannot be submitted apart from the Declaration, which the submit refuses with too.
+
+Amended by ADR 0048: the batches' append-only trigger lets a DELETE through only inside the executor's transaction for an approved disposal list, after the proposals that name them.
