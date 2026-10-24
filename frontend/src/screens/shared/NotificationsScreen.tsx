@@ -6,12 +6,14 @@ import {
   markNotificationRead,
   type AppNotification,
 } from "../../api/notifications.ts";
-import { ApiError } from "../../api/problem.ts";
+import { ApiError, type Problem } from "../../api/problem.ts";
 import { navigate } from "../../app/router.ts";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { useResource } from "../../hooks/useResource.ts";
 import { Pager } from "./Pager.tsx";
 import { STATE_LABELS } from "./systemStates.ts";
+
+const UNREACHABLE: Problem = { type: "about:blank", title: "The server could not be reached", status: 0 };
 
 /** When a notification came, in Singapore time whatever the browser's own zone is. */
 const WHEN = new Intl.DateTimeFormat("en-SG", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Singapore" });
@@ -29,18 +31,23 @@ function when(instant: string): string {
 export function NotificationsScreen() {
   const [page, setPage] = useState(0);
   const [refresh, setRefresh] = useState(0);
-  const [failure, setFailure] = useState<ApiError | undefined>(undefined);
+  const [failure, setFailure] = useState<Problem | undefined>(undefined);
+  const [busy, setBusy] = useState(false);
   const load = useCallback(() => fetchNotifications(page), [page]);
   const list = useResource(load, refresh);
 
+  /** Marks one read; while that is under way its row's buttons are disabled, so a double click writes once. */
   async function markRead(item: AppNotification): Promise<boolean> {
+    setBusy(true);
     try {
       await markNotificationRead(item.id);
       setFailure(undefined);
       return true;
     } catch (error) {
-      if (error instanceof ApiError) setFailure(error);
+      setFailure(error instanceof ApiError ? error.problem : UNREACHABLE);
       return false;
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -62,7 +69,7 @@ export function NotificationsScreen() {
         What needs you, and what changed on your Systems. A notification names the System, its state, what to do and by
         when; open it to act.
       </p>
-      {failure ? <ErrorPanel problem={failure.problem} /> : null}
+      {failure ? <ErrorPanel problem={failure} /> : null}
       {list.error ? <ErrorPanel problem={list.error.problem} /> : null}
       {data && data.total === 0 ? <p className="muted">You have no notifications.</p> : null}
       {data && data.total > 0 ? (
@@ -82,7 +89,7 @@ export function NotificationsScreen() {
               </thead>
               <tbody>
                 {data.items.map((item) => (
-                  <NotificationRow key={item.id} item={item} onOpen={open} onRead={read} />
+                  <NotificationRow key={item.id} item={item} busy={busy} onOpen={open} onRead={read} />
                 ))}
               </tbody>
             </table>
@@ -114,10 +121,13 @@ function NotificationRow({
   item,
   onOpen,
   onRead,
+  busy,
 }: {
   item: AppNotification;
   onOpen: (item: AppNotification) => void;
   onRead: (item: AppNotification) => void;
+  /** A mark-read is under way: no second write starts until it settles. */
+  busy: boolean;
 }) {
   return (
     <tr className={item.readAt === null ? "notification--unread" : undefined}>
@@ -130,11 +140,11 @@ function NotificationRow({
       <td>{item.dueOn ? dayLabel(item.dueOn) : "-"}</td>
       <td>{status(item)}</td>
       <td>
-        <button type="button" className="button" onClick={() => onOpen(item)}>
+        <button type="button" className="button" disabled={busy} onClick={() => onOpen(item)}>
           Open
         </button>{" "}
         {item.readAt === null ? (
-          <button type="button" className="button button--secondary" onClick={() => onRead(item)}>
+          <button type="button" className="button button--secondary" disabled={busy} onClick={() => onRead(item)}>
             Mark read
           </button>
         ) : null}
