@@ -3,6 +3,7 @@ package sg.annualva.submission;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.CacheControl;
@@ -55,6 +56,32 @@ public class SubmissionController {
     public ResponseEntity<Submissions.Submission> submit(@PathVariable UUID id,
             @RequestBody Submissions.DeclarationAnswer request) {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(submissions.submit(id, request));
+    }
+
+    /**
+     * Returns the VA Submission In Review for rework, with what is Disputed attached: 200 with it Returned for Rework.
+     *
+     * @param request an optional comment; {@code {}} gives none
+     */
+    @PostMapping("/api/submissions/{id}/return")
+    @PreAuthorize("hasRole('CYBER_MANAGER')")
+    public ResponseEntity<Submissions.Submission> returnForRework(@PathVariable UUID id,
+            @RequestBody Submissions.ReturnRequest request) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(submissions.returnForRework(id, request));
+    }
+
+    /** Passes the VA Submission to endorsement: 200 with it Awaiting Endorsement, or 409 listing what is unconfirmed. */
+    @PostMapping("/api/submissions/{id}/pass-to-endorsement")
+    @PreAuthorize("hasRole('CYBER_MANAGER')")
+    public ResponseEntity<Submissions.Submission> passToEndorsement(@PathVariable UUID id) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(submissions.passToEndorsement(id));
+    }
+
+    /** The returns of the VA Submission, the latest first, each with what was Disputed then. */
+    @GetMapping("/api/submissions/{id}/returns")
+    @PreAuthorize("hasAnyRole('SMO','CYBER_MANAGER','VA_POC')")
+    public ResponseEntity<List<Submissions.Return>> returns(@PathVariable UUID id) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(submissions.returns(id));
     }
 
     @GetMapping("/api/submissions/{id}")

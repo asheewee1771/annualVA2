@@ -6,11 +6,15 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -132,8 +136,9 @@ class SubmissionStore {
     private static final String LOCK_SHARED = LOCATE + " FOR SHARE";
 
     /**
-     * A submit holds the row against every write to what the SMO/Tech Lead prepares until it commits. NO KEY: the rows
-     * that refer to the VA Submission (a file, a Finding) can still be inserted meanwhile, by the scan job.
+     * A move (a submit, a return, a pass to endorsement) holds the row against every write to what the SMO/Tech Lead
+     * prepares and every review until it commits. NO KEY: the rows that refer to the VA Submission (a file, a Finding, a
+     * return) can still be inserted meanwhile, by the scan job or by the move itself.
      */
     private static final String LOCK_EXCLUSIVE = LOCATE + " FOR NO KEY UPDATE";
 
@@ -154,6 +159,30 @@ class SubmissionStore {
             + "WHERE overdue_since IS NULL AND " + windowPassed("state") + " "
             + "AND system_id = ANY(CAST(:systems AS uuid[])) "
             + "ORDER BY id FOR NO KEY UPDATE SKIP LOCKED) due WHERE s.id = due.id RETURNING s.id, s.system_id, s.state";
+
+    /** A move out of In Review takes the flag with it ({@link #OVERDUE_AFTER_MOVE}). */
+    private static final String MOVED =
+            "UPDATE va_submission SET state = :state, " + OVERDUE_AFTER_MOVE + " WHERE id = :id";
+
+    private static final String INSERT_RETURN =
+            "INSERT INTO submission_return (submission_id, step, comment, returned_by, returned_at) "
+            + "VALUES (:submission, :step, CAST(:comment AS text), :by, :now) RETURNING id";
+
+    /** What a return attaches, one row per Disputed item, in the order given. */
+    private static final String INSERT_RETURN_ITEMS =
+            "INSERT INTO submission_return_item (return_id, finding_id, finding_review_id, report_type, report_review_id) "
+            + "SELECT :return, finding, finding_review, report_type, report_review FROM unnest(CAST(:findings AS uuid[]), "
+            + "CAST(:findingReviews AS uuid[]), CAST(:types AS text[]), CAST(:reportReviews AS uuid[])) WITH ORDINALITY "
+            + "AS item(finding, finding_review, report_type, report_review, n) ORDER BY n";
+
+    private static final String RETURNS =
+            "SELECT id, step, comment, returned_by, returned_at FROM submission_return WHERE submission_id = :submission "
+            + "ORDER BY seq DESC";
+
+    private static final String RETURN_ITEMS =
+            "SELECT i.return_id, i.finding_id, i.finding_review_id, i.report_type, i.report_review_id "
+            + "FROM submission_return_item i JOIN submission_return r ON r.id = i.return_id "
+            + "WHERE r.submission_id = :submission ORDER BY i.seq";
 
     private static final String PARTICIPATION =
             "SELECT user_id, step, first_at FROM submission_participation WHERE submission_id = :id "
@@ -215,18 +244,69 @@ class SubmissionStore {
         return located(LOCK_SHARED, id);
     }
 
-    /** The VA Submission's System and state, its row held against every such write until the transaction ends. */
-    Optional<Located> lockForSubmit(UUID id) {
+    /**
+     * The VA Submission's System and state, its row held against every such write, and every review, until the transaction
+     * ends: for a command that moves it to another state.
+     */
+    Optional<Located> lockForMove(UUID id) {
         return located(LOCK_EXCLUSIVE, id);
     }
 
     /**
-     * Moves a VA Submission whose row the caller holds ({@link #lockForSubmit}) to the state, as submitted by this person
+     * Moves a VA Submission whose row the caller holds ({@link #lockForMove}) to the state, as submitted by this person
      * now, on this business date.
      */
     void submitted(UUID id, SubmissionState state, UUID by, Instant now, LocalDate today) {
         jdbc.sql(SUBMITTED).param("id", id).param("state", state.name()).param("by", by).param("now", utc(now))
                 .param("today", today).update();
+    }
+
+    /** Moves a VA Submission whose row the caller holds ({@link #lockForMove}) to the state, on this business date. */
+    void moved(UUID id, SubmissionState state, LocalDate today) {
+        jdbc.sql(MOVED).param("id", id).param("state", state.name()).param("today", today).update();
+    }
+
+    /** Keeps a return of the VA Submission with what was Disputed when it was returned. */
+    void insertReturn(UUID submissionId, SubmissionStep step, @Nullable String comment, UUID by, Instant now,
+            List<ReviewProgress.Disputed> disputed) {
+        UUID id = jdbc.sql(INSERT_RETURN)
+                .param("submission", submissionId)
+                .param("step", step.name())
+                .param("comment", comment)
+                .param("by", by)
+                .param("now", utc(now))
+                .query(UUID.class)
+                .single();
+        jdbc.sql(INSERT_RETURN_ITEMS)
+                .param("return", id)
+                .param("findings", texts(disputed, ReviewProgress.Disputed::findingId))
+                .param("findingReviews", texts(disputed, item -> item.findingId() == null ? null : item.reviewId()))
+                .param("types", texts(disputed, ReviewProgress.Disputed::reportType))
+                .param("reportReviews", texts(disputed, item -> item.reportType() == null ? null : item.reviewId()))
+                .update();
+    }
+
+    /** The returns of the VA Submission, the latest first, each with what it attached in the order it was attached. */
+    List<Submissions.Return> returns(UUID submissionId) {
+        Map<UUID, List<Submissions.ReturnedFinding>> findings = new HashMap<>();
+        Map<UUID, List<Submissions.ReturnedReport>> reports = new HashMap<>();
+        jdbc.sql(RETURN_ITEMS).param("submission", submissionId).query(rs -> {
+            UUID returnId = rs.getObject("return_id", UUID.class);
+            UUID finding = rs.getObject("finding_id", UUID.class);
+            if (finding != null) {
+                findings.computeIfAbsent(returnId, key -> new ArrayList<>()).add(
+                        new Submissions.ReturnedFinding(finding, rs.getObject("finding_review_id", UUID.class)));
+            } else {
+                reports.computeIfAbsent(returnId, key -> new ArrayList<>()).add(new Submissions.ReturnedReport(
+                        rs.getString("report_type"), rs.getObject("report_review_id", UUID.class)));
+            }
+        });
+        return jdbc.sql(RETURNS).param("submission", submissionId).query((rs, row) -> {
+            UUID id = rs.getObject("id", UUID.class);
+            return new Submissions.Return(id, SubmissionStep.valueOf(rs.getString("step")), rs.getString("comment"),
+                    rs.getObject("returned_by", UUID.class), instant(rs, "returned_at"),
+                    findings.getOrDefault(id, List.of()), reports.getOrDefault(id, List.of()));
+        }).list();
     }
 
     /** Flags what is overdue on this business date at this instant, among these active Systems; what was flagged. */
@@ -363,6 +443,14 @@ class SubmissionStore {
 
     private static Instant instant(ResultSet rs, String column) throws SQLException {
         return rs.getObject(column, OffsetDateTime.class).toInstant();
+    }
+
+    /** One value of each item as text, null where the item has none, for an array parameter. */
+    private static <T> @Nullable String[] texts(List<T> items, Function<T, @Nullable Object> value) {
+        return items.stream().map(item -> {
+            Object each = value.apply(item);
+            return each == null ? null : each.toString();
+        }).toArray(String[]::new);
     }
 
     private static String[] ids(Collection<UUID> ids) {

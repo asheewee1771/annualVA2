@@ -168,7 +168,21 @@ public enum AuditAction {
      * has changed since the version reviewed (REFUSED, with {@code report_type} and a fixed reason). About the System and
      * the VA Submission; never the comment or the justification.
      */
-    REPORT_REVIEWED("report-reviewed", "database");
+    REPORT_REVIEWED("report-reviewed", "database"),
+    /**
+     * A Cyber Manager returned a VA Submission In Review for rework (SUCCESS, with {@code state_from}, {@code state_to} and
+     * the {@code count} of Disputed items attached), or was refused: segregation of duties, it is not In Review, or nothing
+     * is Disputed (REFUSED, with a fixed reason). About the System and the VA Submission; never the comment.
+     */
+    SUBMISSION_RETURNED("submission-returned", "database"),
+    /**
+     * A Cyber Manager passed a VA Submission to endorsement (SUCCESS, with {@code state_from} and {@code state_to}), or was
+     * refused: segregation of duties, it is not In Review, or something is still unconfirmed (REFUSED, with a fixed reason,
+     * and for {@code not-confirmed} the {@code count} of reasons). About the System and the VA Submission.
+     */
+    SUBMISSION_PASSED("submission-passed-to-endorsement", "database"),
+    /** Someone read the returns of a VA Submission, which carry what a person wrote. About the System and the VA Submission. */
+    SUBMISSION_RETURNS_VIEWED("submission-returns-viewed", "database");
 
     private final String ecs;
     private final String category;

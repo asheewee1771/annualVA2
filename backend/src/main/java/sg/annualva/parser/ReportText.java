@@ -20,6 +20,12 @@ public final class ReportText {
      */
     public static final int MAX_FIELD_CHARS = 4_000;
 
+    /**
+     * The longest a text a person types over several lines may be once cleaned, in code points: a Finding Status field,
+     * a review comment, a return comment (ADR 0027 item 5, IM8 as-1).
+     */
+    public static final int MAX_LONG_TEXT = 4_000;
+
     private ReportText() {}
 
     /** The text with control and formatting characters removed and the ends trimmed; empty when nothing is left. */

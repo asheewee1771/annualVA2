@@ -69,8 +69,8 @@ class ArchitectureTest {
                 .whereLayer("boundary").mayOnlyBeAccessedByLayers("app", "web", "access", "adapters", "scan", "ingestion")
                 // quarantine and malware scan: one module holds the upload steps both the Register upload and the pipeline use
                 .whereLayer("scan").mayOnlyBeAccessedByLayers("app", "register", "ingestion")
-                // the report readers are a leaf; the upload pipeline sniffs, checks and parses files with them, and the Findings keep what they read
-                .whereLayer("parser").mayOnlyBeAccessedByLayers("app", "finding", "ingestion")
+                // the report readers are a leaf; the upload pipeline sniffs, checks and parses files with them, and the Findings keep what they read; the submissions clean a return's comment by the one text rule (ReportText)
+                .whereLayer("parser").mayOnlyBeAccessedByLayers("app", "submission", "finding", "ingestion")
                 // the audit log is written by the modules that act (access, the register and the submissions today)
                 .whereLayer("audit").mayOnlyBeAccessedByLayers("app", "access", "register", "submission", "finding", "ingestion")
                 // the domain modules ask access who is acting and whether they may reach a System
@@ -159,7 +159,8 @@ class ArchitectureTest {
     @Test
     void writesOfAReviewTakeTheReviewLock() throws Exception {
         Class<?> reviewTarget = Class.forName("sg.annualva.submission.Submissions$ReviewTarget");
-        var reads = java.util.Set.of("latestOfReports", "review");
+        var reads = java.util.Set.of("latestOfReports", "review", "unconfirmedFindings", "unconfirmedJustifications",
+                "disputed");
         var missing = Arrays.stream(Class.forName("sg.annualva.finding.ReviewStore").getDeclaredMethods())
                 .filter(method -> !Modifier.isPrivate(method.getModifiers()) && !method.isSynthetic())
                 .filter(method -> !reads.contains(method.getName()))
