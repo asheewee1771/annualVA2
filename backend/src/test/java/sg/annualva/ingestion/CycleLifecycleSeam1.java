@@ -15,7 +15,7 @@ import tools.jackson.databind.JsonNode;
  * the scheduler would. VA Cycle 2027's Q4 ends on Sunday 6 February 2028, Cycle 2028's Q1 starts on Monday 7 February
  * 2028, and Cycle 2027 closes at the end of Sunday 5 March 2028 unless a VA POC closes it earlier.
  */
-abstract class CycleLifecycleSeam1 extends EndorseSeam1 {
+abstract class CycleLifecycleSeam1 extends NotificationSeam1 {
 
     static final String NOT_ENDORSED = "NOT_ENDORSED";
     static final String INBOX = "/api/dashboards/smo-inbox";

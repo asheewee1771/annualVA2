@@ -82,6 +82,15 @@ class CycleCloseTest extends CycleLifecycleSeam1 {
         assertThat(event.notEndorsed()).extracting(CycleClosed.NotEndorsed::systemId)
                 .containsExactlyInAnyOrder(UUID.fromString(draft.systemId()), UUID.fromString(notStarted));
         assertThat(event.notEndorsed()).filteredOn(item -> item.from() == null).hasSize(1);
+
+        JsonNode toSmoA = only(signedInAs(SMO_A), NOT_ENDORSED);
+        assertThat(toSmoA.get("submissionId").asString()).isEqualTo(sub);
+        assertThat(toSmoA.get("state").asString()).isEqualTo(NOT_ENDORSED);
+        assertThat(toSmoA.get("link").asString()).isEqualTo("/smo/submissions/" + sub);
+        assertThat(only(signedInAs(SMO_B), NOT_ENDORSED).get("submissionId").asString())
+                .isEqualTo(f2.get("submissionId").asString());
+        assertThat(only(otherVaPoc(), "ENDORSE").get("handledAt").isNull())
+                .as("the close decided the endorsement the pair awaited").isFalse();
     }
 
     @Test
@@ -218,5 +227,7 @@ class CycleCloseTest extends CycleLifecycleSeam1 {
         assertThat(entries(NOT_ENDORSED_ACTION, draft.systemId()).get(0).get("actorId").isNull()).isTrue();
         assertThat(cycleEvents.published()).hasSize(1);
         assertThat(cycleEvents.published().getFirst().closedBy()).isNull();
+        assertThat(only(signedInAs(SMO_A), NOT_ENDORSED).get("state").asString()).isEqualTo(NOT_ENDORSED);
+        assertThat(only(poc, "ENDORSE").get("handledAt").isNull()).as("the job acts for nobody").isTrue();
     }
 }

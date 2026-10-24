@@ -54,3 +54,9 @@ ALTER TABLE audit_entry ADD CONSTRAINT audit_entry_detail_check
                               'roles_revoked', 'finding_status', 'replaced_file_id', 'proposed_as',
                               'rescan_file_id', 'report_type', 'mode', 'date_changed', 'target_changed',
                               'declaration_version', 'state', 'decision', 'endorsed_late', 'cycle'] = '{}'::jsonb);
+
+-- The notifications (V136) learn the close's notice to the SMO/Tech Lead: their System is Not Endorsed.
+ALTER TABLE notification DROP CONSTRAINT notification_action_check;
+ALTER TABLE notification ADD CONSTRAINT notification_action_check CHECK (action IN ('REVIEW', 'REWORK', 'ENDORSE',
+    'SUBMIT_OVERDUE', 'REVIEW_OVERDUE', 'ENDORSE_OVERDUE', 'SYSTEM_MOVED', 'SYSTEM_TRANSFERRED_TO_YOU',
+    'SYSTEM_TRANSFERRED_FROM_YOU', 'NOT_ENDORSED'));
