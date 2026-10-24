@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review &mdash; 37-mail-outbox-and-content-rules</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall: PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">build WARN &middot; C0 H0 M0 L5</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN &middot; C0 H0 M4 L3</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN &middot; C0 H0 M3 L14</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">semgrep WARN &middot; C0 H0 M1 L2</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN &middot; C0 H0 M0 L2</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">react PASS &middot; C0 H0 M0 L0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN &middot; C0 H0 M2 L10</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">impl/37-mail-outbox</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report</h1>
+          <p class="text-sm text-slate-500 mt-1">Ticket 37, the mail outbox and content rules: a required notification queues a mail in an outbox in the same transaction, a dispatcher leases each mail and hands it to the mail relay as a template id plus allow-listed values, and refused, rejected and failed outcomes are settled on the row. Diff <span class="font-mono text-xs">integration/annual-va-r1...HEAD</span> on <span class="font-mono text-xs">impl/37-mail-outbox</span>, final commit <span class="font-mono text-xs">b2002ba</span> (41 files, +1523 / -60; back end, configuration, migration V137 and docs; no front-end file).</p>
+        </div>
+        <div class="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 space-y-2">
+          <p><strong>What each check saw.</strong> <span class="font-mono text-xs">thermo-nuclear</span>, <span class="font-mono text-xs">semgrep</span>, <span class="font-mono text-xs">im8</span>, <span class="font-mono text-xs">react</span> and <span class="font-mono text-xs">springboot</span> ran on the first diff, at commit <span class="font-mono text-xs">d843842</span> (54305cc, 3c8219c, d843842). Their findings are carried over as written and their line numbers refer to that commit. Under the fast mode the user approved, checks that did not FAIL were not rerun.</p>
+          <p><strong>What changed after the first round.</strong> Commits <span class="font-mono text-xs">7164221</span> and <span class="font-mono text-xs">5c74e58</span> addressed the first-round Mediums: one lease per mail, typed mail values, one mapping per action, explicit abandonment, claim-lost logging, configuration bounds and a configuration test, and more Seam 1 tests. <span class="font-mono text-xs">code-review</span> is a second round on the later diff (through <span class="font-mono text-xs">7164221</span> and <span class="font-mono text-xs">aef1c5d</span>) and states which first-round Mediums are resolved: five resolved and three mostly resolved. <span class="font-mono text-xs">build</span> ran on the final commit <span class="font-mono text-xs">b2002ba</span>.</p>
+          <p><strong>After the second round.</strong> <span class="font-mono text-xs">5c74e58</span> and <span class="font-mono text-xs">59bdf44</span> landed after <span class="font-mono text-xs">code-review</span> ran. The aggregator read both diffs: they add a Seam 1 test where a hand-over outlasts its lease (code-review M1, the <span class="font-mono text-xs">sent</span> path), drop the <span class="font-mono text-xs">state</span> and <span class="font-mono text-xs">link</span> rules in favour of the V136 CHECKs and add a <span class="font-mono text-xs">system_id</span> refusal test (M2), add lower bounds on <span class="font-mono text-xs">lease</span> and <span class="font-mono text-xs">firstRetry</span> with a test (L2), and add notes to tickets 57 (escaping, M3) and 51 (relay timeout, L1). No review check reran on them; the build did. Findings stay counted as each check reported them, with a resolution note where one applies.</p>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Executive Summary</h2>
+          <p class="text-xs text-slate-500 mt-1">Overall status across all active checks. <strong>Overall PASS:</strong> no check has a Critical or High finding, and the build is green at <span class="font-mono">b2002ba</span> (944 tests, 0 failures; JaCoCo line 97.4 %, branch 91.6 %; <span class="font-mono">npm run check</span> clean). Six checks are WARN on Medium or Low findings and react is PASS. Most first-round Mediums are resolved; the open Mediums are code-review&rsquo;s three (two of them largely addressed after that round) and semgrep&rsquo;s one pre-existing, mitigated test-endpoint item. None blocks the merge.</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Check</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Status</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">C / H / M / L</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Summary of gaps</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">build <span class="text-xs text-slate-400">(b2002ba)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 5</td>
+              <td class="px-4 py-2">Every gate passes: <span class="font-mono text-xs">clean verify</span> (944 tests), JaCoCo, Prettier, <span class="font-mono text-xs">tsc -b</span>, <span class="font-mono text-xs">vite build</span>, no raw HTML, dependency-cruiser, fallow. Lows are coverage gaps: the claim-lost branches after <span class="font-mono text-xs">retryAt</span>/<span class="font-mono text-xs">settle</span>, the record-failed catch, <span class="font-mono text-xs">MailDispatchJob</span> (by design) and <span class="font-mono text-xs">UnwiredMailRelay</span>; plus one pre-existing deprecation.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">thermo-nuclear <span class="text-xs text-slate-400">(d843842)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 4 / 3</td>
+              <td class="px-4 py-2">First round. M1 (tautological allow-list) and M3 (two switches over <span class="font-mono text-xs">NoticeAction</span>) resolved; M2 (derived state label) and M4 (give-up policy spread, hidden write in <span class="font-mono text-xs">claim</span>) mostly resolved per code-review. Lows: build failures treated as record failures, NPE on missing <span class="font-mono text-xs">templates</span>, hand-written JSON escaper in the harness.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">code-review <span class="text-xs text-slate-400">(round 2)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 3 / 14</td>
+              <td class="px-4 py-2">Of eight first-round Mediums, five resolved and three mostly resolved. New Mediums: M1 no Seam 1 test of claim-lost or record-failed; M2 only the <span class="font-mono text-xs">system_name</span> refusal proven; M3 ticket 57 does not track the escaping promise. 5c74e58 and 59bdf44 then addressed M1 (sent path), M2 and M3 (as a ticket note), plus L1 and L2. Lows cover log wording, naming, duplicated labels, commit granularity and ticket wording.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">semgrep <span class="text-xs text-slate-400">(d843842)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 2</td>
+              <td class="px-4 py-2">Semgrep 1.179.0 with <span class="font-mono text-xs">p/security-audit</span>, <span class="font-mono text-xs">p/default</span>, <span class="font-mono text-xs">p/secrets</span>, <span class="font-mono text-xs">p/java</span> on the 34 changed files. Nothing in the new production code. One Low in changed code (a raw U+202E in a test string, since rewritten as <span class="font-mono text-xs">(char) 0x202E</span>); a pre-existing, mitigated string-built SQL Medium and a reflection Low, both in test code outside the diff.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">im8 <span class="text-xs text-slate-400">(d843842)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 2</td>
+              <td class="px-4 py-2">as-1, as-2, as-7, as-8, as-13, dp-3, lm-15, lm-16, lm-19 pass. Lows: as-3, a System Name may carry markup into an MCNS template (escaping depends on ticket 57); lm-4, mail outcomes are not audit entries (accepted by ADR 0044) and <span class="font-mono text-xs">ABANDON</span> logged nothing (now an explicit, logged step).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">react <span class="text-xs text-slate-400">(d843842)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 0</td>
+              <td class="px-4 py-2">No <span class="font-mono text-xs">frontend/</span> file changed; nothing to review.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">springboot <span class="text-xs text-slate-400">(d843842)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 2 / 10</td>
+              <td class="px-4 py-2">All seven sub-reviews ran. M1 (one unmappable row strands the batch) resolved; M2 (lease, re-claim, abandonment untested) mostly resolved per code-review, and 5c74e58 adds the outlasted-lease test. Lows: config NPE, unused <span class="font-mono text-xs">dispatchInterval</span>, silent lost claims, relay timeout vs lease, no outbox metrics, SIT defaults, markup in names, dropped stack trace, no MDC id per pass, untested config (now tested).</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-600">No Critical or High finding in any check. The items most worth a follow-up:</p>
+          <ul class="list-disc pl-5 text-sm text-slate-700 space-y-1">
+            <li><strong>Escaping in MCNS templates</strong> (im8 L-1, springboot L7, code-review M3): a System Name may hold <span class="font-mono text-xs">&lt;</span> or <span class="font-mono text-xs">://</span>, and only the template&rsquo;s escaping stops it reaching a mail as markup. Now a note on <span class="font-mono text-xs">.scratch/annual-va/issues/57-mcns-template-onboarding.md</span>, under Comments rather than as a <span class="font-mono text-xs">- [ ]</span> acceptance line.</li>
+            <li><strong>Relay timeout must stay below the lease</strong> (code-review L1, springboot L4): otherwise a last attempt MCNS accepted is recorded FAILED and loses its relay message id. Now a note on <span class="font-mono text-xs">.scratch/annual-va/issues/51-real-adapters-under-dev-mcc.md</span>.</li>
+            <li><strong>Claim-lost after a retry or settle, and the record-failed catch, are untested</strong> (build L1, L2; residue of code-review M1): <span class="font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailOutbox.java</span>.</li>
+          </ul>
+        </div>
+      </div>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build <span class="text-xs text-slate-400">(final commit b2002ba)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-600 space-y-1">
+          <p>Fast mode (approved by the user): the tree was clean at <span class="font-mono text-xs">b2002ba</span>, so the implementer&rsquo;s logs for this commit were reused (<span class="font-mono text-xs">t37-verify3.log</span>, <span class="font-mono text-xs">t37-fe2.log</span>).</p>
+          <p>Back end: <span class="font-mono text-xs">./mvnw -B -ntp clean verify</span> BUILD SUCCESS, 944 tests, 0 failures, 0 errors, 0 skipped (Seam 1 on Testcontainers, ArchUnit). JaCoCo: &ldquo;All coverage checks have been met&rdquo;, bundle line 97.4 %, branch 91.6 %.</p>
+          <p>Front end: Prettier, <span class="font-mono text-xs">tsc -b</span>, <span class="font-mono text-xs">vite build</span> (105 modules), no raw HTML, dependency-cruiser (0 violations), fallow dead-code and health (78 B) all pass. Vitest is not applicable by convention.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailOutbox.java</td>
+              <td class="px-4 py-2 font-mono text-xs">116-117, 125-126</td>
+              <td class="px-4 py-2">The lost-claim branches after <span class="font-mono text-xs">store.retryAt</span> and <span class="font-mono text-xs">store.settle</span> are never exercised (store side <span class="font-mono text-xs">MailOutboxStore.java:121</span>, <span class="font-mono text-xs">:126</span> partial). No test proves that a stale pass leaves the newer claim&rsquo;s row untouched on those paths. Suggest a <span class="font-mono text-xs">MailLeaseTest</span> case where the clock passes the lease mid-send and the outcome is a retry or settle.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailOutbox.java</td>
+              <td class="px-4 py-2 font-mono text-xs">67-70</td>
+              <td class="px-4 py-2">The &ldquo;outcome could not be recorded&rdquo; <span class="font-mono text-xs">RuntimeException</span> catch never runs in tests, so nothing proves a store failure leaves the mail for a later pass without stopping the batch. Low risk: the behaviour is a log line and the loop continuing.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailDispatchJob.java</td>
+              <td class="px-4 py-2 font-mono text-xs">17-25</td>
+              <td class="px-4 py-2">The scheduled trigger has no coverage (0/5 lines), by design (ADR 0012: Seam 1 runs with scheduling off). The <span class="font-mono text-xs">@ConditionalOnProperty</span> wiring and the <span class="font-mono text-xs">dispatch-interval</span> binding are untested. Recorded only.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/adapters/pending/UnwiredMailRelay.java</td>
+              <td class="px-4 py-2 font-mono text-xs">18</td>
+              <td class="px-4 py-2">The placeholder adapter&rsquo;s throw is uncovered. It is a placeholder until ticket 51; recorded only.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/adapters/oidc/MccHttp.java</td>
+              <td class="px-4 py-2 font-mono text-xs">51</td>
+              <td class="px-4 py-2">Pre-existing, outside the diff: <span class="font-mono text-xs">RestClient.Builder.messageConverters(Consumer)</span> is deprecated and marked for removal.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear <span class="text-xs text-slate-400">(first round, reviewed at d843842)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-500">Carried over as written; line numbers refer to <span class="font-mono text-xs">d843842</span>. The <span class="font-mono text-xs">RegisterText</span> extraction gives the Register&rsquo;s System ID and name rule one home, and the outbox is direct: constant SQL, a sealed <span class="font-mono text-xs">Receipt</span>, exhaustive switches, a clean port. No file crosses 1000 lines (largest touched: <span class="font-mono text-xs">TestEndpoints.java</span>, 572). Resolution notes come from code-review round 2.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailValues.java</td>
+              <td class="px-4 py-2 font-mono text-xs">75</td>
+              <td class="px-4 py-2"><strong>M1.</strong> Most of the allow-list checks values the code has just built from typed sources (action, change kind, due date, link prefix, template keys), so those checks cannot fail; only the System code, name, state and link path are untrusted. The per-template key sets also make <span class="font-mono text-xs">MailTemplate</span> and <span class="font-mono text-xs">MailValues</span> depend on each other. Validate the untrusted strings only and build the rest from typed fields. <em>Resolved:</em> <span class="font-mono text-xs">MailValues.refusal</span> now checks only values read as text; the key sets and string-key switch are gone.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailValues.java</td>
+              <td class="px-4 py-2 font-mono text-xs">105</td>
+              <td class="px-4 py-2"><strong>M2.</strong> The state label is derived by reshaping enum names with a special case for &ldquo;for&rdquo;, and the allowed set is generated by the same function; the screens already have a canonical label map. Give the state an explicit <span class="font-mono text-xs">label()</span>. <em>Mostly resolved:</em> labels now come from <span class="font-mono text-xs">SubmissionState.label</span>; <span class="font-mono text-xs">NOT_STARTED_LABEL</span> remains a second home (code-review L6).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailValues.java</td>
+              <td class="px-4 py-2 font-mono text-xs">95</td>
+              <td class="px-4 py-2"><strong>M3.</strong> &ldquo;Which <span class="font-mono text-xs">NoticeAction</span> is mailed, and how&rdquo; is spread over two switches in two files (<span class="font-mono text-xs">MailTemplate.of</span>, <span class="font-mono text-xs">MailValues.changeKind</span>), and the README names only one. Return one mapping per action. <em>Resolved:</em> <span class="font-mono text-xs">MailTemplate.of</span> returns a single <span class="font-mono text-xs">Mailing(template, changeKind)</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailOutboxStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">88</td>
+              <td class="px-4 py-2"><strong>M4.</strong> &ldquo;Give up after <span class="font-mono text-xs">maxAttempts</span>&rdquo; is encoded in three places (CLAIM, ABANDON, <span class="font-mono text-xs">MailOutbox.failed</span>), and <span class="font-mono text-xs">claim</span> silently runs ABANDON as a second write. Give the policy one owner, or make abandonment an explicit named step. <em>Mostly resolved:</em> <span class="font-mono text-xs">store.abandonExpired</span> is now an explicit, logged step in <span class="font-mono text-xs">dispatch()</span>; the three named places remain and code-review accepts this.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailOutbox.java</td>
+              <td class="px-4 py-2 font-mono text-xs">58</td>
+              <td class="px-4 py-2"><strong>L1.</strong> A row whose values cannot be built is logged as <span class="font-mono text-xs">mail-record-failed</span> and retried as if transient, then abandoned with no log line. Building values belongs on the refusal path. (Related: code-review L4, still open in a narrower form.)</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailProperties.java</td>
+              <td class="px-4 py-2 font-mono text-xs">44</td>
+              <td class="px-4 py-2"><strong>L2.</strong> The compact constructor runs before <span class="font-mono text-xs">@NotNull</span>, so a missing <span class="font-mono text-xs">templates</span> map fails with a bare NPE instead of the friendly message. <em>Resolved:</em> null now maps to an empty map (code-review L7 notes the <span class="font-mono text-xs">@NotNull</span> is now dead).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/harness/Arrange.java</td>
+              <td class="px-4 py-2 font-mono text-xs">82</td>
+              <td class="px-4 py-2"><strong>L3.</strong> <span class="font-mono text-xs">renameSystem</span> hand-writes a <span class="font-mono text-xs">\uXXXX</span> JSON escaper; the harness already has Jackson. Test-only. (7164221 added <span class="font-mono text-xs">ApiClient.toJson</span>, per code-review L9.)</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review <span class="text-xs text-slate-400">(round 2, through 7164221 and aef1c5d)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-600 space-y-2">
+          <p>Two axes: Standards (AGENTS.md, CONTEXT.md, reviewer decisions, ADRs, CONVENTIONS.md, Fowler smells) and Spec (ticket 37, the TRD, ADR 0044). Read-only; Maven and the front-end gates were not run by this check.</p>
+          <p><strong>Round 1 Mediums:</strong> resolved: code-review S1 (batch-wide lease), code-review S2 (no lease, ABANDON or notification-fault test), springboot M1, thermo-nuclear M1 and M3. Mostly resolved: springboot M2 (residue is M1 below), thermo-nuclear M2 (residue is L6) and thermo-nuclear M4 (accepted).</p>
+          <p><strong>After this round</strong> (aggregator&rsquo;s reading of 5c74e58 and 59bdf44, not re-reviewed): M1 is addressed for the <span class="font-mono text-xs">sent</span> path by <span class="font-mono text-xs">MailLeaseTest.aHandOverThatOutlastsItsLeaseKeepsTheOutcomeOfTheClaimThatHoldsTheMail</span>; the retry, settle and record-failed paths stay uncovered (build L1, L2). M2 is addressed by dropping the <span class="font-mono text-xs">state</span> and <span class="font-mono text-xs">link</span> rules (the V136 CHECKs hold them) and adding <span class="font-mono text-xs">MailTest.aSystemIdOutsideTheAllowListIsNeverHandedToTheRelayEither</span>. M3 is addressed by a note under ticket 57&rsquo;s Comments, not the <span class="font-mono text-xs">- [ ]</span> acceptance line it asked for. L1 is addressed by a note on ticket 51, and L2 by <span class="font-mono text-xs">@DurationMin</span> bounds with a <span class="font-mono text-xs">MailConfigurationTest</span> case.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailOutbox.java</td>
+              <td class="px-4 py-2 font-mono text-xs">134 (also 67-71, 94-95, 116-117, 125-126)</td>
+              <td class="px-4 py-2"><strong>M1 (Standards).</strong> The claim-lost and record-failed paths, and a relay call that outlasts its lease, have no Seam 1 test, although ADR 0044 items 4 and 5 promise <span class="font-mono text-xs">mail-claim-lost</span> and <span class="font-mono text-xs">mail-record-failed</span>. The batch cap and known-build claim filter live in SQL, so JaCoCo cannot see the gap. Fix: a relay knob that advances the clock past the lease and dispatches again inside <span class="font-mono text-xs">send</span>; assert the claim-lost log (no address) and that the second claim&rsquo;s outcome is stored. <em>Since addressed for the sent path in 5c74e58.</em></td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailValues.java</td>
+              <td class="px-4 py-2 font-mono text-xs">38-51</td>
+              <td class="px-4 py-2"><strong>M2 (Spec).</strong> Only the <span class="font-mono text-xs">system_name</span> refusal is proven by a Seam 1 test; the <span class="font-mono text-xs">system_id</span>, <span class="font-mono text-xs">state</span> and <span class="font-mono text-xs">link</span> refusals could be deleted without a failing test. Add Seam 1 cases for a bad System code, an unknown state and a link outside <span class="font-mono text-xs">PATH</span>. <em>Since addressed in 5c74e58 (state and link rules removed in favour of V136 CHECKs; System ID test added).</em></td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">docs/adr/0044-a-required-notification-is-mailed-from-an-outbox-with-allow-listed-template-values.md</td>
+              <td class="px-4 py-2 font-mono text-xs">11</td>
+              <td class="px-4 py-2"><strong>M3 (Spec).</strong> ADR 0044&rsquo;s promise that MCNS onboarding (ticket 57) confirms every template escapes what it substitutes is not tracked by ticket 57, and it is now the only safeguard against markup or URLs from the Register reaching a mail. Add a <span class="font-mono text-xs">- [ ]</span> line to ticket 57. <em>Since noted under ticket 57&rsquo;s Comments in 59bdf44, not as an acceptance line.</em></td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailOutboxStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">44</td>
+              <td class="px-4 py-2"><strong>L1.</strong> A last attempt that outlasts its lease can be recorded FAILED although the relay accepted it, and its <span class="font-mono text-xs">relay_message_id</span> is lost (ticket 39 matches receipts by it). The only guard is the relay timeout rule; make ticket 51 enforce and test it. <em>Since noted on ticket 51 in 59bdf44.</em></td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailProperties.java</td>
+              <td class="px-4 py-2 font-mono text-xs">35 (also 34)</td>
+              <td class="px-4 py-2"><strong>L2.</strong> <span class="font-mono text-xs">lease</span> and <span class="font-mono text-xs">firstRetry</span> have no lower bound; zero lets two instances hand over the same mail or one pass burn every attempt. <em>Since fixed in 5c74e58 (<span class="font-mono text-xs">@DurationMin</span> 30 s and 1 s, with a test).</em></td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailOutbox.java</td>
+              <td class="px-4 py-2 font-mono text-xs">116-121</td>
+              <td class="px-4 py-2"><strong>L3.</strong> When <span class="font-mono text-xs">store.retryAt</span> returns false, the code logs <span class="font-mono text-xs">mail-claim-lost</span> and then still logs <span class="font-mono text-xs">mail-send-failed ... it is tried again later</span>: two contradictory lines. Return after <span class="font-mono text-xs">claimLost</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailOutbox.java</td>
+              <td class="px-4 py-2 font-mono text-xs">85-87</td>
+              <td class="px-4 py-2"><strong>L4.</strong> <span class="font-mono text-xs">properties.templateId(...)</span> and <span class="font-mono text-xs">MailValues.of(...)</span> are inside the <span class="font-mono text-xs">try</span> around <span class="font-mono text-xs">relay.send</span>, so a throw there would be treated as a relay failure. Neither can throw today; build the values before the <span class="font-mono text-xs">try</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailValues.java</td>
+              <td class="px-4 py-2 font-mono text-xs">68</td>
+              <td class="px-4 py-2"><strong>L5.</strong> <span class="font-mono text-xs">MailValues.of</span> re-derives <span class="font-mono text-xs">change_kind</span> from the action instead of the stored template (Feature Envy; two sources for one fact), so a later remap could make them disagree for queued mails.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailValues.java</td>
+              <td class="px-4 py-2 font-mono text-xs">33</td>
+              <td class="px-4 py-2"><strong>L6.</strong> <span class="font-mono text-xs">NOT_STARTED_LABEL</span> is a second home for a state label (Duplicated Code); <span class="font-mono text-xs">WorkflowNotices.NOT_STARTED</span> was widened to support it. Give Not Started one labelled home.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailProperties.java</td>
+              <td class="px-4 py-2 font-mono text-xs">37 (also 32)</td>
+              <td class="px-4 py-2"><strong>L7.</strong> <span class="font-mono text-xs">dispatchInterval</span> is bound but never read (the job reads the raw key with its own <span class="font-mono text-xs">30s</span> default), and <span class="font-mono text-xs">@NotNull</span> on <span class="font-mono text-xs">templates</span> can no longer fire. Follows the <span class="font-mono text-xs">ScanProperties</span> pattern (Speculative Generality).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailOutbox.java</td>
+              <td class="px-4 py-2 font-mono text-xs">59</td>
+              <td class="px-4 py-2"><strong>L8.</strong> The loop counter <span class="font-mono text-xs">sent</span> counts claims, not sends (Mysterious Name). Rename it to <span class="font-mono text-xs">claimed</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">commit 7164221</td>
+              <td class="px-4 py-2 font-mono text-xs">&mdash;</td>
+              <td class="px-4 py-2"><strong>L9.</strong> One commit bundles per-mail leasing, explicit abandonment, the known-build claim filter, the typed value rebuild, <span class="font-mono text-xs">MailConfigurationTest</span> and <span class="font-mono text-xs">ApiClient.toJson</span>, against &ldquo;one logical change per commit&rdquo;. Low impact: it fixes the branch&rsquo;s own unmerged work.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">.scratch/annual-va/issues/43-register-change-effects.md</td>
+              <td class="px-4 py-2 font-mono text-xs">21-23</td>
+              <td class="px-4 py-2"><strong>L10 (Spec).</strong> The withdrawn Register-change mail is a comment on ticket 43, not an acceptance line; promote the note to a <span class="font-mono text-xs">- [ ]</span> item.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">.scratch/annual-va/issues/51-real-adapters-under-dev-mcc.md</td>
+              <td class="px-4 py-2 font-mono text-xs">10</td>
+              <td class="px-4 py-2"><strong>L11 (Spec).</strong> Ticket 51 still says the mail adapter enforces the value allow-list, while ADR 0044 item 3 puts it on the application side. Amend it so nobody adds a second allow-list. <em>59bdf44 adds a clarifying note; the original line is unchanged.</em></td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">.scratch/annual-va/issues/57-mcns-template-onboarding.md</td>
+              <td class="px-4 py-2 font-mono text-xs">10</td>
+              <td class="px-4 py-2"><strong>L12 (Spec).</strong> Ticket 57 still lists a separate &ldquo;disputed&rdquo; template, but Disputed rides on <span class="font-mono text-xs">RETURNED_FOR_REWORK</span> (ADR 0043 item 6).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">docs/adr/0044-a-required-notification-is-mailed-from-an-outbox-with-allow-listed-template-values.md</td>
+              <td class="px-4 py-2 font-mono text-xs">3</td>
+              <td class="px-4 py-2"><strong>L13 (Spec).</strong> Item 2 (REVIEW and ENDORSE stay in-app only) is &ldquo;provisional, awaiting a human decision&rdquo; but appears in neither reviewer-decisions.md nor PENDING-DECISIONS.md.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/harness/TestEndpoints.java</td>
+              <td class="px-4 py-2 font-mono text-xs">323-355</td>
+              <td class="px-4 py-2"><strong>L14 (Spec).</strong> <span class="font-mono text-xs">/api/test/mail-outbox</span> reads <span class="font-mono text-xs">mail_outbox</span> and <span class="font-mono text-xs">/api/test/systems/{id}/name</span> writes <span class="font-mono text-xs">va_system</span> directly. Accepted by ADR 0044 item 6 until ticket 39; a note, not a defect.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep <span class="text-xs text-slate-400">(first round, reviewed at d843842)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-500">Semgrep 1.179.0 (Docker image, worktree mounted read-only), rulesets <span class="font-mono text-xs">p/security-audit</span>, <span class="font-mono text-xs">p/default</span>, <span class="font-mono text-xs">p/secrets</span>, <span class="font-mono text-xs">p/java</span>, on the 34 changed files; 0 errors. Nothing in the new production code, and no hardcoded secret in <span class="font-mono text-xs">backend/.env.sit.example</span> or the <span class="font-mono text-xs">application*.yml</span> files. Triage: P0 changed lines, P2 pre-existing and untouched.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/harness/TestEndpoints.java</td>
+              <td class="px-4 py-2 font-mono text-xs">366</td>
+              <td class="px-4 py-2"><strong>P2, pre-existing, not in this diff.</strong> <span class="font-mono text-xs">tainted-sql-string</span>: <span class="font-mono text-xs">reportFileFault</span> concatenates the <span class="font-mono text-xs">{prefix}</span> path variable into a <span class="font-mono text-xs">CREATE TRIGGER</span> statement. Mitigated: the value is checked against <span class="font-mono text-xs">[A-Z_]+</span>, and the class is test-only. Treated as a false positive for injection; no action for this ticket. The SQL ticket 37 adds to this file uses constants and named parameters.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/MailTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">192</td>
+              <td class="px-4 py-2"><strong>P0, intentional fixture.</strong> <span class="font-mono text-xs">contains-bidirectional-characters</span>: the test wrote a raw U+202E (RIGHT-TO-LEFT OVERRIDE) into a string to prove the allow-list refuses it. Legitimate but makes the source line display differently from what it contains; write it as an escape. <em>Since fixed: the current file builds it as <span class="font-mono text-xs">(char) 0x202E</span> (line 214).</em></td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/arch/ArchitectureTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">122</td>
+              <td class="px-4 py-2"><strong>P2, pre-existing, false positive.</strong> <span class="font-mono text-xs">unsafe-reflection</span>: <span class="font-mono text-xs">Class.forName</span> on a hard-coded array inside an ArchUnit test. No external input; no action.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8 <span class="text-xs text-slate-400">(first round, reviewed at d843842)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-600 space-y-2">
+          <p>Back end only; front-end controls N/A. Passing with evidence: as-1 (<span class="font-mono text-xs">@Validated</span> <span class="font-mono text-xs">MailProperties</span>, https app URL, bounded attempts, a template id required for each template), as-2 (constant SQL with named parameters), as-7/ac-1 (no production endpoint), as-8 (no secrets in config), as-13 (no error body change), dp-3 (https links), lm-15 (ECS keys via the SLF4J fluent API), lm-16 (Actuator present), lm-19 (no address or mail value logged; <span class="font-mono text-xs">Claimed.toString</span> leaves out the address). as-14/ck-* N/A.</p>
+          <p>Manual review checklist: confirm MCNS templates HTML-escape values (ticket 57); the ticket 51 adapter must not log the recipient, values or raw relay bodies, and must use TLS with certificate and hostname validation; consider alerting or meters on <span class="font-mono text-xs">mail-abandoned</span>/<span class="font-mono text-xs">mail-refused</span>; verify the SIT environment sets a real app URL and template ids (<span class="font-mono text-xs">application-sit.yml:50-54</span> falls back to localhost and placeholders); confirm ticket 49 disposes of <span class="font-mono text-xs">mail_outbox</span>.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailValues.java</td>
+              <td class="px-4 py-2 font-mono text-xs">84 (also 60; RegisterText.java:35)</td>
+              <td class="px-4 py-2"><strong>L-1, as-3 Output Sanitisation.</strong> <span class="font-mono text-xs">system_name</span> and <span class="font-mono text-xs">system_id</span> pass the Register&rsquo;s plain-text rule, which accepts <span class="font-mono text-xs">&lt;</span>, <span class="font-mono text-xs">&gt;</span>, <span class="font-mono text-xs">&amp;</span>, <span class="font-mono text-xs">&quot;</span> and URL-like text, so a name holding an anchor tag reaches the MCNS template. If a template renders values unescaped, a crafted Register name could inject markup or a phishing link into an official email. Low: only a VA POC writes the Register, through an audited upload. Confirm escaping at ticket 57, or narrow the mail rule for names.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailOutbox.java</td>
+              <td class="px-4 py-2 font-mono text-xs">72 (also 88, 97; MailOutboxStore.java:38)</td>
+              <td class="px-4 py-2"><strong>L-2, lm-4 Audit Logging.</strong> Mail outcomes (<span class="font-mono text-xs">REFUSED</span>, <span class="font-mono text-xs">REJECTED</span>, <span class="font-mono text-xs">FAILED</span>) are only log lines and outbox status, not audit entries; a refusal can signal a <span class="font-mono text-xs">va_system</span> write outside the Register path. The lease-expiry <span class="font-mono text-xs">ABANDON</span> logged nothing. ADR 0044 item 5 accepts the first part. Consider auditing <span class="font-mono text-xs">mail-refused</span>. <em>The abandonment part is since resolved: <span class="font-mono text-xs">abandonExpired</span> is an explicit step that logs <span class="font-mono text-xs">mail-abandoned</span>.</em></td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react <span class="text-xs text-slate-400">(first round, reviewed at d843842)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-500"><span class="font-mono text-xs">git diff --name-only integration/annual-va-r1...HEAD -- frontend</span> returned no files, so there was nothing to review. No later commit touches <span class="font-mono text-xs">frontend/</span>.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot <span class="text-xs text-slate-400">(first round, reviewed at d843842)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-500">All seven sub-reviews ran (core, web, data, batch, security, logging, test); spring-web-review found nothing, as the change adds no production controller. Sound: the relay is called outside any transaction, queueing joins the <span class="font-mono text-xs">@Transactional</span> notification write, constructor injection, a validated properties record, constant SQL, scheduling on virtual threads, ECS log keys with no address or value, and one shared <span class="font-mono text-xs">@Primary</span> fake relay. Line numbers refer to <span class="font-mono text-xs">d843842</span>; resolution notes come from code-review round 2 and the aggregator&rsquo;s reading of later commits.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailOutboxStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">93 (also 95)</td>
+              <td class="px-4 py-2"><strong>M1 (data, batch).</strong> One unmappable outbox row strands the whole claimed batch: the claim leases up to 50 rows before the mapper runs, an unknown template or action throws out of <span class="font-mono text-xs">claim</span>, and after five passes ABANDON fails every row, valid ones included. Bites in a rolling deploy as tickets 38, 40 and 43 add values. <em>Resolved:</em> each claim is one row, and CLAIM takes only templates and actions this build knows.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/MailTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">537 (also MailOutboxStore.java:89, MailOutbox.java:58)</td>
+              <td class="px-4 py-2"><strong>M2 (test).</strong> Lease expiry, re-claim and abandonment are not tested; the record-failed catch and the &ldquo;outcome written only while the claim is held&rdquo; guard are never exercised. <em>Mostly resolved:</em> <span class="font-mono text-xs">MailLeaseTest</span> covers re-claim after the lease and abandoning a stopped last attempt, and 5c74e58 adds a hand-over that outlasts its lease; the retry, settle and record-failed paths remain uncovered (build L1, L2).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailProperties.java</td>
+              <td class="px-4 py-2 font-mono text-xs">40</td>
+              <td class="px-4 py-2"><strong>L1 (core).</strong> A missing <span class="font-mono text-xs">templates</span> map fails startup with an NPE, not the validation message. <em>Resolved: null maps to an empty map.</em></td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailProperties.java</td>
+              <td class="px-4 py-2 font-mono text-xs">36 (MailDispatchJob.java:22)</td>
+              <td class="px-4 py-2"><strong>L2 (core).</strong> <span class="font-mono text-xs">dispatchInterval</span> is bound and validated but never read, and its default is duplicated in the job&rsquo;s placeholder. Still open (code-review L7).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailOutboxStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">101 (also 105, 109)</td>
+              <td class="px-4 py-2"><strong>L3 (data).</strong> A late outcome from a lost claim was dropped silently: <span class="font-mono text-xs">sent</span>, <span class="font-mono text-xs">settle</span> and <span class="font-mono text-xs">retryAt</span> ignored the update count. <em>Resolved: they return it and <span class="font-mono text-xs">MailOutbox</span> logs <span class="font-mono text-xs">mail-claim-lost</span>.</em></td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailOutbox.java</td>
+              <td class="px-4 py-2 font-mono text-xs">78</td>
+              <td class="px-4 py-2"><strong>L4 (batch).</strong> No bound ties a relay call&rsquo;s duration to the lease; a slow relay lets a second instance re-claim mails still in flight. <em>Per-mail leases (7164221) and a note on ticket 51 (59bdf44) address most of it; the residual case is code-review L1.</em></td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailOutbox.java</td>
+              <td class="px-4 py-2 font-mono text-xs">52</td>
+              <td class="px-4 py-2"><strong>L5 (batch).</strong> No metrics for outbox depth, failures or abandonment; until ticket 51 every required mail ends FAILED. Expose Micrometer counters and a PENDING-backlog gauge, or an INFO summary per pass.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/application-sit.yml</td>
+              <td class="px-4 py-2 font-mono text-xs">50</td>
+              <td class="px-4 py-2"><strong>L6 (security).</strong> SIT starts with placeholder template ids and a localhost app URL instead of failing fast; mailed links would point at localhost. Follows the SIT default convention, but outbound mail warrants no default.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailValues.java</td>
+              <td class="px-4 py-2 font-mono text-xs">84</td>
+              <td class="px-4 py-2"><strong>L7 (security).</strong> Register-controlled names can carry markup or URLs into a mail template; harm depends on MCNS escaping. Confirm and record for ticket 57, or refuse <span class="font-mono text-xs">&lt;</span>, <span class="font-mono text-xs">&gt;</span> and <span class="font-mono text-xs">://</span>. <em>Since noted on ticket 57 (59bdf44).</em></td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailOutbox.java</td>
+              <td class="px-4 py-2 font-mono text-xs">60</td>
+              <td class="px-4 py-2"><strong>L8 (logging).</strong> The <span class="font-mono text-xs">mail-record-failed</span> line drops the stack trace; log the cause&rsquo;s frames without its message so on-call staff can find the failing statement.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailDispatchJob.java</td>
+              <td class="px-4 py-2 font-mono text-xs">22</td>
+              <td class="px-4 py-2"><strong>L9 (logging).</strong> A dispatch pass has no correlation id in the MDC, so one pass&rsquo;s lines cannot be grouped. The sibling jobs share the gap; one helper could fix all.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailProperties.java</td>
+              <td class="px-4 py-2 font-mono text-xs">30</td>
+              <td class="px-4 py-2"><strong>L10 (test).</strong> The mail configuration&rsquo;s fail-fast behaviour had no test. <em>Resolved: <span class="font-mono text-xs">MailConfigurationTest</span> (7164221, extended in 5c74e58).</em></td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+    </main>
+  </body>
+</html>
