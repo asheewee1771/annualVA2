@@ -112,6 +112,9 @@ class ReviewSegregationTest extends ReviewSeam1 {
         JsonNode startRefused = entries("SUBMISSION_STARTED", other).get(0);
         assertThat(startRefused.get("outcome").asString()).isEqualTo("REFUSED");
         assertThat(startRefused.get("detail").get("reason").asString()).isEqualTo("sod-conflict");
+        assertThat(startRefused.get("submissionId").isNull()).as("the refused start created nothing to name").isTrue();
+        assertThat(started(signedInAs(SMO_B), other).get("state").asString())
+                .as("the refused start left the System Not Started").isEqualTo("DRAFT");
     }
 
     @Test

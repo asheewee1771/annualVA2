@@ -8,7 +8,7 @@ Ticket 28 (stories 50 and 58, story 52 in part) lets the Cyber Manager assigned 
    - they acted at another step of that VA Submission (`submission_participation`);
    - the Register assigns them to another step of its System, even before they act. The System's SMO/Tech Lead counts as its submitter and its Cyber Manager as its reviewer. Each `SubmissionStep` names the `Need` that assigns it (`SUBMIT` to `Need.SUBMIT`, `REVIEW` to `Need.REVIEW`), and the component reads the caller's scope for every other step. A scope over every System (a VA POC's) has no place in the rule yet: meeting one is an `IllegalStateException`, not a silent "assigned to nothing", until the ticket that adds the endorsing step decides how a VA POC counts.
 
-   It runs on:
+   - **start**, on the VA Submission the start has just created or taken (a Not Started one a rejected Exemption request left), through the same gate as every step command (`Submissions.atStep`, review fixes 2026-10-25): an SMO/Tech Lead who is also the System's Cyber Manager is refused. It runs after the Cycle and Quarter checks, so a start into a closed Cycle, a Quarter handled outside the app or a System already started is refused for that first; a refusal rolls the creation back and its entry names the System only;
    - **start**, assignment only: there is no participation yet, so an SMO/Tech Lead who is also the System's Cyber Manager is refused;
    - **submit**;
    - **both review commands**.
