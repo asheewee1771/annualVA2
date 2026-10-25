@@ -21,4 +21,4 @@ Amended by ADR 0034: the Cyber Manager inbox lists Overdue first, then by the da
 
 Amended by ADR 0049: a Not Started System a Register apply moves to another Quarter has its flag cleared while the new Quarter's Submission Window has not passed.
 
-Amended by ADR 0050: the weekly deadline reminder reads the flag, and goes every 7 days after the Overdue message while it stays set.
+Amended by ADR 0051: the weekly deadline reminder reads the flag, and goes every 7 days after the Overdue message while it stays set.

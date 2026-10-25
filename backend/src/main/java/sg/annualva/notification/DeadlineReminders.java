@@ -15,7 +15,7 @@ import sg.annualva.submission.SubmissionState;
 import sg.annualva.submission.WaitingWork;
 
 /**
- * The deadline reminders (stories 88, 89 and 90, ADR 0050). Once a day ({@code DeadlineReminderJob}, 08:00 in Singapore)
+ * The deadline reminders (stories 88, 89 and 90, ADR 0051). Once a day ({@code DeadlineReminderJob}, 08:00 in Singapore)
  * the planner reads where every piece of waiting work stands ({@link WaitingWork}) and reminds whoever's step it is:
  *
  * <ul>

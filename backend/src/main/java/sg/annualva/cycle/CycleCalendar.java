@@ -55,6 +55,11 @@ public class CycleCalendar {
         return instant.atZone(businessZone).toLocalDate();
     }
 
+    /** The instant a business date begins: midnight in the business time zone. */
+    public Instant startOf(LocalDate day) {
+        return day.atStartOfDay(businessZone).toInstant();
+    }
+
     /** The VA Cycle of that year, or nothing for a year outside {@value #FIRST_YEAR} to {@value #LAST_YEAR}. */
     public Optional<VaCycle> cycle(int year) {
         return year < FIRST_YEAR || year > LAST_YEAR ? Optional.empty() : Optional.of(build(year, records.closes()));

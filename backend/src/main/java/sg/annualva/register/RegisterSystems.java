@@ -183,6 +183,16 @@ public class RegisterSystems {
                 system.smoEmail(), system.cyberManagerEmail(), system.quarter()));
     }
 
+    /**
+     * The Systems retired before this instant, in System ID order, for the retention job, which acts for nobody and lists
+     * a retired System for disposal once its Cycles are disposed of (ticket 49). It skips the access guard, so it is never
+     * for a request: the architecture test names its caller.
+     */
+    @Transactional(readOnly = true)
+    public List<UUID> retiredBefore(Instant before) {
+        return store.retiredBefore(before).stream().map(ExistingSystem::id).toList();
+    }
+
     /** The Systems still in the Register whose id passes the test, in System ID order. */
     private List<ActiveSystem> activeWhere(Predicate<UUID> include) {
         return store.systems().stream()

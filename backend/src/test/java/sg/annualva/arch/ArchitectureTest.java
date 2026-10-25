@@ -63,24 +63,26 @@ class ArchitectureTest {
                 .layer("dashboard").definedBy("sg.annualva.dashboard..")
                 .layer("notification").definedBy("sg.annualva.notification..")
                 .layer("export").definedBy("sg.annualva.export..")
+                .layer("retention").definedBy("sg.annualva.retention..")
                 .layer("adapters").definedBy("sg.annualva.adapters..")
                 // app is the composition root: it may import everything and nothing imports it
                 .whereLayer("app").mayNotBeAccessedByAnyLayer()
-                .whereLayer("web").mayOnlyBeAccessedByLayers("app", "adapters", "access", "audit", "cycle", "register", "submission", "finding", "ingestion", "dashboard", "notification", "export")
+                .whereLayer("web").mayOnlyBeAccessedByLayers("app", "adapters", "access", "audit", "cycle", "register", "submission", "finding", "ingestion", "dashboard", "notification", "export", "retention")
                 .whereLayer("config").mayOnlyBeAccessedByLayers("app", "web", "access", "adapters", "audit", "cycle")
-                // the exports keep the files they make in the file store's export zone; the notifications mail through the relay
+                // the exports keep the files they make in the file store's export zone; the notifications mail through the relay;
+                // the retention executor removes the files an approved disposal list names
                 .whereLayer("boundary").mayOnlyBeAccessedByLayers("app", "web", "access", "adapters", "scan", "ingestion", "export",
-                        "notification")
+                        "notification", "retention")
                 // quarantine and malware scan: one module holds the upload steps both the Register upload and the pipeline use
                 .whereLayer("scan").mayOnlyBeAccessedByLayers("app", "register", "ingestion")
                 // the report readers are a leaf; the upload pipeline sniffs, checks and parses files with them, and the Findings keep what they read; the submissions clean a return's comment by the one text rule (ReportText)
                 .whereLayer("parser").mayOnlyBeAccessedByLayers("app", "submission", "finding", "ingestion")
                 // the audit log is written by the modules that act (access, the register and the submissions today)
-                .whereLayer("audit").mayOnlyBeAccessedByLayers("app", "access", "register", "submission", "finding", "ingestion", "export")
+                .whereLayer("audit").mayOnlyBeAccessedByLayers("app", "access", "register", "submission", "finding", "ingestion", "export", "retention")
                 // the domain modules ask access who is acting and whether they may reach a System
-                .whereLayer("access").mayOnlyBeAccessedByLayers("app", "register", "submission", "finding", "ingestion", "dashboard", "notification", "export")
-                // the register is a domain module: the submissions start from its Systems, the dashboards list them and the notifications address the people it names
-                .whereLayer("register").mayOnlyBeAccessedByLayers("app", "submission", "dashboard", "notification")
+                .whereLayer("access").mayOnlyBeAccessedByLayers("app", "register", "submission", "finding", "ingestion", "dashboard", "notification", "export", "retention")
+                // the register is a domain module: the submissions start from its Systems, the dashboards list them, the notifications address the people it names and the disposal lists name them
+                .whereLayer("register").mayOnlyBeAccessedByLayers("app", "submission", "dashboard", "notification", "retention")
                 // the submissions sit above the register and the calendar; the dashboards read them (the inbox shows a Draft), the file pipeline and the Findings ask which System a VA Submission belongs to, and the notifications listen to their events
                 .whereLayer("submission").mayOnlyBeAccessedByLayers("app", "dashboard", "finding", "ingestion", "notification")
                 // the Findings sit above the submissions and the parsers; the upload pipeline hands them what a parser read, and the dashboards count them
@@ -93,9 +95,11 @@ class ArchitectureTest {
                 .whereLayer("notification").mayOnlyBeAccessedByLayers("app")
                 // the exports sit on top: nothing reads them
                 .whereLayer("export").mayOnlyBeAccessedByLayers("app")
+                // retention sits on top beside the exports: it disposes of every module's records through its own store; nothing reads it
+                .whereLayer("retention").mayOnlyBeAccessedByLayers("app")
                 // the calendar is a leaf below the domain modules (the register dates a System by it, a submission and the inbox by its Quarter, the Findings and the upload pipeline's age check read today's business date from it); nothing it reads reads back
                 .whereLayer("cycle").mayOnlyBeAccessedByLayers("app", "register", "submission", "finding", "ingestion",
-                        "dashboard", "notification", "export")
+                        "dashboard", "notification", "export", "retention")
                 // production adapters are wired by Spring type only; no module imports them
                 .whereLayer("adapters").mayNotBeAccessedByAnyLayer()
                 .check(main);
@@ -217,7 +221,7 @@ class ArchitectureTest {
     /**
      * ADR 0033 and 0044: {@code RegisterSystems.everyActive} lists every System, of the Register or of one VA Cycle,
      * without asking the access guard. Only the Overdue sweep, the VA Cycle lifecycle and the waiting work the deadline
-     * reminders read (ADR 0050) may call it: the sweep, the reminder planner and the lifecycle job act for nobody, and the
+     * reminders read (ADR 0051) may call it: the sweep, the reminder planner and the lifecycle job act for nobody, and the
      * lifecycle's other caller, a VA POC's close, reaches every System anyway (a VA POC's scope is all Systems, ADR 0013)
      * and moves a whole Cycle. So no other request can list Systems past the guard.
      * A later job that needs it adds itself here.
@@ -249,6 +253,20 @@ class ArchitectureTest {
         noClasses().that().resideOutsideOfPackage("sg.annualva.notification..")
                 .should().callMethod(sg.annualva.register.RegisterSystems.class, method, java.util.UUID.class)
                 .because("it skips the access guard, so only the notifications, which act for nobody, may read it")
+                .check(main);
+    }
+
+    /**
+     * ADR 0050: {@code RegisterSystems.retiredBefore} lists retired Systems without asking the access guard, because the
+     * retention job lists them for disposal and acts for nobody. Only the job's listing may call it.
+     */
+    @Test
+    void onlyTheRetentionJobListsRetiredSystemsPastTheAccessGuard() throws Exception {
+        String method = sg.annualva.register.RegisterSystems.class.getMethod("retiredBefore", java.time.Instant.class)
+                .getName();
+        noClasses().that().doNotHaveFullyQualifiedName(sg.annualva.retention.DisposalPlanner.class.getName())
+                .should().callMethod(sg.annualva.register.RegisterSystems.class, method, java.time.Instant.class)
+                .because("it skips the access guard, so only the retention job, which acts for nobody, may call it")
                 .check(main);
     }
 

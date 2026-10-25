@@ -88,6 +88,11 @@ export interface ReportFile {
   replacesId: string | null;
   /** The rescan that replaced this file once it was parsed; null while none has. A superseded file is kept. */
   supersededBy: string | null;
+  /**
+   * When an approved disposal deleted this superseded file's content once its VA Submission was Endorsed (ticket 49); the
+   * record stays, and the content can no longer be downloaded. Null while the content is held.
+   */
+  contentDisposedAt: string | null;
 }
 
 const files = (submissionId: string): string => `/api/submissions/${encodeURIComponent(submissionId)}/files`;

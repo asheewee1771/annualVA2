@@ -1,0 +1,88 @@
+package sg.annualva.retention;
+
+import java.time.Clock;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
+import sg.annualva.audit.AuditAction;
+import sg.annualva.audit.AuditEvent;
+import sg.annualva.audit.AuditLog;
+import sg.annualva.audit.AuditOutcome;
+import sg.annualva.audit.DetailKey;
+import sg.annualva.boundary.FileStore;
+
+/**
+ * The executor (story 87): disposes of the approved list. It deletes the file-store objects the list's records hold
+ * first, outside any transaction, and then, in one transaction, the records in foreign-key order, the audit entries before
+ * the list's cutoff only, and writes the tombstone: one audit entry with the counts and the list's id. A file-store
+ * object that cannot be removed stops the pass with nothing deleted from the database, and the next pass tries again
+ * (removing what is no longer there is not an error), so no record is ever gone while its content is still held; a
+ * database failure rolls the whole transaction back and the next pass tries again too.
+ *
+ * <p>Log lines carry the list's id, the event and the exception's type only, never a key or a message (lm-19).
+ */
+@Service
+public class DisposalExecutor {
+
+    private static final Logger log = LoggerFactory.getLogger(DisposalExecutor.class);
+
+    private final DisposalStore store;
+    private final FileStore files;
+    private final AuditLog audit;
+    private final Clock clock;
+    private final TransactionTemplate transaction;
+
+    DisposalExecutor(DisposalStore store, FileStore files, AuditLog audit, Clock clock, TransactionTemplate transaction) {
+        this.store = store;
+        this.files = files;
+        this.audit = audit;
+        this.clock = clock;
+        this.transaction = transaction;
+    }
+
+    /** One pass: executes the approved list, if one is waiting. */
+    public void execute() {
+        Optional<DisposalStore.ListRow> approved = transaction.execute(status -> store.approved());
+        if (approved == null || approved.isEmpty()) {
+            return;
+        }
+        UUID listId = approved.get().id();
+        try {
+            List<DisposalStore.Blob> blobs = transaction.execute(status -> store.blobs(listId));
+            for (DisposalStore.Blob blob : blobs == null ? List.<DisposalStore.Blob>of() : blobs) {
+                files.delete(blob.zone(), blob.key());
+            }
+            if (Boolean.TRUE.equals(transaction.execute(status -> dispose(listId)))) {
+                log.atInfo().setMessage("A disposal list was executed").addKeyValue("event.action", "disposal-executed")
+                        .addKeyValue("labels.disposal_list_id", listId.toString()).log();
+            }
+        } catch (RuntimeException e) {
+            log.atWarn().setMessage("A disposal did not complete; it is tried again on the next pass")
+                    .addKeyValue("event.action", "disposal-failed")
+                    .addKeyValue("labels.disposal_list_id", listId.toString())
+                    .addKeyValue("error.type", e.getClass().getName()).log();
+        }
+    }
+
+    /** The records and the tombstone, under the lock; false when another pass executed the list first. */
+    private boolean dispose(UUID listId) {
+        store.lock();
+        if (store.approved().filter(waiting -> waiting.id().equals(listId)).isEmpty()) {
+            return false;
+        }
+        DisposalStore.Counts counts = store.dispose(listId, clock.instant());
+        audit.record(AuditEvent.of(AuditAction.DISPOSAL_EXECUTED, AuditOutcome.SUCCESS)
+                .with(DetailKey.DISPOSAL_LIST_ID, listId)
+                .with(DetailKey.SUBMISSIONS, counts.of(DisposalStore.Counted.SUBMISSIONS))
+                .with(DetailKey.FILES, counts.of(DisposalStore.Counted.FILES))
+                .with(DetailKey.SUPERSEDED_FILES, counts.supersededFiles())
+                .with(DetailKey.EXPORTS, counts.of(DisposalStore.Counted.EXPORTS))
+                .with(DetailKey.SYSTEMS, counts.of(DisposalStore.Counted.SYSTEMS))
+                .with(DetailKey.AUDIT_ENTRIES, counts.of(DisposalStore.Counted.AUDIT_ENTRIES)));
+        return true;
+    }
+}

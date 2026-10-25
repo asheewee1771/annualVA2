@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Runs {@link DeadlineReminders} every day at 08:00 business time when {@code annualva.scheduling.enabled} is true (ADR
- * 0012, ADR 0050). A day the application is down at 08:00 sends that day's reminders when it is next run, by hand or the
+ * 0012, ADR 0051). A day the application is down at 08:00 sends that day's reminders when it is next run, by hand or the
  * next morning no longer. Seam 1 tests leave it off, move the clock and run the planner themselves.
  */
 @Component

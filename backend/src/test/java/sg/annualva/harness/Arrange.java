@@ -57,6 +57,17 @@ public final class Arrange {
     }
 
     /** One pass of the export job, which produces queued exports and removes expired ones (ticket 44). */
+    public void retention() {
+        assertThat(client.post("/api/test/jobs/retention").status()).isEqualTo(200);
+    }
+
+    /** How many rows each table a disposal removes from holds, by table name. */
+    public JsonNode rows() {
+        var response = client.get("/api/test/rows");
+        assertThat(response.status()).isEqualTo(200);
+        return ApiClient.json(response);
+    }
+
     public void exports() {
         assertThat(client.post("/api/test/jobs/exports").status()).isEqualTo(200);
     }

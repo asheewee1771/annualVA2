@@ -1,4 +1,4 @@
--- Deadline reminders (ticket 38, stories 88, 89 and 90, ADR 0050). A daily planner reminds whoever's step it is before
+-- Deadline reminders (ticket 38, stories 88, 89 and 90, ADR 0051). A daily planner reminds whoever's step it is before
 -- and on the last day of the window their work waits on (V20 current_window_due), then weekly while it is Overdue with a
 -- copy to the next person up, and reminds both VA POCs 2 weeks and 1 week before the Quarter's last day. A reminder is a
 -- notification like any other (V136) and is mailed through the outbox (V137). Numbered after V144_43, which rebuilt

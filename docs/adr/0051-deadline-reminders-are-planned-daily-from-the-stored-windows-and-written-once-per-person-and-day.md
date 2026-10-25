@@ -2,7 +2,7 @@
 
 Status: accepted (items 3 and 4 provisional, awaiting a human decision)
 
-Ticket 38 (stories 88, 89 and 90) reminds the SMO/Tech Lead, the Cyber Manager and the VA POCs of their deadlines by email and in the app. It adds one migration (`V144_43_38`), a read of waiting work in `submission`, a planner and its daily job in `notification`, ten `NoticeAction`s and four mail templates, and no endpoint.
+Ticket 38 (stories 88, 89 and 90) reminds the SMO/Tech Lead, the Cyber Manager and the VA POCs of their deadlines by email and in the app. It adds one migration (`V149_38`), a read of waiting work in `submission`, a planner and its daily job in `notification`, ten `NoticeAction`s and four mail templates, and no endpoint.
 
 1. **A daily planner over the stored state.** `DeadlineReminders.plan` (in `notification`, which owns the reminder schedule) reads the clock once, takes today's business date in `Asia/Singapore` and asks `WaitingWork.on(today)` (in `submission`, which owns windows and Overdue) for every piece of work that waits on a window: each VA Submission whose state has a `current_window_due` (V20), and each System with none in the Cycle (Not Started, due by `NOT_STARTED`'s window for its Quarter), each with its due date by that one rule and its Overdue flag as the sweep stored it (ADR 0033: the flag is read, never computed). `WaitingWork` looks where the sweep looks: the active Systems of every VA Cycle that has not closed (`RegisterSystems.everyActive(year)`, which skips the access guard: it acts for nobody, and `ArchitectureTest` now names it beside the sweep and the lifecycle), in Quarters not Handled outside the app. So a retired System (whose VA Submission is Withdrawn), the final states and the frozen Exemption Requested, which wait on no window, are never reminded. `DeadlineReminderJob` runs it at 08:00 Singapore time (`annualva.reminders.cron`) when scheduling is on; a Seam 1 test moves the clock and calls `POST /api/test/jobs/reminders`.
 
@@ -22,7 +22,7 @@ Ticket 38 (stories 88, 89 and 90) reminds the SMO/Tech Lead, the Cyber Manager a
 Not done here, on purpose: a weekly Overdue reminder to the VA POCs for an endorsement past the Quarter's last day (story 90 asks only for the two before it; the sweep's `ENDORSE_OVERDUE` tells them once); reminders for Unlinked or Unreachable SMOs beyond what is sent to everyone (ticket 39); the weekly digest of FYIs (story 93, Release 2).
 
 Consequences:
-- A new reminder is a `NoticeAction`, its `MailTemplate.of` mapping, and a migration widening `notification_action_check` that sorts after `V144_43_38` and keeps the union.
+- A new reminder is a `NoticeAction`, its `MailTemplate.of` mapping, and a migration widening `notification_action_check` that sorts after `V149_38` and keeps the union.
 - Every deployed profile needs the four new template ids; `sit` has placeholders until ticket 57.
 - The reminders read what the sweep stored, so a weekly reminder waits for the sweep to flag the work (it runs hourly, so on the reminder's day it has).
 
