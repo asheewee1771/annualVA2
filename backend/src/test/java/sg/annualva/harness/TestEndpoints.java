@@ -237,17 +237,14 @@ public class TestEndpoints {
             return Map.of("id", id.toString());
         }
 
-        /** Empties the Register, its previews, the VA Submissions, the grants scoped to a System and the sessions between tests; the suite shares one database. */
+        /**
+         * Empties the Register, its previews, the VA Submissions and the grants scoped to a System between tests; the suite
+         * shares one database. Signed-in sessions are left alone: the one-session rule ends them as people sign in again
+         * (ticket 50 removed the stopgap that deleted them, ADR 0057).
+         */
         @PostMapping("/api/test/register-reset")
         public Map<String, String> resetRegister() {
             transaction.executeWithoutResult(status -> {
-                // STOPGAP, remove when the real fix lands. Signed-in sessions are deleted too (the arranging browser keeps
-                // its anonymous one, which holds its CSRF token). The defect: a session created by a step-up is not
-                // evicted by that person's next sign-in, so it stays live, and the person's next step-up then sees two
-                // live sessions, the one-session rule expires the current one, and the request answers 401. It showed as
-                // RegisterApplyTest.applyingNeedsAFreshSignInAndChangesNothingWithoutOne failing in the full suite. It is
-                // recorded on ticket 09 and not fixed here. Every Register test signs in after this reset.
-                jdbc.sql("DELETE FROM spring_session WHERE principal_name IS NOT NULL AND principal_name <> ''").update();
                 jdbc.sql("DROP TRIGGER IF EXISTS test_fault ON report_file").update();
                 jdbc.sql("DROP TRIGGER IF EXISTS test_finding_fault ON finding_occurrence").update();
                 jdbc.sql("DROP TRIGGER IF EXISTS test_finding_late ON report_file").update();

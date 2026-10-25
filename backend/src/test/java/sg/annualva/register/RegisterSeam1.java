@@ -8,6 +8,7 @@ import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import sg.annualva.harness.ApiClient;
+import sg.annualva.harness.AuditEntries;
 import sg.annualva.harness.RegisterXlsx;
 import sg.annualva.harness.Seam1Test;
 import sg.annualva.harness.SignIn;
@@ -38,6 +39,11 @@ public abstract class RegisterSeam1 extends Seam1Test {
     protected void leaveAnEmptyRegister() {
         clock.set(before);
         arrange.clearRegister();
+    }
+
+    /** A filter that reads the audit log up to today's business date ({@link AuditEntries#untilToday}). */
+    protected String untilToday() {
+        return AuditEntries.untilToday(clock);
     }
 
     /** A sign-in whose auth_time is the application clock's now, so the person is within the step-up window. */

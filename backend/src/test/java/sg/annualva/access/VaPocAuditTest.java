@@ -6,6 +6,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import sg.annualva.harness.ApiClient;
+import sg.annualva.harness.AuditEntries;
 import sg.annualva.harness.Seam1Test;
 import sg.annualva.harness.SignIn;
 import sg.annualva.harness.TestIdentity;
@@ -68,16 +69,8 @@ class VaPocAuditTest extends Seam1Test {
         return reader;
     }
 
+    /** Every entry the query answers; reads of the log, which counting it writes, are left out ({@link AuditEntries}). */
     private static List<JsonNode> allEntries(ApiClient reader, String query) {
-        var items = new java.util.ArrayList<JsonNode>();
-        for (int page = 0;; page++) {
-            var response = reader.get("/api/audit-entries?size=200&page=" + page + "&" + query);
-            assertThat(response.status()).isEqualTo(200);
-            JsonNode body = ApiClient.json(response);
-            body.get("items").forEach(items::add);
-            if (items.size() >= body.get("total").asLong()) {
-                return items;
-            }
-        }
+        return AuditEntries.all(reader, query);
     }
 }

@@ -37,10 +37,12 @@ public class AuditLog {
 
     private final AuditStore store;
     private final Clock clock;
+    private final AuditCaller caller;
 
-    AuditLog(AuditStore store, Clock clock) {
+    AuditLog(AuditStore store, Clock clock, AuditCaller caller) {
         this.store = store;
         this.clock = clock;
+        this.caller = caller;
     }
 
     /** Writes in the caller's transaction; fails when there is none, so an entry cannot be written by accident without one. */
@@ -58,6 +60,18 @@ public class AuditLog {
     /** Newest first; {@code page} counts from zero. */
     public Page<AuditEntry> entries(AuditFilter filter, int page, int size) {
         return new Page<>(store.page(filter, size, (long) page * size), page, size, store.count(filter));
+    }
+
+    /**
+     * A page of entries for a reader, narrowed by {@code filter} (the query's, with the reader's scope), and the read itself
+     * recorded as an {@code AUDIT_LOG_VIEWED} entry by the reader, in one transaction: a read the log cannot record is not
+     * answered (Q11, IM8 lm-4, ADR 0057).
+     */
+    @Transactional
+    public Page<AuditEntry> read(AuditQuery query, AuditFilter filter, int size) {
+        Page<AuditEntry> entries = entries(filter, query.page(), size);
+        write(caller.attribute(query.viewed()));
+        return entries;
     }
 
     private void write(AuditEvent event) {

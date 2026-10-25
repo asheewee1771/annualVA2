@@ -27,9 +27,8 @@ public final class Arrange {
     }
 
     /**
-     * Empties the System Register, its previews and the grants scoped to a System, and ends every signed-in session, so
-     * a test starts from none (the reset endpoint says why the sessions go). The Register is shared by the whole suite,
-     * so a test that uses it calls this first and last, before it signs anyone in.
+     * Empties the System Register, its previews and the grants scoped to a System, so a test starts from none. The
+     * Register is shared by the whole suite, so a test that uses it calls this first and last, before it signs anyone in.
      */
     public void clearRegister() {
         assertThat(client.post("/api/test/register-reset").status()).isEqualTo(200);

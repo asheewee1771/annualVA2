@@ -40,7 +40,7 @@ class RegisterScanTest extends RegisterSeam1 {
     /** The refused-upload entries of the first VA POC, newest first, read as the second. */
     private JsonNode rejections(ApiClient poc) {
         var response = otherVaPoc().get("/api/audit-entries?size=200&action=REGISTER_UPLOAD_REJECTED&actor="
-                + userId(poc));
+                + userId(poc) + untilToday());
         assertThat(response.status()).as(response.body()).isEqualTo(200);
         return ApiClient.json(response).get("items");
     }

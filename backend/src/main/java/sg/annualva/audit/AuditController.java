@@ -20,8 +20,8 @@ import sg.annualva.web.ResourceNotFoundException;
 /**
  * Read access to the audit log: a VA POC reads every entry (story 84), a Cyber Manager the history of the VA Submissions
  * they reviewed on Systems still assigned to them (story 85, ADR 0038), with the same filters. Auditors read the log within
- * their scope in a later ticket. There is no write, update or delete endpoint: the log changes only by the application
- * recording something.
+ * their scope in a later ticket. Every answered read is itself an {@code AUDIT_LOG_VIEWED} entry (Q11, ADR 0057). There is
+ * no write, update or delete endpoint: the log changes only by the application recording something.
  */
 @RestController
 public class AuditController {
@@ -42,7 +42,7 @@ public class AuditController {
     /**
      * Newest first. {@code from} and {@code to} are business dates in {@code Asia/Singapore}, both inclusive. A VA
      * Submission outside the caller's read scope answers 404, as one that does not exist (ADR 0013); every other filter
-     * only narrows what the caller may read.
+     * only narrows what the caller may read. The read is recorded with what it asked for ({@link AuditQuery#viewed}).
      */
     @GetMapping("/api/audit-entries")
     @PreAuthorize("hasAnyRole('VA_POC','CYBER_MANAGER')")
@@ -62,10 +62,7 @@ public class AuditController {
         if (submission != null && !scope.allows(submission)) {
             throw new ResourceNotFoundException();
         }
-        var filter = new AuditFilter(actor, action, system, submission,
-                from == null ? null : from.atStartOfDay(businessZone).toInstant(),
-                to == null ? null : to.plusDays(1).atStartOfDay(businessZone).toInstant(),
-                scope.narrowing());
-        return auditLog.entries(filter, page, size);
+        var query = new AuditQuery(actor, action, system, submission, from, to, page);
+        return auditLog.read(query, query.filter(businessZone, scope.narrowing()), size);
     }
 }

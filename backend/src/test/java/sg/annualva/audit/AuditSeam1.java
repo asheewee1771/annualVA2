@@ -1,15 +1,13 @@
 package sg.annualva.audit;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import sg.annualva.harness.ApiClient;
+import sg.annualva.harness.AuditEntries;
 import sg.annualva.harness.Seam1Test;
 import sg.annualva.harness.SignIn;
 import sg.annualva.harness.TestIdentity;
@@ -65,16 +63,7 @@ abstract class AuditSeam1 extends Seam1Test {
 
     /** Every page of an answer, so a test never depends on how many entries the other tests left. */
     protected static List<JsonNode> allPages(ApiClient reader, String query) {
-        var items = new ArrayList<JsonNode>();
-        for (int page = 0;; page++) {
-            var response = reader.get("/api/audit-entries?size=200&page=" + page + "&" + query);
-            assertThat(response.status()).as(response.body()).isEqualTo(200);
-            JsonNode body = ApiClient.json(response);
-            body.get("items").forEach(items::add);
-            if (items.size() >= body.get("total").asLong()) {
-                return items;
-            }
-        }
+        return AuditEntries.all(reader, query);
     }
 
     protected static List<String> actions(List<JsonNode> entries) {
