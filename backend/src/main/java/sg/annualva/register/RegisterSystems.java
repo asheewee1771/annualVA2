@@ -196,8 +196,9 @@ public class RegisterSystems {
 
     /**
      * As {@link #named}, for several Systems at once, by id: for the notifications, which show each item's System ID and
-     * name as the Register holds them now. It skips the access guard, so it is never for a request: the architecture test
-     * names its callers.
+     * name as the Register holds them now, including in a person's own notification list. It skips the access guard:
+     * that list asks only for the Systems of the reader's own notifications, which a notification already named to them,
+     * and shows only their System ID and name. The architecture test keeps every other module from calling it.
      */
     @Transactional(readOnly = true)
     public Map<UUID, Named> named(Collection<UUID> systemIds) {

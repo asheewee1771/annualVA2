@@ -9,7 +9,8 @@ import sg.annualva.submission.SubmissionState;
 /**
  * What a notification says, before it is addressed: the System, the state, the action, the due date and a link, and
  * nothing else (story 91). There is no field for free text, so no Finding, vulnerability or comment can reach a
- * notification.
+ * notification. A sender describes what happened ({@link About}) and says what it tells and where it links with
+ * {@link About#tell}; a notice to whoever acts at a step gets both from the port ({@link Notifications#toStep}).
  *
  * @param submissionId the VA Submission it is about; null for a Not Started System
  * @param state {@code NOT_STARTED} for a System with no VA Submission, or the VA Submission's state
@@ -23,26 +24,23 @@ import sg.annualva.submission.SubmissionState;
 public record Notice(UUID systemId, @Nullable UUID submissionId, SubmissionState state, NoticeAction action,
         @Nullable LocalDate dueOn, String link, Instant at, @Nullable LocalDate reminderOn) {
 
-    /** A notice of a move. */
-    public Notice(UUID systemId, @Nullable UUID submissionId, SubmissionState state, NoticeAction action,
-            @Nullable LocalDate dueOn, String link, Instant at) {
-        this(systemId, submissionId, state, action, dueOn, link, at, null);
-    }
+    /**
+     * What a notice is about, before anyone is told anything: the System, its VA Submission and state, the due date, when
+     * it happened and, for a reminder, its business day.
+     */
+    public record About(UUID systemId, @Nullable UUID submissionId, SubmissionState state, @Nullable LocalDate dueOn,
+            Instant at, @Nullable LocalDate reminderOn) {
 
-    /** A deadline reminder for a business day: it always has the due date it reminds of. */
-    static Notice reminder(UUID systemId, @Nullable UUID submissionId, SubmissionState state, NoticeAction action,
-            LocalDate dueOn, String link, Instant at, LocalDate day) {
-        return new Notice(systemId, submissionId, state, action, dueOn, link, at, day);
-    }
+        /** A move, an Overdue flag or a Register change: told once. */
+        public About(UUID systemId, @Nullable UUID submissionId, SubmissionState state, @Nullable LocalDate dueOn,
+                Instant at) {
+            this(systemId, submissionId, state, dueOn, at, null);
+        }
 
-    /** The same notice with another action. */
-    public Notice as(NoticeAction other) {
-        return new Notice(systemId, submissionId, state, other, dueOn, link, at, reminderOn);
-    }
-
-    /** The same notice with another action and link. */
-    public Notice linked(NoticeAction other, String otherLink) {
-        return new Notice(systemId, submissionId, state, other, dueOn, otherLink, at, reminderOn);
+        /** The notice that tells this action, linked here. */
+        public Notice tell(NoticeAction action, String link) {
+            return new Notice(systemId, submissionId, state, action, dueOn, link, at, reminderOn);
+        }
     }
 
     /**

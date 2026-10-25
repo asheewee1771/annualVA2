@@ -65,17 +65,23 @@ public class Notifications {
     }
 
     /**
-     * To whoever acts at this step of the System's VA Submission (ADR 0052), the one recipient rule of every notice to
-     * whoever acts next: the SMO/Tech Lead at the submitting step, the Cyber Manager at the reviewing step, both VA POCs
-     * as an endorsement pair at the endorsing step. {@link Links#forStep} is the matching link rule.
+     * Tells whoever acts at this step of the System's VA Submission (ADR 0043 item 3, ADR 0052), linked where they take
+     * it up: the one rule of who is told at a step and where their link points. The SMO/Tech Lead at the submitting step,
+     * at their place for it in its state ({@link Links#forSmo}: the inbox while it is Not Started, the rework queue once
+     * it is Returned for Rework, otherwise the VA Submission); the Cyber Manager at the reviewing step, at the review;
+     * both VA POCs, as an endorsement pair, at the endorsing step, at the endorsement.
      */
     @Transactional
-    public void toStep(SubmissionStep step, Notice notice) {
+    public void toStep(SubmissionStep step, Notice.About about, NoticeAction action) {
         switch (step) {
-            case SUBMIT -> toSmo(notice);
-            case REVIEW -> toCyberManager(notice);
-            case ENDORSE -> toVaPocs(notice, Awaits.ENDORSEMENT);
+            case SUBMIT -> toSmo(about.tell(action, Links.forSmo(about.state(), about.submissionId())));
+            case REVIEW -> toCyberManager(about.tell(action, Links.review(started(about))));
+            case ENDORSE -> toVaPocs(about.tell(action, Links.endorse(started(about))), Awaits.ENDORSEMENT);
         }
+    }
+
+    private static UUID started(Notice.About about) {
+        return Objects.requireNonNull(about.submissionId(), "a step after submitting has a VA Submission");
     }
 
     /** To one person, known by email (a transfer's former SMO/Tech Lead, whom the Register no longer names). */
