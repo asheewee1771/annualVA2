@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,11 @@ import sg.annualva.audit.DetailKey;
  * after it lapsed comes back, and one whose System's Quarter began within the last 90 days does not lapse, so an annual
  * SMO/Tech Lead is not locked out of the Quarter they are named for. The caller says when each System's latest Quarter
  * began, because this module reads neither the Register nor the calendar.
+ *
+ * <p>It is also the writer of a grant's suspension (ticket 47, ADR 0056), the other way a grant stops counting without
+ * being revoked: a VA POC's role-holder review suspends and restores one ({@link RoleHolders}), and a person the identity
+ * provider reports disabled has every grant suspended ({@link IdentityDisablement}). A suspended grant neither lapses nor
+ * comes back by itself; it is restored by a VA POC or revoked when the Register names someone else.
  */
 @Service
 public class RoleLapse {
@@ -84,6 +90,44 @@ public class RoleLapse {
     public void handBack(Role role, UUID systemId, ReturnTrigger trigger) {
         Instant now = clock.instant();
         grants.lapsedOn(role, systemId).forEach(grant -> returned(grant, trigger, now));
+    }
+
+    /**
+     * Suspends one grant and audits it ({@code ROLE_SUSPENDED} with the cause as the reason), attributed to the caller;
+     * whether it was not suspended already.
+     *
+     * @param by the VA POC who suspended it, or null when the identity provider's report did
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    boolean suspend(RoleGrant grant, SuspensionCause cause, @Nullable UUID by, Instant now) {
+        if (!grants.suspend(grant.id(), cause, by, now)) {
+            return false;
+        }
+        audit.record(actor.attribute(grant.describe(AuditEvent.of(AuditAction.ROLE_SUSPENDED, AuditOutcome.SUCCESS)))
+                .with(DetailKey.REASON, cause.code()));
+        return true;
+    }
+
+    /** Suspends every grant of a person the identity provider reports disabled; how many it suspended. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    int suspendEvery(UUID userId, Instant now) {
+        int suspended = 0;
+        for (RoleGrant grant : grants.notSuspendedOf(userId)) {
+            if (suspend(grant, SuspensionCause.IDENTITY_PROVIDER, null, now)) {
+                suspended++;
+            }
+        }
+        return suspended;
+    }
+
+    /** Lifts one grant's suspension and audits it ({@code ROLE_RESTORED}); whether it was suspended. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    boolean restore(RoleGrant grant) {
+        if (!grants.restore(grant.id())) {
+            return false;
+        }
+        audit.record(actor.attribute(grant.describe(AuditEvent.of(AuditAction.ROLE_RESTORED, AuditOutcome.SUCCESS))));
+        return true;
     }
 
     /** Brings one lapsed grant back and audits it, unless it came back meanwhile. */

@@ -96,7 +96,8 @@ public class TestEndpoints {
                 @Nullable String expiresAt) {}
 
         private static final String REVOKE = "UPDATE role_grant SET revoked_at = :now WHERE id = :id";
-        private static final String SUSPEND = "UPDATE role_grant SET suspended_at = :now WHERE id = :id";
+        private static final String SUSPEND =
+                "UPDATE role_grant SET suspended_at = :now, suspension_cause = 'REVIEW' WHERE id = :id";
         private static final String LAPSE = "UPDATE role_grant SET lapsed_at = :now WHERE id = :id";
         private static final String LIST_GRANTS =
                 "SELECT id, role, source, system_id, user_id IS NOT NULL AS attached, last_used_at, revoked_at IS NOT NULL AS revoked "
@@ -305,6 +306,11 @@ public class TestEndpoints {
                 // from their grant: one a test lapsed stands again, and a use or return at a later test's clock is forgotten.
                 jdbc.sql("UPDATE role_grant SET lapsed_at = NULL, last_used_at = NULL, returned_at = NULL, "
                         + "return_trigger = NULL WHERE system_id IS NULL").update();
+                // Likewise a VA POC's grant a test suspended (ticket 47), the identity provider's word that someone is
+                // disabled, and the role-holder reviews recorded.
+                jdbc.sql("UPDATE role_grant SET suspended_at = NULL, suspended_by = NULL, suspension_cause = NULL "
+                        + "WHERE source = 'CONFIG'").update();
+                jdbc.sql("DELETE FROM role_holder_review").update();
                 jdbc.sql("DELETE FROM register_upload").update();
                 jdbc.sql("DELETE FROM export_request").update();
                 // The disposal lists (V149) name no other row by key; at most one may wait at a time.

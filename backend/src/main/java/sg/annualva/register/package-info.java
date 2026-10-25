@@ -7,7 +7,9 @@
  * ({@code GET /api/systems}). A preview names each row's effects on in-flight work, and the apply withdraws what the VA POC
  * confirmed (ADR 0049), through {@link sg.annualva.register.InFlightWork}, which the submissions implement. It holds the
  * SMO Unreachable flag (story 13, ADR 0053), which {@link sg.annualva.register.SmoReachability} sets and clears on the
- * mail relay's answers, and an apply naming another SMO/Tech Lead clears.
+ * mail relay's answers, and an apply naming another SMO/Tech Lead clears. The VA POCs' role-holder review
+ * ({@code /api/role-holders}, ADR 0056) lists every role holder against the Register, says when a review is due, records
+ * each review and suspends or restores a role through the access module.
  * Depends on access, audit, cycle, scan and web only.
  */
 package sg.annualva.register;

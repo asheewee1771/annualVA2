@@ -7,6 +7,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -15,9 +16,9 @@ import org.springframework.stereotype.Repository;
 /**
  * The role_grant table. Constant SQL, named parameters (as-2). Roles change only through this
  * store, and only its callers write: configuration ({@link VaPocSync}), sign-in (attaching grants
- * made by email), a Register apply ({@link RegisterRoles}), the role lapse and its returns ({@link RoleLapse}) and, in a
- * later slice, the role-holder review. No controller
- * may depend on it (an architecture test holds that line).
+ * made by email), a Register apply ({@link RegisterRoles}) and the role lapse, its returns and the suspensions
+ * ({@link RoleLapse}); the role-holder review ({@link RoleHolders}) reads it. No controller may depend on it (an
+ * architecture test holds that line).
  */
 @Repository
 public class RoleGrantStore {
@@ -71,6 +72,27 @@ public class RoleGrantStore {
 
     private static final String RETURN = "UPDATE role_grant SET lapsed_at = NULL, returned_at = :now, "
             + "return_trigger = :trigger WHERE id = :id AND lapsed_at IS NOT NULL AND revoked_at IS NULL";
+
+    /** Every grant not revoked, with what the person's user record says (ticket 47): the role-holder review's list. */
+    private static final String HOLDER_COLUMNS = "SELECT g.id, g.role, g.user_id, g.email, g.system_id, g.source, "
+            + "g.granted_at, g.expires_at, g.last_used_at, g.lapsed_at, g.suspended_at, g.suspension_cause, g.returned_at, "
+            + "g.return_trigger, u.display_name, u.sso_id IS NOT NULL AS signed_in, u.idp_disabled_at IS NOT NULL AS disabled "
+            + "FROM role_grant g LEFT JOIN app_user u ON u.id = g.user_id WHERE g.revoked_at IS NULL";
+
+    private static final String HOLDERS = HOLDER_COLUMNS + " ORDER BY g.granted_at, g.id";
+
+    private static final String HOLDER = HOLDER_COLUMNS + " AND g.id = :id";
+
+    private static final String LIVE_BY_ID = "SELECT " + COLUMNS + " FROM role_grant WHERE id = :id AND revoked_at IS NULL";
+
+    private static final String NOT_SUSPENDED_OF_USER = "SELECT " + COLUMNS + " FROM role_grant WHERE user_id = :userId "
+            + "AND revoked_at IS NULL AND suspended_at IS NULL ORDER BY granted_at, id";
+
+    private static final String SUSPEND = "UPDATE role_grant SET suspended_at = :now, suspended_by = :by, "
+            + "suspension_cause = :cause WHERE id = :id AND revoked_at IS NULL AND suspended_at IS NULL";
+
+    private static final String RESTORE = "UPDATE role_grant SET suspended_at = NULL, suspended_by = NULL, "
+            + "suspension_cause = NULL WHERE id = :id AND revoked_at IS NULL AND suspended_at IS NOT NULL";
 
     private final JdbcClient jdbc;
 
@@ -152,6 +174,60 @@ public class RoleGrantStore {
     /** Brings a lapsed grant back; whether it was lapsed. */
     boolean returned(UUID id, ReturnTrigger trigger, Instant now) {
         return jdbc.sql(RETURN).param("id", id).param("trigger", trigger.name()).param("now", utc(now)).update() == 1;
+    }
+
+    /** Every grant not revoked, oldest first. */
+    List<RoleHolder> holders() {
+        return jdbc.sql(HOLDERS).query(RoleGrantStore::holder).list();
+    }
+
+    /** One grant not revoked, as the review lists it. */
+    Optional<RoleHolder> holder(UUID id) {
+        return jdbc.sql(HOLDER).param("id", id).query(RoleGrantStore::holder).optional();
+    }
+
+    /** One grant not revoked. */
+    Optional<RoleGrant> live(UUID id) {
+        return jdbc.sql(LIVE_BY_ID).param("id", id).query(RoleGrantStore::map).optional();
+    }
+
+    /** A person's grants, not revoked, that are not suspended yet. */
+    List<RoleGrant> notSuspendedOf(UUID userId) {
+        return jdbc.sql(NOT_SUSPENDED_OF_USER).param("userId", userId).query(RoleGrantStore::map).list();
+    }
+
+    /** Suspends a grant; whether it was not suspended already. */
+    boolean suspend(UUID id, SuspensionCause cause, @Nullable UUID by, Instant now) {
+        return jdbc.sql(SUSPEND).param("id", id).param("cause", cause.name()).param("by", by).param("now", utc(now))
+                .update() == 1;
+    }
+
+    /** Lifts a grant's suspension; whether it was suspended. */
+    boolean restore(UUID id) {
+        return jdbc.sql(RESTORE).param("id", id).update() == 1;
+    }
+
+    private static RoleHolder holder(ResultSet rs, int row) throws SQLException {
+        String cause = rs.getString("suspension_cause");
+        String trigger = rs.getString("return_trigger");
+        return new RoleHolder(
+                rs.getObject("id", UUID.class),
+                Role.valueOf(rs.getString("role")),
+                rs.getObject("user_id", UUID.class),
+                rs.getString("email"),
+                rs.getString("display_name"),
+                rs.getObject("system_id", UUID.class),
+                GrantSource.valueOf(rs.getString("source")),
+                instant(rs, "granted_at"),
+                instant(rs, "expires_at"),
+                instant(rs, "last_used_at"),
+                instant(rs, "lapsed_at"),
+                instant(rs, "suspended_at"),
+                cause == null ? null : SuspensionCause.valueOf(cause),
+                instant(rs, "returned_at"),
+                trigger == null ? null : ReturnTrigger.valueOf(trigger),
+                rs.getBoolean("signed_in"),
+                rs.getBoolean("disabled"));
     }
 
     private static RoleGrant map(ResultSet rs, int row) throws SQLException {
