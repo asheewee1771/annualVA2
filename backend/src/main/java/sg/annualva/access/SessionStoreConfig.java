@@ -2,6 +2,8 @@ package sg.annualva.access;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
@@ -20,7 +22,8 @@ class SessionStoreConfig {
      * from each run of adjacent rows, and the query as shipped has no order: once the store holds many rows of one person,
      * PostgreSQL joins by hash, a session's attribute rows come back apart, and the reader keeps a part of it. The one-session
      * rule then misses the "ended" mark on an older session, treats it as live, and the person's next step-up ends the
-     * session it is made in.
+     * session it is made in. Copied from Spring Session JDBC 4.0.5's {@code LIST_SESSIONS_BY_PRINCIPAL_NAME_QUERY}, with
+     * the order added; check it against the shipped query on an upgrade.
      */
     static final String SESSIONS_OF_A_PERSON = """
             SELECT S.PRIMARY_ID, S.SESSION_ID, S.CREATION_TIME, S.LAST_ACCESS_TIME, S.MAX_INACTIVE_INTERVAL,
@@ -43,8 +46,12 @@ class SessionStoreConfig {
         return new SpringSessionBackedSessionRegistry<>(sessions);
     }
 
-    /** Reads a person's sessions whole, each one's rows together ({@link #SESSIONS_OF_A_PERSON}). */
+    /**
+     * Reads a person's sessions whole, each one's rows together ({@link #SESSIONS_OF_A_PERSON}). Last of the customizers:
+     * Spring Boot's own sets the table name, which puts every query back to the shipped one, so this must run after it.
+     */
     @Bean
+    @Order(Ordered.LOWEST_PRECEDENCE)
     SessionRepositoryCustomizer<JdbcIndexedSessionRepository> sessionsOfAPersonInOrder() {
         return repository -> repository.setListSessionsByPrincipalNameQuery(SESSIONS_OF_A_PERSON);
     }
