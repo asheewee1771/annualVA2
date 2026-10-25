@@ -53,9 +53,7 @@ public abstract class RegisterSeam1 extends Seam1Test {
 
     /** The first VA POC, signed in, with a CSRF token. */
     protected ApiClient vaPoc() {
-        ApiClient browser = anotherBrowser();
-        SignIn.signedIn(browser, issuer, fresh(TestIdentity.of("af-5001", POC_ONE, "POC One")));
-        return browser.withCsrf();
+        return freshVaPoc();
     }
 
     /** The second VA POC, signed in, with a CSRF token. */
