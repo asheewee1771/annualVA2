@@ -145,7 +145,7 @@ class DisposalStore {
     private static final String RUNNING = "SELECT set_config('annualva.disposal_list', CAST(:list AS text), true)";
 
     /**
-     * The disposal, in foreign-key order (ADR 0049): what names a record goes before it, and a rescan and the file it
+     * The disposal, in foreign-key order (ADR 0050): what names a record goes before it, and a rescan and the file it
      * replaced go in one statement. The proposals, batches, reviews, returns, Declarations and audit entries are
      * append-only; V149 lets these deletes through only while the list named by {@link #RUNNING} is APPROVED. A schema test
      * checks that every table naming a table deleted from here is deleted from here too.

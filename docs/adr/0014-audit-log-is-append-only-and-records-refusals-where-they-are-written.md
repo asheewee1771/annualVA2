@@ -12,4 +12,4 @@ Entries carry ids and fixed codes only. `detail` keys are an allow-list in `Deta
 
 Consequences: every unauthenticated request to a protected path writes a row, so throttling at the edge matters (tickets 52 and 55); a failed independent write is logged as `audit-write-failed` (exception type only) and does not block the refusal or the sign-in; a new detail key needs a migration as well as an enum constant.
 
-Amended by ADR 0049: the trigger lets a DELETE through only inside the executor's transaction for a disposal list a VA POC approved, and only for entries before that list's cutoff; UPDATE and TRUNCATE are still refused for every connection.
+Amended by ADR 0050: the trigger lets a DELETE through only inside the executor's transaction for a disposal list a VA POC approved, and only for entries before that list's cutoff; UPDATE and TRUNCATE are still refused for every connection.

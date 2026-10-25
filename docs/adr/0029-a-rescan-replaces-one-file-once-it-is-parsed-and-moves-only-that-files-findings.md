@@ -21,4 +21,4 @@ Consequences: a key reported again leaves the Finding with no current proposal, 
 
 Amends ADR 0021 (a file can be superseded and the live count excludes it), ADR 0022 (a rescan's Findings replace another file's places in the same settlement) and ADR 0027 (a proposal records who made it).
 
-Amended by ADR 0049 (item 7): once its VA Submission is Endorsed, a superseded file is listed for disposal and an approved disposal deletes its content only; the row stays until its Cycle is disposed of, `contentDisposedAt` says when, and a download answers `410 disposed`.
+Amended by ADR 0050 (item 7): once its VA Submission is Endorsed, a superseded file is listed for disposal and an approved disposal deletes its content only; the row stays until its Cycle is disposed of, `contentDisposedAt` says when, and a download answers `410 disposed`.
