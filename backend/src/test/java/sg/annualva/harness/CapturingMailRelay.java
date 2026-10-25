@@ -68,6 +68,11 @@ public final class CapturingMailRelay implements MailRelay {
         rejected.add(email.toLowerCase(Locale.ROOT));
     }
 
+    /** The relay takes this address again from now on (its mailbox was fixed). */
+    public void acceptAddress(String email) {
+        rejected.remove(email.toLowerCase(Locale.ROOT));
+    }
+
     /** The next {@code count} calls fail as if the relay could not be reached. */
     public void failNext(int count) {
         failures.set(count);

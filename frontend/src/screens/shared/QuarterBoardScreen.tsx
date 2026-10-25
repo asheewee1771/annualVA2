@@ -8,6 +8,7 @@ import { useSelectedCycle } from "../../app/CycleChoice.tsx";
 import { HandledOutsideSection } from "./HandledOutsideSection.tsx";
 import { LapsedFlag } from "./LapsedFlag.tsx";
 import { findingsLabel, ReviewFlags, type DashboardStep } from "./ReviewFlags.tsx";
+import { SmoUnreachableFlag } from "./SmoUnreachableFlag.tsx";
 import { STATE_LABELS } from "./systemStates.ts";
 
 const QUARTERS = [1, 2, 3, 4] as const;
@@ -40,6 +41,7 @@ function Column({ state, systems, boardFor }: { state: SystemState; systems: Boa
             <CardTitle system={system} linkOf={boardFor.linkOf} />
             <ReviewFlags overdue={system.overdue} sodConflict={system.sodConflict} step={boardFor.step} />
             <LapsedFlag lapsed={system.exemptionLapsed} />
+            <SmoUnreachableFlag since={system.smoUnreachableOn} />
             <br />
             <small className="muted">{findingsLabel(system)}</small>
           </li>

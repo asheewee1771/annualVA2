@@ -291,6 +291,23 @@ class ArchitectureTest {
                 .check(main);
     }
 
+    /**
+     * ADR 0053: {@code SmoReachability.refused} and {@code accepted} flag and clear SMO Unreachable on the word of the mail
+     * relay, without asking the access guard, because the mail dispatcher acts for nobody. Only the dispatcher may call
+     * them, with the answer it has just written.
+     */
+    @Test
+    void onlyTheMailDispatcherSetsOrClearsSmoUnreachableFromTheRelaysAnswer() throws Exception {
+        Class<?> reachability = sg.annualva.register.SmoReachability.class;
+        for (String method : new String[] {"refused", "accepted"}) {
+            String name = reachability.getMethod(method, String.class, java.time.Instant.class).getName();
+            noClasses().that().doNotHaveFullyQualifiedName(sg.annualva.notification.MailOutbox.class.getName())
+                    .should().callMethod(reachability, name, String.class, java.time.Instant.class)
+                    .because("only the relay's answer, written by the mail dispatcher, says an address is refused or reached")
+                    .check(main);
+        }
+    }
+
     @Test
     void noStandardStreamsLoggingOrGenericExceptions() {
         NO_CLASSES_SHOULD_ACCESS_STANDARD_STREAMS.check(main);

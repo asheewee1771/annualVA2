@@ -44,6 +44,19 @@ public enum AuditAction {
     /** A System was retired by a Register apply; its history stays. One entry per System, about that System. */
     REGISTER_SYSTEM_RETIRED("register-system-retired", "configuration"),
     /**
+     * The mail relay refused the address of a System's SMO/Tech Lead, so the System is flagged SMO Unreachable (story 13,
+     * ticket 39). One entry per System flagged, about that System: by the mail dispatcher, with no actor, or, for a
+     * System a VA POC's Register apply adds or gives an address already refused for another System, by that VA POC with
+     * {@code source} {@code register}. Never the address or the mail.
+     */
+    SMO_UNREACHABLE("smo-unreachable", "configuration"),
+    /**
+     * A System's SMO Unreachable flag was cleared (story 13, ticket 39): the relay took a later mail to the address
+     * ({@code source} {@code mail-accepted}, no actor), or a VA POC's Register apply named another SMO/Tech Lead for the
+     * System ({@code source} {@code register}, by that VA POC). About the System; never the address.
+     */
+    SMO_UNREACHABLE_CLEARED("smo-unreachable-cleared", "configuration"),
+    /**
      * An SMO/Tech Lead started the VA Submission for a System (SUCCESS), or was refused because it was already started,
      * its Quarter is Handled outside the app, or segregation of duties does not allow it because they are also the
      * System's Cyber Manager (REFUSED, with a fixed reason: {@code sod-conflict} for the last). It is about the System

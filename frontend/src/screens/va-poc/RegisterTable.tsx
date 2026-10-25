@@ -1,8 +1,10 @@
 import type { RegisterSystem } from "../../api/systemRegister.ts";
+import { SmoUnreachableFlag } from "../shared/SmoUnreachableFlag.tsx";
 
 /**
- * The System Register as it stands (stories 2 and 12): every System with its SMO/Tech Lead, Cyber Manager and Quarter.
- * A retired System stays listed and says so; an SMO/Tech Lead no sign-in has matched yet carries the Unlinked SMO flag.
+ * The System Register as it stands (stories 2, 12 and 13): every System with its SMO/Tech Lead, Cyber Manager and
+ * Quarter. A retired System stays listed and says so; an SMO/Tech Lead no sign-in has matched yet carries the Unlinked
+ * SMO flag, and one whose address the mail relay refused carries the SMO Unreachable flag with the day it was set.
  * Everything here is rendered as text.
  */
 export function RegisterTable({ systems }: { systems: RegisterSystem[] }) {
@@ -36,6 +38,7 @@ export function RegisterTable({ systems }: { systems: RegisterSystem[] }) {
                     <span className="flag flag--warning">Unlinked SMO</span>
                   </>
                 ) : null}
+                <SmoUnreachableFlag since={system.smoUnreachableOn} />
               </td>
               <td>{system.cyberManagerEmail}</td>
               <td>{system.quarter}</td>
