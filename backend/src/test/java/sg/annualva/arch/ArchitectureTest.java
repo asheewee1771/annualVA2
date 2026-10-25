@@ -236,7 +236,6 @@ class ArchitectureTest {
                     .and().doNotHaveFullyQualifiedName(sg.annualva.submission.CycleLifecycle.class.getName())
                     .and().doNotHaveFullyQualifiedName(Class.forName("sg.annualva.submission.OpenQuarters").getName())
                     .and().doNotHaveFullyQualifiedName(sg.annualva.submission.ExemptionLapse.class.getName())
-                    .and().doNotHaveFullyQualifiedName(sg.annualva.submission.RoleLapses.class.getName())
                     .should().callMethod(register, register.getMethod(method, parameters).getName(), parameters)
                     .because("it skips the access guard, so only the jobs that act for nobody, and the Cycle close a VA POC "
                             + "whose scope is every System asks for, may list every System")

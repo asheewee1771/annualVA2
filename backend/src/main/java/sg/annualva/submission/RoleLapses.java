@@ -14,16 +14,13 @@ import sg.annualva.access.ReturnTrigger;
 import sg.annualva.access.Role;
 import sg.annualva.access.RoleLapse;
 import sg.annualva.cycle.CycleCalendar;
-import sg.annualva.cycle.Quarter;
-import sg.annualva.cycle.VaCycle;
-import sg.annualva.register.RegisterSystems;
 
 /**
  * What the VA Submissions tell the role lapse (ticket 46, ADR 0053): when each System's Quarter began, for the daily pass,
- * and when work on a System is handed to a person whose role has lapsed. A Return for Rework hands the VA Submission
- * to its SMO/Tech Lead and a submit to its Cyber Manager; a conditional Exemption that lapses back with new windows hands it to its SMO/Tech Lead and, back
- * In Review, to its Cyber Manager too (a lapse to Not Endorsed has no new windows, and one Awaiting Endorsement waits on
- * the VA POCs, whose role only configuration returns). The returns are heard inside the command's or the lapse job's
+ * and when work on a System is handed to a person whose role has lapsed. A Return for Rework hands the VA Submission to
+ * its SMO/Tech Lead and a submit to its Cyber Manager; a conditional Exemption that lapses back with new windows hands it
+ * to its SMO/Tech Lead and, back In Review, to its Cyber Manager too (a lapse to Not Endorsed has no new windows, and one
+ * Awaiting Endorsement waits on the VA POCs, whose role only configuration returns). The returns are heard inside the command's or the lapse job's
  * transaction, so they commit or roll back with the move. The scheduler ({@code RoleLapseJob}) or a Seam 1 test runs the
  * pass.
  */
@@ -31,33 +28,33 @@ import sg.annualva.register.RegisterSystems;
 public class RoleLapses {
 
     private final RoleLapse lapse;
-    private final RegisterSystems register;
+    private final OpenQuarters openQuarters;
     private final CycleCalendar calendar;
     private final Clock clock;
 
-    RoleLapses(RoleLapse lapse, RegisterSystems register, CycleCalendar calendar, Clock clock) {
+    RoleLapses(RoleLapse lapse, OpenQuarters openQuarters, CycleCalendar calendar, Clock clock) {
         this.lapse = lapse;
-        this.register = register;
+        this.openQuarters = openQuarters;
         this.calendar = calendar;
         this.clock = clock;
     }
 
     /**
-     * One pass: for each System still in the Register, the latest of its Quarters, in the VA Cycles the app runs, that has
-     * begun and is run in the app; then the role lapse returns and lapses by it. The clock is read once per pass.
+     * One pass: for each active System, when the latest of its open Quarters ({@link OpenQuarters}, the one rule the
+     * Overdue sweep and the reminders read) that has begun began; then the role lapse returns and lapses by it. A Quarter
+     * of a closed Cycle is left out, but by then it began more than 90 days ago, so it would change nothing. The clock is
+     * read once per pass.
      */
     @Transactional
     public void run() {
         Instant now = clock.instant();
         LocalDate today = calendar.dateOf(now);
         Map<UUID, Instant> began = new HashMap<>();
-        for (VaCycle cycle : calendar.cyclesOn(today)) {
-            for (RegisterSystems.ActiveSystem system : register.everyActive(cycle.year())) {
-                Quarter quarter = cycle.quarters().get(system.quarter() - 1);
-                if (!quarter.handledOutsideApp() && !quarter.startsOn().isAfter(today)) {
-                    began.merge(system.id(), calendar.startOf(quarter.startsOn()), (one, other) ->
-                            one.isAfter(other) ? one : other);
-                }
+        for (OpenQuarters.InQuarter open : openQuarters.on(today)) {
+            if (!open.quarter().startsOn().isAfter(today)) {
+                Instant start = calendar.startOf(open.quarter().startsOn());
+                open.systems().forEach(system -> began.merge(system, start,
+                        (one, other) -> one.isAfter(other) ? one : other));
             }
         }
         lapse.pass(began, now);
