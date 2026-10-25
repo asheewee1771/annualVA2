@@ -3,6 +3,7 @@ package sg.annualva.access;
 import java.util.UUID;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import sg.annualva.audit.AuditCaller;
 import sg.annualva.audit.AuditEvent;
 
 /**
@@ -12,9 +13,10 @@ import sg.annualva.audit.AuditEvent;
  * the entry without an actor.
  */
 @Component
-public class AuditActor {
+public class AuditActor implements AuditCaller {
 
     /** The same event, by whoever the current request's security context names. */
+    @Override
     public AuditEvent attribute(AuditEvent event) {
         if (SecurityContextHolder.getContext().getAuthentication() instanceof RoleAuthentication caller) {
             return event.by(caller.getPrincipal().id(), RoleAuthentication.audited(caller.roles()));

@@ -353,7 +353,14 @@ public enum AuditAction {
      * {@code disposal_list_id} and the counts deleted: {@code submissions}, {@code files}, {@code superseded_files},
      * {@code exports}, {@code systems} and {@code audit_entries}). Attributed to nobody: the approval is its own entry.
      */
-    DISPOSAL_EXECUTED("disposal-executed", "database");
+    DISPOSAL_EXECUTED("disposal-executed", "database"),
+    /**
+     * A VA POC or a Cyber Manager read the audit log (Q11, IM8 lm-4, ticket 50; SUCCESS, about the System and VA Submission
+     * filtered on, with the other filters as {@code filter_actor}, {@code filter_action}, {@code filter_from} and
+     * {@code filter_to}, the {@code page} and the {@code count} of entries answered). Never anything an entry says. A
+     * refused read is the {@code REQUEST_REFUSED} of every refusal; an out-of-scope VA Submission is an unaudited 404.
+     */
+    AUDIT_LOG_VIEWED("audit-log-viewed", "database");
 
     private final String ecs;
     private final String category;

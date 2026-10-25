@@ -81,7 +81,8 @@ class AuditReadTest extends AuditSeam1 {
         UUID system = UUID.randomUUID();
         writeAbout(poc, system, UUID.randomUUID());
 
-        String query = "system=" + system;
+        // The reads themselves are entries about the System too (AUDIT_LOG_VIEWED); only what was written counts.
+        String query = "system=" + system + "&action=ROLE_GRANTED";
         assertThat(allPages(poc, query + "&from=2033-03-11&to=2033-03-11")).as("its Singapore day").hasSize(1);
         assertThat(allPages(poc, query + "&from=2033-03-10&to=2033-03-10")).as("its UTC day").isEmpty();
         assertThat(allPages(poc, query + "&from=2033-03-10&to=2033-03-11")).hasSize(1);
@@ -99,12 +100,14 @@ class AuditReadTest extends AuditSeam1 {
             clock.advance(Duration.ofSeconds(1));
         }
 
+        // The reads are entries about the System too (AUDIT_LOG_VIEWED), so only the action written is paged.
+        String written = "/api/audit-entries?action=ROLE_GRANTED&system=" + system + "&from=" + today() + "&to="
+                + today() + "&size=2&page=";
         Set<String> seen = new HashSet<>();
         Instant previous = Instant.MAX;
         int[] expectedSizes = {2, 2, 1};
         for (int page = 0; page < 3; page++) {
-            JsonNode answer = ApiClient.json(poc.get("/api/audit-entries?system=" + system + "&from=" + today()
-                    + "&to=" + today() + "&size=2&page=" + page));
+            JsonNode answer = ApiClient.json(poc.get(written + page));
             assertThat(answer.get("total").asLong()).isEqualTo(5);
             assertThat(answer.get("page").asInt()).isEqualTo(page);
             assertThat(answer.get("size").asInt()).isEqualTo(2);
@@ -116,8 +119,7 @@ class AuditReadTest extends AuditSeam1 {
                 assertThat(seen.add(entry.get("id").asString())).as("no entry on two pages").isTrue();
             }
         }
-        JsonNode beyond = ApiClient.json(poc.get("/api/audit-entries?system=" + system + "&from=" + today()
-                + "&to=" + today() + "&size=2&page=3"));
+        JsonNode beyond = ApiClient.json(poc.get(written + 3));
         assertThat(beyond.get("items")).isEmpty();
         assertThat(beyond.get("total").asLong()).isEqualTo(5);
     }

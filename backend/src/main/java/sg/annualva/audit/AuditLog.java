@@ -60,6 +60,17 @@ public class AuditLog {
         return new Page<>(store.page(filter, size, (long) page * size), page, size, store.count(filter));
     }
 
+    /**
+     * A page of entries for a reader, and the read itself recorded as {@code viewed} with the {@code count} answered, in
+     * one transaction: a read the log cannot record is not answered (Q11, IM8 lm-4, ADR 0057).
+     */
+    @Transactional
+    public Page<AuditEntry> read(AuditFilter filter, int page, int size, AuditEvent viewed) {
+        Page<AuditEntry> entries = entries(filter, page, size);
+        write(viewed.with(DetailKey.COUNT, entries.items().size()));
+        return entries;
+    }
+
     private void write(AuditEvent event) {
         AuditEntry entry = store.insert(event, clock.instant(), CorrelationIdFilter.current());
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
