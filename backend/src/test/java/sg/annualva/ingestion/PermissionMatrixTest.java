@@ -2,14 +2,11 @@ package sg.annualva.ingestion;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.tngtech.archunit.core.domain.JavaClass;
-import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
-import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -20,11 +17,11 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 import sg.annualva.harness.ApiClient;
+import sg.annualva.harness.AuditEntries;
 import sg.annualva.harness.SignIn;
 import sg.annualva.harness.TestIdentity;
 import tools.jackson.databind.JsonNode;
@@ -47,20 +44,47 @@ class PermissionMatrixTest extends ExemptionSeam1 {
 
     enum Person { ANONYMOUS, SMO, OTHER_SMO, CM, OTHER_CM, VA_POC, AUDITOR }
 
-    /** What one person gets from one endpoint. */
-    enum Answer { OK, R401, R403, R404, STEP }
+    /** What one person gets from one endpoint, as a cell of the matrix writes it. */
+    enum Answer {
+        /** The access rules let it through, whatever the command then answers (never a server error). */
+        OK("OK"),
+        UNAUTHENTICATED("401"),
+        FORBIDDEN("403"),
+        NOT_FOUND("404"),
+        /** 403 {@code step-up-required}, with the row's intent. */
+        STEP_UP("STEP");
 
-    /** One endpoint: its method and path, the body sent, what each person gets, and its step-up intent if it has one. */
-    record Endpoint(String method, String path, @Nullable String body, Map<Person, Answer> answers,
+        final String cell;
+
+        Answer(String cell) {
+            this.cell = cell;
+        }
+
+        static Answer of(String cell) {
+            return Arrays.stream(values()).filter(answer -> answer.cell.equals(cell)).findFirst().orElseThrow();
+        }
+    }
+
+    /** How a request is sent: a multipart upload is an HTTP POST. */
+    enum Verb {
+        GET, POST, PUT, MULTIPART;
+
+        String http() {
+            return this == MULTIPART ? "POST" : name();
+        }
+    }
+
+    /** One endpoint: its verb and path, the body sent, what each person gets, and its step-up intent if it has one. */
+    record Endpoint(Verb verb, String path, @Nullable String body, Map<Person, Answer> answers,
             @Nullable String intent) {
 
         Endpoint stepUp(String code) {
-            return new Endpoint(method, path, body, answers, code);
+            return new Endpoint(verb, path, body, answers, code);
         }
 
         @Override
         public String toString() {
-            return method + " " + path;
+            return verb.http() + " " + path;
         }
     }
 
@@ -70,26 +94,25 @@ class PermissionMatrixTest extends ExemptionSeam1 {
         assertThat(cells).hasSize(Person.values().length);
         Map<Person, Answer> answers = new EnumMap<>(Person.class);
         for (Person person : Person.values()) {
-            String cell = cells[person.ordinal()];
-            answers.put(person, cell.equals("OK") || cell.equals("STEP") ? Answer.valueOf(cell) : Answer.valueOf("R" + cell));
+            answers.put(person, Answer.of(cells[person.ordinal()]));
         }
         return answers;
     }
 
     static Endpoint get(String path, String row) {
-        return new Endpoint("GET", path, null, answers(row), null);
+        return new Endpoint(Verb.GET, path, null, answers(row), null);
     }
 
     static Endpoint post(String path, @Nullable String body, String row) {
-        return new Endpoint("POST", path, body, answers(row), null);
+        return new Endpoint(Verb.POST, path, body, answers(row), null);
     }
 
     static Endpoint put(String path, String body, String row) {
-        return new Endpoint("PUT", path, body, answers(row), null);
+        return new Endpoint(Verb.PUT, path, body, answers(row), null);
     }
 
     static Endpoint multipart(String path, String row) {
-        return new Endpoint("MULTIPART", path, null, answers(row), null);
+        return new Endpoint(Verb.MULTIPART, path, null, answers(row), null);
     }
 
     //                                  ANONYMOUS SMO OTHER_SMO CM OTHER_CM VA_POC AUDITOR
@@ -114,7 +137,7 @@ class PermissionMatrixTest extends ExemptionSeam1 {
             get("/.well-known/jwks.json", PUBLIC),
             get("/auth/step-up?intent=probe-sensitive", SIGNED_IN),
             get("/api/cycles", SIGNED_IN),
-            get("/api/cycles/2027", SIGNED_IN),
+            get("/api/cycles/{year}", SIGNED_IN),
             get("/api/notifications", SIGNED_IN),
             post("/api/notifications/{random}/read", null, NO_SUCH),
             get("/api/declaration-text", PREPARERS),
@@ -141,8 +164,8 @@ class PermissionMatrixTest extends ExemptionSeam1 {
             get("/api/submissions/{f1}/batches", SEES_F1),
             get("/api/submissions/{f1}/rework-queue", SMO_F1),
             get("/api/submissions/{f1}/reports", SEES_F1),
-            put("/api/submissions/{f1}/reports/BURP_SUITE/mode", "{\"mode\":\"UPLOAD\"}", SMO_F1),
-            post("/api/submissions/{f1}/reports/BURP_SUITE/review",
+            put("/api/submissions/{f1}/reports/{type}/mode", "{\"mode\":\"UPLOAD\"}", SMO_F1),
+            post("/api/submissions/{f1}/reports/{type}/review",
                     "{\"decision\":\"CONFIRMED\",\"justificationVersion\":\"0\"}", CM_F1),
             multipart("/api/submissions/{f1}/files", SMO_F1),
             get("/api/submissions/{f1}/files", SEES_F1),
@@ -161,7 +184,7 @@ class PermissionMatrixTest extends ExemptionSeam1 {
             post("/api/exemptions/{exemption}/reject", "{}", POC_STEP).stepUp("exemption-decide"),
             post("/api/exemptions/{exemption}/va-happened", "{}", SMO_F2),
             post("/api/exemptions/{exemption}/confirm-va", "{}", POC_STEP).stepUp("exemption-decide"),
-            post("/api/cycles/2027/close", "{}", POC_STEP).stepUp("cycle-close"),
+            post("/api/cycles/{year}/close", "{}", POC_STEP).stepUp("cycle-close"),
             get("/api/system-register/template", POC),
             multipart("/api/system-register/uploads", POC),
             get("/api/system-register/previews/{preview}", POC),
@@ -181,49 +204,34 @@ class PermissionMatrixTest extends ExemptionSeam1 {
     /** The ids the rows' paths name, by placeholder. */
     private final Map<String, String> ids = new HashMap<>();
 
+    /** Every endpoint the application serves, as Spring MVC maps them (class prefixes and every path included). */
+    @Autowired
+    @Qualifier("requestMappingHandlerMapping")
+    private RequestMappingHandlerMapping mappings;
+
     @Test
     void everyEndpointTheApplicationHasHasARow() {
-        Set<String> rows = MATRIX.stream()
-                .map(row -> (row.method().equals("MULTIPART") ? "POST" : row.method()) + " " + template(row.path()))
+        Set<String> rows = MATRIX.stream().map(row -> row.verb().http() + " " + template(row.path()))
                 .collect(Collectors.toSet());
         Set<String> endpoints = new HashSet<>();
-        for (JavaClass type : new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                .importPackages("sg.annualva")) {
-            if (!type.isAnnotatedWith(RestController.class)) {
-                continue;
+        mappings.getHandlerMethods().forEach((mapping, handler) -> {
+            if (handler.getBeanType().getPackageName().startsWith("sg.annualva")
+                    && !handler.getBeanType().getPackageName().startsWith("sg.annualva.harness")) {
+                for (String pattern : mapping.getPatternValues()) {
+                    for (var method : mapping.getMethodsCondition().getMethods()) {
+                        endpoints.add(method.name() + " " + template(pattern));
+                    }
+                }
             }
-            for (Method method : type.reflect().getDeclaredMethods()) {
-                mapping(method).ifPresent(endpoints::add);
-            }
-        }
+        });
+        assertThat(endpoints).as("Spring MVC lists the endpoints").isNotEmpty();
         assertThat(rows).as("one row per endpoint, and none for an endpoint that does not exist")
                 .containsExactlyInAnyOrderElementsOf(endpoints);
     }
 
     /** The path with every placeholder or path variable written {@code {}}, and no query. */
     private static String template(String path) {
-        return path.replaceAll("\\?.*$", "").replaceAll("\\{[^}]+}", "{}").replaceAll("/2027", "/{}")
-                .replace("/BURP_SUITE/", "/{}/");
-    }
-
-    private static java.util.Optional<String> mapping(Method method) {
-        GetMapping get = method.getAnnotation(GetMapping.class);
-        if (get != null) {
-            return java.util.Optional.of("GET " + template(first(get.value(), get.path())));
-        }
-        PostMapping post = method.getAnnotation(PostMapping.class);
-        if (post != null) {
-            return java.util.Optional.of("POST " + template(first(post.value(), post.path())));
-        }
-        PutMapping put = method.getAnnotation(PutMapping.class);
-        if (put != null) {
-            return java.util.Optional.of("PUT " + template(first(put.value(), put.path())));
-        }
-        return java.util.Optional.empty();
-    }
-
-    private static String first(String[] value, String[] path) {
-        return value.length > 0 ? value[0] : path[0];
+        return path.replaceAll("\\?.*$", "").replaceAll("\\{[^}]+}", "{}");
     }
 
     @Test
@@ -246,7 +254,7 @@ class PermissionMatrixTest extends ExemptionSeam1 {
                 if (!matches(expected, endpoint, response)) {
                     wrong.add(endpoint + " as " + person + ": expected " + expected + ", got " + response.status() + " "
                             + response.body());
-                } else if (expected != Answer.OK && expected != Answer.R404) {
+                } else if (expected != Answer.OK && expected != Answer.NOT_FOUND) {
                     refusals.put(response.header("x-correlation-id"), new Refused(endpoint + " as " + person,
                             userIds.get(person), expected, endpoint.intent()));
                 }
@@ -255,20 +263,20 @@ class PermissionMatrixTest extends ExemptionSeam1 {
         assertThat(wrong).as("cells that do not match the matrix").isEmpty();
 
         Map<String, JsonNode> audited = new HashMap<>();
-        allPages(otherVaPoc(), "action=REQUEST_REFUSED&from=2027-09-15&to=2027-09-15")
+        AuditEntries.all(otherVaPoc(), "action=REQUEST_REFUSED&from=2027-09-15&to=2027-09-15")
                 .forEach(entry -> audited.put(entry.get("correlationId").asString(), entry));
         refusals.forEach((correlationId, refused) -> {
             JsonNode entry = audited.get(correlationId);
             assertThat(entry).as("the refusal of " + refused.what() + " is audited").isNotNull();
             assertThat(entry.get("outcome").asString()).isEqualTo("REFUSED");
             assertThat(entry.get("detail").get("status").asInt()).as(refused.what())
-                    .isEqualTo(refused.answer() == Answer.R401 ? 401 : 403);
+                    .isEqualTo(refused.answer() == Answer.UNAUTHENTICATED ? 401 : 403);
             assertThat(entry.get("detail").get("reason").asString()).as(refused.what()).isEqualTo(switch (refused.answer()) {
-                case R401 -> "unauthenticated";
-                case STEP -> "step-up-required";
+                case UNAUTHENTICATED -> "unauthenticated";
+                case STEP_UP -> "step-up-required";
                 default -> "forbidden";
             });
-            if (refused.answer() == Answer.STEP) {
+            if (refused.answer() == Answer.STEP_UP) {
                 assertThat(entry.get("detail").get("intent").asString()).isEqualTo(refused.intent());
             }
             if (refused.userId() == null) {
@@ -301,7 +309,8 @@ class PermissionMatrixTest extends ExemptionSeam1 {
             var answered = send(fresh, endpoint);
             assertThat(answered.status() == 403 && answered.body().contains("step-up-required"))
                     .as(endpoint + " with a fresh sign-in: " + answered.status() + " " + answered.body()).isFalse();
-            assertThat(answered.status()).as(endpoint + " is let through").isNotIn(401, 403);
+            assertThat(answered.status()).as(endpoint + " is let through, and answered").isNotIn(401, 403)
+                    .isLessThan(500);
         }
     }
 
@@ -336,6 +345,8 @@ class PermissionMatrixTest extends ExemptionSeam1 {
         arrange.exports();
         ids.put("export", ApiClient.json(export).get("id").asString());
         ids.put("random", UUID.randomUUID().toString());
+        ids.put("year", "2027");
+        ids.put("type", BURP_SUITE);
         arrange.grant("AUDITOR", AUDITOR_EMAIL, null, "GRANT", clock.instant().plus(Duration.ofDays(30)).toString());
     }
 
@@ -364,14 +375,13 @@ class PermissionMatrixTest extends ExemptionSeam1 {
 
     private ApiClient.Response send(ApiClient client, Endpoint endpoint) {
         String path = filled(endpoint.path());
-        return switch (endpoint.method()) {
-            case "GET" -> client.get(path);
-            case "POST" -> client.postJson(path, endpoint.body() == null ? "" : filled(endpoint.body()));
-            case "PUT" -> client.putJson(path, filled(endpoint.body()));
-            case "MULTIPART" -> client.postMultipart(path, Map.of("reportType", DEPENDENCY_CHECK, "kind",
+        return switch (endpoint.verb()) {
+            case GET -> client.get(path);
+            case POST -> client.postJson(path, endpoint.body() == null ? "" : filled(endpoint.body()));
+            case PUT -> client.putJson(path, filled(endpoint.body()));
+            case MULTIPART -> client.postMultipart(path, Map.of("reportType", DEPENDENCY_CHECK, "kind",
                     MACHINE_READABLE), "file", "file.json", "application/octet-stream",
                     "{}".getBytes(StandardCharsets.UTF_8));
-            default -> throw new IllegalArgumentException(endpoint.method());
         };
     }
 
@@ -386,29 +396,16 @@ class PermissionMatrixTest extends ExemptionSeam1 {
     private static boolean matches(Answer expected, Endpoint endpoint, ApiClient.Response response) {
         int status = response.status();
         return switch (expected) {
-            case OK -> status != 401 && status != 403 && status != 404;
-            case R401 -> status == 401;
-            case R404 -> status == 404;
-            case R403 -> status == 403 && type(response).endsWith("/forbidden");
-            case STEP -> status == 403 && type(response).endsWith("/step-up-required")
+            case OK -> status < 500 && status != 401 && status != 403 && status != 404;
+            case UNAUTHENTICATED -> status == 401;
+            case NOT_FOUND -> status == 404;
+            case FORBIDDEN -> status == 403 && type(response).endsWith("/forbidden");
+            case STEP_UP -> status == 403 && type(response).endsWith("/step-up-required")
                     && ApiClient.json(response).get("stepUpPath").asString().endsWith("intent=" + endpoint.intent());
         };
     }
 
     private static String type(ApiClient.Response response) {
         return ApiClient.json(response).path("type").asString("");
-    }
-
-    private static List<JsonNode> allPages(ApiClient reader, String query) {
-        List<JsonNode> items = new ArrayList<>();
-        for (int page = 0;; page++) {
-            var response = reader.get("/api/audit-entries?size=200&page=" + page + "&" + query);
-            assertThat(response.status()).as(response.body()).isEqualTo(200);
-            JsonNode body = ApiClient.json(response);
-            body.get("items").forEach(items::add);
-            if ((long) (page + 1) * 200 >= body.get("total").asLong()) {
-                return items;
-            }
-        }
     }
 }

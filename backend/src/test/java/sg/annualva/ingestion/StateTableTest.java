@@ -17,6 +17,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import sg.annualva.harness.ApiClient;
+import sg.annualva.harness.AuditEntries;
 import sg.annualva.submission.SubmissionState;
 import tools.jackson.databind.JsonNode;
 
@@ -88,12 +89,13 @@ class StateTableTest extends ExemptionSeam1 {
      * SYS-F1 in one state, with what the commands address: its VA Submission, a Finding and its current proposal, the
      * Dependency-Check file, the version of the Burp Suite justification and the Exemption; null where it has none.
      */
-    record At(String state, String systemId, @Nullable String submissionId, @Nullable String findingId,
+    record At(String systemId, @Nullable String submissionId, @Nullable String findingId,
             @Nullable String proposalId, @Nullable String fileId, int justificationVersion,
             @Nullable String exemptionId) {
 
-        At withExemption(String id) {
-            return new At(state, systemId, submissionId, findingId, proposalId, fileId, justificationVersion, id);
+        /** The same System once a request or a start has made its VA Submission, and the Exemption if one was asked for. */
+        At with(String submission, @Nullable String exemption) {
+            return new At(systemId, submission, findingId, proposalId, fileId, justificationVersion, exemption);
         }
 
         boolean has(Needs needs) {
@@ -185,7 +187,12 @@ class StateTableTest extends ExemptionSeam1 {
                 Arguments.of(AWAITING_ENDORSEMENT, "REQUEST_EXEMPTION", EXEMPTION_REQUESTED),
                 Arguments.of(EXEMPTION_REQUESTED, "APPROVE_EXEMPTION", EXEMPTED),
                 Arguments.of(EXEMPTION_REQUESTED, "REJECT_EXEMPTION", DRAFT),
+                Arguments.of(IN_REVIEW, "REQUEST_THEN_REJECT", IN_REVIEW),
+                Arguments.of(RETURNED_FOR_REWORK, "REQUEST_THEN_REJECT", RETURNED_FOR_REWORK),
+                Arguments.of(AWAITING_ENDORSEMENT, "REQUEST_THEN_REJECT", AWAITING_ENDORSEMENT),
+                Arguments.of(NONE, "REQUEST_THEN_REJECT", NOT_STARTED),
                 Arguments.of(EXEMPTED, "LAPSE", DRAFT),
+                Arguments.of(NONE, "REQUEST_APPROVE_LAPSE", NOT_STARTED),
                 Arguments.of(DRAFT, "WITHDRAW", WITHDRAWN),
                 Arguments.of(IN_REVIEW, "WITHDRAW", WITHDRAWN),
                 Arguments.of(RETURNED_FOR_REWORK, "WITHDRAW", WITHDRAWN),
@@ -211,8 +218,11 @@ class StateTableTest extends ExemptionSeam1 {
         JsonNode entry = newestSuccess(audited(move), at.systemId());
         assertThat(entry.get("detail").get("state_to").asString()).isEqualTo(to);
         if (entry.get("detail").has("state_from")) {
-            assertThat(entry.get("detail").get("state_from").asString())
-                    .isEqualTo(from.equals(NONE) ? NOT_STARTED : from);
+            assertThat(entry.get("detail").get("state_from").asString()).isEqualTo(switch (move) {
+                case "REQUEST_THEN_REJECT" -> EXEMPTION_REQUESTED;
+                case "REQUEST_APPROVE_LAPSE" -> EXEMPTED;
+                default -> from.equals(NONE) ? NOT_STARTED : from;
+            });
         }
     }
 
@@ -234,55 +244,34 @@ class StateTableTest extends ExemptionSeam1 {
             case NONE -> {
                 registered(List.of(listed("SYS-F1", "File one", SMO_A, CM, "Q3"),
                         listed("SYS-F2", "File two", SMO_B, CM_OTHER, "Q3")), List.of());
-                yield new At(NONE, idOf("SYS-F1"), null, null, null, null, 0, null);
+                yield new At(idOf("SYS-F1"), null, null, null, null, 0, null);
             }
             case NOT_STARTED -> {
-                At none = arrive(NONE);
-                JsonNode exemption = requested(signedInAs(SMO_A), none.systemId(), PRIOR_VA_2027);
-                rejected(vaPoc(), exemption.get("id").asString());
-                yield new At(NOT_STARTED, none.systemId(), exemption.get("submissionId").asString(), null, null, null,
-                        0, exemption.get("id").asString());
+                yield make("REQUEST_THEN_REJECT", arrive(NONE));
             }
-            case DRAFT -> prepared(DRAFT, readyDraft());
-            case IN_REVIEW -> prepared(IN_REVIEW, inReview());
-            case RETURNED_FOR_REWORK -> prepared(RETURNED_FOR_REWORK, returnedForRework());
-            case AWAITING_ENDORSEMENT -> prepared(AWAITING_ENDORSEMENT, awaitingEndorsement());
-            case ENDORSED -> {
-                At awaiting = arrive(AWAITING_ENDORSEMENT);
-                endorsed(vaPoc(), awaiting.submissionId());
-                yield moved(awaiting, ENDORSED);
-            }
-            case EXEMPTION_REQUESTED -> {
-                At draft = arrive(DRAFT);
-                yield moved(draft, EXEMPTION_REQUESTED)
-                        .withExemption(requested(signedInAs(SMO_A), draft.systemId(), scheduledVa()).get("id").asString());
-            }
-            case EXEMPTED -> {
-                At requested = arrive(EXEMPTION_REQUESTED);
-                approved(vaPoc(), requested.exemptionId());
-                yield moved(requested, EXEMPTED);
-            }
-            case WITHDRAWN -> moved(make("WITHDRAW", arrive(DRAFT)), WITHDRAWN);
-            case NOT_ENDORSED -> moved(make("CLOSE_CYCLE", arrive(DRAFT)), NOT_ENDORSED);
+            case DRAFT -> prepared(readyDraft());
+            case IN_REVIEW -> prepared(inReview());
+            case RETURNED_FOR_REWORK -> prepared(returnedForRework());
+            case AWAITING_ENDORSEMENT -> prepared(awaitingEndorsement());
+            case ENDORSED -> make("ENDORSE", arrive(AWAITING_ENDORSEMENT));
+            case EXEMPTION_REQUESTED -> make("REQUEST_SCHEDULED_EXEMPTION", arrive(DRAFT));
+            case EXEMPTED -> make("APPROVE_EXEMPTION", arrive(EXEMPTION_REQUESTED));
+            case WITHDRAWN -> make("WITHDRAW", arrive(DRAFT));
+            case NOT_ENDORSED -> make("CLOSE_CYCLE", arrive(DRAFT));
             default -> throw new IllegalArgumentException(state);
         };
     }
 
     /** What a started VA Submission holds that the commands address, read by its SMO/Tech Lead. */
-    private At prepared(String state, Draft draft) {
+    private At prepared(Draft draft) {
         String sub = draft.submissionId();
         ApiClient smo = signedInAs(SMO_A);
         JsonNode finding = findings(smo, sub).get("items").get(0);
         JsonNode files = ApiClient.json(smo.get(filesOf(sub)));
         String fileId = files.get(0).get("id").asString();
-        return new At(state, draft.systemId(), sub, finding.get("id").asString(),
+        return new At(draft.systemId(), sub, finding.get("id").asString(),
                 finding.get("currentProposal").get("id").asString(), fileId,
                 justificationVersion(smo, sub, BURP_SUITE), null);
-    }
-
-    private static At moved(At at, String state) {
-        return new At(state, at.systemId(), at.submissionId(), at.findingId(), at.proposalId(), at.fileId(),
-                at.justificationVersion(), at.exemptionId());
     }
 
     // ---- sending the commands ----
@@ -331,8 +320,7 @@ class StateTableTest extends ExemptionSeam1 {
             case "START" -> {
                 var response = start(signedInAs(SMO_A), at.systemId());
                 assertThat(response.status()).as(response.body()).isEqualTo(201);
-                return new At(at.state(), at.systemId(), ApiClient.json(response).get("id").asString(), null, null,
-                        null, 0, at.exemptionId());
+                return at.with(ApiClient.json(response).get("id").asString(), at.exemptionId());
             }
             case "SUBMIT" -> submitted(signedInAs(SMO_A), sub);
             case "RETURN_FROM_REVIEW" -> {
@@ -347,10 +335,16 @@ class StateTableTest extends ExemptionSeam1 {
             }
             case "ENDORSE" -> endorsed(vaPoc(), sub);
             case "RETURN_FROM_ENDORSEMENT" -> returned(vaPoc(), sub, "The plan's date is too late.");
-            case "REQUEST_EXEMPTION" -> {
-                JsonNode exemption = requested(signedInAs(SMO_A), at.systemId(), PRIOR_VA_2027);
-                return new At(at.state(), at.systemId(), exemption.get("submissionId").asString(), at.findingId(),
-                        at.proposalId(), at.fileId(), at.justificationVersion(), exemption.get("id").asString());
+            case "REQUEST_EXEMPTION", "REQUEST_SCHEDULED_EXEMPTION" -> {
+                JsonNode exemption = requested(signedInAs(SMO_A), at.systemId(),
+                        move.equals("REQUEST_EXEMPTION") ? PRIOR_VA_2027 : scheduledVa());
+                return at.with(exemption.get("submissionId").asString(), exemption.get("id").asString());
+            }
+            case "REQUEST_THEN_REJECT" -> {
+                return make("REJECT_EXEMPTION", make("REQUEST_EXEMPTION", at));
+            }
+            case "REQUEST_APPROVE_LAPSE" -> {
+                return make("LAPSE", make("APPROVE_EXEMPTION", make("REQUEST_SCHEDULED_EXEMPTION", at)));
             }
             case "APPROVE_EXEMPTION" -> approved(vaPoc(), at.exemptionId());
             case "REJECT_EXEMPTION" -> rejected(vaPoc(), at.exemptionId());
@@ -378,7 +372,8 @@ class StateTableTest extends ExemptionSeam1 {
 
     private static String audited(String move) {
         return switch (move) {
-            case "LAPSE" -> "EXEMPTION_LAPSED";
+            case "LAPSE", "REQUEST_APPROVE_LAPSE" -> "EXEMPTION_LAPSED";
+            case "REQUEST_THEN_REJECT" -> "EXEMPTION_REJECTED";
             case "WITHDRAW" -> "SUBMISSION_WITHDRAWN";
             case "CLOSE_CYCLE" -> "SUBMISSION_NOT_ENDORSED";
             default -> Command.valueOf(move).audited;
@@ -389,39 +384,31 @@ class StateTableTest extends ExemptionSeam1 {
 
     /** The state SYS-F1's VA Submission is in, or, with none, the state its SMO/Tech Lead's inbox shows for 2027. */
     private String stateOf(At at) {
-        if (at.submissionId() != null) {
-            return submission(vaPoc(), at.submissionId()).get("state").asString();
-        }
-        return CycleLifecycleSeam1.itemOf(CycleLifecycleSeam1.inbox(signedInAs(SMO_A), 2027), "SYS-F1").get("state")
-                .asString();
+        return rowOf(at).get("state").asString();
     }
 
     private boolean overdue(At at) {
+        return rowOf(at).get("overdue").asBoolean();
+    }
+
+    /** SYS-F1's VA Submission as a VA POC reads it, or, with none, its row in its SMO/Tech Lead's inbox for 2027. */
+    private JsonNode rowOf(At at) {
         if (at.submissionId() != null) {
-            return submission(vaPoc(), at.submissionId()).get("overdue").asBoolean();
+            return submission(vaPoc(), at.submissionId());
         }
-        return CycleLifecycleSeam1.itemOf(CycleLifecycleSeam1.inbox(signedInAs(SMO_A), 2027), "SYS-F1").get("overdue")
-                .asBoolean();
+        return CycleLifecycleSeam1.itemOf(CycleLifecycleSeam1.inbox(signedInAs(SMO_A), 2027), "SYS-F1");
     }
 
     /** How many REFUSED entries each action has about this System. */
     private Map<String, Integer> refusedByAction(String systemId) {
         Map<String, Integer> counts = new HashMap<>();
-        ApiClient reader = otherVaPoc();
-        for (int page = 0;; page++) {
-            var response = reader.get("/api/audit-entries?size=200&page=" + page + "&system=" + systemId);
-            assertThat(response.status()).as(response.body()).isEqualTo(200);
-            JsonNode body = ApiClient.json(response);
-            body.get("items").forEach(entry -> {
-                if (entry.get("outcome").asString().equals("REFUSED")) {
-                    assertThat(entry.get("detail").has("reason")).as(entry.toString()).isTrue();
-                    counts.merge(entry.get("action").asString(), 1, Integer::sum);
-                }
-            });
-            if ((long) (page + 1) * 200 >= body.get("total").asLong()) {
-                return counts;
+        for (JsonNode entry : AuditEntries.all(otherVaPoc(), "system=" + systemId)) {
+            if (entry.get("outcome").asString().equals("REFUSED")) {
+                assertThat(entry.get("detail").has("reason")).as(entry.toString()).isTrue();
+                counts.merge(entry.get("action").asString(), 1, Integer::sum);
             }
         }
+        return counts;
     }
 
     private JsonNode newestSuccess(String action, String systemId) {
