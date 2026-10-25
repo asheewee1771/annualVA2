@@ -46,7 +46,7 @@ public abstract class RoleHolderSeam1 extends RegisterSeam1 {
     }
 
     protected static String grantOf(JsonNode review, String role, String email, String systemCode) {
-        return holder(review, role, email, systemCode).get("grantId").asString();
+        return holder(review, role, email, systemCode).get("id").asString();
     }
 
     protected static List<String> roles(ApiClient client) {

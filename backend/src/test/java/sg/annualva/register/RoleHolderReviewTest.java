@@ -45,6 +45,8 @@ class RoleHolderReviewTest extends RoleHolderSeam1 {
         assertThat(smo.get("namedInRegister").asBoolean()).isTrue();
         assertThat(smo.get("signedIn").asBoolean()).isTrue();
         assertThat(smo.get("own").asBoolean()).isFalse();
+        assertThat(smo.get("suspendable").asBoolean()).isTrue();
+        assertThat(smo.get("restorable").asBoolean()).isFalse();
         assertThat(holder(review, "SMO", SMO_B, "SYS-HB").get("signedIn").asBoolean()).as("named, not signed in yet")
                 .isFalse();
         holder(review, "CYBER_MANAGER", CM, "SYS-HA");
@@ -53,6 +55,7 @@ class RoleHolderReviewTest extends RoleHolderSeam1 {
         assertThat(poc.get("source").asString()).isEqualTo("CONFIG");
         assertThat(poc.get("namedInRegister").isNull()).as("not a Register role").isTrue();
         assertThat(poc.get("own").asBoolean()).isTrue();
+        assertThat(poc.get("suspendable").asBoolean()).as("own, and not held for a System").isFalse();
         holder(review, "VA_POC", POC_TWO, null);
     }
 
@@ -139,7 +142,7 @@ class RoleHolderReviewTest extends RoleHolderSeam1 {
         JsonNode review = review(vaPoc());
         JsonNode returned = review.get("automaticReturns");
         assertThat(returned).hasSize(1);
-        assertThat(returned.get(0).get("grantId").asString()).isEqualTo(smoGrant);
+        assertThat(returned.get(0).get("id").asString()).isEqualTo(smoGrant);
         assertThat(returned.get(0).get("returnTrigger").asString()).isEqualTo("REGISTER");
         assertThat(returned.get(0).get("returnedAt").asString()).isEqualTo("2030-09-02T02:00:00Z");
         assertThat(holder(review, "SMO", SMO_A, "SYS-HA").get("state").asString()).isEqualTo("ACTIVE");

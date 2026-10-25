@@ -31,9 +31,9 @@ class IdentityProviderDisablementTest extends RoleHolderSeam1 {
         for (String system : new String[] {"SYS-HA", "SYS-HB"}) {
             JsonNode holder = holder(review, "SMO", email, system);
             assertThat(holder.get("state").asString()).isEqualTo("SUSPENDED");
-            assertThat(holder.get("suspendedBecause").asString()).isEqualTo("IDENTITY_PROVIDER");
+            assertThat(holder.get("suspensionCause").asString()).isEqualTo("IDENTITY_PROVIDER");
             assertThat(holder.get("disabledAtIdentityProvider").asBoolean()).isTrue();
-            JsonNode entry = entries(poc, SUSPENDED, holder.get("grantId").asString()).getFirst();
+            JsonNode entry = entries(poc, SUSPENDED, holder.get("id").asString()).getFirst();
             assertThat(entry.get("detail").get("reason").asString()).isEqualTo("identity-provider");
             assertThat(entry.get("actorId").isNull()).as("the provider's word, not a person's act").isTrue();
         }
@@ -58,6 +58,22 @@ class IdentityProviderDisablementTest extends RoleHolderSeam1 {
         var refusals = vaPoc().get("/api/audit-entries?size=1&action=SIGN_IN_FAILED");
         assertThat(ApiClient.json(refusals).get("items").get(0).get("detail").get("reason").asString())
                 .isEqualTo("account-disabled");
+    }
+
+    @Test
+    void theStatusInsideTheAfcasClaimCountsAndOnlyActiveMeansEnabled() {
+        bothSystemsNamingSmoA();
+        String ssoId = ssoIdOf(SMO_A);
+        TestIdentity person = fresh(TestIdentity.of(ssoId, SMO_A, "Person"));
+        ApiClient active = anotherBrowser();
+        SignIn.signedIn(active, issuer, person.withClaim("afcas", java.util.Map.of("uuid", ssoId, "status", "Active")));
+        assertThat(roles(active)).containsExactly("SMO");
+
+        var locked = SignIn.through(anotherBrowser(), issuer,
+                person.withClaim("afcas", java.util.Map.of("uuid", ssoId, "status", "LOCKED")));
+
+        assertThat(locked.callback().header("location")).endsWith("/?signin=refused&reason=account-disabled");
+        assertEverySmoGrantSuspendedByTheIdentityProvider(SMO_A);
     }
 
     @Test
@@ -118,6 +134,6 @@ class IdentityProviderDisablementTest extends RoleHolderSeam1 {
         assertThat(poc.get(HOLDERS).status()).isEqualTo(401);
         JsonNode holder = holder(review(otherVaPoc()), "VA_POC", POC_ONE, null);
         assertThat(holder.get("state").asString()).isEqualTo("SUSPENDED");
-        assertThat(holder.get("suspendedBecause").asString()).isEqualTo("IDENTITY_PROVIDER");
+        assertThat(holder.get("suspensionCause").asString()).isEqualTo("IDENTITY_PROVIDER");
     }
 }

@@ -1,5 +1,6 @@
 package sg.annualva.register;
 
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -16,12 +17,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sg.annualva.access.AuditActor;
 import sg.annualva.access.CurrentUser;
-import sg.annualva.access.GrantSource;
-import sg.annualva.access.ReturnTrigger;
 import sg.annualva.access.Role;
+import sg.annualva.access.RoleGrant;
 import sg.annualva.access.RoleHolder;
 import sg.annualva.access.RoleHolders;
-import sg.annualva.access.SuspensionCause;
 import sg.annualva.audit.AuditAction;
 import sg.annualva.audit.AuditEvent;
 import sg.annualva.audit.AuditLog;
@@ -34,7 +33,7 @@ import sg.annualva.cycle.CycleCalendar;
  * Register, the roles that came back by themselves since the last review (ADR 0055), whether a review is due, and the
  * record of each completed review. A review is due when none has been recorded, when 3 months have passed since the last
  * one (by the business date) and when a Register apply came after it. Its only change is a suspension, or lifting one,
- * which the access module makes ({@link RoleHolders}).
+ * which the access module makes ({@link RoleHolders}); this class only says where each grant stands against the Register.
  *
  * <p>Reading the list is not audited, as reading the Register list is not (reviewer decisions, 2026-10-06): it names
  * people and Systems, no report or Finding content. Recording a review is.
@@ -50,18 +49,23 @@ public class RoleHolderReviews {
     private static final int MONTHS_BETWEEN_REVIEWS = 3;
 
     /**
-     * One role holder, against the Register.
+     * One role holder, against the Register: the grant and the person (flattened into the same JSON object), and what
+     * the review adds.
      *
      * @param namedInRegister whether the Register names this person for this role on this System now; null for a role
      *     that does not come from the Register (a VA POC's, an Auditor's)
      * @param own whether it is the caller's own grant, which they may not suspend or restore
+     * @param suspendable whether the caller may suspend it, by the rule the command refuses by
+     * @param restorable whether the caller may restore it, likewise
      */
-    public record Holder(UUID grantId, Role role, String email, @Nullable String displayName, @Nullable UUID systemId,
-            @Nullable String systemCode, @Nullable String systemName, GrantSource source, RoleHolder.State state,
-            Instant grantedAt, @Nullable Instant expiresAt, @Nullable Instant lastUsedAt, @Nullable Instant lapsedAt,
-            @Nullable Instant suspendedAt, @Nullable SuspensionCause suspendedBecause, @Nullable Instant returnedAt,
-            @Nullable ReturnTrigger returnTrigger, @Nullable Boolean namedInRegister, boolean signedIn,
-            boolean disabledAtIdentityProvider, boolean own) {}
+    public record Holder(@JsonUnwrapped RoleHolder holder, @Nullable String systemCode, @Nullable String systemName,
+            RoleHolder.State state, @Nullable Boolean namedInRegister, boolean own, boolean suspendable,
+            boolean restorable) {
+
+        private RoleGrant grant() {
+            return holder.grant();
+        }
+    }
 
     /**
      * The review as the screen shows it.
@@ -70,15 +74,15 @@ public class RoleHolderReviews {
      * @param automaticReturns the holders whose role came back by itself since the last review (all of them before the
      *     first), newest first
      */
-    public record View(List<Holder> holders, @Nullable RoleHolderReview lastReview, boolean reviewDue, List<String> dueBecause,
-            List<Holder> automaticReturns) {}
+    public record View(List<Holder> holders, @Nullable CompletedReview lastReview, boolean reviewDue,
+            List<String> dueBecause, List<Holder> automaticReturns) {}
 
     /** The VA POCs first, then by System ID, role and email. */
     private static final Comparator<Holder> ORDER = Comparator
             .comparing((Holder holder) -> holder.systemCode() != null)
             .thenComparing(holder -> holder.systemCode() == null ? "" : holder.systemCode())
-            .thenComparing(Holder::role)
-            .thenComparing(Holder::email);
+            .thenComparing(holder -> holder.grant().role())
+            .thenComparing(holder -> holder.grant().email());
 
     private final RoleHolders roleHolders;
     private final RoleHolderReviewStore reviews;
@@ -91,7 +95,6 @@ public class RoleHolderReviews {
 
     RoleHolderReviews(RoleHolders roleHolders, RoleHolderReviewStore reviews, RegisterStore register,
             CycleCalendar calendar, CurrentUser user, AuditLog audit, AuditActor actor, Clock clock) {
-        this.clock = clock;
         this.roleHolders = roleHolders;
         this.reviews = reviews;
         this.register = register;
@@ -99,87 +102,81 @@ public class RoleHolderReviews {
         this.user = user;
         this.audit = audit;
         this.actor = actor;
+        this.clock = clock;
     }
 
     @Transactional(readOnly = true)
     public View view() {
-        List<Holder> holders = holders();
-        Optional<RoleHolderReview> last = reviews.latest();
+        Map<UUID, ExistingSystem> systems = register.systems().stream()
+                .collect(Collectors.toMap(ExistingSystem::id, Function.identity()));
+        UUID caller = user.id();
+        Instant now = clock.instant();
+        List<Holder> holders = new ArrayList<>();
+        for (RoleHolder holder : roleHolders.list()) {
+            RoleGrant grant = holder.grant();
+            holders.add(against(holder, grant.systemId() == null ? null : systems.get(grant.systemId()), caller, now));
+        }
+        holders.sort(ORDER);
+        Optional<CompletedReview> last = reviews.latest();
         List<String> due = dueBecause(last);
         List<Holder> returns = holders.stream()
-                .filter(holder -> holder.returnedAt() != null
-                        && last.map(review -> holder.returnedAt().isAfter(review.reviewedAt())).orElse(true))
-                .sorted(Comparator.comparing(Holder::returnedAt).reversed())
+                .filter(holder -> returnedSince(holder.grant(), last))
+                .sorted(Comparator.comparing((Holder holder) -> holder.grant().returnedAt()).reversed())
                 .toList();
         return new View(holders, last.orElse(null), !due.isEmpty(), due, returns);
     }
 
     /** Records that the caller has completed a review of every role holder listed now. */
     @Transactional
-    public RoleHolderReview complete() {
+    public CompletedReview complete() {
         int count = roleHolders.list().size();
-        RoleHolderReview review = reviews.insert(clock.instant(), user.id(), count);
+        CompletedReview review = reviews.insert(clock.instant(), user.id(), count);
         audit.record(actor.attribute(AuditEvent.of(AuditAction.ROLE_HOLDERS_REVIEWED, AuditOutcome.SUCCESS))
                 .with(DetailKey.COUNT, count));
         return review;
     }
 
-    /** Suspends a grant (a step-up action) and answers it as the review lists it. */
-    @Transactional
+    /** Suspends a grant (a step-up action, in the access module's transaction) and answers it as the review lists it. */
     public Holder suspend(UUID grantId) {
         return against(roleHolders.suspend(grantId));
     }
 
     /** Lifts a grant's suspension (a step-up action) and answers it as the review lists it. */
-    @Transactional
     public Holder restore(UUID grantId) {
         return against(roleHolders.restore(grantId));
     }
 
-    private List<Holder> holders() {
-        Map<UUID, ExistingSystem> systems = systems();
-        UUID me = user.id();
-        Instant now = clock.instant();
-        List<Holder> holders = new ArrayList<>();
-        for (RoleHolder holder : roleHolders.list()) {
-            holders.add(holder(holder, systems, me, now));
-        }
-        holders.sort(ORDER);
-        return holders;
-    }
-
     private Holder against(RoleHolder holder) {
-        return holder(holder, systems(), user.id(), clock.instant());
+        UUID systemId = holder.grant().systemId();
+        ExistingSystem system = systemId == null ? null : register.system(systemId).orElse(null);
+        return against(holder, system, user.id(), clock.instant());
     }
 
-    private Map<UUID, ExistingSystem> systems() {
-        return register.systems().stream().collect(Collectors.toMap(ExistingSystem::id, Function.identity()));
-    }
-
-    private static Holder holder(RoleHolder holder, Map<UUID, ExistingSystem> systems, UUID me, Instant now) {
-        ExistingSystem system = holder.systemId() == null ? null : systems.get(holder.systemId());
-        return new Holder(holder.grantId(), holder.role(), holder.email(), holder.displayName(), holder.systemId(),
-                system == null ? null : system.code(), system == null ? null : system.name(), holder.source(),
-                holder.state(now), holder.grantedAt(), holder.expiresAt(), holder.lastUsedAt(), holder.lapsedAt(),
-                holder.suspendedAt(), holder.suspendedBecause(), holder.returnedAt(), holder.returnTrigger(),
-                named(holder, system), holder.signedIn(), holder.disabledAtIdentityProvider(),
-                me.equals(holder.userId()));
+    private static Holder against(RoleHolder holder, @Nullable ExistingSystem system, UUID caller, Instant now) {
+        return new Holder(holder, system == null ? null : system.code(), system == null ? null : system.name(),
+                holder.state(now), named(holder.grant(), system), holder.heldBy(caller), holder.suspendableBy(caller),
+                holder.restorableBy(caller));
     }
 
     /** Whether the Register names this person for this role on this System now; null for a role it does not give. */
-    private static @Nullable Boolean named(RoleHolder holder, @Nullable ExistingSystem system) {
-        String named = switch (holder.role()) {
-            case SMO -> system == null ? "" : system.smoEmail();
-            case CYBER_MANAGER -> system == null ? "" : system.cyberManagerEmail();
-            case VA_POC, AUDITOR -> null;
-        };
-        if (named == null) {
+    private static @Nullable Boolean named(RoleGrant grant, @Nullable ExistingSystem system) {
+        if (!Role.PER_SYSTEM.contains(grant.role())) {
             return null;
         }
-        return system != null && !system.retired() && named.equalsIgnoreCase(holder.email());
+        if (system == null || system.retired()) {
+            return false;
+        }
+        String named = grant.role() == Role.SMO ? system.smoEmail() : system.cyberManagerEmail();
+        return named.equalsIgnoreCase(grant.email());
     }
 
-    private List<String> dueBecause(Optional<RoleHolderReview> last) {
+    /** Whether the grant came back by itself after the last review, or ever when there has been none. */
+    private static boolean returnedSince(RoleGrant grant, Optional<CompletedReview> last) {
+        Instant returnedAt = grant.returnedAt();
+        return returnedAt != null && last.map(review -> returnedAt.isAfter(review.reviewedAt())).orElse(true);
+    }
+
+    private List<String> dueBecause(Optional<CompletedReview> last) {
         if (last.isEmpty()) {
             return List.of(NEVER_REVIEWED);
         }

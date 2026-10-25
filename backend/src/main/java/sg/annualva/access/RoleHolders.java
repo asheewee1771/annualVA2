@@ -2,7 +2,6 @@ package sg.annualva.access;
 
 import java.time.Clock;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -19,8 +18,10 @@ import sg.annualva.web.ResourceNotFoundException;
  * The role store as the VA POCs' role-holder review sees it (IM8 ac-4, ticket 47, ADR 0056): every grant not revoked, and
  * the review's one change, suspending a person's role for a System until a Register upload names someone else, or
  * restoring it. Both are step-up actions (ac-2, "changing roles") and both are refused for the caller's own grant, so a
- * VA POC cannot lift a suspension of their own role or suspend themselves out of segregation of duties. The writes go
- * through {@link RoleLapse}, the writer of a grant's state; each change and each refusal is audited with the grant id.
+ * VA POC cannot lift a suspension of their own role or suspend themselves out of segregation of duties. What may be done
+ * to a grant is {@link RoleHolder#suspendableBy} and {@link RoleHolder#restorableBy}; a refusal says which part failed.
+ * The writes go through {@link RoleLapse}, the writer of a grant's state; each change and each refusal is audited with the
+ * grant id.
  */
 @Service
 public class RoleHolders {
@@ -28,8 +29,7 @@ public class RoleHolders {
     static final String SUSPEND_INTENT = "role-suspend";
     static final String RESTORE_INTENT = "role-restore";
 
-    /** The roles a review may suspend: those held for a System. */
-    private static final Set<Role> PER_SYSTEM = Set.of(Role.SMO, Role.CYBER_MANAGER);
+    private static final String OWN_GRANT = "You cannot suspend or restore a role of your own. Ask the other VA POC.";
 
     private final RoleGrantStore grants;
     private final RoleLapse lapse;
@@ -65,15 +65,17 @@ public class RoleHolders {
     @Transactional
     public RoleHolder suspend(UUID grantId) {
         stepUp.require(SUSPEND_INTENT);
-        RoleGrant grant = changeable(grantId, AuditAction.ROLE_SUSPENDED);
-        if (!PER_SYSTEM.contains(grant.role())) {
-            throw refused(AuditAction.ROLE_SUSPENDED, grant, HttpStatus.CONFLICT, "not-for-a-system",
-                    "Only a role held for a System can be suspended.");
+        UUID caller = user.id();
+        RoleHolder holder = grants.holder(grantId).orElseThrow(ResourceNotFoundException::new);
+        if (!holder.suspendableBy(caller)) {
+            throw refused(AuditAction.ROLE_SUSPENDED, holder.grant(), holder.heldBy(caller)
+                    ? new Refusal(HttpStatus.FORBIDDEN, "own-grant", OWN_GRANT)
+                    : !Role.PER_SYSTEM.contains(holder.grant().role())
+                            ? new Refusal(HttpStatus.CONFLICT, "not-for-a-system",
+                                    "Only a role held for a System can be suspended.")
+                            : new Refusal(HttpStatus.CONFLICT, "already-suspended", "This role is already suspended."));
         }
-        if (!lapse.suspend(grant, SuspensionCause.REVIEW, user.id(), clock.instant())) {
-            throw refused(AuditAction.ROLE_SUSPENDED, grant, HttpStatus.CONFLICT, "already-suspended",
-                    "This role is already suspended.");
-        }
+        lapse.suspend(holder.grant(), SuspensionCause.REVIEW, caller, clock.instant());
         return grants.holder(grantId).orElseThrow(ResourceNotFoundException::new);
     }
 
@@ -81,40 +83,34 @@ public class RoleHolders {
      * Lifts a grant's suspension, with a fresh sign-in.
      *
      * @throws ResourceNotFoundException when there is no such grant, or it was revoked
-     * @throws RejectedRequestException 403 {@code own-grant} for the caller's own; 409 {@code disabled-at-identity-provider}
-     *     while the identity provider last reported the person disabled, {@code not-suspended} for one not suspended
+     * @throws RejectedRequestException 403 {@code own-grant} for the caller's own; 409 {@code not-suspended} for one not
+     *     suspended, {@code disabled-at-identity-provider} while the identity provider last reported the person disabled
      */
     @Transactional
     public RoleHolder restore(UUID grantId) {
         stepUp.require(RESTORE_INTENT);
-        RoleGrant grant = changeable(grantId, AuditAction.ROLE_RESTORED);
+        UUID caller = user.id();
         RoleHolder holder = grants.holder(grantId).orElseThrow(ResourceNotFoundException::new);
-        if (holder.disabledAtIdentityProvider()) {
-            throw refused(AuditAction.ROLE_RESTORED, grant, HttpStatus.CONFLICT, "disabled-at-identity-provider",
-                    "The identity provider reports this person disabled. Restore the role once they can sign in again.");
+        if (!holder.restorableBy(caller)) {
+            throw refused(AuditAction.ROLE_RESTORED, holder.grant(), holder.heldBy(caller)
+                    ? new Refusal(HttpStatus.FORBIDDEN, "own-grant", OWN_GRANT)
+                    : holder.grant().suspendedAt() == null
+                            ? new Refusal(HttpStatus.CONFLICT, "not-suspended", "This role is not suspended.")
+                            : new Refusal(HttpStatus.CONFLICT, "disabled-at-identity-provider",
+                                    "The identity provider reports this person disabled. Restore the role once they can "
+                                            + "sign in again."));
         }
-        if (!lapse.restore(grant)) {
-            throw refused(AuditAction.ROLE_RESTORED, grant, HttpStatus.CONFLICT, "not-suspended",
-                    "This role is not suspended.");
-        }
+        lapse.restore(holder.grant());
         return grants.holder(grantId).orElseThrow(ResourceNotFoundException::new);
     }
 
-    /** The grant, when it exists and is not the caller's own. */
-    private RoleGrant changeable(UUID grantId, AuditAction action) {
-        RoleGrant grant = grants.live(grantId).orElseThrow(ResourceNotFoundException::new);
-        if (user.id().equals(grant.userId())) {
-            throw refused(action, grant, HttpStatus.FORBIDDEN, "own-grant",
-                    "You cannot suspend or restore a role of your own. Ask the other VA POC.");
-        }
-        return grant;
-    }
+    /** Why a review command was refused: a status, a fixed problem type and a sentence written here. */
+    private record Refusal(HttpStatus status, String reason, String sentence) {}
 
     /** Audits the refusal in a transaction of its own, which the refused command's rollback leaves standing. */
-    private RejectedRequestException refused(AuditAction action, RoleGrant grant, HttpStatus status, String reason,
-            String sentence) {
+    private RejectedRequestException refused(AuditAction action, RoleGrant grant, Refusal refusal) {
         audit.recordIndependently(actor.attribute(grant.describe(AuditEvent.of(action, AuditOutcome.REFUSED)))
-                .with(DetailKey.REASON, reason));
-        return new RejectedRequestException(status, reason, sentence);
+                .with(DetailKey.REASON, refusal.reason()));
+        return new RejectedRequestException(refusal.status(), refusal.reason(), refusal.sentence());
     }
 }

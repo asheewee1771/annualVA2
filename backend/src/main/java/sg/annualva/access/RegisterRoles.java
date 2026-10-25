@@ -70,7 +70,7 @@ public class RegisterRoles {
         }
         Set<Held> standing = new HashSet<>();
         int revoked = 0;
-        for (Role role : List.of(Role.SMO, Role.CYBER_MANAGER)) {
+        for (Role role : Role.PER_SYSTEM) {
             for (RoleGrant grant : grants.live(role, GrantSource.REGISTER)) {
                 Held held = new Held(role, lower(grant.email()), grant.systemId());
                 if (wanted.contains(held)) {

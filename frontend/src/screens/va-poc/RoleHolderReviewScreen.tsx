@@ -68,13 +68,10 @@ function system(holder: RoleHolder): string {
 function Flags({ holder }: { holder: RoleHolder }) {
   return (
     <>
-      {holder.suspendedBecause === "IDENTITY_PROVIDER" ? (
+      {holder.disabledAtIdentityProvider || holder.suspensionCause === "IDENTITY_PROVIDER" ? (
         <span className="flag flag--danger">Disabled at the single sign-on</span>
       ) : null}
-      {holder.suspendedBecause === "REVIEW" ? <span className="flag flag--warning">Suspended in a review</span> : null}
-      {holder.disabledAtIdentityProvider && holder.suspendedBecause !== "IDENTITY_PROVIDER" ? (
-        <span className="flag flag--danger">Disabled at the single sign-on</span>
-      ) : null}
+      {holder.suspensionCause === "REVIEW" ? <span className="flag flag--warning">Suspended in a review</span> : null}
       {holder.namedInRegister === false ? <span className="flag flag--warning">Not named in the Register</span> : null}
       {holder.signedIn ? null : <span className="flag">Not signed in yet</span>}
     </>
@@ -85,14 +82,12 @@ function Flags({ holder }: { holder: RoleHolder }) {
 function HolderAction({ holder, onChanged }: { holder: RoleHolder; onChanged: () => void }) {
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<Problem | undefined>(undefined);
-  const suspendable = (holder.role === "SMO" || holder.role === "CYBER_MANAGER") && holder.state !== "SUSPENDED";
-  const restorable = holder.state === "SUSPENDED";
 
   async function act(change: (grantId: string) => Promise<RoleHolder>) {
     setBusy(true);
     setProblem(undefined);
     try {
-      await change(holder.grantId);
+      await change(holder.id);
       onChanged();
     } catch (failure) {
       const refused = problemOf(failure);
@@ -106,7 +101,7 @@ function HolderAction({ holder, onChanged }: { holder: RoleHolder; onChanged: ()
   if (holder.own) return <small className="muted">Your own role: the other VA POC acts on it.</small>;
   return (
     <>
-      {suspendable ? (
+      {holder.suspendable ? (
         <button
           type="button"
           className="button button--secondary"
@@ -116,7 +111,7 @@ function HolderAction({ holder, onChanged }: { holder: RoleHolder; onChanged: ()
           Suspend
         </button>
       ) : null}
-      {restorable ? (
+      {holder.restorable ? (
         <button
           type="button"
           className="button button--secondary"
@@ -148,7 +143,7 @@ function HoldersTable({ holders, onChanged }: { holders: RoleHolder[]; onChanged
         </thead>
         <tbody>
           {holders.map((holder) => (
-            <tr key={holder.grantId}>
+            <tr key={holder.id}>
               <td>{system(holder)}</td>
               <td>{ROLE_LABELS[holder.role]}</td>
               <td>{person(holder)}</td>
@@ -183,7 +178,7 @@ function ReturnsTable({ returns }: { returns: RoleHolder[] }) {
         </thead>
         <tbody>
           {returns.map((holder) => (
-            <tr key={holder.grantId}>
+            <tr key={holder.id}>
               <td>{when(holder.returnedAt)}</td>
               <td>{holder.returnTrigger === null ? "" : TRIGGER_LABELS[holder.returnTrigger]}</td>
               <td>{system(holder)}</td>
@@ -216,13 +211,15 @@ function CompleteReview({ onCompleted }: { onCompleted: () => void }) {
   }
 
   return (
-    <p>
+    <>
       {problem ? <ErrorPanel problem={problem} /> : null}
-      <button type="button" className="button" disabled={busy} onClick={() => void complete()}>
-        Review completed
-      </button>{" "}
-      <small className="muted">Press it once you have checked every role holder listed above.</small>
-    </p>
+      <p>
+        <button type="button" className="button" disabled={busy} onClick={() => void complete()}>
+          Review completed
+        </button>{" "}
+        <small className="muted">Press it once you have checked every role holder listed above.</small>
+      </p>
+    </>
   );
 }
 

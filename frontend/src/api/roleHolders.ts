@@ -8,7 +8,8 @@ export type ReturnTrigger =
 
 /** One role holder against the System Register (ticket 47). Emails and names are data: shown only as text. */
 export interface RoleHolder {
-  grantId: string;
+  /** The grant's id. */
+  id: string;
   role: HolderRole;
   email: string;
   displayName: string | null;
@@ -22,7 +23,7 @@ export interface RoleHolder {
   lastUsedAt: string | null;
   lapsedAt: string | null;
   suspendedAt: string | null;
-  suspendedBecause: SuspensionCause | null;
+  suspensionCause: SuspensionCause | null;
   returnedAt: string | null;
   returnTrigger: ReturnTrigger | null;
   /** Whether the Register names this person for this role on this System now; null for a role it does not give. */
@@ -31,9 +32,12 @@ export interface RoleHolder {
   disabledAtIdentityProvider: boolean;
   /** The caller's own grant, which they may not suspend or restore. */
   own: boolean;
+  /** Whether the caller may suspend or restore it, by the rules the server refuses by. */
+  suspendable: boolean;
+  restorable: boolean;
 }
 
-interface RoleHolderReviewRecord {
+interface CompletedReview {
   reviewedAt: string;
   reviewedBy: string;
   holders: number;
@@ -41,9 +45,9 @@ interface RoleHolderReviewRecord {
 
 export type DueReason = "never-reviewed" | "three-months" | "register-applied";
 
-interface RoleHolderReview {
+interface ReviewView {
   holders: RoleHolder[];
-  lastReview: RoleHolderReviewRecord | null;
+  lastReview: CompletedReview | null;
   reviewDue: boolean;
   dueBecause: DueReason[];
   /** The roles that came back by themselves since the last review, newest first. */
@@ -53,13 +57,13 @@ interface RoleHolderReview {
 const HOLDERS = "/api/role-holders";
 
 /** GET /api/role-holders (VA POC only). */
-export function fetchRoleHolderReview(): Promise<RoleHolderReview> {
-  return request<RoleHolderReview>("GET", HOLDERS);
+export function fetchRoleHolderReview(): Promise<ReviewView> {
+  return request<ReviewView>("GET", HOLDERS);
 }
 
 /** POST /api/role-holders/reviews: records that the caller has completed a review. */
-export function completeRoleHolderReview(): Promise<RoleHolderReviewRecord> {
-  return request<RoleHolderReviewRecord>("POST", `${HOLDERS}/reviews`, {});
+export function completeRoleHolderReview(): Promise<CompletedReview> {
+  return request<CompletedReview>("POST", `${HOLDERS}/reviews`, {});
 }
 
 /** POST /api/role-holders/{grantId}/suspend, a step-up action. */

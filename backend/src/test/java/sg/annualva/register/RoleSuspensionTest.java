@@ -46,7 +46,7 @@ class RoleSuspensionTest extends RoleHolderSeam1 {
         assertThat(response.status()).as(response.body()).isEqualTo(200);
         JsonNode suspended = ApiClient.json(response);
         assertThat(suspended.get("state").asString()).isEqualTo("SUSPENDED");
-        assertThat(suspended.get("suspendedBecause").asString()).isEqualTo("REVIEW");
+        assertThat(suspended.get("suspensionCause").asString()).isEqualTo("REVIEW");
         assertThat(suspended.get("systemCode").asString()).isEqualTo("SYS-HA");
         JsonNode systems = ApiClient.json(smo.get("/api/systems"));
         assertThat(systems).as("SYS-HB only, on the very next request").hasSize(1);
@@ -79,6 +79,24 @@ class RoleSuspensionTest extends RoleHolderSeam1 {
         assertThat(holder(review, "SMO", SMO_C, "SYS-HA").get("state").asString()).isEqualTo("ACTIVE");
         assertThat(roles(signedInAs(SMO_C))).containsExactly("SMO");
         assertThat(review.get("holders").toString()).as("the suspended grant was revoked").doesNotContain(grant);
+    }
+
+    @Test
+    void aSuspendedRoleDoesNotComeBackByItselfFromALapse() {
+        twoSystems();
+        ApiClient poc = vaPoc();
+        String grant = grantOf(review(poc), "SMO", SMO_A, "SYS-HA");
+        assertThat(suspend(poc, grant).status()).isEqualTo(200);
+        arrange.lapse(grant);
+
+        twoSystems();
+
+        ApiClient again = vaPoc();
+        JsonNode review = review(again);
+        assertThat(holder(review, "SMO", SMO_A, "SYS-HA").get("returnedAt").isNull()).isTrue();
+        assertThat(review.get("automaticReturns").toString()).doesNotContain(grant);
+        assertThat(ApiClient.json(restore(otherVaPoc(), grant)).get("state").asString())
+                .as("restored, and still lapsed until something returns it").isEqualTo("LAPSED");
     }
 
     @Test

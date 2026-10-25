@@ -30,7 +30,7 @@ public class RoleHolderController {
     /** Records that the caller has completed a review. */
     @PostMapping("/api/role-holders/reviews")
     @PreAuthorize("hasRole('VA_POC')")
-    public ResponseEntity<RoleHolderReview> complete() {
+    public ResponseEntity<CompletedReview> complete() {
         return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore()).body(reviews.complete());
     }
 

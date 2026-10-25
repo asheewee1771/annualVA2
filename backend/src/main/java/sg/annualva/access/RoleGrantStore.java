@@ -24,7 +24,7 @@ import org.springframework.stereotype.Repository;
 public class RoleGrantStore {
 
     private static final String COLUMNS = "id, role, user_id, email, system_id, source, granted_at, granted_by, "
-            + "expires_at, last_used_at, lapsed_at, suspended_at, revoked_at";
+            + "expires_at, last_used_at, lapsed_at, suspended_at, suspension_cause, revoked_at, returned_at, return_trigger";
 
     private static final String ACTIVE_FOR_USER = "SELECT " + COLUMNS + " FROM role_grant WHERE user_id = :userId "
             + "AND revoked_at IS NULL AND lapsed_at IS NULL AND suspended_at IS NULL "
@@ -70,20 +70,21 @@ public class RoleGrantStore {
             + "AND source = 'REGISTER' AND system_id = :systemId AND lapsed_at IS NOT NULL AND revoked_at IS NULL "
             + "ORDER BY granted_at, id";
 
+    /** A suspended grant does not come back by itself (ADR 0056): a VA POC restores it first. */
     private static final String RETURN = "UPDATE role_grant SET lapsed_at = NULL, returned_at = :now, "
-            + "return_trigger = :trigger WHERE id = :id AND lapsed_at IS NOT NULL AND revoked_at IS NULL";
+            + "return_trigger = :trigger WHERE id = :id AND lapsed_at IS NOT NULL AND revoked_at IS NULL "
+            + "AND suspended_at IS NULL";
 
     /** Every grant not revoked, with what the person's user record says (ticket 47): the role-holder review's list. */
     private static final String HOLDER_COLUMNS = "SELECT g.id, g.role, g.user_id, g.email, g.system_id, g.source, "
-            + "g.granted_at, g.expires_at, g.last_used_at, g.lapsed_at, g.suspended_at, g.suspension_cause, g.returned_at, "
-            + "g.return_trigger, u.display_name, u.sso_id IS NOT NULL AS signed_in, u.idp_disabled_at IS NOT NULL AS disabled "
+            + "g.granted_at, g.granted_by, g.expires_at, g.last_used_at, g.lapsed_at, g.suspended_at, g.suspension_cause, "
+            + "g.revoked_at, g.returned_at, g.return_trigger, u.display_name, u.sso_id IS NOT NULL AS signed_in, "
+            + "u.idp_disabled_at IS NOT NULL AS disabled "
             + "FROM role_grant g LEFT JOIN app_user u ON u.id = g.user_id WHERE g.revoked_at IS NULL";
 
     private static final String HOLDERS = HOLDER_COLUMNS + " ORDER BY g.granted_at, g.id";
 
     private static final String HOLDER = HOLDER_COLUMNS + " AND g.id = :id";
-
-    private static final String LIVE_BY_ID = "SELECT " + COLUMNS + " FROM role_grant WHERE id = :id AND revoked_at IS NULL";
 
     private static final String NOT_SUSPENDED_OF_USER = "SELECT " + COLUMNS + " FROM role_grant WHERE user_id = :userId "
             + "AND revoked_at IS NULL AND suspended_at IS NULL ORDER BY granted_at, id";
@@ -91,8 +92,10 @@ public class RoleGrantStore {
     private static final String SUSPEND = "UPDATE role_grant SET suspended_at = :now, suspended_by = :by, "
             + "suspension_cause = :cause WHERE id = :id AND revoked_at IS NULL AND suspended_at IS NULL";
 
-    private static final String RESTORE = "UPDATE role_grant SET suspended_at = NULL, suspended_by = NULL, "
-            + "suspension_cause = NULL WHERE id = :id AND revoked_at IS NULL AND suspended_at IS NOT NULL";
+    /** Never for a person the identity provider reports disabled, even one disabled since the caller read the grant. */
+    private static final String RESTORE ="UPDATE role_grant SET suspended_at = NULL, suspended_by = NULL, "
+            + "suspension_cause = NULL WHERE id = :id AND revoked_at IS NULL AND suspended_at IS NOT NULL "
+            + "AND NOT EXISTS (SELECT 1 FROM app_user u WHERE u.id = role_grant.user_id AND u.idp_disabled_at IS NOT NULL)";
 
     private final JdbcClient jdbc;
 
@@ -186,11 +189,6 @@ public class RoleGrantStore {
         return jdbc.sql(HOLDER).param("id", id).query(RoleGrantStore::holder).optional();
     }
 
-    /** One grant not revoked. */
-    Optional<RoleGrant> live(UUID id) {
-        return jdbc.sql(LIVE_BY_ID).param("id", id).query(RoleGrantStore::map).optional();
-    }
-
     /** A person's grants, not revoked, that are not suspended yet. */
     List<RoleGrant> notSuspendedOf(UUID userId) {
         return jdbc.sql(NOT_SUSPENDED_OF_USER).param("userId", userId).query(RoleGrantStore::map).list();
@@ -208,25 +206,7 @@ public class RoleGrantStore {
     }
 
     private static RoleHolder holder(ResultSet rs, int row) throws SQLException {
-        String cause = rs.getString("suspension_cause");
-        String trigger = rs.getString("return_trigger");
-        return new RoleHolder(
-                rs.getObject("id", UUID.class),
-                Role.valueOf(rs.getString("role")),
-                rs.getObject("user_id", UUID.class),
-                rs.getString("email"),
-                rs.getString("display_name"),
-                rs.getObject("system_id", UUID.class),
-                GrantSource.valueOf(rs.getString("source")),
-                instant(rs, "granted_at"),
-                instant(rs, "expires_at"),
-                instant(rs, "last_used_at"),
-                instant(rs, "lapsed_at"),
-                instant(rs, "suspended_at"),
-                cause == null ? null : SuspensionCause.valueOf(cause),
-                instant(rs, "returned_at"),
-                trigger == null ? null : ReturnTrigger.valueOf(trigger),
-                rs.getBoolean("signed_in"),
+        return new RoleHolder(map(rs, row), rs.getString("display_name"), rs.getBoolean("signed_in"),
                 rs.getBoolean("disabled"));
     }
 
@@ -244,7 +224,15 @@ public class RoleGrantStore {
                 instant(rs, "last_used_at"),
                 instant(rs, "lapsed_at"),
                 instant(rs, "suspended_at"),
-                instant(rs, "revoked_at"));
+                named(rs, "suspension_cause", SuspensionCause.class),
+                instant(rs, "revoked_at"),
+                instant(rs, "returned_at"),
+                named(rs, "return_trigger", ReturnTrigger.class));
+    }
+
+    private static <E extends Enum<E>> @Nullable E named(ResultSet rs, String column, Class<E> type) throws SQLException {
+        String name = rs.getString(column);
+        return name == null ? null : Enum.valueOf(type, name);
     }
 
     private static @Nullable Instant instant(ResultSet rs, String column) throws SQLException {

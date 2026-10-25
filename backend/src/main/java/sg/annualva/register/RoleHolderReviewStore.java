@@ -24,13 +24,13 @@ class RoleHolderReviewStore {
         this.jdbc = jdbc;
     }
 
-    RoleHolderReview insert(Instant at, UUID by, int holders) {
+    CompletedReview insert(Instant at, UUID by, int holders) {
         jdbc.sql(INSERT).param("at", at.atOffset(ZoneOffset.UTC)).param("by", by).param("holders", holders).update();
-        return new RoleHolderReview(at, by, holders);
+        return new CompletedReview(at, by, holders);
     }
 
-    Optional<RoleHolderReview> latest() {
-        return jdbc.sql(LATEST).query((rs, row) -> new RoleHolderReview(
+    Optional<CompletedReview> latest() {
+        return jdbc.sql(LATEST).query((rs, row) -> new CompletedReview(
                 rs.getObject("reviewed_at", OffsetDateTime.class).toInstant(),
                 rs.getObject("reviewed_by", UUID.class),
                 rs.getInt("holders"))).optional();
