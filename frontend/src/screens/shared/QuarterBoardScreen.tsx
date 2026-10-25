@@ -6,6 +6,7 @@ import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { useResource } from "../../hooks/useResource.ts";
 import { useSelectedCycle } from "../../app/CycleChoice.tsx";
 import { HandledOutsideSection } from "./HandledOutsideSection.tsx";
+import { LapsedFlag } from "./LapsedFlag.tsx";
 import { findingsLabel, ReviewFlags, type DashboardStep } from "./ReviewFlags.tsx";
 import { STATE_LABELS } from "./systemStates.ts";
 
@@ -38,6 +39,7 @@ function Column({ state, systems, boardFor }: { state: SystemState; systems: Boa
           <li key={system.id} className="board__card">
             <CardTitle system={system} linkOf={boardFor.linkOf} />
             <ReviewFlags overdue={system.overdue} sodConflict={system.sodConflict} step={boardFor.step} />
+            <LapsedFlag lapsed={system.exemptionLapsed} />
             <br />
             <small className="muted">{findingsLabel(system)}</small>
           </li>

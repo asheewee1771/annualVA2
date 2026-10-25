@@ -30,6 +30,8 @@ interface DashboardSystem {
   group: InboxGroup;
   /** The Overdue flag the server's sweep set: its window passed without the next step. Nothing locks. */
   overdue: boolean;
+  /** A conditional Exemption of it lapsed: its scheduled VA was not recorded in time. */
+  exemptionLapsed: boolean;
 }
 
 /** One of the SMO/Tech Lead's own Systems. */
@@ -108,6 +110,8 @@ export interface BoardCard extends ReviewMarkers {
   name: string;
   submissionId: string | null;
   overdue: boolean;
+  /** A conditional Exemption of it lapsed. */
+  exemptionLapsed: boolean;
 }
 
 /** GET /api/dashboards/quarter-board: one Quarter, one column per state in the server's order. */
@@ -154,6 +158,8 @@ export interface MatrixSystem {
   submissionId: string | null;
   overdue: boolean;
   endorsedLate: boolean;
+  /** A conditional Exemption of it lapsed. */
+  exemptionLapsed: boolean;
   submitted: Milestone;
   reviewed: Milestone;
   endorsed: Milestone;

@@ -1,7 +1,7 @@
--- Deadline reminders (ticket 38, stories 88, 89 and 90, ADR 0051). A planner reminds whoever's step it is before and on
+-- Deadline reminders (ticket 38, stories 88, 89 and 90, ADR 0052). A planner reminds whoever's step it is before and on
 -- the last day of the window their work waits on (V20 current_window_due), then weekly while it is Overdue with a copy to
 -- the next person up, and reminds both VA POCs 2 weeks and 1 week before the Quarter's last day. A reminder is a
--- notification like any other (V136) and is mailed through the outbox (V137). Numbered after V149 and V144_43 (which
+-- notification like any other (V136) and is mailed through the outbox (V137). Numbered after V149 and V149_42 (which
 -- rebuilt notification_action_check last); the rebuild lists every action allowed before.
 --
 -- notification.reminder_on: for a reminder, the business day it is for; null for the notice of a move. A person gets at
@@ -22,7 +22,8 @@ ALTER TABLE notification DROP CONSTRAINT notification_action_check;
 ALTER TABLE notification ADD CONSTRAINT notification_action_check CHECK (action IN ('REVIEW', 'REWORK', 'ENDORSE',
     'SUBMIT_OVERDUE', 'REVIEW_OVERDUE', 'ENDORSE_OVERDUE', 'SYSTEM_MOVED', 'SYSTEM_TRANSFERRED_TO_YOU',
     'SYSTEM_TRANSFERRED_FROM_YOU', 'NOT_ENDORSED', 'VA_POC_REWORK', 'VA_POC_RETURNED', 'DECIDE_EXEMPTION',
-    'EXEMPTION_APPROVED', 'EXEMPTION_REJECTED', 'WITHDRAWN', 'SUBMIT_DUE_SOON', 'SUBMIT_DUE_TODAY',
+    'EXEMPTION_APPROVED', 'EXEMPTION_REJECTED', 'WITHDRAWN', 'CONFIRM_VA', 'VA_CONFIRMED', 'EXEMPTION_LAPSED',
+    'EXEMPTION_LAPSED_NOT_ENDORSED', 'SUBMIT_DUE_SOON', 'SUBMIT_DUE_TODAY',
     'SUBMIT_STILL_OVERDUE', 'SUBMIT_OVERDUE_COPY', 'REVIEW_DUE_SOON', 'REVIEW_DUE_TODAY', 'REVIEW_STILL_OVERDUE',
     'REVIEW_OVERDUE_COPY', 'ENDORSE_DUE_IN_TWO_WEEKS', 'ENDORSE_DUE_IN_ONE_WEEK'));
 

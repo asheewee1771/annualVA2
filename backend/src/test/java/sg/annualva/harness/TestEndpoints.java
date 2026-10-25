@@ -48,6 +48,7 @@ import sg.annualva.notification.MailOutbox;
 import sg.annualva.retention.DisposalExecutor;
 import sg.annualva.retention.DisposalPlanner;
 import sg.annualva.submission.CycleLifecycle;
+import sg.annualva.submission.ExemptionLapse;
 import sg.annualva.submission.OverdueSweep;
 import sg.annualva.web.ProblemResponses;
 import sg.annualva.web.ResourceNotFoundException;
@@ -119,6 +120,7 @@ public class TestEndpoints {
         private final MailOutbox mailOutbox;
         private final CycleLifecycle cycleLifecycle;
         private final ExportWorker exportWorker;
+        private final ExemptionLapse exemptionLapse;
         private final DisposalExecutor disposalExecutor;
         private final DisposalPlanner disposalPlanner;
         private final DeadlineReminders reminders;
@@ -126,8 +128,9 @@ public class TestEndpoints {
         public TestController(AppUserStore users, RoleGrantStore grants, AccessGuard guard, StepUp stepUp, JdbcClient jdbc,
                 Clock clock, AuditLog audit, TransactionTemplate transaction, ScanPoller scanPoller,
                 OverdueSweep overdueSweep, MailOutbox mailOutbox, CycleLifecycle cycleLifecycle,
-                ExportWorker exportWorker, DisposalExecutor disposalExecutor, DisposalPlanner disposalPlanner,
-                DeadlineReminders reminders) {
+                ExportWorker exportWorker, ExemptionLapse exemptionLapse, DisposalExecutor disposalExecutor,
+                DisposalPlanner disposalPlanner, DeadlineReminders reminders) {
+            this.exemptionLapse = exemptionLapse;
             this.disposalExecutor = disposalExecutor;
             this.disposalPlanner = disposalPlanner;
             this.reminders = reminders;
@@ -395,6 +398,13 @@ public class TestEndpoints {
         public Map<String, String> cycleLifecycle() {
             cycleLifecycle.run();
             return Map.of("ran", "cycle-lifecycle");
+        }
+
+        /** One pass of the conditional Exemption lapse job (ticket 42), which scheduling being off keeps from running. */
+        @PostMapping("/api/test/jobs/exemption-lapse")
+        public Map<String, String> exemptionLapse() {
+            exemptionLapse.run();
+            return Map.of("ran", "exemption-lapse");
         }
 
         /** One pass of the export job, which {@code annualva.scheduling.enabled=false} keeps from running by itself in tests. */

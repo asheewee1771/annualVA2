@@ -57,7 +57,7 @@ class NotificationStore {
 
     /**
      * One person's row of a notice; {@code groupKey} and {@code awaits} are set together, for a VA POC pair only. A
-     * reminder this person already has for the same action, System, due date and day is not written again (ADR 0051).
+     * reminder this person already has for the same action, System, due date and day is not written again (ADR 0052).
      *
      * @return the notification's id; nothing when the reminder was written before
      */

@@ -57,7 +57,7 @@ public enum SubmissionState {
     }
 
     /**
-     * The step whose person acts next in this state (ADR 0051): the SMO/Tech Lead submits a VA Submission that is Not
+     * The step whose person acts next in this state (ADR 0052): the SMO/Tech Lead submits a VA Submission that is Not
      * Started, a Draft or Returned for Rework, the Cyber Manager reviews one In Review, a VA POC endorses one Awaiting
      * Endorsement. A final state, and the frozen Exemption Requested, wait on nobody.
      */

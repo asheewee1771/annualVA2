@@ -12,7 +12,7 @@ import sg.annualva.cycle.VaCycle;
 import sg.annualva.register.RegisterSystems;
 
 /**
- * Where the jobs that act for nobody look for work by Quarter, written once (ADR 0033 item 3, ADR 0051): every Quarter not
+ * Where the jobs that act for nobody look for work by Quarter, written once (ADR 0033 item 3, ADR 0052): every Quarter not
  * Handled outside the app of every VA Cycle the app runs that has not closed on the business date, with the active
  * Systems that Cycle holds in it (an older Cycle keeps its Systems as they were when a newer one opened, ADR 0044). The
  * Overdue sweep flags the Not Started Systems it answers, and the deadline reminders remind the same Systems, so the two

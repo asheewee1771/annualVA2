@@ -30,13 +30,17 @@ class SubmissionStore {
      */
     record Located(UUID systemId, String state, int cycleYear) {}
 
-    /** What a VA Submission is as the table holds it. */
+    /**
+     * What a VA Submission is as the table holds it.
+     *
+     * @param exemptionLapsed whether a conditional Exemption of it lapsed (ticket 42): a lasting flag, as Endorsed Late is
+     */
     record Row(
             UUID id, UUID systemId, int cycleYear, int quarter, SubmissionState state, boolean overdue,
             boolean endorsedLate, LocalDate submitDue, LocalDate reviewDue, LocalDate endorseDue,
             @Nullable Instant startedAt,
             @Nullable Instant submittedAt, @Nullable Instant overdueSince, @Nullable LocalDate dueOn,
-            @Nullable Instant passedToEndorsementAt, @Nullable Instant endorsedAt) {}
+            @Nullable Instant passedToEndorsementAt, @Nullable Instant endorsedAt, boolean exemptionLapsed) {}
 
     /**
      * What the Overdue sweep has just flagged: a VA Submission, or a System with none (Not Started, no {@code id}), with
@@ -172,7 +176,9 @@ class SubmissionStore {
     private static final String COLUMNS =
             "SELECT id, system_id, cycle_year, quarter, state, overdue, endorsed_late, submit_due, review_due, "
             + "endorse_due, started_at, submitted_at, overdue_since, passed_to_endorsement_at, endorsed_at, "
-            + windowDue("state", "submit_due", "review_due", "endorse_due") + " AS due_on FROM va_submission ";
+            + windowDue("state", "submit_due", "review_due", "endorse_due") + " AS due_on, "
+            + "EXISTS (SELECT 1 FROM exemption e WHERE e.submission_id = va_submission.id AND e.lapsed_at IS NOT NULL) "
+            + "AS exemption_lapsed FROM va_submission ";
 
     private static final String FIND = COLUMNS + "WHERE id = :id";
 
@@ -291,6 +297,14 @@ class SubmissionStore {
      */
     private static final String RESTORED = "UPDATE va_submission SET state = :state, "
             + overdueAfterMove("CAST(:overdueSince AS timestamptz)") + " WHERE id = :id";
+
+    /**
+     * A conditional Exemption's lapse while its VA Cycle is open (ticket 42): the state the request froze, with new
+     * windows, and the flag with it ({@link #OVERDUE_AFTER_MOVE}; Exempted keeps no flag, so it stays clear until the
+     * sweep sets it by the new windows).
+     */
+    private static final String LAPSED_BACK = "UPDATE va_submission SET state = :state, submit_due = :submitDue, "
+            + "review_due = :reviewDue, endorse_due = :endorseDue, " + OVERDUE_AFTER_MOVE + " WHERE id = :id";
 
     /**
      * A pass to endorsement: Awaiting Endorsement, the flag with it, and when the review ended
@@ -442,6 +456,16 @@ class SubmissionStore {
     void restored(UUID id, SubmissionState state, @Nullable Instant overdueSince, LocalDate today) {
         jdbc.sql(RESTORED).param("id", id).param("state", state.name())
                 .param("overdueSince", overdueSince == null ? null : utc(overdueSince)).param("today", today).update();
+    }
+
+    /**
+     * Moves a VA Submission whose row the caller holds out of Exempted after its conditional Exemption lapsed: to the
+     * state the request froze, with these windows.
+     */
+    void lapsedBack(UUID id, SubmissionState state, LocalDate submitDue, LocalDate reviewDue, LocalDate endorseDue,
+            LocalDate today) {
+        jdbc.sql(LAPSED_BACK).param("id", id).param("state", state.name()).param("submitDue", submitDue)
+                .param("reviewDue", reviewDue).param("endorseDue", endorseDue).param("today", today).update();
     }
 
     /** Passes a VA Submission whose row the caller holds ({@link #lockForMove}) to endorsement now. */
@@ -782,7 +806,7 @@ class SubmissionStore {
                 rs.getObject("review_due", LocalDate.class), rs.getObject("endorse_due", LocalDate.class),
                 nullableInstant(rs, "started_at"), nullableInstant(rs, "submitted_at"), nullableInstant(rs, "overdue_since"),
                 rs.getObject("due_on", LocalDate.class), nullableInstant(rs, "passed_to_endorsement_at"),
-                nullableInstant(rs, "endorsed_at"));
+                nullableInstant(rs, "endorsed_at"), rs.getBoolean("exemption_lapsed"));
     }
 
     private static @Nullable Instant nullableInstant(ResultSet rs, String column) throws SQLException {

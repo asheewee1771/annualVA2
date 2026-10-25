@@ -39,7 +39,9 @@ enum MailTemplate {
      * (ticket 41): the spec names it neither a required message nor an FYI. A VA POC's return (ticket 35, ADR 0047) is a
      * Return for Rework for both people it tells: the SMO/Tech Lead who reworks it and the Cyber Manager it comes back to.
      * An Exemption's request and decision (ticket 40) are in-app only (provisional, ADR 0048): the spec names neither a
-     * required message.
+     * required message. So are a conditional Exemption's recorded VA, its confirmation and its lapse (ticket 42,
+     * provisional, ADR 0051): the lapse's new Submission Window is mailed by the deadline reminders (ticket 38) and, once
+     * it passes, as Overdue.
      */
     static Optional<Mailing> of(NoticeAction action) {
         return switch (action) {
@@ -54,8 +56,8 @@ enum MailTemplate {
             case SUBMIT_DUE_TODAY, REVIEW_DUE_TODAY -> mailed(REMINDER_DUE, null);
             case SUBMIT_STILL_OVERDUE, REVIEW_STILL_OVERDUE -> mailed(OVERDUE_WEEKLY, null);
             case SUBMIT_OVERDUE_COPY, REVIEW_OVERDUE_COPY -> mailed(REMINDER_COPY, null);
-            case REVIEW, ENDORSE, NOT_ENDORSED, DECIDE_EXEMPTION, EXEMPTION_APPROVED, EXEMPTION_REJECTED ->
-                    Optional.empty();
+            case REVIEW, ENDORSE, NOT_ENDORSED, DECIDE_EXEMPTION, EXEMPTION_APPROVED, EXEMPTION_REJECTED, CONFIRM_VA,
+                    VA_CONFIRMED, EXEMPTION_LAPSED, EXEMPTION_LAPSED_NOT_ENDORSED -> Optional.empty();
         };
     }
 

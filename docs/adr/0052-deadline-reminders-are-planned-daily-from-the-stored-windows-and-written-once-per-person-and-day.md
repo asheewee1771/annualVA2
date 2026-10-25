@@ -2,7 +2,7 @@
 
 Status: accepted (items 3, 4 and 5 provisional, awaiting a human decision)
 
-Ticket 38 (stories 88, 89 and 90) reminds the SMO/Tech Lead, the Cyber Manager and the VA POCs of their deadlines by email and in the app. It adds one migration (`V149_38`), a read of waiting work in `submission`, a planner and its job in `notification`, ten `NoticeAction`s and four mail templates, and no endpoint.
+Ticket 38 (stories 88, 89 and 90) reminds the SMO/Tech Lead, the Cyber Manager and the VA POCs of their deadlines by email and in the app. It adds one migration (`V149_42_38`), a read of waiting work in `submission`, a planner and its job in `notification`, ten `NoticeAction`s and four mail templates, and no endpoint.
 
 1. **A planner over the stored state.** `DeadlineReminders.plan` (in `notification`, which owns the reminder schedule) reads the clock once, takes today's business date in `Asia/Singapore` and asks `WaitingWork.on(today)` (in `submission`, which owns windows and Overdue) for every piece of work that waits on a window: each VA Submission whose state has a `current_window_due` (V20), and each System with none in the Cycle (Not Started, due by `NOT_STARTED`'s window for its Quarter). Each comes with the step whose person acts next (`SubmissionState.nextStep`: Not Started, Draft and Returned for Rework submit, In Review reviews, Awaiting Endorsement endorses), its due date by that one rule, and the business day the sweep flagged it (ADR 0033: the flag is read, never computed). `WaitingWork` looks where the sweep looks, through one `OpenQuarters` both use: every Quarter not Handled outside the app of every VA Cycle that has not closed, with the active Systems that Cycle holds in it (`RegisterSystems.everyActive(year)`, past the access guard). So a retired System (whose VA Submission is Withdrawn), the final states and the frozen Exemption Requested, which wait on no window, are never reminded; the close of a VA Cycle makes what is left of it final. `ArchitectureTest` lets only `OpenQuarters`, the sweep and the lifecycle list every System, and only the planner use `WaitingWork`.
 
@@ -25,7 +25,7 @@ Ticket 38 (stories 88, 89 and 90) reminds the SMO/Tech Lead, the Cyber Manager a
 Not done here, on purpose: reminders for Unlinked or Unreachable SMOs beyond what is sent to everyone (ticket 39); a meter for the passes (ticket 52); the weekly digest of FYIs (story 93, Release 2).
 
 Consequences:
-- A new reminder is a `NoticeAction`, its `MailTemplate.of` mapping, a row of the schedule, and a migration widening `notification_action_check` that sorts after `V149_38` and keeps the union.
+- A new reminder is a `NoticeAction`, its `MailTemplate.of` mapping, a row of the schedule, and a migration widening `notification_action_check` that sorts after `V149_42_38` and keeps the union.
 - Every deployed profile needs the four new template ids; `sit` has placeholders until ticket 57.
 - The reminders read what the sweep stored, so a weekly reminder waits for the sweep to flag the work (it runs hourly, so on the reminder's day it has).
 

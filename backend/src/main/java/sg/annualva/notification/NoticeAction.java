@@ -51,6 +51,22 @@ public enum NoticeAction {
      * Submission became Withdrawn (ticket 43, story 94): nothing more is due from them.
      */
     WITHDRAWN("The System Register retired this System, so its VA Submission is Withdrawn: nothing more is due."),
+    /**
+     * To both VA POCs, once the SMO/Tech Lead records that a conditional Exemption's scheduled VA happened (ticket 42);
+     * either one's confirmation clears it.
+     */
+    CONFIRM_VA("Confirm the VA the SMO/Tech Lead recorded for this conditional Exemption."),
+    /** To the SMO/Tech Lead, once a VA POC confirms the recorded VA. */
+    VA_CONFIRMED("A VA POC confirmed the VA: the Exemption is no longer conditional."),
+    /**
+     * To the SMO/Tech Lead, once a conditional Exemption lapsed while its VA Cycle is open: the VA Submission is back where
+     * it was before the request, with new windows.
+     */
+    EXEMPTION_LAPSED("The conditional Exemption lapsed because its VA was not recorded in time: the VA Submission is "
+            + "back where it was before the request, with new windows."),
+    /** To the SMO/Tech Lead, once a conditional Exemption lapsed after its VA Cycle closed. */
+    EXEMPTION_LAPSED_NOT_ENDORSED("The conditional Exemption lapsed because its VA was not recorded in time, after the "
+            + "VA Cycle closed: it is Not Endorsed."),
     /** A reminder (ticket 38, story 88) to the SMO/Tech Lead, 5 days before the window their step waits on ends. */
     SUBMIT_DUE_SOON("Due in 5 days: prepare and submit the VA Submission."),
     /** A reminder to the SMO/Tech Lead on the last day of the window their step waits on. */

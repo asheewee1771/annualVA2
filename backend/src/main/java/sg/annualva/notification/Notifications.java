@@ -77,7 +77,7 @@ public class Notifications {
     }
 
     /**
-     * To each VA POC as an item of their own, which nothing clears: a copy for their information (ADR 0051), not a
+     * To each VA POC as an item of their own, which nothing clears: a copy for their information (ADR 0052), not a
      * decision they await.
      */
     @Transactional

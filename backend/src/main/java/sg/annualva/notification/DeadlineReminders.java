@@ -18,7 +18,7 @@ import sg.annualva.submission.WaitingWork;
 import sg.annualva.submission.WaitingWork.Waiting;
 
 /**
- * The deadline reminders (stories 88, 89 and 90, ADR 0051). Each pass ({@code DeadlineReminderJob}: 08:00 in Singapore,
+ * The deadline reminders (stories 88, 89 and 90, ADR 0052). Each pass ({@code DeadlineReminderJob}: 08:00 in Singapore,
  * then hourly to the end of the day) reads where every piece of waiting work stands ({@link WaitingWork}) and reminds the
  * person whose step it is, by the one table below ({@link #schedule}):
  *

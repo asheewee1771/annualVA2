@@ -7,7 +7,7 @@
  * marked "handled by (name)", once either makes the decision it awaits. A required message also goes out by email: it is
  * queued with the notification and sent through the mail-relay port by {@link sg.annualva.notification.MailOutbox} with
  * allow-listed values only (ADR 0046). Every morning {@link sg.annualva.notification.DeadlineReminders} reminds whoever's
- * step it is of their deadline, and copies the weekly Overdue reminder to the next person up (ADR 0051). It sits above
+ * step it is of their deadline, and copies the weekly Overdue reminder to the next person up (ADR 0052). It sits above
  * the modules it listens to and nothing reads it. Depends on access, boundary, cycle, register, submission and web only.
  */
 package sg.annualva.notification;

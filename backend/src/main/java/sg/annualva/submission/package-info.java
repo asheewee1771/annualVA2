@@ -5,7 +5,7 @@
  * ({@code GET /api/submissions/{id}}). The SMO/Tech Lead submits it (ADR 0032); the Cyber Manager returns it for rework
  * or passes it to endorsement (ADR 0039); a VA POC endorses it, after a fresh sign-in (ADR 0042). The Overdue sweep
  * flags what passed its window (ADR 0033), and {@link sg.annualva.submission.WaitingWork} tells the deadline reminders
- * what waits on which window (ADR 0051). The VA Cycle lifecycle opens a Cycle when its Q1 starts and closes it, by the
+ * what waits on which window (ADR 0052). The VA Cycle lifecycle opens a Cycle when its Q1 starts and closes it, by the
  * job after its close date or early by a VA POC ({@code POST /api/cycles/{year}/close}), making everything unfinished Not
  * Endorsed (ADR 0044). An SMO/Tech Lead requests an Exemption ({@code POST /api/systems/{id}/exemptions}), which freezes
  * the VA Submission until a VA POC approves or rejects it after a fresh sign-in (ADR 0048). It owns the state machine

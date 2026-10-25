@@ -221,7 +221,7 @@ class ArchitectureTest {
     /**
      * ADR 0033 and 0044: {@code RegisterSystems.everyActive} lists every System, of the Register or of one VA Cycle,
      * without asking the access guard. Only the Overdue sweep, the open Quarters the sweep and the deadline reminders look
-     * in (ADR 0051) and the VA Cycle lifecycle may call it: the sweep, the reminder planner and the lifecycle job act for
+     * in (ADR 0052) and the VA Cycle lifecycle may call it: the sweep, the reminder planner and the lifecycle job act for
      * nobody, and the lifecycle's other caller, a VA POC's close, reaches every System anyway (a VA POC's scope is all
      * Systems, ADR 0013) and moves a whole Cycle. So no other request can list Systems past the guard.
      * A later job that needs it adds itself here.
@@ -235,6 +235,7 @@ class ArchitectureTest {
             noClasses().that().doNotHaveFullyQualifiedName(sg.annualva.submission.OverdueSweep.class.getName())
                     .and().doNotHaveFullyQualifiedName(sg.annualva.submission.CycleLifecycle.class.getName())
                     .and().doNotHaveFullyQualifiedName(Class.forName("sg.annualva.submission.OpenQuarters").getName())
+                    .and().doNotHaveFullyQualifiedName(sg.annualva.submission.ExemptionLapse.class.getName())
                     .should().callMethod(register, register.getMethod(method, parameters).getName(), parameters)
                     .because("it skips the access guard, so only the jobs that act for nobody, and the Cycle close a VA POC "
                             + "whose scope is every System asks for, may list every System")
@@ -243,7 +244,7 @@ class ArchitectureTest {
     }
 
     /**
-     * ADR 0051: {@code WaitingWork} answers every System's waiting work, and holds a VA Submission's state, without asking
+     * ADR 0052: {@code WaitingWork} answers every System's waiting work, and holds a VA Submission's state, without asking
      * the access guard, because the deadline reminders act for nobody. Only the reminder planner may use it, so no request
      * can read every System's work past the guard (ADR 0013).
      */
