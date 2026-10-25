@@ -73,9 +73,58 @@ export interface QueuedExemption {
   sodConflict: boolean;
 }
 
+/** A recorded VA of a conditional Exemption waiting on a VA POC's confirmation. The evidence is text only. */
+export interface QueuedConfirmation {
+  exemptionId: string;
+  submissionId: string;
+  systemId: string;
+  systemCode: string;
+  systemName: string;
+  /** The VA Cycle: a Q4 one is confirmed after its Cycle has closed. */
+  cycle: number;
+  quarter: number;
+  /** The day the VA was scheduled for. */
+  vaDate: string;
+  /** The day the SMO/Tech Lead says it happened. */
+  vaHappenedOn: string;
+  vaEvidence: string;
+  /** An instant (UTC). */
+  vaRecordedAt: string;
+  /** Segregation of duties refuses this VA POC the confirmation: the other VA POC confirms it. */
+  sodConflict: boolean;
+}
+
 interface ExemptionQueue {
   cycle: number;
   requests: QueuedExemption[];
+  /** The recorded VAs to confirm, of every VA Cycle, the earliest recorded first. */
+  confirmations: QueuedConfirmation[];
+}
+
+/** What the SMO/Tech Lead's VA happened form sends; the server checks every field. */
+export interface VaHappened {
+  /** The day the scheduled VA happened, YYYY-MM-DD: after the Quarter, by the lapse date, not after today. */
+  vaDate: string;
+  /** What shows it happened: the report or its reference. */
+  evidence: string;
+}
+
+/**
+ * POST /api/exemptions/{id}/va-happened: the SMO/Tech Lead records that a conditional Exemption's scheduled VA happened;
+ * from then on it does not lapse. The server answers 400 `invalid-field` naming a wrong field and 409
+ * `invalid-transition` when it is not conditional, is recorded already or has lapsed.
+ */
+export function recordVaHappened(id: string, body: VaHappened): Promise<Exemption> {
+  return request<Exemption>("POST", `/api/exemptions/${encodeURIComponent(id)}/va-happened`, body);
+}
+
+/**
+ * POST /api/exemptions/{id}/confirm-va: a VA POC confirms the recorded VA, and the Exemption is no longer conditional. A
+ * step-up action: 403 `step-up-required` without a sign-in from the last five minutes, 403 `sod-conflict` when the other
+ * VA POC must confirm it, 409 `invalid-transition` once it is confirmed.
+ */
+export function confirmVa(id: string): Promise<Exemption> {
+  return request<Exemption>("POST", `/api/exemptions/${encodeURIComponent(id)}/confirm-va`, {});
 }
 
 /** GET /api/dashboards/exemption-queue: the pending requests of a VA Cycle, oldest first. Every read is audited. */

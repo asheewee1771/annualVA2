@@ -26,6 +26,9 @@ final class ExemptionFields {
     /** What was requested, read and cleaned. */
     record Parsed(Exemptions.Basis basis, LocalDate vaDate, String evidence, @Nullable UUID evidenceFileId) {}
 
+    /** That a scheduled VA happened (ticket 42), read and cleaned. */
+    record Happened(LocalDate vaDate, String evidence) {}
+
     private static final String BASIS = "basis";
     private static final String VA_DATE = "vaDate";
     private static final String EVIDENCE = "evidence";
@@ -38,15 +41,34 @@ final class ExemptionFields {
      */
     static Parsed parse(Exemptions.Request request, Quarter quarter, LocalDate today) {
         Exemptions.Basis basis = basis(request.basis());
-        LocalDate vaDate = vaDate(request.vaDate(), basis, quarter, today);
-        String evidence = request.evidence() == null ? "" : ReportText.cleanLongText(request.evidence());
+        LocalDate vaDate = vaDate(request.vaDate(), window(basis, quarter), today);
+        return new Parsed(basis, vaDate, evidence(request.evidence()), request.evidenceFileId());
+    }
+
+    /**
+     * That a conditional Exemption's scheduled VA happened (story 47): on a day of the scheduled VA's window (from the day
+     * after the Quarter's last day to 3 months after it) that is not after today, with what shows it happened, as long
+     * text by the same rule as a request's evidence.
+     *
+     * @param quarter the Quarter of the Exempted VA Submission
+     * @param today today's business date
+     */
+    static Happened happened(Exemptions.VaHappened happened, Quarter quarter, LocalDate today) {
+        Window scheduled = window(Exemptions.Basis.SCHEDULED_VA, quarter);
+        LocalDate vaDate = vaDate(happened.vaDate(), new Window(scheduled.from(), scheduled.to(), scheduled.side(), true),
+                today);
+        return new Happened(vaDate, evidence(happened.evidence()));
+    }
+
+    private static String evidence(@Nullable String raw) {
+        String evidence = raw == null ? "" : ReportText.cleanLongText(raw);
         if (evidence.isEmpty()) {
             throw refused(EVIDENCE, "is required.");
         }
         if (!ReportText.fits(evidence, ReportText.MAX_LONG_TEXT)) {
             throw refused(EVIDENCE, "must be at most " + ReportText.MAX_LONG_TEXT + " characters.");
         }
-        return new Parsed(basis, vaDate, evidence, request.evidenceFileId());
+        return evidence;
     }
 
     /** The last day a conditional Exemption's VA may be recorded by: the Quarter's last day plus 3 months (story 47). */
@@ -59,7 +81,7 @@ final class ExemptionFields {
                 .orElseThrow(() -> refused(BASIS, "must be PRIOR_VA or SCHEDULED_VA."));
     }
 
-    private static LocalDate vaDate(@Nullable String raw, Exemptions.Basis basis, Quarter quarter, LocalDate today) {
+    private static LocalDate vaDate(@Nullable String raw, Window window, LocalDate today) {
         if (raw == null) {
             throw refused(VA_DATE, "is required.");
         }
@@ -69,7 +91,6 @@ final class ExemptionFields {
         } catch (DateTimeParseException e) {
             throw refused(VA_DATE, "must be a date written yyyy-mm-dd.");
         }
-        Window window = window(basis, quarter);
         if (date.isBefore(window.from()) || date.isAfter(window.to())) {
             throw refused(VA_DATE, "must fall within the 3 months " + window.side() + " the Quarter, from "
                     + window.from() + " to " + window.to() + ".");

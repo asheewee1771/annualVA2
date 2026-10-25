@@ -24,6 +24,11 @@ public record Notice(UUID systemId, @Nullable UUID submissionId, String state, N
         return new Notice(systemId, submissionId, state, other, dueOn, link, at);
     }
 
+    /** The same notice with another action and link. */
+    public Notice linked(NoticeAction other, String otherLink) {
+        return new Notice(systemId, submissionId, state, other, dueOn, otherLink, at);
+    }
+
     /**
      * The same notice for someone who no longer acts on the System (a former SMO/Tech Lead): no due date, and their inbox
      * as the link, since what it pointed at is no longer theirs.

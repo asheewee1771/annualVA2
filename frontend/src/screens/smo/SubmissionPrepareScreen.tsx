@@ -5,6 +5,7 @@ import { fetchScanReportModes } from "../../api/scanReports.ts";
 import { fetchSubmission, isEditable, type AcceptedDeclaration, type Submission } from "../../api/submissions.ts";
 import { AppLink } from "../../app/AppLink.tsx";
 import { useResource } from "../../hooks/useResource.ts";
+import { ConditionalExemptionPanel } from "./ConditionalExemptionPanel.tsx";
 import { DeclarationForm } from "./DeclarationForm.tsx";
 import { EditableContext } from "./Editable.tsx";
 import { FindingsSection } from "./FindingsSection.tsx";
@@ -53,8 +54,20 @@ function ReworkNotice({ submission }: { submission: Submission | undefined }) {
   );
 }
 
-/** While an Exemption request waits on a VA POC, the VA Submission is frozen (story 44); once approved, it is Exempted. */
-function ExemptionNotice({ submission }: { submission: Submission | undefined }) {
+/**
+ * While an Exemption request waits on a VA POC, the VA Submission is frozen (story 44); once approved, it is Exempted,
+ * and an Exemption on a scheduled VA shows where it stands: to record, to confirm, confirmed or lapsed (story 47).
+ */
+function ExemptionNotice({
+  submission,
+  classification,
+  onRecorded,
+}: {
+  submission: Submission | undefined;
+  classification: string;
+  onRecorded: () => void;
+}) {
+  const conditional = submission?.conditionalExemption;
   if (submission?.state === "EXEMPTION_REQUESTED") {
     return (
       <div className="notice" role="status">
@@ -65,14 +78,18 @@ function ExemptionNotice({ submission }: { submission: Submission | undefined })
       </div>
     );
   }
-  if (submission?.state === "EXEMPTED") {
-    return (
-      <div className="notice" role="status">
-        <p>Exempted: a VA POC approved the Exemption. The work below is kept for audit, read only.</p>
-      </div>
-    );
-  }
-  return null;
+  return (
+    <>
+      {submission?.state === "EXEMPTED" ? (
+        <div className="notice" role="status">
+          <p>Exempted: a VA POC approved the Exemption. The work below is kept for audit, read only.</p>
+        </div>
+      ) : null}
+      {conditional ? (
+        <ConditionalExemptionPanel exemption={conditional} classification={classification} onRecorded={onRecorded} />
+      ) : null}
+    </>
+  );
 }
 
 /**
@@ -117,7 +134,7 @@ export function SubmissionPrepareScreen({
       </p>
       <SubmissionSummary heading="Prepare the VA Submission" submission={submission} />
       <ReworkNotice submission={data} />
-      <ExemptionNotice submission={data} />
+      <ExemptionNotice submission={data} classification={classification} onRecorded={submission.reload} />
       {data ? (
         <EditableContext.Provider value={editable}>
           <ScanReportsSection

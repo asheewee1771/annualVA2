@@ -35,11 +35,13 @@ public class CmInbox {
      * @param awaitingReview the Findings whose current proposal awaits the Cyber Manager's review
      * @param sodConflict whether segregation of duties refuses the caller's review (ticket 28): they acted on the VA
      *     Submission at another step, or are assigned to another step of its System (its SMO/Tech Lead, say)
+     * @param exemptionLapsed whether a conditional Exemption of it lapsed (ticket 42)
      */
     public record Item(
             UUID id, String systemId, String name, int quarter, SystemState state, @Nullable UUID submissionId,
             LocalDate submitDue, LocalDate reviewDue, LocalDate endorseDue, @Nullable LocalDate dueOn,
-            InboxGroup group, boolean overdue, long confirmed, long awaitingReview, boolean sodConflict) {}
+            InboxGroup group, boolean overdue, long confirmed, long awaitingReview, boolean sodConflict,
+            boolean exemptionLapsed) {}
 
     /** @param cycle the VA Cycle's year */
     public record Inbox(int cycle, List<Item> systems, List<HandledOutside> handledOutsideApp) {}
@@ -78,7 +80,8 @@ public class CmInbox {
     private static Item item(DashboardSystems.Row row, ReviewMarkers.Marker marker) {
         return new Item(row.system().id(), row.system().systemId(), row.system().name(), row.system().quarter(),
                 row.state(), row.submissionId(), row.submitDue(), row.reviewDue(), row.endorseDue(), row.dueOn(),
-                group(row.state()), row.overdue(), marker.confirmed(), marker.awaitingReview(), marker.sodConflict());
+                group(row.state()), row.overdue(), marker.confirmed(), marker.awaitingReview(), marker.sodConflict(),
+                row.exemptionLapsed());
     }
 
     /** In Review is the Cyber Manager's to act on; a final state is done; anything else waits on someone else. */

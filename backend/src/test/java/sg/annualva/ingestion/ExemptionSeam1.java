@@ -76,11 +76,50 @@ abstract class ExemptionSeam1 extends NotificationSeam1 {
         return ApiClient.json(response);
     }
 
+    /** What the SMO/Tech Lead's VA happened form sends; a null field is left out as JSON null. */
+    protected static String vaHappened(@Nullable String vaDate, @Nullable String evidence) {
+        return "{\"vaDate\":" + quoted(vaDate) + ",\"evidence\":" + quoted(evidence) + "}";
+    }
+
+    protected static ApiClient.Response recordVa(ApiClient client, String exemptionId, String json) {
+        return client.postJson("/api/exemptions/" + exemptionId + "/va-happened", json);
+    }
+
+    /** Records that the scheduled VA happened and expects 200; the Exemption as answered. */
+    protected static JsonNode recordedVa(ApiClient client, String exemptionId, String json) {
+        var response = recordVa(client, exemptionId, json);
+        assertThat(response.status()).as(response.body()).isEqualTo(200);
+        return ApiClient.json(response);
+    }
+
+    protected static ApiClient.Response confirmVa(ApiClient client, String exemptionId) {
+        return client.postJson("/api/exemptions/" + exemptionId + "/confirm-va", "{}");
+    }
+
+    /** Confirms the recorded VA and expects 200; the Exemption as answered. */
+    protected static JsonNode confirmedVa(ApiClient client, String exemptionId) {
+        var response = confirmVa(client, exemptionId);
+        assertThat(response.status()).as(response.body()).isEqualTo(200);
+        return ApiClient.json(response);
+    }
+
+    /** One pass of the conditional Exemption lapse job, run by hand after the clock is moved. */
+    protected void lapse() {
+        arrange.exemptionLapse();
+    }
+
     /** The VA POC's Exemption queue for the Cycle running today: the pending requests. */
     protected static JsonNode queue(ApiClient client) {
         var response = client.get(QUEUE);
         assertThat(response.status()).as(response.body()).isEqualTo(200);
         return ApiClient.json(response).get("requests");
+    }
+
+    /** The VA POC's queue of recorded VAs waiting on a confirmation, from every VA Cycle, oldest recorded first. */
+    protected static JsonNode confirmations(ApiClient client) {
+        var response = client.get(QUEUE);
+        assertThat(response.status()).as(response.body()).isEqualTo(200);
+        return ApiClient.json(response).get("confirmations");
     }
 
     /** The SMO/Tech Lead's inbox row of this System, by its System ID. */

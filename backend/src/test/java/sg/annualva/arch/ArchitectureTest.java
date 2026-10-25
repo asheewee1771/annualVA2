@@ -233,6 +233,7 @@ class ArchitectureTest {
         for (Class<?>[] parameters : new Class<?>[][] {{}, {int.class}}) {
             noClasses().that().doNotHaveFullyQualifiedName(sg.annualva.submission.OverdueSweep.class.getName())
                     .and().doNotHaveFullyQualifiedName(sg.annualva.submission.CycleLifecycle.class.getName())
+                    .and().doNotHaveFullyQualifiedName(sg.annualva.submission.ExemptionLapse.class.getName())
                     .should().callMethod(register, register.getMethod(method, parameters).getName(), parameters)
                     .because("it skips the access guard, so only the jobs that act for nobody, and the Cycle close a VA POC "
                             + "whose scope is every System asks for, may list every System")
@@ -269,7 +270,7 @@ class ArchitectureTest {
     }
 
     /**
-     * ADR 0051: {@code SmoReachability.refused} and {@code accepted} flag and clear SMO Unreachable on the word of the mail
+     * ADR 0052: {@code SmoReachability.refused} and {@code accepted} flag and clear SMO Unreachable on the word of the mail
      * relay, without asking the access guard, because the mail dispatcher acts for nobody. Only the dispatcher may call
      * them, with the answer it has just written.
      */

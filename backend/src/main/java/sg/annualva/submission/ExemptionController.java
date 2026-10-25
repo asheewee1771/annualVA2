@@ -43,6 +43,27 @@ public class ExemptionController {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(exemptions.approve(id));
     }
 
+    /**
+     * Records that a conditional Exemption's scheduled VA happened (ticket 42): 200 with the Exemption. Its System's
+     * SMO/Tech Lead only (an SMO of another System gets 404); from then on it does not lapse.
+     */
+    @PostMapping("/api/exemptions/{id}/va-happened")
+    @PreAuthorize("hasRole('SMO')")
+    public ResponseEntity<Exemptions.Exemption> vaHappened(@PathVariable UUID id,
+            @RequestBody Exemptions.VaHappened happened) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(exemptions.recordVa(id, happened));
+    }
+
+    /**
+     * Confirms the recorded VA of a conditional Exemption, which is then unconditional (ticket 42): 200 with it. A step-up
+     * action ({@code exemption-decide}).
+     */
+    @PostMapping("/api/exemptions/{id}/confirm-va")
+    @PreAuthorize("hasRole('VA_POC')")
+    public ResponseEntity<Exemptions.Exemption> confirmVa(@PathVariable UUID id) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(exemptions.confirmVa(id));
+    }
+
     /** Rejects a pending Exemption: 200 with it decided. A step-up action ({@code exemption-decide}). */
     @PostMapping("/api/exemptions/{id}/reject")
     @PreAuthorize("hasRole('VA_POC')")
