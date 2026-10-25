@@ -28,7 +28,7 @@ import sg.annualva.submission.WaitingWork.Waiting;
  *       each weekly reminder with a copy, a message of its own since the relay has no cc, to the next person up: the
  *       Cyber Manager for submitting, each VA POC for reviewing;
  *   <li>endorsing (both VA POCs, as a pair that either one's endorsement or return clears): 2 weeks and 1 week before
- *       the Quarter's last day.
+ *       the stored {@code endorse_due}: the Quarter's last day, or the VA Cycle's close after a conditional Exemption lapsed.
  * </ul>
  *
  * A reminder is for its business day: a person gets at most one with the same action, System, due date and day, so the

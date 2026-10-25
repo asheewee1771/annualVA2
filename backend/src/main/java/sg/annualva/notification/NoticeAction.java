@@ -83,10 +83,13 @@ public enum NoticeAction {
     REVIEW_STILL_OVERDUE("Still Overdue: review the VA Submission."),
     /** Each VA POC's copy of the Cyber Manager's weekly Overdue reminder (story 89). */
     REVIEW_OVERDUE_COPY("Copy for you: the Cyber Manager's review of this VA Submission is still Overdue."),
-    /** A reminder (story 90) to both VA POCs, 2 weeks before the Quarter's last day. */
-    ENDORSE_DUE_IN_TWO_WEEKS("The Quarter ends in 2 weeks: endorse the VA Submission, or return it for rework."),
-    /** A reminder to both VA POCs, 1 week before the Quarter's last day. */
-    ENDORSE_DUE_IN_ONE_WEEK("The Quarter ends in 1 week: endorse the VA Submission, or return it for rework.");
+    /**
+     * A reminder (story 90) to both VA POCs, 2 weeks before the endorsement is due: the stored {@code endorse_due}, the
+     * Quarter's last day, or the VA Cycle's close once a conditional Exemption lapsed (ADR 0051, 0052).
+     */
+    ENDORSE_DUE_IN_TWO_WEEKS("Endorsement is due in 2 weeks: endorse the VA Submission, or return it for rework."),
+    /** A reminder to both VA POCs, 1 week before the endorsement is due. */
+    ENDORSE_DUE_IN_ONE_WEEK("Endorsement is due in 1 week: endorse the VA Submission, or return it for rework.");
 
     private final String message;
 

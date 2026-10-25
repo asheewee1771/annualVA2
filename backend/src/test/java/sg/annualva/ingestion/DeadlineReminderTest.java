@@ -172,7 +172,9 @@ class DeadlineReminderTest extends MailSeam1 {
         assertThat(twoWeeks.get("dueOn").asString()).isEqualTo("2027-10-31");
         assertThat(twoWeeks.get("link").asString()).isEqualTo("/va-poc/submissions/" + sub);
         assertThat(twoWeeks.get("message").asString())
-                .isEqualTo("The Quarter ends in 2 weeks: endorse the VA Submission, or return it for rework.");
+                .isEqualTo("Endorsement is due in 2 weeks: endorse the VA Submission, or return it for rework.");
+        assertThat(only(poc, "ENDORSE_DUE_IN_ONE_WEEK").get("message").asString()).as("counted from endorse_due")
+                .isEqualTo("Endorsement is due in 1 week: endorse the VA Submission, or return it for rework.");
         assertThat(actions(signedInAs(CM))).as("the Cyber Manager's step is done").containsExactly("REVIEW");
         assertThat(actions(signedInAs(SMO_A))).as("nor is it the SMO/Tech Lead's").isEmpty();
 
