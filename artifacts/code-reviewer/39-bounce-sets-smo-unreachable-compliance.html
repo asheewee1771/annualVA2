@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review — 39-bounce-sets-smo-unreachable</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall: PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">build: WARN · C0 H0 M0 L1</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear: WARN · C0 H0 M2 L5</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review: WARN · C0 H0 M2 L11</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">semgrep: WARN · C0 H0 M0 L1</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8: WARN · C0 H0 M0 L2</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react: WARN · C0 H0 M0 L1</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot: WARN · C0 H0 M1 L6</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">impl/39-bounce-smo-unreachable</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report</h1>
+          <p class="text-sm text-slate-600 mt-1">Ticket 39: a mail relay refusal sets SMO Unreachable. Diff <span class="font-mono text-xs">integration/annual-va-r1...HEAD</span> (HEAD 2887855, 3 commits, 20 files, +493 / -32).</p>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Executive Summary</h2>
+          <p class="text-xs text-slate-500 mt-1">Overall compliance evaluation status across all active checks. No check reports a Critical or High finding, so the overall verdict is PASS. Every check has Medium or Low findings and is therefore WARN.</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Check</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Status</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">C / H / M / L</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Summary of gaps</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">build</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 1</td>
+              <td class="px-4 py-2">All gates pass (1038 back-end tests, JaCoCo met, <span class="font-mono text-xs">npm run check</span> clean). Low: migration V139 sits below higher versions on the integration branch.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">thermo-nuclear</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 2 / 5</td>
+              <td class="px-4 py-2">VA-POC-only field rides on the shared <span class="font-mono text-xs">ActiveSystem</span> read model; extra <span class="font-mono text-xs">changesSmoIn</span> branch in <span class="font-mono text-xs">RegisterApply</span> instead of an event listener.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">code-review</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 2 / 11</td>
+              <td class="px-4 py-2">A System that newly names an already-refused address is not flagged (Spec); no test proves a lost claim sets no flag (Standards).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">semgrep</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 1</td>
+              <td class="px-4 py-2">One pre-existing false positive (reflection in test code); changed code is clean.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">im8</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 2</td>
+              <td class="px-4 py-2">No runtime check of <span class="font-mono text-xs">smoUnreachableOn</span> on the front end; a failed flag-clear audit write rolls back SENT and causes a resend.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">react</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 1</td>
+              <td class="px-4 py-2">Two rendering styles for warning flags in one Register table cell.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">springboot</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 6</td>
+              <td class="px-4 py-2">ADR 0051 guarantees (lost claim, refusal after acceptance) untested; Low concurrency, transaction-contract and ArchUnit hardening items.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-600">No Critical or High findings. The Medium findings most worth fixing before merge:</p>
+          <ul class="list-disc pl-6 text-sm space-y-2">
+            <li><span class="text-amber-600 font-semibold">Medium (code-review P1)</span>: a System added with, or moved to, an SMO address the relay already refuses is shown as reachable until another mail to that address is refused. <a class="font-mono text-xs text-blue-700 underline" href="../../backend/src/main/java/sg/annualva/register/RegisterApply.java">backend/src/main/java/sg/annualva/register/RegisterApply.java:135-148</a></li>
+            <li><span class="text-amber-600 font-semibold">Medium (code-review S1, springboot 1)</span>: no test proves that a lost claim sets no flag on the refused path, or that a refusal recorded after an acceptance survives the <span class="font-mono text-xs">smo_unreachable_at &lt;= :at</span> guard. <a class="font-mono text-xs text-blue-700 underline" href="../../backend/src/main/java/sg/annualva/notification/MailOutbox.java">backend/src/main/java/sg/annualva/notification/MailOutbox.java:145</a>, <a class="font-mono text-xs text-blue-700 underline" href="../../backend/src/test/java/sg/annualva/ingestion/SmoUnreachableTest.java">backend/src/test/java/sg/annualva/ingestion/SmoUnreachableTest.java</a></li>
+            <li><span class="text-amber-600 font-semibold">Medium (thermo-nuclear M1)</span>: <span class="font-mono text-xs">ActiveSystem.smoUnreachableOn</span> is carried into every consumer of the shared read model; <span class="font-mono text-xs">QuarterBoard</span> uses <span class="font-mono text-xs">need == Need.ENDORSE</span> as a <span class="font-mono text-xs">vaPoc</span> proxy. <a class="font-mono text-xs text-blue-700 underline" href="../../backend/src/main/java/sg/annualva/register/RegisterSystems.java">backend/src/main/java/sg/annualva/register/RegisterSystems.java:65</a></li>
+            <li><span class="text-amber-600 font-semibold">Medium (thermo-nuclear M2)</span>: <span class="font-mono text-xs">RegisterApply</span> repeats the <span class="font-mono text-xs">changesSmoIn</span> test instead of listening for <span class="font-mono text-xs">SystemChangeEvent.TRANSFERRED</span>. <a class="font-mono text-xs text-blue-700 underline" href="../../backend/src/main/java/sg/annualva/register/RegisterApply.java">backend/src/main/java/sg/annualva/register/RegisterApply.java:143-146</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/resources/db/migration/V139__smo_unreachable.sql</td>
+              <td class="px-4 py-3">—</td>
+              <td class="px-4 py-3">The integration branch already has higher migration versions (up to V149) and Flyway <span class="font-mono text-xs">outOfOrder</span> is not set. Fresh databases migrate cleanly, but a persistent environment already past V139 would fail validation. Follows the ticket-numbered convention, so informational. Fix: renumber or enable out-of-order for that environment if such a database exists.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-amber-600">Medium</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterSystems.java; backend/src/main/java/sg/annualva/dashboard/QuarterBoard.java</td>
+              <td class="px-4 py-3">65, 214-222; 82, 91-95</td>
+              <td class="px-4 py-3">M1: a VA-POC-only display date now rides on the shared <span class="font-mono text-xs">ActiveSystem</span> read model (used by sweeps, matrix, exemptions), converted on every <span class="font-mono text-xs">everyActive()</span> call; every consumer must remember to null it, and <span class="font-mono text-xs">QuarterBoard</span> adds a <span class="font-mono text-xs">vaPoc</span> mode flag derived from <span class="font-mono text-xs">need == Need.ENDORSE</span>. Fix: a narrow <span class="font-mono text-xs">smoUnreachableOn(Collection&lt;UUID&gt;)</span> port called only for the endorse scope; amend ADR 0051 item 5.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-amber-600">Medium</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterApply.java</td>
+              <td class="px-4 py-3">70, 76, 143-146</td>
+              <td class="px-4 py-3">M2: a second <span class="font-mono text-xs">changesSmoIn</span> branch in the apply loop repeats the test that <span class="font-mono text-xs">announce()</span> already makes when publishing <span class="font-mono text-xs">SystemChangeEvent.TRANSFERRED</span>. Fix: make <span class="font-mono text-xs">SmoReachability</span> a synchronous <span class="font-mono text-xs">@EventListener</span> for TRANSFERRED, removing the branch and the constructor dependency.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailOutbox.java</td>
+              <td class="px-4 py-3">102-117, 145-159</td>
+              <td class="px-4 py-3">L1: the Accepted and AddressRejected arms duplicate the record-or-claimLost shape, and <span class="font-mono text-xs">settled()</span> is a second settle path. Fix: one <span class="font-mono text-xs">record(mail, write, then)</span> helper.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterSystems.java</td>
+              <td class="px-4 py-3">241-242</td>
+              <td class="px-4 py-3">L2: <span class="font-mono text-xs">unlinked</span> and <span class="font-mono text-xs">unreachable</span> each re-test <span class="font-mono text-xs">vaPoc &amp;&amp; !retired</span>. Fix: compute it once.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">frontend/src/screens/va-poc/RegisterTable.tsx</td>
+              <td class="px-4 py-3">36-41</td>
+              <td class="px-4 py-3">L3: Unlinked SMO is inline JSX while SMO Unreachable uses a component with the same markup. Fix: a shared warning-flag component.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/test/java/sg/annualva/arch/ArchitectureTest.java</td>
+              <td class="px-4 py-3">279-284</td>
+              <td class="px-4 py-3">L4: <span class="font-mono text-xs">getMethod(...).getName()</span> is a rename tripwire hidden among inline fully-qualified names. Fix: import the types and comment the intent.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailOutbox.java</td>
+              <td class="px-4 py-3">27</td>
+              <td class="px-4 py-3">L5: overlong Javadoc line; re-wrap to 120 columns.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-amber-600">Medium</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterApply.java; RegisterStore.java (insert)</td>
+              <td class="px-4 py-3">135-148</td>
+              <td class="px-4 py-3">P1 (Spec): a System that newly names an already-refused address is not flagged. ADD inserts with no flag, and an UPDATE that changes the SMO always clears it, contrary to the spec (&quot;flags every System naming that SMO/Tech Lead&quot;) and the glossary. Fix: on ADD or SMO change, copy the earliest <span class="font-mono text-xs">smo_unreachable_at</span> from active Systems with the same address and audit it (or keep refused addresses in their own table); add a Seam 1 test.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-amber-600">Medium</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailOutbox.java</td>
+              <td class="px-4 py-3">110-114, 145</td>
+              <td class="px-4 py-3">S1 (Standards, test gap): ADR 0051 item 2 promises no flag when the claim was lost, but only the SENT path has a lost-claim test. A broken guard in <span class="font-mono text-xs">recorded</span> would write the flag and audit entry undetected. Fix: a lease test where the refusal is re-claimed before it is recorded; assert exactly one flag and one audit entry.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailOutbox.java</td>
+              <td class="px-4 py-3">103-106, 145-153</td>
+              <td class="px-4 py-3">S2: SENT now shares a transaction with the flag clear; if clearing throws, the mail is resent. Allowed by ADR 0046 but not stated in ADR 0051. Fix: document it, or clear in a separate transaction.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterStore.java</td>
+              <td class="px-4 py-3">108-109</td>
+              <td class="px-4 py-3">S3: the <span class="font-mono text-xs">&lt;= :at</span> guard stops a late acceptance clearing a newer refusal but not an older refusal written after a newer acceptance; instance clock skew also matters. Fix: soften ADR 0051 item 3 wording, or store a last-accepted time.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/register/SmoReachability.java</td>
+              <td class="px-4 py-3">65</td>
+              <td class="px-4 py-3">S4: <span class="font-mono text-xs">newSmo</span> lacks <span class="font-mono text-xs">@Transactional(propagation = MANDATORY)</span>, unlike its siblings. Fix: add it.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/register/SmoReachability.java</td>
+              <td class="px-4 py-3">27-28</td>
+              <td class="px-4 py-3">S5: audit source values are string constants where other entries use an enum. Fix: a small <span class="font-mono text-xs">ClearedBy</span> enum.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/dashboard/QuarterBoard.java</td>
+              <td class="px-4 py-3">82, 91-95</td>
+              <td class="px-4 py-3">S6: <span class="font-mono text-xs">need == Need.ENDORSE</span> is passed as <span class="font-mono text-xs">vaPoc</span>, hiding the coupling. Fix: rename to <span class="font-mono text-xs">endorseScope</span> with a comment, or derive from the role.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">frontend/src/screens/va-poc/RegisterTable.tsx</td>
+              <td class="px-4 py-3">38</td>
+              <td class="px-4 py-3">S7: the Unlinked SMO flag is still inline while the same-shaped new flag was extracted. Fix: one shared flag component.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/register/SmoReachability.java; RegisterStore.java</td>
+              <td class="px-4 py-3">—</td>
+              <td class="px-4 py-3">S8: possible Data Clump; <span class="font-mono text-xs">(String email, Instant at)</span> passed through four methods. Optional record.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterSystems.java</td>
+              <td class="px-4 py-3">242</td>
+              <td class="px-4 py-3">S9: no test covers the documented rule that a retired System's flag shows as null. Fix: assert it in <span class="font-mono text-xs">SmoUnreachableTest</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/SmoUnreachableTest.java</td>
+              <td class="px-4 py-3">—</td>
+              <td class="px-4 py-3">P2: AC3 only partly proven; no Seam 1 test for case-insensitive address matching, retired Systems never flagged, a refusal after an acceptance being kept, or a lost claim setting no flag. Fix: add at least the letter-case and retired-System tests.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterStore.java</td>
+              <td class="px-4 py-3">108-109</td>
+              <td class="px-4 py-3">P3: <span class="font-mono text-xs">CLEAR_REACHED</span> has no <span class="font-mono text-xs">retired_at IS NULL</span> filter, so accepted mail writes clear entries for retired Systems; asymmetric with <span class="font-mono text-xs">FLAG_UNREACHABLE</span>. Fix: add the filter, or clear on retirement.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">.scratch/annual-va/issues/39-bounce-sets-smo-unreachable.md</td>
+              <td class="px-4 py-3">11</td>
+              <td class="px-4 py-3">P4 (info): the issue cites ADR 0014 for the limitation; it is recorded in ADR 0051 item 7. Optionally note the renumbering.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/test/java/sg/annualva/arch/ArchitectureTest.java</td>
+              <td class="px-4 py-3">130</td>
+              <td class="px-4 py-3"><span class="font-mono text-xs">java.lang.security.audit.unsafe-reflection</span> on <span class="font-mono text-xs">Class.forName(write[0])</span>. Pre-existing (not touched by this branch) and a false positive: names are hard-coded test constants. Optional: use class literals or a justified <span class="font-mono text-xs">nosemgrep</span>. Scan of 18 changed files with p/security-audit + p/default found nothing else.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">frontend/src/api/systemRegister.ts; frontend/src/api/dashboards.ts; frontend/src/screens/shared/SmoUnreachableFlag.tsx</td>
+              <td class="px-4 py-3">170; 112; 12</td>
+              <td class="px-4 py-3">as-1: <span class="font-mono text-xs">smoUnreachableOn</span> is typed <span class="font-mono text-xs">string | null</span> but not checked at runtime; an unparsable value is printed raw (as text, so no XSS). Existing project-wide pattern. Optional: validate the date shape at the API boundary.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailOutbox.java</td>
+              <td class="px-4 py-3">102-106, 145-155</td>
+              <td class="px-4 py-3">lm-4 observation: SENT and the flag-clearing audit entries share one transaction, so a failed audit write rolls back SENT and the delivered mail is resent. Deliberate trade-off; optionally record it in ADR 0051 or clear in a follow-up transaction.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">frontend/src/screens/va-poc/RegisterTable.tsx</td>
+              <td class="px-4 py-3">34-41</td>
+              <td class="px-4 py-3">Inconsistent flag rendering in the same cell: Unlinked SMO is an inline fragment, SMO Unreachable uses the extracted component. Optional: a shared <span class="font-mono text-xs">&lt;WarningFlag&gt;</span> if a third flag lands.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-amber-600">Medium</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/SmoUnreachableTest.java (code: MailOutbox.java:145, RegisterStore.java:107)</td>
+              <td class="px-4 py-3">45</td>
+              <td class="px-4 py-3">spring-test-review: ADR 0051 guarantees untested: (a) no flag set or cleared when the claim was lost; (b) a refusal written after an acceptance survives the <span class="font-mono text-xs">&lt;= :at</span> guard. Also untested: retired Systems never flagged, same-SMO UPDATE keeps the flag, case-insensitive match. Fix: Seam 1 cases using <span class="font-mono text-xs">mailRelay.beforeNextAnswer(...)</span> as in <span class="font-mono text-xs">MailLeaseTest</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterStore.java; MailOutbox.java</td>
+              <td class="px-4 py-3">99; 109-112</td>
+              <td class="px-4 py-3">spring-data-review: with concurrent dispatchers, an older refusal can commit after a newer acceptance's clear and leave a stale flag. Unlikely. Fix: guard on the last accepted instant, or document the window in ADR 0051 item 3.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterStore.java; RegisterApply.java</td>
+              <td class="px-4 py-3">99, 107; 145-147</td>
+              <td class="px-4 py-3">spring-data-review: flag/clear updates and a Register apply lock the same <span class="font-mono text-xs">va_system</span> rows in different orders, so a deadlock is possible. Fix: lock in id order first, or accept and record it.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailOutbox.java</td>
+              <td class="px-4 py-3">104-105, 145-152</td>
+              <td class="px-4 py-3">spring-batch-review: a failure in <span class="font-mono text-xs">reachability.accepted</span> rolls back SENT and causes a duplicate mail. Acceptable as designed; optionally clear in a nested savepoint or after the SENT commit.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/register/SmoReachability.java</td>
+              <td class="px-4 py-3">64</td>
+              <td class="px-4 py-3">spring-core / data: <span class="font-mono text-xs">newSmo</span> declares no transaction contract. Fix: <span class="font-mono text-xs">@Transactional(propagation = Propagation.MANDATORY)</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/test/java/sg/annualva/arch/ArchitectureTest.java</td>
+              <td class="px-4 py-3">277-285</td>
+              <td class="px-4 py-3">spring-security-review: the caller rule uses <span class="font-mono text-xs">callMethod(...)</span>, so a method reference from another class would pass. Existing pattern. Fix: use <span class="font-mono text-xs">accessTargetWhere(...)</span> to cover references.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailOutbox.java</td>
+              <td class="px-4 py-3">115-116</td>
+              <td class="px-4 py-3">spring-logging-review: <span class="font-mono text-xs">mail-address-rejected</span> does not say whether Systems were flagged, nothing is logged on clear, and the WARN is emitted even after a lost claim. Optional: add a count label (no address) and log only when recorded.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+    </main>
+  </body>
+</html>
