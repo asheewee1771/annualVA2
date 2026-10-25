@@ -60,10 +60,21 @@ public class SmoReachability {
         store.clearReached(email, at).forEach(system -> audit.record(cleared(system, SOURCE_MAIL)));
     }
 
-    /** A Register apply names another SMO/Tech Lead for this System: its flag, if any, is cleared, by the apply's caller. */
-    void newSmo(UUID systemId) {
+    /**
+     * A Register apply has just added this System or named another SMO/Tech Lead for it: the flag follows the new address,
+     * by the apply's caller. Whatever the old address did says nothing of the new one, so its flag is cleared; and when
+     * another active System already names the new address as SMO Unreachable, this one is flagged from the same date, so
+     * every System naming a refused address shows it.
+     *
+     * @param smoEmail the address the System now names; never logged or audited
+     */
+    void newSmo(UUID systemId, String smoEmail) {
         if (store.clearUnreachable(systemId)) {
             audit.record(actor.attribute(cleared(systemId, SOURCE_REGISTER)));
+        }
+        if (store.flagAsOthers(systemId, smoEmail)) {
+            audit.record(actor.attribute(AuditEvent.of(AuditAction.SMO_UNREACHABLE, AuditOutcome.SUCCESS)
+                    .onSystem(systemId).with(DetailKey.SOURCE, SOURCE_REGISTER)));
         }
     }
 

@@ -111,6 +111,12 @@ class RegisterStore {
     private static final String CLEAR_SYSTEM =
             "UPDATE va_system SET smo_unreachable_at = NULL WHERE id = :id AND smo_unreachable_at IS NOT NULL";
 
+    /** Flags one System from the earliest flag another active System naming the same address holds, if any. */
+    private static final String FLAG_AS_OTHERS =
+            "UPDATE va_system v SET smo_unreachable_at = o.at FROM (SELECT min(smo_unreachable_at) AS at FROM va_system "
+            + "WHERE smo_email = CAST(:email AS citext) AND id <> :id AND retired_at IS NULL) o "
+            + "WHERE v.id = :id AND o.at IS NOT NULL";
+
     private static final String MARK_APPLIED =
             "UPDATE register_upload SET status = 'APPLIED', applied_at = :now, applied_by = :by "
             + "WHERE id = :id AND status = 'PREVIEW'";
@@ -242,6 +248,11 @@ class RegisterStore {
     /** Clears one System's flag; whether it was flagged. */
     boolean clearUnreachable(UUID id) {
         return jdbc.sql(CLEAR_SYSTEM).param("id", id).update() == 1;
+    }
+
+    /** Flags one System as another active System naming this address is flagged; whether one was. */
+    boolean flagAsOthers(UUID id, String email) {
+        return jdbc.sql(FLAG_AS_OTHERS).param("id", id).param("email", email).update() == 1;
     }
 
     /** Marks the preview applied; false when it was not waiting any more. */

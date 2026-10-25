@@ -2,6 +2,7 @@ package sg.annualva.ingestion;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -140,6 +141,63 @@ class SmoUnreachableTest extends MailSeam1 {
         assertThat(entries.get(0).get("actorId").asString()).as("the VA POC who applied it").isEqualTo(actor);
         assertThat(entries.get(0).get("detail").get("source").asString()).isEqualTo("register");
         assertThat(entries(CLEARED, idOf("SYS-U2"))).isEmpty();
+    }
+
+    @Test
+    void aSystemTheRegisterNewlyNamesARefusedAddressForIsFlaggedFromTheSameDateForTheVaPoc() {
+        smoARefusedOnTheSixteenth();
+        today("2027-08-20");
+
+        registered(listed("SYS-U1", "Unreachable one", SMO_A, CM, "Q3"),
+                listed("SYS-U2", "Unreachable two", SMO_A, CM_OTHER, "Q4"),
+                listed("SYS-U3", "Reachable", SMO_A, CM, "Q3"),
+                listed("SYS-U4", "Added", SMO_A.toUpperCase(java.util.Locale.ROOT), CM, "Q4"));
+
+        ApiClient poc = vaPoc();
+        String actor = userId(poc);
+        JsonNode register = ApiClient.json(poc.get("/api/systems"));
+        for (String systemId : List.of("SYS-U3", "SYS-U4")) {
+            assertThat(system(register, systemId).get("smoUnreachableOn").asString()).as(systemId)
+                    .isEqualTo("2027-08-16");
+            JsonNode entries = entries(FLAGGED, idOf(systemId));
+            assertThat(entries).as(systemId).hasSize(1);
+            assertThat(entries.get(0).get("actorId").asString()).isEqualTo(actor);
+            assertThat(entries.get(0).get("detail").get("source").asString()).isEqualTo("register");
+        }
+        assertThat(entries(CLEARED, idOf("SYS-U3"))).as("SMO_B's address was never refused").isEmpty();
+    }
+
+    @Test
+    void aRetiredSystemNamingTheRefusedAddressIsNeitherFlaggedNorShownAsFlagged() {
+        registered(List.of(listed("SYS-U1", "Unreachable one", SMO_A, CM, "Q3")),
+                List.of(listed("SYS-UR", "Retired", SMO_A, CM, "Q3")));
+        mailRelay.rejectAddress(SMO_A);
+        today("2027-08-16");
+        arrange.overdueSweep();
+        dispatched();
+
+        JsonNode register = ApiClient.json(vaPoc().get("/api/systems"));
+        assertThat(system(register, "SYS-U1").get("smoUnreachableOn").asString()).isEqualTo("2027-08-16");
+        assertThat(system(register, "SYS-UR").get("smoUnreachableOn").isNull()).isTrue();
+        assertThat(entries(FLAGGED, idOf("SYS-UR"))).isEmpty();
+    }
+
+    @Test
+    void aRefusalWhoseClaimWasLostFlagsNothing() {
+        Draft draft = returnedForRework();
+        mailRelay.beforeNextAnswer(() -> {
+            // The hand-over outlasts its lease: another pass sends the mail, and only then is the address refused.
+            clock.advance(Duration.ofMinutes(6));
+            dispatched();
+            mailRelay.rejectAddress(SMO_A);
+        });
+
+        dispatched();
+
+        assertThat(onlyMailOf(SMO_A).get("status").asString()).as("the claim that holds the mail").isEqualTo("SENT");
+        JsonNode register = ApiClient.json(vaPoc().get("/api/systems"));
+        assertThat(system(register, "SYS-F1").get("smoUnreachableOn").isNull()).isTrue();
+        assertThat(entries(FLAGGED, draft.systemId())).isEmpty();
     }
 
     private static JsonNode system(JsonNode systems, String systemId) {

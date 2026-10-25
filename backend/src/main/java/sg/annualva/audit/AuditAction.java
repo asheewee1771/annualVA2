@@ -33,8 +33,9 @@ public enum AuditAction {
     REGISTER_SYSTEM_RETIRED("register-system-retired", "configuration"),
     /**
      * The mail relay refused the address of a System's SMO/Tech Lead, so the System is flagged SMO Unreachable (story 13,
-     * ticket 39). One entry per System flagged, about that System; written by the mail dispatcher, so it has no actor.
-     * Never the address or the mail.
+     * ticket 39). One entry per System flagged, about that System: by the mail dispatcher, with no actor, or, for a
+     * System a VA POC's Register apply adds or gives an address already refused for another System, by that VA POC with
+     * {@code source} {@code register}. Never the address or the mail.
      */
     SMO_UNREACHABLE("smo-unreachable", "configuration"),
     /**

@@ -134,18 +134,18 @@ public class RegisterApply {
             switch (row.outcome()) {
                 case ADD -> {
                     SystemSnapshot after = row.after();
-                    store.insertSystem(row.systemId(), after.name(), after.smoEmail(), after.cyberManagerEmail(),
-                            quarter(after), calendar.today());
+                    UUID system = store.insertSystem(row.systemId(), after.name(), after.smoEmail(),
+                            after.cyberManagerEmail(), quarter(after), calendar.today());
+                    reachability.newSmo(system, after.smoEmail());
                     added++;
                 }
                 case UPDATE -> {
                     SystemSnapshot after = row.after();
-                    if (row.before().changesSmoIn(after)) {
-                        // Another SMO/Tech Lead: whether the old one's address was refused says nothing of theirs.
-                        reachability.newSmo(row.existingSystemId());
-                    }
                     store.updateSystem(row.existingSystemId(), after.name(), after.smoEmail(), after.cyberManagerEmail(),
                             quarter(after));
+                    if (row.before().changesSmoIn(after)) {
+                        reachability.newSmo(row.existingSystemId(), after.smoEmail());
+                    }
                     announce(row.existingSystemId(), row.before(), after, now);
                     updated++;
                 }
