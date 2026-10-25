@@ -52,3 +52,7 @@ annualva:
       returned-for-rework: ${ANNUALVA_MAIL_TEMPLATE_RETURNED_FOR_REWORK:onboarding-pending-returned-for-rework}
       overdue: ${ANNUALVA_MAIL_TEMPLATE_OVERDUE:onboarding-pending-overdue}
       register-change: ${ANNUALVA_MAIL_TEMPLATE_REGISTER_CHANGE:onboarding-pending-register-change}
+      reminder-due-soon: ${ANNUALVA_MAIL_TEMPLATE_REMINDER_DUE_SOON:onboarding-pending-reminder-due-soon}
+      reminder-due: ${ANNUALVA_MAIL_TEMPLATE_REMINDER_DUE:onboarding-pending-reminder-due}
+      overdue-weekly: ${ANNUALVA_MAIL_TEMPLATE_OVERDUE_WEEKLY:onboarding-pending-overdue-weekly}
+      reminder-copy: ${ANNUALVA_MAIL_TEMPLATE_REMINDER_COPY:onboarding-pending-reminder-copy}

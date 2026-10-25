@@ -43,6 +43,7 @@ import sg.annualva.audit.DetailKey;
 import sg.annualva.access.RoleGrantStore;
 import sg.annualva.export.ExportWorker;
 import sg.annualva.ingestion.ScanPoller;
+import sg.annualva.notification.DeadlineReminders;
 import sg.annualva.notification.MailOutbox;
 import sg.annualva.retention.DisposalExecutor;
 import sg.annualva.retention.DisposalPlanner;
@@ -123,17 +124,19 @@ public class TestEndpoints {
         private final ExemptionLapse exemptionLapse;
         private final DisposalExecutor disposalExecutor;
         private final DisposalPlanner disposalPlanner;
+        private final DeadlineReminders reminders;
         private final RoleLapses roleLapses;
 
         public TestController(AppUserStore users, RoleGrantStore grants, AccessGuard guard, StepUp stepUp, JdbcClient jdbc,
                 Clock clock, AuditLog audit, TransactionTemplate transaction, ScanPoller scanPoller,
                 OverdueSweep overdueSweep, MailOutbox mailOutbox, CycleLifecycle cycleLifecycle,
                 ExportWorker exportWorker, ExemptionLapse exemptionLapse, DisposalExecutor disposalExecutor,
-                DisposalPlanner disposalPlanner, RoleLapses roleLapses) {
+                DisposalPlanner disposalPlanner, DeadlineReminders reminders, RoleLapses roleLapses) {
             this.roleLapses = roleLapses;
             this.exemptionLapse = exemptionLapse;
             this.disposalExecutor = disposalExecutor;
             this.disposalPlanner = disposalPlanner;
+            this.reminders = reminders;
             this.cycleLifecycle = cycleLifecycle;
             this.scanPoller = scanPoller;
             this.overdueSweep = overdueSweep;
@@ -341,6 +344,13 @@ public class TestEndpoints {
         public Map<String, String> overdue() {
             overdueSweep.sweep();
             return Map.of("ran", "overdue");
+        }
+
+        /** One pass of the deadline reminder planner, which {@code annualva.scheduling.enabled=false} keeps from running by itself in tests. */
+        @PostMapping("/api/test/jobs/reminders")
+        public Map<String, String> reminders() {
+            reminders.plan();
+            return Map.of("ran", "reminders");
         }
 
         /** One pass of the mail dispatcher, which {@code annualva.scheduling.enabled=false} keeps from running by itself in tests. */

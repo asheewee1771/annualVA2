@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review &mdash; 38-deadline-reminders</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall: PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">build WARN &middot; C0 H0 M0 L2 &middot; r2</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN &middot; C0 H0 M2 L4 &middot; r2</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN &middot; C0 H0 M3 L10 &middot; r1</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">semgrep WARN &middot; C0 H0 M0 L4 &middot; r1</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN &middot; C0 H0 M0 L2 &middot; r1</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">react PASS &middot; C0 H0 M0 L0 &middot; r1</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN &middot; C0 H0 M2 L7 &middot; r1</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">impl/38-deadline-reminders @ ccbde25</span>
+    </div>
+
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report</h1>
+          <p class="text-sm text-slate-600 mt-1">Ticket 38, deadline reminders. Round 2 (approved fast mode): <span class="font-mono text-xs">git diff integration/annual-va-r1...HEAD</span> at HEAD <span class="font-mono text-xs">ccbde25</span>.</p>
+        </div>
+
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Executive Summary</h2>
+          <p class="text-xs text-slate-500 mt-1">Overall status across all seven active checks. <strong>build</strong> and <strong>thermo-nuclear</strong> were rerun on HEAD ccbde25 after the fixes (round 2). The other five checks are carried over from round 1 (HEAD 69100da) because they had no Critical or High findings; their line numbers refer to the round-1 code.</p>
+        </div>
+
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Check</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Source</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Status</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">C / H / M / L</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Summary of gaps</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 font-medium">build</td>
+              <td class="px-4 py-2">Round 2 (ccbde25)</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 2</td>
+              <td class="px-4 py-2">All gates pass: 1046 tests, 0 failures; ArchUnit 28/28; JaCoCo &ge; 80 % met; front-end check clean. Two informational notes only (scheduler wrapper uncovered by design; pre-existing deprecation).</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">thermo-nuclear</td>
+              <td class="px-4 py-2">Round 2 (ccbde25)</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 2 / 4</td>
+              <td class="px-4 py-2">Round-1 High (routing switch) and all round-1 Mediums but one resolved by 70af445. Remaining: every hourly pass locks each waiting item before checking whether anything is due; step routing duplicated with <span class="font-mono text-xs">WorkflowNotices</span>.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">code-review</td>
+              <td class="px-4 py-2">Carried over (round 1)</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 3 / 10</td>
+              <td class="px-4 py-2">S1 (shared OpenQuarters) and P2 (weekly cadence from the flag day) addressed in 70af445. P1 (copies on weekly reminders only) and P3 (VA POC copy pairing) remain provisional decisions in ADR 0052.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">semgrep</td>
+              <td class="px-4 py-2">Carried over (round 1)</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 4</td>
+              <td class="px-4 py-2">No finding in changed code. Four pre-existing Low results (false positives or generated files), recorded only.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">im8</td>
+              <td class="px-4 py-2">Carried over (round 1)</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 2</td>
+              <td class="px-4 py-2">ac-1 (callers of <span class="font-mono text-xs">WaitingWork.on</span> unrestricted; same fix as springboot M2, addressed in 70af445) and lm-16 (no outcome metric for failed reminders).</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">react</td>
+              <td class="px-4 py-2">Carried over (round 1)</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 0</td>
+              <td class="px-4 py-2">No front-end files changed.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">springboot</td>
+              <td class="px-4 py-2">Carried over (round 1)</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 2 / 7</td>
+              <td class="px-4 py-2">M1 (no same-day retry) and M2 (no ArchUnit rule for <span class="font-mono text-xs">WaitingWork</span>) addressed in 70af445. Seven Lows remain from round 1.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-700">None. No check reports a Critical or High finding on HEAD ccbde25.</p>
+          <ul class="list-disc pl-6 text-sm text-slate-700 space-y-1">
+            <li>The only round-1 High (thermo-nuclear #1, routing table hand-written as a state switch) is <strong>resolved</strong> in 70af445: <span class="font-mono text-xs">backend/src/main/java/sg/annualva/notification/DeadlineReminders.java:77-92</span> now holds one <span class="font-mono text-xs">Schedule</span> per step.</li>
+          </ul>
+        </div>
+
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Round-1 items addressed or decided</h3>
+          <ul class="list-disc pl-6 text-sm text-slate-700 space-y-1">
+            <li><strong>springboot M1</strong> (no same-day retry): addressed in 70af445. The job now runs hourly from 08:00, so a failed reminder is written by a later pass the same day.</li>
+            <li><strong>springboot M2</strong> (no rule limits <span class="font-mono text-xs">WaitingWork</span>): addressed in 70af445. An ArchUnit rule now limits <span class="font-mono text-xs">WaitingWork</span> to the planner. This also covers im8 ac-1 (L-1).</li>
+            <li><strong>code-review P2</strong> (weekly cadence anchored to the due date): addressed in 70af445. The weekly cadence now counts from the day the Overdue flag was set.</li>
+            <li><strong>code-review S1</strong> (duplicated Cycle/Quarter traversal): addressed in 70af445 by the shared <span class="font-mono text-xs">OpenQuarters</span>.</li>
+            <li><strong>code-review P1</strong> (Cyber Manager copied on the weekly Overdue reminders only) and the <strong>copy / VA POC pairing</strong> (code-review P3): remain <strong>provisional decisions</strong> recorded in ADR 0052, awaiting a human decision.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- build -->
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build <span class="text-xs text-slate-500">(round 2, rerun on ccbde25; implementer logs reused under the approved fast mode)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-600">
+          <p>Back end <span class="font-mono text-xs">./mvnw -B -ntp clean verify</span>: 305 main sources compiled; 1046 tests, 0 failures, 0 errors; <span class="font-mono text-xs">ArchitectureTest</span> 18/18 and <span class="font-mono text-xs">ModuleConventionsArchTest</span> 10/10; JaCoCo line and branch &ge; 80 % met. Front end <span class="font-mono text-xs">npm run check</span>: Prettier, <span class="font-mono text-xs">tsc -b</span>, <span class="font-mono text-xs">vite build</span>, no raw HTML, dependency-cruiser and fallow all pass. Logs were confirmed to post-date the HEAD commit with a clean tree. Changed classes are at 95.8&ndash;100 % line coverage, except the 5-line scheduler wrapper. The check itself reports PASS; its two informational notes are listed as Low.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low (Info)</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/DeadlineReminderJob.java</td>
+              <td class="px-4 py-3">&ndash;</td>
+              <td class="px-4 py-3">0 % coverage of the 5-line <span class="font-mono text-xs">@Scheduled</span> wrapper. It is gated on <span class="font-mono text-xs">annualva.scheduling.enabled</span>, which Seam 1 leaves off by design; <span class="font-mono text-xs">DeadlineReminders</span> is at 100 % line coverage, and the other <span class="font-mono text-xs">*Job</span> wrappers follow the same pattern. No action needed.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low (Info)</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/adapters/oidc/MccHttp.java</td>
+              <td class="px-4 py-3">51</td>
+              <td class="px-4 py-3">Pre-existing compiler deprecation warning (<span class="font-mono text-xs">messageConverters(...)</span>). Not touched by this branch. No action needed for ticket 38.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <!-- thermo-nuclear -->
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear <span class="text-xs text-slate-500">(round 2, rerun on ccbde25)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-600 space-y-2">
+          <p>Round-1 resolution: #1 High routing switch, #2 traversal duplication, #4 stringly-typed dedupe key (now a typed <span class="font-mono text-xs">reminder_on</span> column with a partial unique index), #5 positional enums, #6&ndash;#10 Lows: <strong>resolved</strong>. #3 nullable <span class="font-mono text-xs">submissionId</span> on <span class="font-mono text-xs">Waiting</span>: <strong>partly resolved</strong>, downgraded to Low (N3). No touched file approaches 1000 lines (largest: <span class="font-mono text-xs">SubmissionStore.java</span>, 804).</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-3 text-amber-600">Medium</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/DeadlineReminders.java</td>
+              <td class="px-4 py-3">98</td>
+              <td class="px-4 py-3"><strong>N1.</strong> Each of the 16 hourly passes opens a transaction and takes <span class="font-mono text-xs">FOR SHARE</span> on every waiting VA Submission before checking whether any reminder is due today; on most days nothing is. Make the schedule lookup a pure <span class="font-mono text-xs">due(Waiting, today)</span> and open the transaction and hold only for items with something due.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-amber-600">Medium</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/DeadlineReminders.java</td>
+              <td class="px-4 py-3">77</td>
+              <td class="px-4 py-3"><strong>N2.</strong> Step routing (who is told, which link) is written twice in <span class="font-mono text-xs">notification</span>: in <span class="font-mono text-xs">DeadlineReminders.schedule</span> and in <span class="font-mono text-xs">WorkflowNotices.on(OverdueEvent)</span> (WorkflowNotices.java:110-124), which also re-spells <span class="font-mono text-xs">Links.forSmo</span>. Give each step one package-private <span class="font-mono text-xs">StepRoute</span> used by both.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/submission/WaitingWork.java</td>
+              <td class="px-4 py-3">39</td>
+              <td class="px-4 py-3"><strong>N3.</strong> <span class="font-mono text-xs">Waiting</span> still pairs a nullable <span class="font-mono text-xs">submissionId</span> with <span class="font-mono text-xs">state</span>, asserted at run time in <span class="font-mono text-xs">started()</span> and <span class="font-mono text-xs">Links.forSmo</span>. A <span class="font-mono text-xs">StepRoute.link(Waiting)</span> would confine the null to the SUBMIT row.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/submission/WaitingWork.java</td>
+              <td class="px-4 py-3">76</td>
+              <td class="px-4 py-3"><strong>N4.</strong> <span class="font-mono text-xs">SubmissionState.nextStep</span> and V20 <span class="font-mono text-xs">current_window_due</span> list the same five states, kept in step only by a comment. A SQL-only state aborts the whole pass via <span class="font-mono text-xs">orElseThrow</span>; a Java-only state is silently never reminded. Admit on one side, or add a parity test across all ten states.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionStore.java</td>
+              <td class="px-4 py-3">555</td>
+              <td class="px-4 py-3"><strong>N5.</strong> <span class="font-mono text-xs">notStartedOverdue</span> now returns a mutable <span class="font-mono text-xs">HashMap.keySet()</span> view filled by a side-effecting row callback, and <span class="font-mono text-xs">Submissions.overdueNotStarted</span> hands it out of the module. Collect to an unmodifiable map and restore <span class="font-mono text-xs">Set.copyOf(...)</span>.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/DeadlineReminders.java</td>
+              <td class="px-4 py-3">48</td>
+              <td class="px-4 py-3"><strong>N6.</strong> <span class="font-mono text-xs">Route</span> is a thin alias of <span class="font-mono text-xs">BiConsumer</span>, and the constant <span class="font-mono text-xs">schedule(step)</span> table is rebuilt for every item on every pass. Hold it as a <span class="font-mono text-xs">static final</span> <span class="font-mono text-xs">EnumMap</span>, or fold it into N2&rsquo;s <span class="font-mono text-xs">StepRoute</span>.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <!-- code-review -->
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review <span class="text-xs text-slate-500">(carried over from round 1, HEAD 69100da)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-600">
+          <p>Two-axis review (Standards and Spec) against ticket 38, spec stories 88&ndash;90, reviewer decisions and the ADRs. Not rerun in round 2; status and counts are those of round 1. Line numbers refer to the round-1 code. Round-2 status is noted in each row where known.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-3 text-amber-600">Medium</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/submission/WaitingWork.java</td>
+              <td class="px-4 py-3">50-63</td>
+              <td class="px-4 py-3"><strong>S1. Duplicated scope loop</strong> copied from <span class="font-mono text-xs">OverdueSweep</span>. <span class="text-emerald-700 font-semibold">Addressed in 70af445</span>: both now iterate the shared <span class="font-mono text-xs">OpenQuarters</span>.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-amber-600">Medium</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/DeadlineReminders.java</td>
+              <td class="px-4 py-3">84-87, 96-99</td>
+              <td class="px-4 py-3"><strong>P1. Copies go on the weekly Overdue reminders only</strong>; story 89 can be read as every SMO reminder. <span class="text-amber-700 font-semibold">Provisional decision in ADR 0052</span>, awaiting a human decision.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-amber-600">Medium</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/DeadlineReminders.java</td>
+              <td class="px-4 py-3">127-128</td>
+              <td class="px-4 py-3"><strong>P2. Weekly cadence anchored to the due date</strong>, not to when Overdue began. <span class="text-emerald-700 font-semibold">Addressed in 70af445</span>: the cadence now counts from the day the flag was set.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/DeadlineReminders.java</td>
+              <td class="px-4 py-3">76-99, 119-121</td>
+              <td class="px-4 py-3"><strong>S2. Data clumps</strong>: SMO and Cyber Manager branches repeat the same soon/today/still-overdue trio. (Round-2 thermo-nuclear reports this replaced by one schedule per step.)</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/Notice.java</td>
+              <td class="px-4 py-3">22, 40-42</td>
+              <td class="px-4 py-3"><strong>S3. Stringly-typed dedupe key</strong> <span class="font-mono text-xs">once</span> and its SQL CHECK regex. (Round-2 thermo-nuclear reports this replaced by a typed <span class="font-mono text-xs">reminder_on</span> column.)</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/DeadlineReminders.java</td>
+              <td class="px-4 py-3">58</td>
+              <td class="px-4 py-3"><strong>S4. Mysterious name</strong>: <span class="font-mono text-xs">plan()</span> writes and mails reminders; <span class="font-mono text-xs">remind()</span> or <span class="font-mono text-xs">sendDue()</span> would say so.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/DeadlineReminders.java</td>
+              <td class="px-4 py-3">39, 116</td>
+              <td class="px-4 py-3"><strong>S5. Glossary</strong>: Javadoc uses &ldquo;owner&rdquo;, a synonym <span class="font-mono text-xs">CONTEXT.md</span> says to avoid.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/submission/package-info.java</td>
+              <td class="px-4 py-3">5</td>
+              <td class="px-4 py-3"><strong>S6. Formatting</strong>: line longer than the 120 columns used elsewhere. (Round-2 thermo-nuclear reports this fixed.)</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/DeadlineReminders.java</td>
+              <td class="px-4 py-3">58-71</td>
+              <td class="px-4 py-3"><strong>S7. Stale read</strong>: work that moves between the read and the per-item write can still be reminded. (Round-2 thermo-nuclear notes a per-item <span class="font-mono text-xs">FOR SHARE</span> state hold now exists.)</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/DeadlineReminders.java</td>
+              <td class="px-4 py-3">62-69</td>
+              <td class="px-4 py-3"><strong>S8. Log flood</strong>: per-item <span class="font-mono text-xs">reminder-failed</span> logged once per waiting item when the database is down. Stop on first data-access failure or log one summary.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/Notifications.java</td>
+              <td class="px-4 py-3">&ndash;</td>
+              <td class="px-4 py-3"><strong>S9. Possible pair split (not verified)</strong>: a same-day rerun after the VA POC list changes may write the missing row under a new group key in <span class="font-mono text-xs">toVaPocs</span>.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/Notifications.java</td>
+              <td class="px-4 py-3">86</td>
+              <td class="px-4 py-3"><strong>P3. VA POC copies are separate items nothing clears</strong>, departing from the spec&rsquo;s paired VA POC items. <span class="text-amber-700 font-semibold">Provisional decision in ADR 0052</span> (copy / VA POC pairing), awaiting sign-off.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/DeadlineReminderTest.java</td>
+              <td class="px-4 py-3">160-262</td>
+              <td class="px-4 py-3"><strong>P4. Partial AC2 test coverage</strong>: handled-outside-the-app case checks only the SMO; Withdrawn tested on the 5-day day only; final states reached via a backdoor; VA POC test does not assert the SMO gets nothing; no closed-Cycle exclusion test.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <!-- semgrep -->
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep <span class="text-xs text-slate-500">(carried over from round 1, HEAD 69100da)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-600">
+          <p>Semgrep 1.179.0 (<span class="font-mono text-xs">p/security-audit</span>, <span class="font-mono text-xs">p/default</span>), full repo plus changed test files. No P0 or P1 finding in changed code; the check itself reports PASS. The four results below are pre-existing and recorded only.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/test/java/sg/annualva/harness/TestEndpoints.java</td>
+              <td class="px-4 py-3">418</td>
+              <td class="px-4 py-3">Pre-existing. <span class="font-mono text-xs">tainted-sql-string</span> on a test-only endpoint; <span class="font-mono text-xs">prefix</span> is checked against <span class="font-mono text-xs">[A-Z_]+</span> first. False positive.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/test/java/sg/annualva/arch/ArchitectureTest.java</td>
+              <td class="px-4 py-3">126</td>
+              <td class="px-4 py-3">Pre-existing. <span class="font-mono text-xs">unsafe-reflection</span>: <span class="font-mono text-xs">Class.forName</span> on a hard-coded list. False positive.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">scripts/mock-mockpass-assertions.js</td>
+              <td class="px-4 py-3">11</td>
+              <td class="px-4 py-3">Pre-existing. <span class="font-mono text-xs">path-join-resolve-traversal</span> in a local mock script.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">artifacts/code-reviewer/*-compliance.html</td>
+              <td class="px-4 py-3">6-7</td>
+              <td class="px-4 py-3">Pre-existing. <span class="font-mono text-xs">missing-integrity</span> on CDN assets in generated review reports (39 files); not shipped in the app.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <!-- im8 -->
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8 <span class="text-xs text-slate-500">(carried over from round 1, HEAD 69100da)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-600">
+          <p>IM8 Application Technical Controls (Low Risk column). as-2, as-3, as-7, as-8, as-13, lm-4, lm-15, lm-19, dp-3 and pm-6 pass; the change weakens no control. Tracked deferrals: MCNS adapter (ticket 51), template onboarding (ticket 57), hosting log alerting (ticket 55).</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/submission/WaitingWork.java</td>
+              <td class="px-4 py-3">30, 55</td>
+              <td class="px-4 py-3"><strong>ac-1 (L-1).</strong> Public, unguarded <span class="font-mono text-xs">WaitingWork.on</span> re-exposes the cross-scope <span class="font-mono text-xs">everyActive</span> listing with no ArchUnit rule on its callers. <span class="text-emerald-700 font-semibold">Addressed in 70af445</span> by the same ArchUnit rule as springboot M2.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/DeadlineReminders.java</td>
+              <td class="px-4 py-3">58-71</td>
+              <td class="px-4 py-3"><strong>lm-16 (L-2).</strong> A failed reminder is caught and only logged, so the scheduled-task metric records success and no counter tracks written or failed reminders. Add an outcome counter, or confirm ticket 55 alerts on <span class="font-mono text-xs">event.action=reminder-failed</span>.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <!-- react -->
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react <span class="text-xs text-slate-500">(carried over from round 1, HEAD 69100da)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-600">
+          <p>The branch changes no file under <span class="font-mono text-xs">frontend/</span>; the round-2 build also confirms no front-end changes.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <!-- springboot -->
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot <span class="text-xs text-slate-500">(carried over from round 1, HEAD 69100da)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-600">
+          <p>Seven skills: core PASS (Low notes), web PASS, data WARN, batch WARN, security WARN, logging PASS (Low notes), test PASS (Low notes). Not rerun in round 2; line numbers refer to the round-1 code.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-3 text-amber-600">Medium</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/DeadlineReminders.java</td>
+              <td class="px-4 py-3">64-68</td>
+              <td class="px-4 py-3"><strong>M1. No same-day retry</strong>: the cron fired once a day, so a failed reminder was lost although the log and ADR promised a rerun. <span class="text-emerald-700 font-semibold">Addressed in 70af445</span>: the job now runs hourly from 08:00.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-amber-600">Medium</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/submission/WaitingWork.java</td>
+              <td class="px-4 py-3">55-61</td>
+              <td class="px-4 py-3"><strong>M2. No architecture rule limits callers</strong> of the public cross-scope read <span class="font-mono text-xs">WaitingWork.on</span>. <span class="text-emerald-700 font-semibold">Addressed in 70af445</span>: an ArchUnit rule now limits <span class="font-mono text-xs">WaitingWork</span> to the planner.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/DeadlineReminders.java</td>
+              <td class="px-4 py-3">58-63, 101-108</td>
+              <td class="px-4 py-3"><strong>L1. Stale write</strong>: a reminder (or an Endorse pair) can be written after the state has moved on, leaving a permanently open pair. Re-check the state under a row lock in the per-item transaction. (Round-2 thermo-nuclear notes a per-item <span class="font-mono text-xs">FOR SHARE</span> state hold now exists.)</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/DeadlineReminders.java</td>
+              <td class="px-4 py-3">65-68</td>
+              <td class="px-4 py-3"><strong>L2.</strong> <span class="font-mono text-xs">reminder-failed</span> has no non-sensitive root-cause hint (root-cause class, SQLState) and is written once per item when the database is down.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/DeadlineReminders.java</td>
+              <td class="px-4 py-3">58</td>
+              <td class="px-4 py-3"><strong>L3.</strong> A pass leaves no summary log line or metric, so a quiet day looks like a day the scheduler never ran.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/DeadlineReminders.java</td>
+              <td class="px-4 py-3">111</td>
+              <td class="px-4 py-3"><strong>L4.</strong> <span class="font-mono text-xs">default -&gt; { }</span> silently skips any future state that waits on a window. (Round-2 thermo-nuclear reports the arm gone and <span class="font-mono text-xs">SubmissionState.nextStep</span> exhaustive.)</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/resources/db/migration/V149_42_38__deadline_reminders.sql</td>
+              <td class="px-4 py-3">11</td>
+              <td class="px-4 py-3"><strong>L5.</strong> Full unique index on <span class="font-mono text-xs">(recipient_id, dedupe_key)</span> indexes every notification row; a partial index would do. (Round-2 thermo-nuclear reports a partial unique index on <span class="font-mono text-xs">reminder_on</span> in V149_42_38.)</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/DeadlineReminderTest.java</td>
+              <td class="px-4 py-3">265</td>
+              <td class="px-4 py-3"><strong>L6.</strong> Unproven claims: concurrent <span class="font-mono text-xs">plan()</span> calls are not tested; no context loads <span class="font-mono text-xs">DeadlineReminderJob</span> (bad cron override fails only when deployed); the fault test does not check the log carries ids only.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/DeadlineReminderJob.java</td>
+              <td class="px-4 py-3">8-10</td>
+              <td class="px-4 py-3"><strong>L7.</strong> Garbled Javadoc implying catch-up, and an over-long line in <span class="font-mono text-xs">submission/package-info.java:5</span>. (Round-2 thermo-nuclear reports both fixed.)</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+    </main>
+  </body>
+</html>

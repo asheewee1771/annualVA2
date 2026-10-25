@@ -34,6 +34,10 @@ annualva:
       returned-for-rework: ci-returned-for-rework
       overdue: ci-overdue
       register-change: ci-register-change
+      reminder-due-soon: ci-reminder-due-soon
+      reminder-due: ci-reminder-due
+      overdue-weekly: ci-overdue-weekly
+      reminder-copy: ci-reminder-copy
   mcc:
     login-client-id: app-appfw
     # Short, so the stalled-provider tests finish quickly; the fake answers normally in milliseconds.

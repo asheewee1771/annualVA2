@@ -1,5 +1,7 @@
 package sg.annualva.submission;
 
+import java.util.Optional;
+
 /**
  * Where a VA Submission is in its life: the spec's ten states. A System with no VA Submission is Not Started; so is a VA
  * Submission an Exemption request created once the request is rejected (ticket 40, ADR 0048), which a start then takes
@@ -51,6 +53,20 @@ public enum SubmissionState {
         return switch (this) {
             case ENDORSED, EXEMPTED, WITHDRAWN, NOT_ENDORSED -> true;
             case NOT_STARTED, DRAFT, IN_REVIEW, RETURNED_FOR_REWORK, AWAITING_ENDORSEMENT, EXEMPTION_REQUESTED -> false;
+        };
+    }
+
+    /**
+     * The step whose person acts next in this state (ADR 0052): the SMO/Tech Lead submits a VA Submission that is Not
+     * Started, a Draft or Returned for Rework, the Cyber Manager reviews one In Review, a VA POC endorses one Awaiting
+     * Endorsement. A final state, and the frozen Exemption Requested, wait on nobody.
+     */
+    public Optional<SubmissionStep> nextStep() {
+        return switch (this) {
+            case NOT_STARTED, DRAFT, RETURNED_FOR_REWORK -> Optional.of(SubmissionStep.SUBMIT);
+            case IN_REVIEW -> Optional.of(SubmissionStep.REVIEW);
+            case AWAITING_ENDORSEMENT -> Optional.of(SubmissionStep.ENDORSE);
+            case EXEMPTION_REQUESTED, ENDORSED, EXEMPTED, WITHDRAWN, NOT_ENDORSED -> Optional.empty();
         };
     }
 

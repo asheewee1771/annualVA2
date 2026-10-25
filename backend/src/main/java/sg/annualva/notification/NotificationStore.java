@@ -19,8 +19,9 @@ class NotificationStore {
 
     private static final String INSERT =
             "INSERT INTO notification (recipient_id, system_id, submission_id, state, action, due_on, link, created_at, "
-            + "group_key, awaits) VALUES (:recipient, :system, :submission, :state, :action, :dueOn, :link, :at, "
-            + ":groupKey, :awaits) RETURNING id";
+            + "group_key, awaits, reminder_on) VALUES (:recipient, :system, :submission, :state, :action, :dueOn, :link, "
+            + ":at, :groupKey, :awaits, :reminderOn) ON CONFLICT (recipient_id, action, system_id, due_on, reminder_on) "
+            + "WHERE reminder_on IS NOT NULL DO NOTHING RETURNING id";
 
     /** Every open pair a VA POC's decision on the VA Submission handles: both rows of each, with who and when. */
     private static final String HANDLE =
@@ -55,11 +56,12 @@ class NotificationStore {
     }
 
     /**
-     * One person's row of a notice; {@code groupKey} and {@code awaits} are set together, for a VA POC pair only.
+     * One person's row of a notice; {@code groupKey} and {@code awaits} are set together, for a VA POC pair only. A
+     * reminder this person already has for the same action, System, due date and day is not written again (ADR 0052).
      *
-     * @return the notification's id
+     * @return the notification's id; nothing when the reminder was written before
      */
-    UUID insert(UUID recipient, Notice notice, @Nullable UUID groupKey, @Nullable Awaits awaits) {
+    Optional<UUID> insert(UUID recipient, Notice notice, @Nullable UUID groupKey, @Nullable Awaits awaits) {
         return jdbc.sql(INSERT)
                 .param("recipient", recipient)
                 .param("system", notice.systemId())
@@ -71,8 +73,9 @@ class NotificationStore {
                 .param("at", utc(notice.at()))
                 .param("groupKey", groupKey)
                 .param("awaits", awaits == null ? null : awaits.name())
+                .param("reminderOn", notice.reminderOn())
                 .query(UUID.class)
-                .single();
+                .optional();
     }
 
     void handle(UUID submissionId, Awaits awaits, UUID handler, Instant at) {
