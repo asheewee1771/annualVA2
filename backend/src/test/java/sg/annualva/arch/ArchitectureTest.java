@@ -118,7 +118,7 @@ class ArchitectureTest {
      */
     @Test
     void writesToPreparedContentTakeTheEditLock() throws Exception {
-        Class<?> editTarget = Class.forName("sg.annualva.submission.Submissions$EditTarget");
+        Class<?> editTarget = sg.annualva.submission.Submissions.EditTarget.class;
         String[][] writes = {
             {"sg.annualva.ingestion.ReportFileStore", "insert"},
             {"sg.annualva.ingestion.ReportFileStore", "confirm"},
@@ -142,13 +142,13 @@ class ArchitectureTest {
         assertThat(Arrays.stream(editTarget.getDeclaredConstructors()).allMatch(c -> Modifier.isPrivate(c.getModifiers())))
                 .as("only Submissions.lockForEdit makes an EditTarget").isTrue();
 
-        noClasses().that().doNotHaveFullyQualifiedName("sg.annualva.ingestion.ReportFiles")
+        noClasses().that().doNotHaveFullyQualifiedName(sg.annualva.ingestion.ReportFiles.class.getName())
                 .and().resideOutsideOfPackage("sg.annualva.submission..")
                 .should().callMethod(sg.annualva.submission.Submissions.class, "precheckEdit", java.util.UUID.class,
                         sg.annualva.submission.Submissions.Refusal.class)
                 .because("the unlocked early check is only for refusing an upload before its bytes are quarantined")
                 .check(main);
-        methods().that().areDeclaredIn(Class.forName("sg.annualva.ingestion.ReportFiles"))
+        methods().that().areDeclaredIn(sg.annualva.ingestion.ReportFiles.class)
                 .and().haveName("keep")
                 .should(new com.tngtech.archunit.lang.ArchCondition<com.tngtech.archunit.core.domain.JavaMethod>(
                         "take the edit lock before keeping a file") {
@@ -174,7 +174,7 @@ class ArchitectureTest {
      */
     @Test
     void writesOfAReviewTakeTheReviewLock() throws Exception {
-        Class<?> reviewTarget = Class.forName("sg.annualva.submission.Submissions$ReviewTarget");
+        Class<?> reviewTarget = sg.annualva.submission.Submissions.ReviewTarget.class;
         var reads = java.util.Set.of("latestOfReports", "review", "disputedFindings",
                 "disputedReports");
         var missing = Arrays.stream(Class.forName("sg.annualva.finding.ReviewStore").getDeclaredMethods())
@@ -198,8 +198,8 @@ class ArchitectureTest {
         Class<?> store = Class.forName("sg.annualva.submission.SubmissionStore");
         Class<?> sod = Class.forName("sg.annualva.submission.SegregationOfDuties");
         noClasses().that().doNotHaveFullyQualifiedName(sg.annualva.submission.Submissions.class.getName())
-                .should().callMethod("sg.annualva.submission.SubmissionStore", "recordParticipation", "java.util.UUID",
-                        "java.util.UUID", "sg.annualva.submission.SubmissionStep", "java.time.Instant")
+                .should().callMethod(store, "recordParticipation", java.util.UUID.class, java.util.UUID.class,
+                        sg.annualva.submission.SubmissionStep.class, java.time.Instant.class)
                 .because("a step is recorded only by a command of Submissions, which asks segregation of duties first")
                 .check(main);
         methods().that().areDeclaredIn(sg.annualva.submission.Submissions.class)
@@ -395,7 +395,7 @@ class ArchitectureTest {
 
     @Test
     void xmlReadersAreMadeOnlyInSecureXml() {
-        noClasses().that().doNotHaveFullyQualifiedName("sg.annualva.parser.xml.SecureXml")
+        noClasses().that().doNotHaveFullyQualifiedName(sg.annualva.parser.xml.SecureXml.class.getName())
                 .should().callMethod(javax.xml.stream.XMLInputFactory.class, "newFactory")
                 .orShould().callMethod(javax.xml.stream.XMLInputFactory.class, "newInstance")
                 .orShould().callMethod(javax.xml.parsers.DocumentBuilderFactory.class, "newInstance")
@@ -463,10 +463,10 @@ class ArchitectureTest {
         noClasses().that().areNotAssignableTo(RoleGrantStore.class)
                 .and().doNotHaveFullyQualifiedName("sg.annualva.access.VaPocSync")
                 .and().doNotHaveFullyQualifiedName("sg.annualva.access.RoleResolver")
-                .and().doNotHaveFullyQualifiedName("sg.annualva.access.RegisterRoles")
-                .and().doNotHaveFullyQualifiedName("sg.annualva.access.RoleLapse")
-                .and().doNotHaveFullyQualifiedName("sg.annualva.access.RoleHolders")
-                .and().doNotHaveFullyQualifiedName("sg.annualva.access.SignInService")
+                .and().doNotHaveFullyQualifiedName(sg.annualva.access.RegisterRoles.class.getName())
+                .and().doNotHaveFullyQualifiedName(sg.annualva.access.RoleLapse.class.getName())
+                .and().doNotHaveFullyQualifiedName(sg.annualva.access.RoleHolders.class.getName())
+                .and().doNotHaveFullyQualifiedName(sg.annualva.access.SignInService.class.getName())
                 .should().dependOnClassesThat().areAssignableTo(RoleGrantStore.class)
                 .because("roles are given only by configuration and a System Register apply, lapse, come back and are"
                         + " suspended only by the role lapse (ADR 0055, 0056); sign-in attaches grants made by email, and role"
