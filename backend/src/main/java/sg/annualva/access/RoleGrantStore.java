@@ -50,7 +50,7 @@ public class RoleGrantStore {
     private static final String REVOKE = "UPDATE role_grant SET revoked_at = :now WHERE id = :id AND revoked_at IS NULL";
 
     /**
-     * Unused since the cutoff (ADR 0054): a grant that still counts, whose last use, grant or return (GREATEST skips a
+     * Unused since the cutoff (ADR 0055): a grant that still counts, whose last use, grant or return (GREATEST skips a
      * null) is before it. The job reads with it and then lapses with it, so a request that used the grant in between wins.
      * It is the store's half of the lapse rule; {@link RoleLapse#pass} adds the other, a Quarter of the System begun since.
      */

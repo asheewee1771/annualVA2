@@ -1,4 +1,4 @@
--- Role lapse and automatic return (ticket 46, story 80a, IM8 ac-3, ADR 0054). V4 already holds when a grant was last used
+-- Role lapse and automatic return (ticket 46, story 80a, IM8 ac-3, ADR 0055). V4 already holds when a grant was last used
 -- and when it lapsed; a lapsed grant that comes back by itself records when and why, so the VA POCs' role-holder review
 -- (ticket 47) can list the automatic returns since its last review. Numbered 149.46 so it sorts after the migrations
 -- already merged (V149, V149_42); it changes only role_grant, which V4 created.

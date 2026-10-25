@@ -77,7 +77,7 @@ annualva:
   # IM8 ac-1, story 75: exactly two VA POC email addresses (comma-separated), set at deployment and changed only
   # through its change request. The application refuses to start with fewer or more; roles are synced at startup.
   va-pocs: ${ANNUALVA_VA_POCS}
-  # Story 80a, ADR 0054: a VA POC's role lapses after 90 days unused and comes back only through configuration. A change
+  # Story 80a, ADR 0055: a VA POC's role lapses after 90 days unused and comes back only through configuration. A change
   # request lists the VA POCs to return (comma-separated, only the two above); the next startup returns their lapsed
   # grant. Empty unless a change request sets it, and emptied again by the next one.
   va-poc-role-returns: ${ANNUALVA_VA_POC_ROLE_RETURNS:}

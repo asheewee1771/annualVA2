@@ -444,7 +444,7 @@ class ArchitectureTest {
                 .and().doNotHaveFullyQualifiedName("sg.annualva.access.SignInService")
                 .should().dependOnClassesThat().areAssignableTo(RoleGrantStore.class)
                 .because("roles are given only by configuration, a System Register apply and the role-holder review, and"
-                        + " lapse and come back only by the role lapse (ADR 0054); sign-in attaches grants made by email and"
+                        + " lapse and come back only by the role lapse (ADR 0055); sign-in attaches grants made by email and"
                         + " role resolution only reads them")
                 .check(main);
         noClasses().that().areAnnotatedWith(RestController.class)

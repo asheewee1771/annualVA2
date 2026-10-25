@@ -27,7 +27,7 @@ import sg.annualva.audit.AuditOutcome;
  * <p>It is the only class that gives or revokes REGISTER grants, and the Register apply is its only caller. Each grant given or revoked is
  * an audit entry about the System, written in the caller's transaction with the role, the source and the grant id; the
  * person's email is never in an entry (lm-19). A grant that already stands is left as it is, except that a lapsed one
- * comes back, because the apply names the person again (story 80a, ADR 0054); a suspended one stays suspended (ticket 47).
+ * comes back, because the apply names the person again (story 80a, ADR 0055); a suspended one stays suspended (ticket 47).
  */
 @Component
 public class RegisterRoles {

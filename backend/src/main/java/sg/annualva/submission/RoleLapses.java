@@ -16,7 +16,7 @@ import sg.annualva.access.RoleLapse;
 import sg.annualva.cycle.CycleCalendar;
 
 /**
- * What the VA Submissions tell the role lapse (ticket 46, ADR 0054): when each System's Quarter began, for the daily pass,
+ * What the VA Submissions tell the role lapse (ticket 46, ADR 0055): when each System's Quarter began, for the daily pass,
  * and when work on a System is handed to a person whose role has lapsed. A Return for Rework hands the VA Submission to
  * its SMO/Tech Lead and a submit to its Cyber Manager; a conditional Exemption that lapses back with new windows hands it
  * to its SMO/Tech Lead and, back In Review, to its Cyber Manager too (a lapse to Not Endorsed has no new windows, and one

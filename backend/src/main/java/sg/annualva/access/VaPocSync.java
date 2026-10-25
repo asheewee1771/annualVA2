@@ -23,7 +23,7 @@ import sg.annualva.audit.AuditOutcome;
  * Runs before the server accepts requests. Each grant given or revoked is an audit entry written in the
  * same transaction (no actor: the deployment is the actor); a sync that changes nothing writes none. A configured VA POC
  * whose grant lapsed after 90 days unused gets it back only when {@code annualva.va-poc-role-returns} names them (story 80a,
- * ADR 0054): nothing else returns a VA POC.
+ * ADR 0055): nothing else returns a VA POC.
  * Emails stay out of the log and the audit entries: they carry the grant id.
  */
 @Component

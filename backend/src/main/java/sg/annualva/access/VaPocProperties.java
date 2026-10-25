@@ -13,7 +13,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * to start unless exactly two distinct email addresses are given. Values are never echoed in the
  * failure: the message names the setting, not what was set.
  *
- * <p>A VA POC's role that lapsed after 90 days unused comes back only through configuration (story 80a, ADR 0054): the
+ * <p>A VA POC's role that lapsed after 90 days unused comes back only through configuration (story 80a, ADR 0055): the
  * change request lists them in {@code annualva.va-poc-role-returns}, and the startup that follows returns their lapsed grant.
  * The list may name only the configured VA POCs; it is empty by default and is emptied again by the next change.
  *

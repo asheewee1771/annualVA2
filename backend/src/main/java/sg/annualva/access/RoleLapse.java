@@ -16,7 +16,7 @@ import sg.annualva.audit.AuditOutcome;
 import sg.annualva.audit.DetailKey;
 
 /**
- * The role lapse and its automatic return (story 80a, IM8 ac-3, ADR 0054). A grant unused for 90 days lapses: it stops
+ * The role lapse and its automatic return (story 80a, IM8 ac-3, ADR 0055). A grant unused for 90 days lapses: it stops
  * counting, so the person's next request is refused (roles are read per request, ADR 0011), but the person's sign-in is
  * left alone. An SMO/Tech Lead or Cyber Manager grant comes back by itself when a Register apply names the person again
  * ({@link RegisterRoles}), when the Quarter of its System begins, and when work on its System is handed to the person; a
