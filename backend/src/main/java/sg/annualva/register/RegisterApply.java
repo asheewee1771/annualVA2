@@ -67,11 +67,13 @@ public class RegisterApply {
     private final Clock clock;
     private final RegisterSystems systems;
     private final ApplicationEventPublisher events;
+    private final SmoReachability reachability;
 
     RegisterApply(RegisterStore store, RegisterRoles roles, StepUp stepUp, AuditLog audit, AuditActor actor,
             CurrentUser user, CycleCalendar calendar, Clock clock, RegisterSystems systems,
-            ApplicationEventPublisher events, WorkEffects effects) {
+            ApplicationEventPublisher events, WorkEffects effects, SmoReachability reachability) {
         this.effects = effects;
+        this.reachability = reachability;
         this.systems = systems;
         this.store = store;
         this.roles = roles;
@@ -132,14 +134,18 @@ public class RegisterApply {
             switch (row.outcome()) {
                 case ADD -> {
                     SystemSnapshot after = row.after();
-                    store.insertSystem(row.systemId(), after.name(), after.smoEmail(), after.cyberManagerEmail(),
-                            quarter(after), calendar.today());
+                    UUID system = store.insertSystem(row.systemId(), after.name(), after.smoEmail(),
+                            after.cyberManagerEmail(), quarter(after), calendar.today());
+                    reachability.newSmo(system, after.smoEmail());
                     added++;
                 }
                 case UPDATE -> {
                     SystemSnapshot after = row.after();
                     store.updateSystem(row.existingSystemId(), after.name(), after.smoEmail(), after.cyberManagerEmail(),
                             quarter(after));
+                    if (row.before().changesSmoIn(after)) {
+                        reachability.newSmo(row.existingSystemId(), after.smoEmail());
+                    }
                     announce(row.existingSystemId(), row.before(), after, now);
                     updated++;
                 }

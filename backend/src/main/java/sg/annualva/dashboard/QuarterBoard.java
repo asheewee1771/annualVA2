@@ -1,5 +1,6 @@
 package sg.annualva.dashboard;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -36,10 +37,12 @@ public class QuarterBoard {
      *     (ticket 28) or, on a VA POC's board, the endorsement (ticket 34): they acted on the VA Submission at another
      *     step, or are assigned to another step of its System (its SMO/Tech Lead, say)
      * @param exemptionLapsed whether a conditional Exemption of it lapsed (ticket 42)
+     * @param smoUnreachableOn on a VA POC's board, the business date the System was flagged SMO Unreachable (ticket 39,
+     *     ADR 0053); null while it is not, and on a Cyber Manager's board
      */
     public record Card(
             UUID id, String systemId, String name, @Nullable UUID submissionId, boolean overdue, long confirmed,
-            long awaitingReview, boolean sodConflict, boolean exemptionLapsed) {}
+            long awaitingReview, boolean sodConflict, boolean exemptionLapsed, @Nullable LocalDate smoUnreachableOn) {}
 
     /** The Systems in one state, in System ID order. */
     public record Column(SystemState state, List<Card> systems) {}
@@ -77,7 +80,7 @@ public class QuarterBoard {
         Map<SystemState, List<Card>> byState = new EnumMap<>(SystemState.class);
         for (DashboardSystems.Row row : rows.live()) {
             byState.computeIfAbsent(row.state(), state -> new ArrayList<>())
-                    .add(card(row, ReviewMarkers.of(marked, row)));
+                    .add(card(row, ReviewMarkers.of(marked, row), need == Need.ENDORSE));
         }
         List<Column> columns = new ArrayList<>();
         for (SystemState state : SystemState.values()) {
@@ -86,8 +89,10 @@ public class QuarterBoard {
         return new Board(cycle.year(), quarter, List.copyOf(columns), rows.handledOutside());
     }
 
-    private static Card card(DashboardSystems.Row row, ReviewMarkers.Marker marker) {
+    /** @param vaPoc whether the board is a VA POC's, the only one that shows the SMO Unreachable flag: theirs to fix */
+    private static Card card(DashboardSystems.Row row, ReviewMarkers.Marker marker, boolean vaPoc) {
         return new Card(row.system().id(), row.system().systemId(), row.system().name(), row.submissionId(),
-                row.overdue(), marker.confirmed(), marker.awaitingReview(), marker.sodConflict(), row.exemptionLapsed());
+                row.overdue(), marker.confirmed(), marker.awaitingReview(), marker.sodConflict(), row.exemptionLapsed(),
+                vaPoc ? row.system().smoUnreachableOn() : null);
     }
 }

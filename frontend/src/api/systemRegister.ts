@@ -163,6 +163,11 @@ export interface RegisterSystem {
   retired: boolean;
   /** Only a VA POC is told; null for anyone else. */
   unlinkedSmo: boolean | null;
+  /**
+   * The day the mail relay first refused the SMO/Tech Lead's address (SMO Unreachable); null while it is not refused, for
+   * a retired System, and for anyone but a VA POC.
+   */
+  smoUnreachableOn: string | null;
 }
 
 /** The Systems the signed-in person may see: all of them for a VA POC, their own for an SMO or Cyber Manager. */
