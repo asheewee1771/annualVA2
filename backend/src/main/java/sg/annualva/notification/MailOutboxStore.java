@@ -1,9 +1,9 @@
 package sg.annualva.notification;
 
+import static sg.annualva.jdbc.Timestamps.utc;
+
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -131,7 +131,4 @@ class MailOutboxStore {
         return statement.param("id", mail.id()).param("attempts", mail.attempts());
     }
 
-    private static OffsetDateTime utc(Instant instant) {
-        return instant.atOffset(ZoneOffset.UTC);
-    }
 }

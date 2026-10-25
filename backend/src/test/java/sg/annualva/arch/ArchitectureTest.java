@@ -50,6 +50,7 @@ class ArchitectureTest {
                 .layer("app").definedBy("sg.annualva.app..")
                 .layer("web").definedBy("sg.annualva.web..")
                 .layer("config").definedBy("sg.annualva.config..")
+                .layer("jdbc").definedBy("sg.annualva.jdbc..")
                 .layer("boundary").definedBy("sg.annualva.boundary..")
                 .layer("audit").definedBy("sg.annualva.audit..")
                 .layer("cycle").definedBy("sg.annualva.cycle..")
@@ -69,6 +70,9 @@ class ArchitectureTest {
                 .whereLayer("app").mayNotBeAccessedByAnyLayer()
                 .whereLayer("web").mayOnlyBeAccessedByLayers("app", "adapters", "access", "audit", "cycle", "register", "submission", "finding", "ingestion", "dashboard", "notification", "export", "retention")
                 .whereLayer("config").mayOnlyBeAccessedByLayers("app", "web", "access", "adapters", "audit", "cycle")
+                // every store writes and reads an instant the one way (Timestamps)
+                .whereLayer("jdbc").mayOnlyBeAccessedByLayers("access", "audit", "cycle", "register", "submission", "finding",
+                        "ingestion", "notification", "export", "retention")
                 // the exports keep the files they make in the file store's export zone; the notifications mail through the relay;
                 // the retention executor removes the files an approved disposal list names
                 .whereLayer("boundary").mayOnlyBeAccessedByLayers("app", "web", "access", "adapters", "scan", "ingestion", "export",

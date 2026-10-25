@@ -1,9 +1,10 @@
 package sg.annualva.cycle;
 
+import static sg.annualva.jdbc.Timestamps.utc;
+
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -64,7 +65,4 @@ public class CycleStore {
                 .list().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    private static OffsetDateTime utc(Instant instant) {
-        return instant.atOffset(ZoneOffset.UTC);
-    }
 }

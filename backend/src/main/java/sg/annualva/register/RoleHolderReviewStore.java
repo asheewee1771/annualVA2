@@ -1,8 +1,9 @@
 package sg.annualva.register;
 
+import static sg.annualva.jdbc.Timestamps.utc;
+
 import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -25,7 +26,7 @@ class RoleHolderReviewStore {
     }
 
     CompletedReview insert(Instant at, UUID by, int holders) {
-        jdbc.sql(INSERT).param("at", at.atOffset(ZoneOffset.UTC)).param("by", by).param("holders", holders).update();
+        jdbc.sql(INSERT).param("at", utc(at)).param("by", by).param("holders", holders).update();
         return new CompletedReview(at, by, holders);
     }
 

@@ -1,11 +1,12 @@
 package sg.annualva.register;
 
+import static sg.annualva.jdbc.Timestamps.utc;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -150,7 +151,7 @@ class RegisterStore {
 
     /** The Systems retired before this instant, in System ID order. */
     List<ExistingSystem> retiredBefore(Instant before) {
-        return jdbc.sql(RETIRED_BEFORE).param("before", before.atOffset(java.time.ZoneOffset.UTC))
+        return jdbc.sql(RETIRED_BEFORE).param("before", utc(before))
                 .query((rs, row) -> existing(rs)).list();
     }
 
@@ -305,7 +306,4 @@ class RegisterStore {
         return at == null ? null : at.toInstant();
     }
 
-    private static OffsetDateTime utc(Instant instant) {
-        return instant.atOffset(ZoneOffset.UTC);
-    }
 }
