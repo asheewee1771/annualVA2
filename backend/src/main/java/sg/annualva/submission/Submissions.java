@@ -188,7 +188,7 @@ public class Submissions {
      * access guard's need is the step's own.
      */
     record Gate(SubmissionStep step, Set<SubmissionState> from, String refusedReason, String refusedSentence,
-            Passage passage) {
+            boolean openCycleOnly) {
 
         Gate {
             from = Set.copyOf(from);
@@ -196,7 +196,7 @@ public class Submissions {
 
         /** A gate refused once the VA Submission's Cycle has closed (ADR 0044 item 6): every transition's. */
         Gate(SubmissionStep step, Set<SubmissionState> from, String refusedReason, String refusedSentence) {
-            this(step, from, refusedReason, refusedSentence, Passage.OPEN_CYCLE);
+            this(step, from, refusedReason, refusedSentence, true);
         }
 
         /**
@@ -205,26 +205,9 @@ public class Submissions {
          */
         static Gate afterClose(SubmissionStep step, Set<SubmissionState> from, String refusedReason,
                 String refusedSentence) {
-            return new Gate(step, from, refusedReason, refusedSentence, Passage.AFTER_CLOSE);
+            return new Gate(step, from, refusedReason, refusedSentence, false);
         }
     }
-
-    /** What a gate asks of the VA Submission's Cycle, and what its refusals are about. */
-    enum Passage {
-        /** Refused once the Cycle has closed; a refusal is about the System and the VA Submission. */
-        OPEN_CYCLE,
-        /** Not refused after the close (a conditional Exemption's VA, ADR 0051); a refusal is about both. */
-        AFTER_CLOSE,
-        /**
-         * The command created the VA Submission just before, in the Cycle it held open ({@link #placed}): a start. A
-         * refusal rolls the creation back, so it is about the System only and names no VA Submission (ADR 0035 item 1).
-         */
-        NEW_ROW
-    }
-
-    /** Starting: the SMO/Tech Lead, at the submitting step, on the Draft the start has just created or taken. */
-    private static final Gate STARTING = new Gate(SubmissionStep.SUBMIT, Set.of(SubmissionState.DRAFT),
-            "already-started", "This System already has a VA Submission in this VA Cycle.", Passage.NEW_ROW);
 
     /** Submitting: the SMO/Tech Lead, in Draft or Returned for Rework. */
     private static final Gate SUBMITTING = new Gate(SubmissionStep.SUBMIT,
@@ -361,9 +344,10 @@ public class Submissions {
 
     /**
      * Starts the VA Submission for a System the caller is SMO/Tech Lead of. Ownership comes first, then the Cycle and the
-     * Quarter ({@link #placed}); the VA Submission is then created in Draft (or a Not Started one taken) and passes the
-     * submitting step's gate ({@link #atStep}, {@link Passage#NEW_ROW}), which checks segregation of duties on it and
-     * records the caller there. A refusal at the gate rolls the creation back and is audited about the System only.
+     * Quarter ({@link #placed}); the VA Submission is then created in Draft (or a Not Started one taken), and the caller
+     * is recorded at the submitting step after segregation of duties allows it ({@link #stepped}), as at every step. A
+     * refusal rolls the start back; its entry names the System, and the VA Submission only when one was taken, since a
+     * created one is gone with the rollback.
      *
      * @param cycleYear the VA Cycle's year; null for the one running today (before the first live Cycle starts, that
      *     Cycle)
@@ -377,15 +361,16 @@ public class Submissions {
     @Transactional
     public Submission start(UUID systemId, @Nullable Integer cycleYear) {
         register.active(systemId, Need.SUBMIT);
-        AuditEvent refusedAs = actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_STARTED, AuditOutcome.REFUSED));
-        AuditEvent refused = refusedAs.onSystem(systemId);
+        AuditEvent refused = actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_STARTED, AuditOutcome.REFUSED))
+                .onSystem(systemId);
         Quarter quarter = placed(systemId, cycleYear, refused);
         Instant now = clock.instant();
-        UUID id = inserted(systemId, quarter, SubmissionState.DRAFT, now)
+        Optional<UUID> created = inserted(systemId, quarter, SubmissionState.DRAFT, now);
+        UUID id = created
                 .or(() -> store.takeNotStarted(systemId, quarter.cycle(), now, calendar.dateOf(now), user.id()))
                 .orElseThrow(() -> refusedWith(refused, "already-started",
                         "This System already has a VA Submission in this VA Cycle."));
-        atStep(id, STARTING, refusedAs, Hold.EXCLUSIVE);
+        stepped(SubmissionStep.SUBMIT, systemId, id, created.isPresent() ? refused : refused.onSubmission(id), () -> { });
         audit.record(actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_STARTED, AuditOutcome.SUCCESS))
                 .onSystem(systemId).onSubmission(id).with(DetailKey.STATE_TO, SubmissionState.DRAFT.name()));
         return view(id);
@@ -731,28 +716,39 @@ public class Submissions {
      * A step command's checks, in order (ADR 0035 item 2, ADR 0042 item 1): ownership (the step's need over the System;
      * any other is "not found", ADR 0013); then, with the VA Submission's row held as {@code hold} says until the caller's
      * transaction ends, segregation of duties (403 {@code sod-conflict}) and the gate's state (409
-     * {@code invalid-transition}), the closed Cycle between them for a gate that asks it ({@link Passage}). Each refusal
-     * is audited in an entry of its own, as {@code refusedAs} about the System and, unless this command created it, the VA
-     * Submission, with a fixed reason. The caller is then recorded at the gate's step, kept only if their command commits.
+     * {@code invalid-transition}), the closed Cycle between them for a gate that asks it. Each refusal is audited in an
+     * entry of its own, as {@code refusedAs} about the System and the VA Submission with a fixed reason. The caller is
+     * then recorded at the gate's step ({@link #stepped}), kept only if their command commits.
      */
     AtStep atStep(UUID id, Gate gate, AuditEvent refusedAs, Hold hold) {
         SubmissionStore.Located located = store.locate(id).orElseThrow(ResourceNotFoundException::new);
         guard.requireSystem(located.systemId(), gate.step().need());
         SubmissionStore.Located held = (hold == Hold.EXCLUSIVE ? store.lockForMove(id) : store.lockForEdit(id))
                 .orElseThrow(ResourceNotFoundException::new);
-        AuditEvent refused = gate.passage() == Passage.NEW_ROW ? refusedAs.onSystem(held.systemId())
-                : refusedAs.onSystem(held.systemId()).onSubmission(id);
-        sod.require(gate.step(), held.systemId(), id, refused);
-        if (gate.passage() == Passage.OPEN_CYCLE) {
-            requireOpenCycle(held.cycleYear(), refused);
-        }
+        AuditEvent refused = refusedAs.onSystem(held.systemId()).onSubmission(id);
         SubmissionState from = held.state();
-        if (!gate.from().contains(from)) {
-            audit.recordIndependently(refused.with(DetailKey.REASON, gate.refusedReason()));
-            throw new RejectedRequestException(HttpStatus.CONFLICT, NOT_ALLOWED_NOW, gate.refusedSentence());
-        }
-        store.recordParticipation(id, user.id(), gate.step(), clock.instant());
+        stepped(gate.step(), held.systemId(), id, refused, () -> {
+            if (gate.openCycleOnly()) {
+                requireOpenCycle(held.cycleYear(), refused);
+            }
+            if (!gate.from().contains(from)) {
+                audit.recordIndependently(refused.with(DetailKey.REASON, gate.refusedReason()));
+                throw new RejectedRequestException(HttpStatus.CONFLICT, NOT_ALLOWED_NOW, gate.refusedSentence());
+            }
+        });
         return new AtStep(id, held.systemId(), gate, from, refused, hold);
+    }
+
+    /**
+     * The one place a person is recorded at a step of a VA Submission (ADR 0035 item 1): segregation of duties first (403
+     * {@code sod-conflict}, audited as {@code refused}), then the command's own {@code checks} of the VA Submission, then
+     * the caller recorded at the step, kept only if their command commits. Every step command comes here: through
+     * {@link #atStep}, or, for a start, with the row it has just created or taken.
+     */
+    private void stepped(SubmissionStep step, UUID systemId, UUID id, AuditEvent refused, Runnable checks) {
+        sod.require(step, systemId, id, refused);
+        checks.run();
+        store.recordParticipation(id, user.id(), step, clock.instant());
     }
 
     /**

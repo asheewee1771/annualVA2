@@ -220,20 +220,21 @@ class ArchitectureTest {
                     }
                 })
                 .check(main);
-        methods().that().areDeclaredIn(sg.annualva.submission.Submissions.class).and().doNotHaveName("atStep")
+        methods().that().areDeclaredIn(sg.annualva.submission.Submissions.class).and().doNotHaveName("stepped")
                 .should(new com.tngtech.archunit.lang.ArchCondition<com.tngtech.archunit.core.domain.JavaMethod>(
-                        "leave recording a step to atStep") {
+                        "leave recording a step to stepped") {
                     @Override
                     public void check(com.tngtech.archunit.core.domain.JavaMethod method,
                             com.tngtech.archunit.lang.ConditionEvents events) {
                         if (method.getMethodCallsFromSelf().stream().anyMatch(call -> call.getTargetOwner()
                                 .isEquivalentTo(store) && call.getName().equals("recordParticipation"))) {
                             events.add(com.tngtech.archunit.lang.SimpleConditionEvent.violated(method,
-                                    method.getFullName() + " records a step outside Submissions.atStep"));
+                                    method.getFullName() + " records a step outside Submissions.stepped"));
                         }
                     }
                 })
-                .because("every step command, start and submit included, passes the one gate (ADR 0042 item 1)")
+                .because("every step command, start included, records its step in one place, after segregation of duties"
+                        + " (ADR 0035 item 1, ADR 0042 item 1)")
                 .check(main);
     }
 
