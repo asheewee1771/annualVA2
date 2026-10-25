@@ -88,9 +88,14 @@ public enum DetailKey {
     EXPORTS,
     SYSTEMS,
     AUDIT_ENTRIES,
-    /** What a read of the audit log asked for (ticket 50): the actor's id, the action's code and the business dates. */
+    /**
+     * What a read of the audit log asked for (ticket 50): the actor's, System's and VA Submission's ids, the action's code
+     * and the business dates.
+     */
     FILTER_ACTOR,
     FILTER_ACTION,
+    FILTER_SYSTEM,
+    FILTER_SUBMISSION,
     FILTER_FROM,
     FILTER_TO,
     /** The page of an answer a read asked for, from 0. */

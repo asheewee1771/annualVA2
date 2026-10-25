@@ -355,10 +355,11 @@ public enum AuditAction {
      */
     DISPOSAL_EXECUTED("disposal-executed", "database"),
     /**
-     * A VA POC or a Cyber Manager read the audit log (Q11, IM8 lm-4, ticket 50; SUCCESS, about the System and VA Submission
-     * filtered on, with the other filters as {@code filter_actor}, {@code filter_action}, {@code filter_from} and
-     * {@code filter_to}, the {@code page} and the {@code count} of entries answered). Never anything an entry says. A
-     * refused read is the {@code REQUEST_REFUSED} of every refusal; an out-of-scope VA Submission is an unaudited 404.
+     * A VA POC or a Cyber Manager read the audit log (Q11, IM8 lm-4, ticket 50; SUCCESS, with the filters asked for as
+     * {@code filter_actor}, {@code filter_action}, {@code filter_system}, {@code filter_submission}, {@code filter_from}
+     * and {@code filter_to}, and the {@code page}). About no one System, so a read never lands in a System's history; never
+     * anything an entry says. A refused read is the {@code REQUEST_REFUSED} of every refusal; an out-of-scope VA
+     * Submission is an unaudited 404.
      */
     AUDIT_LOG_VIEWED("audit-log-viewed", "database");
 

@@ -31,20 +31,18 @@ public class AuditController {
 
     private final AuditLog auditLog;
     private final AuditReaders readers;
-    private final AuditCaller caller;
     private final ZoneId businessZone;
 
-    AuditController(AuditLog auditLog, AuditReaders readers, AuditCaller caller, AnnualVaProperties properties) {
+    AuditController(AuditLog auditLog, AuditReaders readers, AnnualVaProperties properties) {
         this.auditLog = auditLog;
         this.readers = readers;
-        this.caller = caller;
         this.businessZone = ZoneId.of(properties.timeZone());
     }
 
     /**
      * Newest first. {@code from} and {@code to} are business dates in {@code Asia/Singapore}, both inclusive. A VA
      * Submission outside the caller's read scope answers 404, as one that does not exist (ADR 0013); every other filter
-     * only narrows what the caller may read. The read is recorded with what it asked for ({@link #viewed}).
+     * only narrows what the caller may read. The read is recorded with what it asked for ({@link AuditQuery#viewed}).
      */
     @GetMapping("/api/audit-entries")
     @PreAuthorize("hasAnyRole('VA_POC','CYBER_MANAGER')")
@@ -64,36 +62,7 @@ public class AuditController {
         if (submission != null && !scope.allows(submission)) {
             throw new ResourceNotFoundException();
         }
-        var filter = new AuditFilter(actor, action, system, submission,
-                from == null ? null : from.atStartOfDay(businessZone).toInstant(),
-                to == null ? null : to.plusDays(1).atStartOfDay(businessZone).toInstant(),
-                scope.narrowing());
-        return auditLog.read(filter, page, size, viewed(actor, action, system, submission, from, to, page));
-    }
-
-    /** The entry of a read: by the caller, about the System and VA Submission asked for, with the other filters. */
-    private AuditEvent viewed(@Nullable UUID actor, @Nullable AuditAction action, @Nullable UUID system,
-            @Nullable UUID submission, @Nullable LocalDate from, @Nullable LocalDate to, int page) {
-        AuditEvent viewed = caller.attribute(AuditEvent.of(AuditAction.AUDIT_LOG_VIEWED, AuditOutcome.SUCCESS))
-                .with(DetailKey.PAGE, page);
-        if (system != null) {
-            viewed = viewed.onSystem(system);
-        }
-        if (submission != null) {
-            viewed = viewed.onSubmission(submission);
-        }
-        if (actor != null) {
-            viewed = viewed.with(DetailKey.FILTER_ACTOR, actor);
-        }
-        if (action != null) {
-            viewed = viewed.with(DetailKey.FILTER_ACTION, action.name());
-        }
-        if (from != null) {
-            viewed = viewed.with(DetailKey.FILTER_FROM, from.toString());
-        }
-        if (to != null) {
-            viewed = viewed.with(DetailKey.FILTER_TO, to.toString());
-        }
-        return viewed;
+        var query = new AuditQuery(actor, action, system, submission, from, to, page);
+        return auditLog.read(query, query.filter(businessZone, scope.narrowing()), size);
     }
 }
