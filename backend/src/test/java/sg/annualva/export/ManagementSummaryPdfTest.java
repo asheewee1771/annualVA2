@@ -48,10 +48,15 @@ class ManagementSummaryPdfTest extends ExportSeam1 {
     @Test
     void thePdfHoldsTheSameSummaryWithTheClassificationOnEveryPageAndNoVulnerabilityDetail() {
         registered(listed("SYS-P1", "Payroll", SMO_A, CM, "Q3"), listed("SYS-P2", "Portal", SMO_B, CM, "Q3"),
-                listed("SYS-P3", "Next Quarter", SMO_A, CM, "Q4"));
+                listed("SYS-P3", "Next Quarter", SMO_A, CM, "Q4"), listed("SYS-P4", "Grants", SMO_B, CM, "Q3"));
         ApiClient smoA = signedInAs(SMO_A);
         String draft = started(smoA, "SYS-P1");
         enteredFindings(smoA, draft, 1);
+        proposedAs(smoA, sentinelFinding(smoA, draft),
+                "{\"status\":\"REMEDIATION_PLANNED\",\"plan\":\"Next release.\",\"targetDate\":\"2027-12-31\"}");
+        String late = started(signedInAs(SMO_B), "SYS-P4");
+        arrange.submissionState(late, "ENDORSED");
+        arrange.endorsedLate(late);
         today("2027-08-16");
         arrange.overdueSweep();
         ApiClient poc = vaPoc();
@@ -61,11 +66,14 @@ class ManagementSummaryPdfTest extends ExportSeam1 {
         assertClassifiedOnEveryPage(pdf, "Confidential");
         String text = pdf.text();
         assertThat(text).contains("Management summary, VA Cycle 2027").contains("As at 2027-08-16")
-                .contains("Q3 2027-08-02 2027-10-31").contains("Q4 2027-11-01 2028-02-06")
-                .contains("SYS-P1 Payroll Q3 " + SMO_A + " Draft Yes No 0")
+                .contains("Q3 2027-08-02 2027-10-31 1 1 0 0 0 1 1 0 0 0 3")
+                .contains("Q4 2027-11-01 2028-02-06 1 0 0 0 0 0 0 0 0 0 1")
+                .contains("SYS-P1 Payroll Q3 " + SMO_A + " Draft Yes No 1")
                 .contains("SYS-P2 Portal Q3 " + SMO_B + " Not Started Yes No 0")
+                .contains("SYS-P4 Grants Q3 " + SMO_B + " Endorsed No Yes 0")
                 .contains("SYS-P3 Next Quarter Q4 " + SMO_A + " Not Started No No 0");
-        assertThat(text).as("no vulnerability detail").doesNotContain("Entered 1").doesNotContain("CVE-");
+        assertThat(text).as("no vulnerability detail").doesNotContain(SENTINEL).doesNotContain("Entered 1")
+                .doesNotContain("CVE-").doesNotContain("Next release");
     }
 
     @Test
@@ -127,10 +135,12 @@ class ManagementSummaryPdfTest extends ExportSeam1 {
         JsonNode asked = entries("EXPORT_REQUESTED", actor, id).getFirst();
         assertThat(asked.get("detail").get("format").asString()).isEqualTo("PDF");
         assertThat(asked.get("detail").get("classification").asString()).isEqualTo("CONFIDENTIAL");
+        assertThat(asked.toString()).doesNotContain("SYS-A1").doesNotContain("Audited").doesNotContain(SMO_A);
         List<JsonNode> downloads = entries("EXPORT_DOWNLOADED", actor, id);
         assertThat(downloads).hasSize(1);
         assertThat(downloads.getFirst().get("outcome").asString()).isEqualTo("SUCCESS");
         assertThat(downloads.getFirst().get("detail").get("format").asString()).isEqualTo("PDF");
-        assertThat(downloads.getFirst().toString()).doesNotContain("SYS-A1").doesNotContain("Audited");
+        assertThat(downloads.getFirst().toString()).doesNotContain("SYS-A1").doesNotContain("Audited")
+                .doesNotContain(SMO_A);
     }
 }
