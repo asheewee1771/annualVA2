@@ -84,8 +84,7 @@ class WorkflowNotices {
             return;
         }
         switch (event.to()) {
-            case IN_REVIEW -> arrived(SubmissionStep.REVIEW, moved);
-            case AWAITING_ENDORSEMENT -> arrived(SubmissionStep.ENDORSE, moved);
+            case IN_REVIEW, AWAITING_ENDORSEMENT -> arrived(moved);
             case RETURNED_FOR_REWORK -> returned(event.from(), moved);
             case EXEMPTION_REQUESTED -> notifications.toVaPocs(
                     moved.tell(NoticeAction.DECIDE_EXEMPTION, Links.EXEMPTION_QUEUE), Awaits.EXEMPTION);
@@ -95,12 +94,13 @@ class WorkflowNotices {
     }
 
     /**
-     * Tells whoever acts at this step, the reviewing or the endorsing one, that the work is now theirs, after a step of
-     * someone else: the Cyber Manager to review, both VA POCs to endorse.
+     * Tells whoever acts next on the notice's state that the work is now theirs, after a step of someone else, by the
+     * table ({@link StepNotices#onArrival}): the Cyber Manager to review, both VA POCs to endorse. The submitting step has
+     * no arrival notice, and a state that waits on no step tells nobody.
      */
-    private void arrived(SubmissionStep step, Notice.About about) {
-        notifications.toStep(step, about, Objects.requireNonNull(StepNotices.of(step).arrived(),
-                "work arrives at the reviewing or the endorsing step"));
+    private void arrived(Notice.About about) {
+        about.state().nextStep().ifPresent(step -> StepNotices.of(step).onArrival()
+                .ifPresent(action -> notifications.toStep(step, about, action)));
     }
 
     /**
@@ -141,13 +141,13 @@ class WorkflowNotices {
     }
 
     /**
-     * A lapse tells the SMO/Tech Lead, then whoever acts next on the restored state when that is not the SMO/Tech Lead
-     * just told: the Cyber Manager In Review, both VA POCs Awaiting Endorsement.
+     * A lapse tells the SMO/Tech Lead, then whoever the restored state's work arrives at: the Cyber Manager In Review,
+     * both VA POCs Awaiting Endorsement.
      */
     private void lapsed(Notice.About lapse) {
         notifications.toStep(SubmissionStep.SUBMIT, lapse, lapse.state() == SubmissionState.NOT_ENDORSED
                 ? NoticeAction.EXEMPTION_LAPSED_NOT_ENDORSED : NoticeAction.EXEMPTION_LAPSED);
-        lapse.state().nextStep().filter(step -> step != SubmissionStep.SUBMIT).ifPresent(step -> arrived(step, lapse));
+        arrived(lapse);
     }
 
     /**

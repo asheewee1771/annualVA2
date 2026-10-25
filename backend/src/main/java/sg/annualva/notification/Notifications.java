@@ -80,6 +80,20 @@ public class Notifications {
         }
     }
 
+    /**
+     * A weekly Overdue reminder's copy for the next person up from this step (ADR 0052 item 3), a message of its own since
+     * the relay has no cc: the Cyber Manager for the submitting step, linked to their inbox (a Draft is not theirs to
+     * open); each VA POC for the reviewing step, linked to the VA Submission. The endorsing step has no one above it.
+     */
+    @Transactional
+    public void copyUp(SubmissionStep step, Notice.About about, NoticeAction action) {
+        switch (step) {
+            case SUBMIT -> toCyberManager(about.tell(action, Links.CYBER_MANAGER_INBOX));
+            case REVIEW -> toEachVaPoc(about.tell(action, Links.endorse(started(about))));
+            case ENDORSE -> throw new IllegalArgumentException("the endorsing step has no one above it to copy");
+        }
+    }
+
     private static UUID started(Notice.About about) {
         return Objects.requireNonNull(about.submissionId(), "a step after submitting has a VA Submission");
     }

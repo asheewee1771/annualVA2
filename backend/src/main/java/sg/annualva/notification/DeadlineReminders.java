@@ -99,7 +99,7 @@ public class DeadlineReminders {
         StepNotices.Weekly weekly = step.weekly();
         if (weekly != null && weeklyDue(waiting.overdueOn(), today)) {
             notifications.toStep(waiting.step(), about, weekly.action());
-            weekly.copyTo().accept(notifications, about.tell(weekly.copy(), weekly.copyLink().apply(about)));
+            notifications.copyUp(waiting.step(), about, weekly.copy());
         }
     }
 
