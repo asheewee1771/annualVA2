@@ -116,6 +116,14 @@ class ModuleConventionsArchTest {
     }
 
     @Test
+    void onlyTheExportModuleUsesThePdfLibrary() {
+        noClasses().that().resideOutsideOfPackage("sg.annualva.export..")
+                .should().dependOnClassesThat().resideInAnyPackage("org.apache.pdfbox..", "org.apache.fontbox..")
+                .because("PDFBox writes the management summary; a PDF someone uploads is never parsed (ADR 0026, ADR 0053)")
+                .check(main);
+    }
+
+    @Test
     void jdbcClientIsUsedOnlyInsideStores() {
         noClasses().that().haveSimpleNameNotEndingWith("Store")
                 .should().dependOnClassesThat().haveFullyQualifiedName(JDBC_CLIENT)

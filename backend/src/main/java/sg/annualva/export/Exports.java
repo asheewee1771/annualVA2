@@ -47,7 +47,7 @@ public class Exports {
      * What a person asks for.
      *
      * @param type {@code MGMT_SUMMARY}
-     * @param format {@code XLSX}
+     * @param format {@code XLSX} or {@code PDF}
      * @param cycle the VA Cycle's year, or null for the one running today
      * @param quarter 1 to 4 for one Quarter, or null for the whole Cycle
      * @param systems the Systems' own ids to cover, or null for every System of the Quarter or Cycle
@@ -101,7 +101,7 @@ public class Exports {
     public ExportView request(ExportRequest request) {
         stepUp.require(MGMT_SUMMARY_INTENT);
         ExportType type = code(ExportType.class, request.type(), "type", "Choose MGMT_SUMMARY.");
-        ExportFormat format = code(ExportFormat.class, request.format(), "format", "Choose XLSX.");
+        ExportFormat format = code(ExportFormat.class, request.format(), "format", "Choose XLSX or PDF.");
         Integer quarter = request.quarter();
         if (quarter != null && (quarter < 1 || quarter > 4)) {
             throw RejectedRequestException.invalidField("quarter", "Choose a Quarter from 1 to 4, or none for the Cycle.");
