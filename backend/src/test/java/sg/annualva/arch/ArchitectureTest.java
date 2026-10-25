@@ -367,6 +367,7 @@ class ArchitectureTest {
                 .should().implement(sg.annualva.boundary.MalwareScanner.class)
                 .orShould().implement(sg.annualva.boundary.FileStore.class)
                 .orShould().implement(sg.annualva.boundary.MailRelay.class)
+                .orShould().implement(sg.annualva.boundary.IdentityStatus.class)
                 .because("production implementations of the boundary ports live under sg.annualva.adapters")
                 .check(main);
     }

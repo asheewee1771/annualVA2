@@ -123,6 +123,8 @@ annualva:
     absolute-timeout: 8h
     # as-4: sessions one client address may start per minute without being signed in; each is a store row.
     anonymous-sessions-per-minute: 60
+    # ac-3 (ADR 0056): a signed-in session asks the identity provider this often whether the person is disabled there.
+    identity-check-interval: 5m
   # ac-2, story 77, ADR 0004: a sensitive action needs a sign-in within the freshness window.
   step-up:
     freshness-window: 5m

@@ -50,6 +50,13 @@ public class HarnessConfig {
         return new RecordedCycleEvents();
     }
 
+    /** The identity provider's account status: everyone enabled until a test disables them. */
+    @Bean
+    @Primary
+    FakeIdentityStatus fakeIdentityStatus() {
+        return new FakeIdentityStatus();
+    }
+
     /** The malware scanner: clean, sanitised, blocked or never finishes, by keyword in the file name. */
     @Bean
     @Primary

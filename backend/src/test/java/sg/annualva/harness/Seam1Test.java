@@ -39,6 +39,10 @@ public abstract class Seam1Test {
     @Autowired
     protected CapturingMailRelay mailRelay;
 
+    /** The identity provider's account status, which the session check asks; emptied before every test. */
+    @Autowired
+    protected FakeIdentityStatus identityStatus;
+
     protected ApiClient api;
 
     /** Arranges Systems and role grants through the test-only endpoints, from a separate browser. */
@@ -54,6 +58,7 @@ public abstract class Seam1Test {
         scanner.reset();
         fileStore.reset();
         mailRelay.reset();
+        identityStatus.reset();
         api = new ApiClient(port);
         arrange = new Arrange(new ApiClient(port).withCsrf());
         issuer.clientJwksUrl("http://localhost:" + port + "/.well-known/jwks.json");

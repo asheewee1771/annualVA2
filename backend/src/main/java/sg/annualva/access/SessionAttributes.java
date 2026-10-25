@@ -9,6 +9,9 @@ final class SessionAttributes {
     /** {@code Instant}: the last request seen, by the application clock; drives the idle limit. */
     static final String LAST_SEEN_AT = "annualva.lastSeenAt";
 
+    /** {@code Instant}: when the session last asked the identity provider whether the person is disabled (ticket 47). */
+    static final String IDENTITY_CHECKED_AT = "annualva.identityCheckedAt";
+
     /** {@code String}: the user id, for the session-ended event (never an email). */
     static final String USER_ID = "annualva.userId";
 

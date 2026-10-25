@@ -310,6 +310,7 @@ public class TestEndpoints {
                 // disabled, and the role-holder reviews recorded.
                 jdbc.sql("UPDATE role_grant SET suspended_at = NULL, suspended_by = NULL, suspension_cause = NULL "
                         + "WHERE source = 'CONFIG'").update();
+                jdbc.sql("UPDATE app_user SET idp_disabled_at = NULL WHERE idp_disabled_at IS NOT NULL").update();
                 jdbc.sql("DELETE FROM role_holder_review").update();
                 jdbc.sql("DELETE FROM register_upload").update();
                 jdbc.sql("DELETE FROM export_request").update();
