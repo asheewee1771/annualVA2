@@ -29,3 +29,5 @@ Consequences:
 - `RegisterSystems.ActiveSystem` carries the SMO/Tech Lead email, so any dashboard row can show it.
 
 Amends ADR 0037 (the matrix can be restricted to some Systems, and its rows carry `smoEmail`).
+
+Amended by ADR 0053: `format` may also be `PDF`, made by a second renderer from the same stored summary, with the classification on every page as a header, footer, first line and diagonal watermark.
