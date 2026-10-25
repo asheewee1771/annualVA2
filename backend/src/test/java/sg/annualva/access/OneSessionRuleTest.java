@@ -9,6 +9,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.session.jdbc.JdbcIndexedSessionRepository;
+import org.springframework.test.util.ReflectionTestUtils;
 import sg.annualva.harness.ApiClient;
 import sg.annualva.harness.Seam1Test;
 import sg.annualva.harness.SignIn;
@@ -28,6 +30,9 @@ class OneSessionRuleTest extends Seam1Test {
     @Autowired
     private JdbcClient database;
 
+    @Autowired
+    private JdbcIndexedSessionRepository sessionStore;
+
     private Instant before;
 
     @BeforeEach
@@ -38,6 +43,16 @@ class OneSessionRuleTest extends Seam1Test {
     @AfterEach
     void putTheClockBack() {
         clock.set(before);
+    }
+
+    /**
+     * The test below meets the defect only when PostgreSQL's planner joins by hash; this one does not depend on the plan:
+     * the store the application runs with lists a person's sessions in order, whichever customizer ran last.
+     */
+    @Test
+    void theStoreListsAPersonsSessionsOrderedBySession() {
+        assertThat((String) ReflectionTestUtils.getField(sessionStore, "listSessionsByPrincipalNameQuery"))
+                .contains("ORDER BY S.SESSION_ID");
     }
 
     @Test

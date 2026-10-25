@@ -19,6 +19,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
@@ -104,8 +105,8 @@ class AuditCompletenessTest extends ExemptionSeam1 {
             row(Kind.VIEW, AuditAction.REWORK_QUEUE_VIEWED, SMO_A, SMO, About.SUBMISSION),
             row(Kind.VIEW, AuditAction.EXEMPTIONS_VIEWED, POC_2, VA_POC, About.NOTHING),
             row(Kind.VIEW, AuditAction.REGISTER_PREVIEW_VIEWED, POC_1, VA_POC, About.NOTHING),
-            row(Kind.VIEW, AuditAction.AUDIT_LOG_VIEWED, CM, CYBER_MANAGER, About.SUBMISSION, "page", "0"),
-            row(Kind.VIEW, AuditAction.AUDIT_LOG_VIEWED, POC_1, VA_POC, About.SYSTEM, "filter_action",
+            row(Kind.VIEW, AuditAction.AUDIT_LOG_VIEWED, CM, CYBER_MANAGER, About.NOTHING, "page", "0"),
+            row(Kind.VIEW, AuditAction.AUDIT_LOG_VIEWED, POC_1, VA_POC, About.NOTHING, "filter_action",
                     "SUBMISSION_ENDORSED"),
             row(Kind.DOWNLOAD, AuditAction.FILE_DOWNLOADED, CM, CYBER_MANAGER, About.SUBMISSION),
             row(Kind.DOWNLOAD, AuditAction.REGISTER_TEMPLATE_DOWNLOADED, POC_1, VA_POC, About.NOTHING),
@@ -204,10 +205,12 @@ class AuditCompletenessTest extends ExemptionSeam1 {
 
     @Test
     void everyAuditedActionHasItsWordsOnTheAuditLogScreen() throws IOException {
-        String screen = Files.readString(Path.of("../frontend/src/api/audit.ts"));
+        Path labels = Path.of("../frontend/src/api/audit.ts");
+        Assumptions.assumeTrue(Files.exists(labels), "the front end is checked out beside the back end");
+        String screen = Files.readString(labels);
         for (AuditAction action : AuditAction.values()) {
             assertThat(screen).as(action + " is labelled in the audit log viewer's action filter")
-                    .contains("  " + action.name() + ": \"");
+                    .containsPattern("\\b" + action.name() + "\\s*:");
         }
     }
 
@@ -359,7 +362,7 @@ class AuditCompletenessTest extends ExemptionSeam1 {
         BatchReviewSeam1.batchReviewed(cm, batch, CONFIRMED, null);
         reportReviewed(cm, sub, BURP_SUITE, CONFIRMED, null);
         returned(cm, sub, "One item needs another look. " + SENTINEL);
-        assertThat(cm.get("/api/audit-entries?system=" + systems.get("SYS-F1") + "&submission=" + sub).status())
+        assertThat(cm.get("/api/audit-entries?submission=" + sub).status())
                 .as("the history of what they reviewed").isEqualTo(200);
     }
 

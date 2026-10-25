@@ -46,7 +46,7 @@ class StateTableTest extends ExemptionSeam1 {
     enum Actor { SMO, CYBER_MANAGER, VA_POC }
 
     /** What a command needs of the VA Submission to be sent at all. */
-    enum Needs { SYSTEM, SUBMISSION, FINDING, FILE, EXEMPTION }
+    enum Needs { SYSTEM, SUBMISSION, FINDING, FILE, BATCH, EXEMPTION }
 
     /** Every command a VA Submission answers, with the states the table allows it in and the entry it is audited as. */
     enum Command {
@@ -56,6 +56,7 @@ class StateTableTest extends ExemptionSeam1 {
                 RETURNED_FOR_REWORK, AWAITING_ENDORSEMENT),
         REVIEW_FINDING(Actor.CYBER_MANAGER, Needs.FINDING, "FINDING_REVIEWED", IN_REVIEW),
         REVIEW_JUSTIFICATION(Actor.CYBER_MANAGER, Needs.SUBMISSION, "REPORT_REVIEWED", IN_REVIEW),
+        REVIEW_BATCH(Actor.CYBER_MANAGER, Needs.BATCH, "BATCH_REVIEWED", IN_REVIEW),
         RETURN_FROM_REVIEW(Actor.CYBER_MANAGER, Needs.SUBMISSION, "SUBMISSION_RETURNED", IN_REVIEW),
         PASS_TO_ENDORSEMENT(Actor.CYBER_MANAGER, Needs.SUBMISSION, "SUBMISSION_PASSED", IN_REVIEW),
         RETURN_FROM_ENDORSEMENT(Actor.VA_POC, Needs.SUBMISSION, "SUBMISSION_RETURNED", AWAITING_ENDORSEMENT),
@@ -87,15 +88,16 @@ class StateTableTest extends ExemptionSeam1 {
 
     /**
      * SYS-F1 in one state, with what the commands address: its VA Submission, a Finding and its current proposal, the
-     * Dependency-Check file, the version of the Burp Suite justification and the Exemption; null where it has none.
+     * Dependency-Check file, the Bulk-set batch, the version of the Burp Suite justification and the Exemption; null where
+     * it has none.
      */
     record At(String systemId, @Nullable String submissionId, @Nullable String findingId,
-            @Nullable String proposalId, @Nullable String fileId, int justificationVersion,
+            @Nullable String proposalId, @Nullable String fileId, @Nullable String batchId, int justificationVersion,
             @Nullable String exemptionId) {
 
         /** The same System once a request or a start has made its VA Submission, and the Exemption if one was asked for. */
         At with(String submission, @Nullable String exemption) {
-            return new At(systemId, submission, findingId, proposalId, fileId, justificationVersion, exemption);
+            return new At(systemId, submission, findingId, proposalId, fileId, batchId, justificationVersion, exemption);
         }
 
         boolean has(Needs needs) {
@@ -104,6 +106,7 @@ class StateTableTest extends ExemptionSeam1 {
                 case SUBMISSION -> submissionId != null;
                 case FINDING -> findingId != null;
                 case FILE -> fileId != null;
+                case BATCH -> batchId != null;
                 case EXEMPTION -> exemptionId != null;
             };
         }
@@ -244,7 +247,7 @@ class StateTableTest extends ExemptionSeam1 {
             case NONE -> {
                 registered(List.of(listed("SYS-F1", "File one", SMO_A, CM, "Q3"),
                         listed("SYS-F2", "File two", SMO_B, CM_OTHER, "Q3")), List.of());
-                yield new At(idOf("SYS-F1"), null, null, null, null, 0, null);
+                yield new At(idOf("SYS-F1"), null, null, null, null, null, 0, null);
             }
             case NOT_STARTED -> {
                 yield make("REQUEST_THEN_REJECT", arrive(NONE));
@@ -271,7 +274,17 @@ class StateTableTest extends ExemptionSeam1 {
         String fileId = files.get(0).get("id").asString();
         return new At(draft.systemId(), sub, finding.get("id").asString(),
                 finding.get("currentProposal").get("id").asString(), fileId,
+                BatchReviewSeam1.batches(smo, sub).get(0).get("batchId").asString(),
                 justificationVersion(smo, sub, BURP_SUITE), null);
+    }
+
+    /** The ready Draft with its Finding entered by hand in a Bulk-set batch, so a batch review is a command to send too. */
+    @Override
+    protected Draft readyDraft() {
+        Draft draft = super.readyDraft();
+        List<String> findings = findingIds(draft.smo(), draft.submissionId());
+        BatchReviewSeam1.bulkSet(draft, List.of(findings.getLast()), falsePositive("Compensated by SSO."));
+        return draft;
     }
 
     // ---- sending the commands ----
@@ -292,6 +305,7 @@ class StateTableTest extends ExemptionSeam1 {
             case REVIEW_JUSTIFICATION -> reviewReport(client, sub, BURP_SUITE,
                     justificationReview(CONFIRMED, null, at.justificationVersion()));
             case RETURN_FROM_REVIEW, RETURN_FROM_ENDORSEMENT -> returnForRework(client, sub, "Another look, please.");
+            case REVIEW_BATCH -> BatchReviewSeam1.reviewBatch(client, at.batchId(), "{\"decision\":\"CONFIRMED\"}");
             case PASS_TO_ENDORSEMENT -> passToEndorsement(client, sub);
             case ENDORSE -> endorse(client, sub);
             case APPROVE_EXEMPTION -> approve(client, at.exemptionId());
