@@ -108,6 +108,8 @@ export interface BoardCard extends ReviewMarkers {
   name: string;
   submissionId: string | null;
   overdue: boolean;
+  /** On a VA POC's board, the day the System was flagged SMO Unreachable; null while it is not, and for a Cyber Manager. */
+  smoUnreachableOn: string | null;
 }
 
 /** GET /api/dashboards/quarter-board: one Quarter, one column per state in the server's order. */
