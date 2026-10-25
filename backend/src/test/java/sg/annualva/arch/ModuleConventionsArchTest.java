@@ -119,7 +119,7 @@ class ModuleConventionsArchTest {
     void onlyTheExportModuleUsesThePdfLibrary() {
         noClasses().that().resideOutsideOfPackage("sg.annualva.export..")
                 .should().dependOnClassesThat().resideInAnyPackage("org.apache.pdfbox..", "org.apache.fontbox..")
-                .because("PDFBox writes the management summary; a PDF someone uploads is never parsed (ADR 0026, ADR 0053)")
+                .because("PDFBox writes the management summary; a PDF someone uploads is never parsed (ADR 0026, ADR 0054)")
                 .check(main);
     }
 

@@ -23,7 +23,7 @@
         <coverage.minimum>0.80</coverage.minimum>
         <archunit.version>1.4.1</archunit.version>
         <poi.version>5.4.1</poi.version>
-        <!-- The management summary as a PDF (ticket 45, ADR 0053): Apache PDFBox, Apache License 2.0. -->
+        <!-- The management summary as a PDF (ticket 45, ADR 0054): Apache PDFBox, Apache License 2.0. -->
         <pdfbox.version>3.0.8</pdfbox.version>
         <!-- Empty so that @{argLine} below resolves even when JaCoCo does not set it; the JaCoCo agent adds itself to it. -->
         <argLine></argLine>

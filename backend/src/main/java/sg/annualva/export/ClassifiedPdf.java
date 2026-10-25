@@ -25,7 +25,7 @@ import org.jspecify.annotations.Nullable;
  * <p>Pages are A4 landscape. Text is set in the standard Helvetica, which the PDF names and does not embed, so the file
  * stays small and holds no font program; a character Helvetica cannot draw (outside Windows-1252, such as Chinese or
  * Tamil script) is written as {@code ?} where the text comes in, and the Excel workbook of the same summary keeps it as
- * typed (ADR 0053).
+ * typed (ADR 0054).
  */
 final class ClassifiedPdf implements AutoCloseable {
 
