@@ -232,6 +232,12 @@ public enum AuditAction {
      */
     SUBMISSION_NOT_ENDORSED("submission-not-endorsed", "database"),
     /**
+     * A Register apply retired a System, and its in-flight VA Submission, confirmed by the VA POC, became Withdrawn (story 7,
+     * ticket 43; SUCCESS, with {@code state_from}, {@code state_to} and the {@code preview_id}). Attributed to the VA POC
+     * who applied the preview. About the System and the VA Submission.
+     */
+    SUBMISSION_WITHDRAWN("submission-withdrawn", "database"),
+    /**
      * An SMO/Tech Lead requested an Exemption and the VA Submission froze (stories 43 and 44; SUCCESS, with
      * {@code state_from}, {@code NOT_STARTED} when the request created it, {@code state_to}, the {@code exemption_id} and
      * the {@code basis}), or was refused: segregation of duties, the state, the Cycle, or a file still being checked

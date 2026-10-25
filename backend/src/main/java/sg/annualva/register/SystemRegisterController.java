@@ -5,6 +5,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -14,6 +15,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -92,20 +94,31 @@ public class SystemRegisterController {
      */
     public record ApplyView(
             UUID previewId, String status, Instant appliedAt, int added, int updated, int retired, int unchanged,
-            int rolesGranted, int rolesRevoked) {}
+            int rolesGranted, int rolesRevoked, int withdrawn) {}
 
     /**
-     * Applies a confirmed preview (stories 2 to 4, 73, 79): the step-up action for the Register, so it is refused with
+     * What the VA POC confirms with an apply.
+     *
+     * @param previewId the preview, named only so the front end can reopen it after a fresh sign-in; the address names
+     *     the preview applied
+     * @param withdraw the VA Submissions they confirmed withdrawing, one by one (story 6); none when null
+     */
+    public record ApplyRequest(@Nullable UUID previewId, @Nullable List<UUID> withdraw) {}
+
+    /**
+     * Applies a confirmed preview (stories 2 to 4, 6, 73, 79): the step-up action for the Register, so it is refused with
      * {@code step-up-required} unless the caller signed in again within five minutes. Answers 409 for a preview that
-     * has been applied, has expired, has a blocked row or was made against a Register that has since changed.
+     * has been applied, has expired, has a blocked row or was made against a Register, or in-flight work, that has since
+     * changed, and 400 {@code withdrawal-unconfirmed} unless {@code withdraw} names exactly the VA Submissions it withdraws.
      */
     @PostMapping("/api/system-register/previews/{id}/apply")
     @PreAuthorize("hasRole('VA_POC')")
-    public ResponseEntity<ApplyView> apply(@PathVariable UUID id) {
-        RegisterApply.Applied applied = apply.apply(id);
+    public ResponseEntity<ApplyView> apply(@PathVariable UUID id, @RequestBody(required = false) @Nullable ApplyRequest body) {
+        List<UUID> withdraw = body == null || body.withdraw() == null ? List.of() : body.withdraw();
+        RegisterApply.Applied applied = apply.apply(id, withdraw);
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(new ApplyView(applied.previewId(), "APPLIED",
                 applied.appliedAt(), applied.added(), applied.updated(), applied.retired(), applied.unchanged(),
-                applied.rolesGranted(), applied.rolesRevoked()));
+                applied.rolesGranted(), applied.rolesRevoked(), applied.withdrawn()));
     }
 
     private PreviewView view(Preview preview) {

@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review &mdash; 43-register-change-effects</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall: PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">build WARN &middot; C0 H0 M0 L3</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN &middot; C0 H0 M0 L7</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN &middot; C0 H0 M1 L4</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">semgrep WARN &middot; C0 H0 M0 L1</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN &middot; C0 H0 M0 L3</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react WARN &middot; C0 H0 M0 L3</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN &middot; C0 H0 M0 L7</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">impl/43-register-change-effects</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report</h1>
+          <p class="text-sm text-slate-500 mt-1">Ticket 43, Register change effects on in-flight work (stories 5, 6, 7 and 94): the Register preview names what each row would do to an in-flight VA Submission (Will withdraw, Will move, Will transfer), holds back moves, transfers, segregation-of-duties breaches and retirements whose files are still scanning, and the apply withdraws a retired System&rsquo;s in-flight VA Submission only once the VA POC has ticked each one, after a fresh sign-in. Diff <span class="font-mono text-xs">integration/annual-va-r1...HEAD</span> on <span class="font-mono text-xs">impl/43-register-change-effects</span>, now at HEAD <span class="font-mono text-xs">a37f2e0</span>.</p>
+        </div>
+        <div class="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 space-y-2">
+          <p><strong>What the checks saw.</strong> The first round ran on <span class="font-mono text-xs">1cf08f7</span> (commits <span class="font-mono text-xs">3244168</span>, <span class="font-mono text-xs">c7f5ed5</span>, <span class="font-mono text-xs">1cf08f7</span>). <span class="font-mono text-xs">code-review</span>, <span class="font-mono text-xs">semgrep</span>, <span class="font-mono text-xs">im8</span>, <span class="font-mono text-xs">react</span> and <span class="font-mono text-xs">springboot</span> reviewed that tree. <span class="font-mono text-xs">thermo-nuclear</span> reported FAIL there (2 High), then ran a second round on <span class="font-mono text-xs">08d4534</span>, which reported PASS (0 High, 3 Medium, 8 Low). <span class="font-mono text-xs">build</span> is judged on the final gate taken on <span class="font-mono text-xs">a37f2e0</span>.</p>
+          <p><strong>What changed after the first round.</strong> <span class="font-mono text-xs">ffc2d4a</span> (a held-back row keeps its outcome; what an update changes is asked once, of <span class="font-mono text-xs">SystemSnapshot</span>; <span class="font-mono text-xs">WorkEffects</span> owns the classification; the Not Started flag reset moves to an <span class="font-mono text-xs">OverdueSweep</span> listener), <span class="font-mono text-xs">442426e</span> (front end: in-flight groups in <span class="font-mono text-xs">InFlightEffects.tsx</span>, <span class="font-mono text-xs">withdrawals</span> moved to <span class="font-mono text-xs">registerPreviewText.ts</span>), <span class="font-mono text-xs">25ebb97</span> (ADR and README), the merge of the integration tip with ticket 40 (<span class="font-mono text-xs">08d4534</span>; the ADR became <strong>0049</strong> and the migration <strong>V144_43</strong>), then <span class="font-mono text-xs">5678e87</span>, <span class="font-mono text-xs">db11150</span> and <span class="font-mono text-xs">a37f2e0</span>, which fix thermo-nuclear&rsquo;s round-2 M1, M2 and M3.</p>
+          <p>The aggregator checked every resolved item against the code at <span class="font-mono text-xs">a37f2e0</span>. Resolved items are listed under &ldquo;Resolved since the review&rdquo; in each card and are not counted. First-round findings that cite ADR 0048 or V143 now mean <strong>ADR 0049</strong> and <strong>V144_43</strong>; their line numbers refer to <span class="font-mono text-xs">1cf08f7</span> unless a current line is given. The commits after <span class="font-mono text-xs">08d4534</span> were reviewed by the aggregator and the final build only.</p>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Executive Summary</h2>
+          <p class="text-xs text-slate-500 mt-1">Overall status across all active checks. <strong>Overall PASS:</strong> no check has an open Critical or High finding. thermo-nuclear&rsquo;s two round-1 Highs (an overloaded <span class="font-mono">BLOCKED</span> outcome, and the move and transfer checks made in three places) were resolved by <span class="font-mono">ffc2d4a</span> and confirmed by its second round. Its three round-2 Mediums were <strong>fixed after review</strong> in <span class="font-mono">5678e87</span>, <span class="font-mono">db11150</span> and <span class="font-mono">a37f2e0</span>. The build is green on <span class="font-mono">a37f2e0</span>: 1019 tests, 0 failures, ArchUnit 16/16, JaCoCo line and branch thresholds met, and <span class="font-mono">npm run check</span> clean. One Medium remains open: code-review S1, about how the history is split into commits. Every check is WARN because Low or Medium findings remain; none blocks the merge.</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Check</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Status</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">C / H / M / L</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Summary of gaps</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">build <span class="text-xs text-slate-400">(HEAD a37f2e0)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 3</td>
+              <td class="px-4 py-2">Back end <span class="font-mono text-xs">clean verify</span> BUILD SUCCESS: 1019 tests, 0 failures, 0 errors; ArchUnit passes; &ldquo;All coverage checks have been met&rdquo; (bundle line 97.6 %, branch 92.0 %). Front end <span class="font-mono text-xs">npm run check</span> passes. Advisory Lows only: panel size (not re-measured after the split), <span class="font-mono text-xs">PreviewRow</span> branch coverage 2/4, and a pre-existing deprecation warning.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">thermo-nuclear <span class="text-xs text-slate-400">(round 2, 08d4534)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 7</td>
+              <td class="px-4 py-2">Round 1&rsquo;s H1 and H2 are resolved. Round 2&rsquo;s M1, M2 and M3 were fixed after review, as were L6 and L7. Open Lows: the per-submission scanning query, the <span class="font-mono text-xs">PreviewRow</span> null-default and its second constructor, the <span class="font-mono text-xs">Preview.withdrawals</span> pass-through, <span class="font-mono text-xs">ApplyControl</span>&rsquo;s props, fully qualified names in tests, and (aggregator) no Seam 1 test pinning what a Not Started row keeps on a move.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">code-review <span class="text-xs text-slate-400">(1cf08f7)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 4</td>
+              <td class="px-4 py-2">Both axes PASS. The open Medium is S1: commit <span class="font-mono text-xs">3244168</span> bundles a behaviour change and two renames (and, per the aggregator, <span class="font-mono text-xs">5678e87</span> bundles the M3 fix with the rename). S3, S4, S6, S7, SP1, SP2, SP3 and SP4 are resolved. Open Lows: one avoid-word left in a test, several names for one concept, and two scope notes.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">semgrep <span class="text-xs text-slate-400">(1cf08f7)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 1</td>
+              <td class="px-4 py-2"><span class="font-mono text-xs">p/security-audit</span> and <span class="font-mono text-xs">p/default</span>: 0 findings on changed source. One pre-existing Low in test-only harness code, outside the diff, where the input is allow-listed. The later <span class="font-mono text-xs">standAside</span> SQL now binds its states as a parameter.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">im8 <span class="text-xs text-slate-400">(1cf08f7)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 3</td>
+              <td class="px-4 py-2">All controls PASS or N/A. Open Lows: a null id in <span class="font-mono text-xs">withdraw</span> gives a 500 (as-1); <span class="font-mono text-xs">REGISTER_APPLIED</span> lacks the withdrawn count (lm-4); <span class="font-mono text-xs">ActedBy</span>&rsquo;s default <span class="font-mono text-xs">toString</span> holds an email (lm-19). One tracked deferral, D-1, owned by ticket 52, is not counted.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">react <span class="text-xs text-slate-400">(1cf08f7)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 3</td>
+              <td class="px-4 py-2">L1 (a helper exported from a component module) is resolved. Open Lows: identical withdrawal labels for two Cycles, &ldquo;to withdraw&rdquo; counting Systems, not VA Submissions, and checkboxes live while the apply runs.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 font-medium">springboot <span class="text-xs text-slate-400">(1cf08f7)</span></td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 7</td>
+              <td class="px-4 py-2">Seven skills run; each PASS or N/A. L3 (the withdrawn count) is resolved. Open Lows: a null withdraw id, a scanning read per submission (narrowed), the <span class="font-mono text-xs">ActedBy</span> <span class="font-mono text-xs">toString</span>, no ArchUnit guard on <span class="font-mono text-xs">InFlightWork</span>, part of the test gaps, a test name that promises counts, and fully qualified names.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-600">None open. No check has an open Critical or High finding.</p>
+          <p class="text-sm text-slate-600">Resolved since the review (verified at <span class="font-mono text-xs">a37f2e0</span>):</p>
+          <ul class="list-disc pl-6 text-sm text-slate-600 space-y-1">
+            <li><strong>thermo-nuclear round-1 H1 (High), <span class="font-mono text-xs">Outcome.BLOCKED</span> overloaded</strong>, in <span class="font-mono text-xs">backend/src/main/java/sg/annualva/register/{Outcome,Preview,WorkEffects}.java</span>. A held-back row now keeps its RETIRE or UPDATE outcome, and &ldquo;held back&rdquo; is derived from <span class="font-mono text-xs">reasons</span>. <span class="font-mono text-xs">Preview.canApply</span> requires every row to have empty reasons, and <span class="font-mono text-xs">classify</span> is idempotent. Fixed in <span class="font-mono text-xs">ffc2d4a</span> and confirmed by round 2. The front-end residue (round-2 M1) was fixed after review in <span class="font-mono text-xs">db11150</span>: <span class="font-mono text-xs">frontend/src/screens/va-poc/RegisterPreviewPanel.tsx:224</span> lists every row by its outcome, and a &ldquo;Held back&rdquo; column renders <span class="font-mono text-xs">&lt;Reasons&gt;</span>.</li>
+            <li><strong>thermo-nuclear round-1 H2 (High), move and transfer checks in three places.</strong> <span class="font-mono text-xs">SystemSnapshot.movesIn / changesSmoIn / transfersIn</span> are now read by both <span class="font-mono text-xs">WorkEffects.classify</span> and <span class="font-mono text-xs">RegisterApply.announce</span>. <span class="font-mono text-xs">InFlightWork.moved</span> is deleted. The Not Started flag reset is <span class="font-mono text-xs">OverdueSweep.on(SystemChangeEvent)</span>, which runs in the apply&rsquo;s transaction. Fixed in <span class="font-mono text-xs">ffc2d4a</span> and confirmed by round 2.</li>
+            <li><strong>Round-2 M2 and M3 (Medium), fixed after review</strong> (details in the thermo-nuclear card).</li>
+          </ul>
+          <p class="text-sm text-slate-600">For a human decision: ADR 0049 item 6 is provisional (the Quarter board&rsquo;s Withdrawn column stays empty). From the im8 checklist: whether a single VA POC, with a fresh sign-in and one tick per item, may irreversibly withdraw in-flight work without a second approver; and whether retiring a System that has in-flight work in an older, frozen Cycle during an overlap should withdraw that work.</p>
+        </div>
+      </div>
+
+      <!-- build -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build <span class="text-xs text-slate-400">(HEAD a37f2e0)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-600 space-y-1">
+          <p>The build check (<span class="font-mono text-xs">build.md</span>) judged <span class="font-mono text-xs">1cf08f7</span>: 984 tests, BUILD SUCCESS, and front end clean. Its current result is the final gate on <span class="font-mono text-xs">a37f2e0</span>. The aggregator checked the timing: the three fix commits were written at 07:49:39 to 07:49:40 (SGT). The back-end run took 19:36 min and ended at 08:09:34, so it started after the last commit.</p>
+          <p>Back end (<span class="font-mono text-xs">t43-verify4.log</span>): <span class="font-mono text-xs">./mvnw -B -ntp clean verify</span> BUILD SUCCESS. 1019 tests, 0 failures, 0 errors, 0 skipped (Seam 1 on Testcontainers). <span class="font-mono text-xs">ArchitectureTest</span> 16/16. JaCoCo: &ldquo;All coverage checks have been met&rdquo;. From the run&rsquo;s <span class="font-mono text-xs">jacoco.csv</span>: bundle line 97.6 %, branch 92.0 %. <span class="font-mono text-xs">WorkEffects</span> has branches 45/48 and lines 51/51. <span class="font-mono text-xs">RegisterApply</span> has 40/48 and 100/104. <span class="font-mono text-xs">InFlightSubmissions</span> has 6/6 and 39/39. <span class="font-mono text-xs">WorkflowNotices</span> has 36/38 and 79/79. <span class="font-mono text-xs">SubmissionStore</span> has 27/30 and 262/265.</p>
+          <p>Front end: <span class="font-mono text-xs">npm run check</span> passed on the same tree: Prettier, <span class="font-mono text-xs">tsc -b</span>, <span class="font-mono text-xs">vite build</span>, no raw HTML, dependency-cruiser, fallow dead-code and fallow health. There is no Vitest suite, by convention.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/RegisterPreviewPanel.tsx</td>
+              <td class="px-4 py-2">221</td>
+              <td class="px-4 py-2">L1. At <span class="font-mono text-xs">1cf08f7</span>, fallow put <span class="font-mono text-xs">RegisterPreviewPanel</span> (74 lines) in its &ldquo;very high&rdquo; unit-size bucket, and the file was 437 lines. <span class="font-mono text-xs">442426e</span> moved the in-flight groups to <span class="font-mono text-xs">InFlightEffects.tsx</span>, and the file is now 270 lines. The unit size was not re-measured. Advisory only: fallow health passes.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/register/PreviewRow.java</td>
+              <td class="px-4 py-2">40-41</td>
+              <td class="px-4 py-2">L2. <span class="font-mono text-xs">PreviewRow</span> branch coverage is still 2/4 at <span class="font-mono text-xs">a37f2e0</span>. The untested branches are the null-defaults for a preview stored before ticket 43 (see thermo-nuclear L2), not a business rule. The bundle is above the 80 % gate.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/adapters/oidc/MccHttp.java</td>
+              <td class="px-4 py-2">51</td>
+              <td class="px-4 py-2">L3. Compiler deprecation warning: <span class="font-mono text-xs">RestClient.Builder.messageConverters</span> is marked for removal. It predates this ticket and is not in the diff.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <!-- thermo-nuclear -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear <span class="text-xs text-slate-400">(round 2, 08d4534)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-600 space-y-1">
+          <p>Round 1 on <span class="font-mono text-xs">1cf08f7</span> reported FAIL (2 High). Round 2 on <span class="font-mono text-xs">08d4534</span> reported PASS: no Critical, no High, 3 Medium and 8 Low. Size check: no file reaches 1,000 lines. <span class="font-mono text-xs">SubmissionStore</span> is 783 lines and <span class="font-mono text-xs">TestEndpoints</span> 630. The reviewer singled out as good: the move listener in <span class="font-mono text-xs">OverdueSweep</span>; <span class="font-mono text-xs">WorkEffects</span> as one owner with a small interface and an idempotent <span class="font-mono text-xs">classify</span>; the withdrawal as a <span class="font-mono text-xs">SubmissionEvent</span>; and the apply&rsquo;s guards, which read top to bottom.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/RegisterEffectsTest.java</td>
+              <td class="px-4 py-2">156</td>
+              <td class="px-4 py-2">A1, raised by the aggregator as the residue of M2. ADR 0049 now records that a Not Started row keeps its Quarter, windows and Overdue flag on a move. M2&rsquo;s second option also asked for a Seam 1 test that pins this, and none was added: <span class="font-mono text-xs">aNotStartedRowARejectedExemptionLeftIsNotInFlightWork</span> covers only the retire preview. Add a move case that asserts the row&rsquo;s windows and flag are unchanged.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/InFlightSubmissions.java</td>
+              <td class="px-4 py-2">105</td>
+              <td class="px-4 py-2">L1. <span class="font-mono text-xs">readiness.filesScanning(item.id())</span> still runs once per in-flight VA Submission on every preview and apply, an N+1. Two lines above it, <span class="font-mono text-xs">actedBy</span> is already batched. A batch <span class="font-mono text-xs">scanning(Collection&lt;UUID&gt;)</span> would match it.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/register/PreviewRow.java</td>
+              <td class="px-4 py-2">40-41</td>
+              <td class="px-4 py-2">L2. A permanent compatibility branch null-defaults <span class="font-mono text-xs">effects</span> and <span class="font-mono text-xs">inFlight</span> &ldquo;for a preview stored before ticket 43&rdquo;, but the components are non-<span class="font-mono text-xs">@Nullable</span> and a preview expires in an hour.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/register/PreviewRow.java</td>
+              <td class="px-4 py-2">45-48</td>
+              <td class="px-4 py-2">L3. There are two construction modes. The 8-argument constructor builds a row before its effects are known, and <span class="font-mono text-xs">WorkEffects.java:123</span> calls the 10-argument canonical constructor positionally. A <span class="font-mono text-xs">withEffects(...)</span> method would remove both.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/register/Preview.java</td>
+              <td class="px-4 py-2">43-44</td>
+              <td class="px-4 py-2">L4. A pass-through: <span class="font-mono text-xs">Preview.withdrawals()</span> only delegates to <span class="font-mono text-xs">WorkEffects.withdrawals(rows)</span>. Keep the rule in one of the two places.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/RegisterPreviewPanel.tsx</td>
+              <td class="px-4 py-2">184</td>
+              <td class="px-4 py-2">L5. <span class="font-mono text-xs">ApplyControl</span> takes the panel&rsquo;s full <span class="font-mono text-xs">RegisterPreviewPanelProps</span> and ignores <span class="font-mono text-xs">onConfirm</span>. Give it its own props interface.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/register/RegisterSeam1.java and others</td>
+              <td class="px-4 py-2">96, 115</td>
+              <td class="px-4 py-2">L8. Fully qualified names are written inline in <span class="font-mono text-xs">Arrange</span>, <span class="font-mono text-xs">TestEndpoints</span>, <span class="font-mono text-xs">RegisterSeam1</span> and <span class="font-mono text-xs">RegisterEffectsTest</span>, and <span class="font-mono text-xs">applyConfirming</span> builds JSON by concatenation. On the server, <span class="font-mono text-xs">SystemRegisterController.java:117</span> null-unwraps <span class="font-mono text-xs">withdraw</span>, where a compact constructor on <span class="font-mono text-xs">ApplyRequest</span> would do. <span class="font-mono text-xs">ApplyRequest.previewId</span> is never read.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-3 text-sm text-slate-600 border-t border-slate-100">
+          <p class="font-medium text-slate-700">Resolved since the review (verified at a37f2e0)</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li>Round 1 H1 and H2 (High), plus M1, M3 and M4 and L3; M2 mostly, and M5 and L5 in part. Each was confirmed in round 2&rsquo;s &ldquo;Resolved from the previous round&rdquo; table.</li>
+            <li><strong>M1 (Medium), fixed after review</strong> in <span class="font-mono text-xs">db11150</span>. Before the fix, the front end hid held-back rows from their outcome group, so the summary counts and the group counts disagreed. Now <span class="font-mono text-xs">RegisterPreviewPanel.tsx:224</span> filters on <span class="font-mono text-xs">row.outcome === outcome</span> alone. <span class="font-mono text-xs">UpdateTable</span> and <span class="font-mono text-xs">RetireTable</span> each gain a &ldquo;Held back&rdquo; column that renders <span class="font-mono text-xs">Reasons</span>, now exported from <span class="font-mono text-xs">InFlightEffects.tsx</span>. The special case and its comment are gone, and the README and ADR 0049 item 2 describe the new listing.</li>
+            <li><strong>M2 (Medium), fixed after review</strong> in <span class="font-mono text-xs">5678e87</span> and <span class="font-mono text-xs">a37f2e0</span>. In <span class="font-mono text-xs">SubmissionStore</span>, <span class="font-mono text-xs">Unfinished</span>, <span class="font-mono text-xs">unfinished</span>, <span class="font-mono text-xs">holdUnfinished</span>, <span class="font-mono text-xs">UNFINISHED</span> and <span class="font-mono text-xs">HOLD_UNFINISHED</span> become <span class="font-mono text-xs">InFlight</span>, <span class="font-mono text-xs">inFlight</span>, <span class="font-mono text-xs">holdInFlight</span>, <span class="font-mono text-xs">IN_FLIGHT</span> and <span class="font-mono text-xs">HOLD_IN_FLIGHT</span>, and the Javadoc points to <span class="font-mono text-xs">SubmissionState#inFlight</span>. The Not Started row was handled with the second option: ADR 0049&rsquo;s Consequences (line 28) record that a move leaves the row&rsquo;s Quarter, windows and Overdue flag, and that re-dating it is Release 2&rsquo;s. The pinning test is still missing (A1 above).</li>
+            <li><strong>M3 (Medium), fixed after review</strong> in <span class="font-mono text-xs">5678e87</span>. Before the fix, <span class="font-mono text-xs">WorkflowNotices</span> had a negated special case in the Exemption-decision branch. Now <span class="font-mono text-xs">WorkflowNotices.java:69</span> dispatches <span class="font-mono text-xs">to == WITHDRAWN</span> first and returns, so the decision branch keys on <span class="font-mono text-xs">from == EXEMPTION_REQUESTED</span> as it did before this ticket. The <span class="font-mono text-xs">WITHDRAWN</span> case is removed from the <span class="font-mono text-xs">switch</span>. <span class="font-mono text-xs">aVaSubmissionWithdrawnWhileItsExemptionIsRequestedIsToldAsAWithdrawalNotADecision</span> covers it.</li>
+            <li><strong>L6, fixed after review</strong> in <span class="font-mono text-xs">5678e87</span>. Before the fix, the test stand-aside hard-coded the final states. <span class="font-mono text-xs">TestEndpoints.standAside</span> (line 497) now binds <span class="font-mono text-xs">SubmissionState::inFlight</span> as a <span class="font-mono text-xs">text[]</span>, so it no longer flips <span class="font-mono text-xs">NOT_STARTED</span> rows.</li>
+            <li><strong>L7, fixed after review</strong> in <span class="font-mono text-xs">5678e87</span>. Before the fix, an apply took locks even when it had nothing to hold. <span class="font-mono text-xs">InFlightSubmissions.hold</span> now returns early when <span class="font-mono text-xs">systemIds</span> is empty, so an apply of additions alone takes no Cycle lock.</li>
+          </ul>
+        </div>
+      </details>
+
+      <!-- code-review -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review <span class="text-xs text-slate-400">(1cf08f7)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-600 space-y-1">
+          <p>Standards: PASS. Spec: PASS. Every acceptance criterion is Met:</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li>classification: Will withdraw, Will move, Will transfer and segregation of duties;</li>
+            <li>files still scanning block a withdrawal;</li>
+            <li>each withdrawal needs its own confirmation, and is audited and notified;</li>
+            <li>concurrency is handled through <span class="font-mono text-xs">hold</span> and <span class="font-mono text-xs">409 work-changed</span>;</li>
+            <li>authorization is VA_POC plus step-up.</li>
+          </ul>
+          <p>AC 4 was Partial for missing tests. Those tests have since been added (SP1 to SP3, below), and the gates pass on <span class="font-mono text-xs">a37f2e0</span>.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs">commit 3244168</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">S1. The AGENTS.md rule &ldquo;one logical change per commit&rdquo; is broken. The feature commit also carries two unrelated things: the moved Not Started flag behaviour, and two renames (<span class="font-mono text-xs">lockCycleForClose</span> to <span class="font-mono text-xs">lockCycle</span>, and <span class="font-mono text-xs">NotEndorsed</span> to <span class="font-mono text-xs">Finished</span>). This is still in the branch history. Aggregator note: <span class="font-mono text-xs">5678e87</span> likewise bundles the M3 dispatch fix with the <span class="font-mono text-xs">inFlight</span> rename, the early return in <span class="font-mono text-xs">hold</span> and the test stand-aside change. It can be fixed only by rewriting history before the merge, or by accepting it.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/RegisterEffectsTest.java</td>
+              <td class="px-4 py-2">279</td>
+              <td class="px-4 py-2">S2, in part. <span class="font-mono text-xs">InFlightWork.Work</span> now names its sets by step (<span class="font-mono text-xs">actedAtSubmit</span>, &hellip;). The test local <span class="font-mono text-xs">submitterReviews</span> still uses a <span class="font-mono text-xs">CONTEXT.md</span> avoid-word (&ldquo;submitter&rdquo;).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">register/InFlightWork.java, register/PreviewRow.java, frontend/src/api/systemRegister.ts</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">S5, in part. <span class="font-mono text-xs">SubmissionStore.Unfinished</span> is now <span class="font-mono text-xs">InFlight</span>. Still, one concept has three names: <span class="font-mono text-xs">InFlightWork.Work</span>, <span class="font-mono text-xs">PreviewRow.InFlight</span> and the front end&rsquo;s <span class="font-mono text-xs">InFlightSubmission</span>. Also, <span class="font-mono text-xs">SubmissionStore.Finished</span> uses a word the glossary calls &ldquo;final state&rdquo;.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">submission/OverdueSweep.java</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">SC1. Clearing a moved Not Started System&rsquo;s Overdue flag is not in the ticket body. ADR 0033 handed this decision to ticket 43, and it is tested. Since <span class="font-mono text-xs">ffc2d4a</span>, it is a listener on <span class="font-mono text-xs">SystemChangeEvent.MOVED</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">SubmissionStore, CycleLifecycle, RegisterScreen.tsx</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">SC2. Unrelated refactors widen the diff: <span class="font-mono text-xs">lockCycleForClose</span> to <span class="font-mono text-xs">lockCycle</span>, <span class="font-mono text-xs">NotEndorsed</span> to <span class="font-mono text-xs">Finished</span>, and the <span class="font-mono text-xs">RegisterIntro</span> extraction. All are harmless.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-3 text-sm text-slate-600 border-t border-slate-100">
+          <p class="font-medium text-slate-700">Resolved since the review (verified at a37f2e0)</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li><strong>S3 (Medium).</strong> Before: duplicated classify wiring across upload and apply. Now <span class="font-mono text-xs">WorkEffects</span> is a package-private <span class="font-mono text-xs">@Component</span> that owns <span class="font-mono text-xs">InFlightWork</span>, <span class="font-mono text-xs">RegisterSystems</span> and <span class="font-mono text-xs">CycleCalendar</span> (<span class="font-mono text-xs">ffc2d4a</span>).</li>
+            <li><strong>SP1 (Medium).</strong> Before: no test of a move in an older Cycle. <span class="font-mono text-xs">CycleOverlapTest.aMoveOfASystemWhoseOnlyInFlightWorkIsInTheOlderCycleIsAnOrdinaryUpdate</span> asserts UPDATE with no effects and <span class="font-mono text-xs">canApply</span>.</li>
+            <li><strong>S4.</strong> <span class="font-mono text-xs">InFlightWork.moved</span> is deleted; the reset is <span class="font-mono text-xs">OverdueSweep</span>&rsquo;s listener.</li>
+            <li><strong>S6.</strong> The <span class="font-mono text-xs">List&lt;Object&gt;</span> key is replaced by a private <span class="font-mono text-xs">record Shown</span>.</li>
+            <li><strong>S7.</strong> <span class="font-mono text-xs">withdrawals</span> and <span class="font-mono text-xs">rowKey</span> moved to <span class="font-mono text-xs">registerPreviewText.ts</span>.</li>
+            <li><strong>SP2.</strong> <span class="font-mono text-xs">aRescanStillBeingCheckedHoldsTheRetirementBackToo</span> covers the rescan.</li>
+            <li><strong>SP3.</strong> <span class="font-mono text-xs">aVaPocWhoReturnedTheVaSubmissionMayNotBecomeItsSmoOrCyberManager</span> covers the endorsing-step branch for both roles.</li>
+            <li><strong>SP4.</strong> The grouping mismatch is gone with thermo-nuclear M1. The Blocked group now holds only rows the file blocks, which matches <span class="font-mono text-xs">counts.blocked</span>. Held-back rows sit under their outcome with their reasons.</li>
+          </ul>
+        </div>
+      </details>
+
+      <!-- semgrep -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep <span class="text-xs text-slate-400">(1cf08f7)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-600 space-y-1">
+          <p>Semgrep 1.179.0, rulesets <span class="font-mono text-xs">p/security-audit</span> and <span class="font-mono text-xs">p/default</span>, with metrics off:</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li>Source (<span class="font-mono text-xs">backend/src</span> and <span class="font-mono text-xs">frontend/src</span>): 415 targets, 362 rules, 0 findings.</li>
+            <li>The 13 changed test files, scanned from a copy: 1 finding.</li>
+          </ul>
+          <p>A manual cross-check found that the new SQL is constant text with named parameters, the front end has no raw HTML, and no secrets were added. Not rescanned after <span class="font-mono text-xs">1cf08f7</span>. The aggregator read the later SQL changes: the renamed constants are unchanged in shape, and <span class="font-mono text-xs">standAside</span> now binds a parameter. Neither builds SQL from input.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/harness/TestEndpoints.java</td>
+              <td class="px-4 py-2">409</td>
+              <td class="px-4 py-2">L1, pre-existing and outside this diff. <span class="font-mono text-xs">java.spring.security.injection.tainted-sql-string</span> fires because <span class="font-mono text-xs">reportFileFault</span> concatenates <span class="font-mono text-xs">{prefix}</span> into a <span class="font-mono text-xs">CREATE TRIGGER</span> string. The value is allow-listed by <span class="font-mono text-xs">[A-Z_]+</span>, and the endpoint is a test-only harness. Effectively a false positive.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-3 text-sm text-slate-600 border-t border-slate-100">
+          <p class="font-medium text-slate-700">Resolved since the review</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li>The cosmetic note (not counted) about the orphaned Javadoc above <span class="font-mono text-xs">standAside</span> is fixed (thermo-nuclear round 2, M5).</li>
+          </ul>
+        </div>
+      </details>
+
+      <!-- im8 -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8 <span class="text-xs text-slate-400">(1cf08f7)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-600 space-y-1">
+          <p>The following controls PASS:</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li>as-2: parameterised SQL;</li>
+            <li>as-3: text-only rendering;</li>
+            <li>as-7 / ac-1: VA_POC only;</li>
+            <li>as-12: <span class="font-mono text-xs">FILES_SCANNING</span> enforces the 2026-10-18 decision;</li>
+            <li>as-13: constant refusal sentences;</li>
+            <li>lm-4: one <span class="font-mono text-xs">SUBMISSION_WITHDRAWN</span> entry for each withdrawal;</li>
+            <li>lm-19: <span class="font-mono text-xs">Work.toString</span> leaves out emails;</li>
+            <li>ac-2: step-up is the apply&rsquo;s first statement.</li>
+          </ul>
+          <p>Nothing in the diff weakens a control.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/register/SystemRegisterController.java; RegisterApply.java</td>
+              <td class="px-4 py-2">106, 117; 121</td>
+              <td class="px-4 py-2">L-1 (as-1), still open at <span class="font-mono text-xs">a37f2e0</span>. <span class="font-mono text-xs">ApplyRequest.withdraw</span> is a <span class="font-mono text-xs">List&lt;UUID&gt;</span> with no check on its elements or its size. <span class="font-mono text-xs">{"withdraw":[null]}</span> reaches <span class="font-mono text-xs">Set.copyOf</span>, which throws and gives a 500 <span class="font-mono text-xs">internal-error</span> instead of a 400 <span class="font-mono text-xs">withdrawal-unconfirmed</span>. The list has no upper bound. Mitigations: VA_POC only, a fresh sign-in is required, and the list must match the preview exactly. Refuse a null element or an over-long list with <span class="font-mono text-xs">withdrawal-unconfirmed</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterApply.java</td>
+              <td class="px-4 py-2">168-175</td>
+              <td class="px-4 py-2">L-2 (lm-4), still open. The <span class="font-mono text-xs">REGISTER_APPLIED</span> entry records the added, updated, retired, unchanged and role counts, but not <span class="font-mono text-xs">withdrawn</span>, although <span class="font-mono text-xs">Applied</span> returns it. Each withdrawal is audited on its own. Add a <span class="font-mono text-xs">WITHDRAWN</span> detail (an integer).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionStore.java</td>
+              <td class="px-4 py-2">63</td>
+              <td class="px-4 py-2">L-3 (lm-19), still open. <span class="font-mono text-xs">record ActedBy(UUID submissionId, SubmissionStep step, String email)</span> keeps the default <span class="font-mono text-xs">toString</span>, which includes the email. Nothing logs it, but it is inconsistent with <span class="font-mono text-xs">Work</span>. Override it, as <span class="font-mono text-xs">Work</span> does.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-400">Deferred</td>
+              <td class="px-4 py-2 font-mono text-xs">(project-wide)</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">D-1 (pm-6 / lm-16), a tracked deferral to ticket 52 that does not block. There is no committed OpenAPI spec for the changed apply body or the new preview fields, and no meter for withdrawals or <span class="font-mono text-xs">work-changed</span>. Not counted.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-3 text-sm text-slate-600 border-t border-slate-100">
+          <p class="font-medium text-slate-700">Manual review checklist (carried for a human)</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li>ADR 0049 item 6 (provisional): confirm that the Quarter board&rsquo;s Withdrawn column stays empty.</li>
+            <li>Should a single VA POC be able to withdraw without a second approver? The same question was left open at ticket 41.</li>
+            <li>Confirm that Register emails are stored lower-case on every path into <span class="font-mono text-xs">va_system</span>. The segregation-of-duties comparison relies on it.</li>
+            <li>Confirm that retiring a System withdraws its in-flight work even in an older, frozen Cycle during an overlap, while <span class="font-mono text-xs">olderCycles</span> applies only to moves.</li>
+            <li>In SIT, confirm that MCC SSO honours <span class="font-mono text-xs">prompt=login</span> / <span class="font-mono text-xs">max_age=0</span> for <span class="font-mono text-xs">register-apply</span>.</li>
+          </ul>
+        </div>
+      </details>
+
+      <!-- react -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react <span class="text-xs text-slate-400">(1cf08f7)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-600 space-y-1">
+          <p>These hold:</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li>render purity;</li>
+            <li>immutable <span class="font-mono text-xs">Set</span> updates;</li>
+            <li>stable callbacks and effect dependencies;</li>
+            <li>keys;</li>
+            <li>controlled checkboxes;</li>
+            <li>derived state;</li>
+            <li>the restored draft treated as untrusted and filtered to the reopened preview;</li>
+            <li>error paths for 400 and 409;</li>
+            <li>text-only rendering.</li>
+          </ul>
+          <p>The later front-end commits (<span class="font-mono text-xs">442426e</span>, <span class="font-mono text-xs">db11150</span>) were reviewed by thermo-nuclear round 2 and by the aggregator.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/InFlightEffects.tsx</td>
+              <td class="px-4 py-2">75</td>
+              <td class="px-4 py-2">L2, still open. The confirmation label reads &ldquo;Withdraw the {state} VA Submission of {systemId}&rdquo; with no VA Cycle. A retired System with work in two Cycles therefore gets two identical accessible names. Add &ldquo;(VA Cycle {cycle})&rdquo;, as <span class="font-mono text-xs">InFlightList</span> already does at line 36, and stack the labels.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/RegisterPreviewPanel.tsx</td>
+              <td class="px-4 py-2">232</td>
+              <td class="px-4 py-2">L3, still open. &ldquo;{counts.willWithdraw} to withdraw&rdquo; counts Systems, while the applied notice counts VA Submissions, so &ldquo;1 to withdraw&rdquo; can be followed by &ldquo;2 VA Submissions withdrawn&rdquo;. Word the summary by Systems, or show <span class="font-mono text-xs">withdrawals(preview).length</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/InFlightEffects.tsx; RegisterScreen.tsx</td>
+              <td class="px-4 py-2">72-73; 204</td>
+              <td class="px-4 py-2">L4, still open. While <span class="font-mono text-xs">applying</span>, the checkboxes are not disabled. <span class="font-mono text-xs">useState&lt;ReadonlySet&lt;string&gt;&gt;(new Set())</span> allocates a new <span class="font-mono text-xs">Set</span> on every render; use the lazy initialiser. <span class="font-mono text-xs">confirmed</span> keeps stale ids after a successful apply until the next <span class="font-mono text-xs">restart</span>.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-3 text-sm text-slate-600 border-t border-slate-100">
+          <p class="font-medium text-slate-700">Resolved since the review (verified at a37f2e0)</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li><strong>L1.</strong> <span class="font-mono text-xs">withdrawals(preview)</span> was exported from a component module. It now lives in <span class="font-mono text-xs">registerPreviewText.ts</span>, and <span class="font-mono text-xs">RegisterPreviewPanel.tsx</span> imports it. <span class="font-mono text-xs">InFlightEffects.tsx</span> exports components only (<span class="font-mono text-xs">Group</span>, <span class="font-mono text-xs">InFlightEffects</span>, <span class="font-mono text-xs">Reasons</span>).</li>
+          </ul>
+        </div>
+      </details>
+
+      <!-- springboot -->
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot <span class="text-xs text-slate-400">(1cf08f7)</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-3 text-sm text-slate-600 space-y-1">
+          <p>Results by skill:</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li>core: PASS;</li>
+            <li>web: PASS;</li>
+            <li>data: PASS. SQL uses named parameters, and the lock order is the Register apply lock, then the Cycle locks, then VA Submission rows. There is no I/O inside the transaction. V144_43 (formerly V143) keeps every earlier action;</li>
+            <li>batch: N/A;</li>
+            <li>security: PASS;</li>
+            <li>logging: PASS;</li>
+            <li>test: PASS. Seam 1 runs on Testcontainers with a fake clock.</li>
+          </ul>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/register/SystemRegisterController.java; RegisterApply.java</td>
+              <td class="px-4 py-2">106, 117; 121</td>
+              <td class="px-4 py-2">L1 (web), the same issue as im8 L-1. A null id in <span class="font-mono text-xs">withdraw</span> gives a 500 after every lock is taken. The transaction rolls back, but a client bug becomes a server error. Refuse it before any lock, following <span class="font-mono text-xs">BulkProposalRequest</span>&rsquo;s pattern.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/InFlightSubmissions.java</td>
+              <td class="px-4 py-2">105</td>
+              <td class="px-4 py-2">L2 (data), in part. The full readiness check (3 queries) is now the narrow <span class="font-mono text-xs">SubmitReadiness.filesScanning</span>. It still runs once per in-flight VA Submission, under the apply&rsquo;s Cycle locks (thermo-nuclear L1).</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/SubmissionStore.java</td>
+              <td class="px-4 py-2">63</td>
+              <td class="px-4 py-2">L4 (logging), the same issue as im8 L-3. <span class="font-mono text-xs">ActedBy</span>&rsquo;s default <span class="font-mono text-xs">toString</span> includes the email.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/register/InFlightWork.java</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">L5 (security, defence in depth). The public port <span class="font-mono text-xs">InFlightWork.withdraw</span> relies on its caller&rsquo;s <span class="font-mono text-xs">@PreAuthorize</span> and step-up. <span class="font-mono text-xs">ArchitectureTest</span> has no rule that limits who may depend on it. Add one that names <span class="font-mono text-xs">WorkEffects</span> / <span class="font-mono text-xs">RegisterApply</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/RegisterEffectsTest.java</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">L6 (test), in part. The older-Cycle move and the endorsing-step segregation branches are now tested. Still untested: reading a preview stored before ticket 43 (null <span class="font-mono text-xs">effects</span> / <span class="font-mono text-xs">inFlight</span>), and duplicate or null ids in <span class="font-mono text-xs">withdraw</span>.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/RegisterEffectsTest.java</td>
+              <td class="px-4 py-2">322</td>
+              <td class="px-4 py-2">L7 (test), still open. <span class="font-mono text-xs">aWithdrawnVaSubmissionLeavesTheBoardsAndTheirCounts</span> asserts only which cards are listed, not any count. Assert the counts or rename the test.</td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">harness/Arrange.java, harness/TestEndpoints.java, register/RegisterSeam1.java, ingestion/RegisterEffectsTest.java</td>
+              <td class="px-4 py-2">&ndash;</td>
+              <td class="px-4 py-2">L8 (test, style). Fully qualified names are written inline instead of imported. <span class="font-mono text-xs">5678e87</span> added more in <span class="font-mono text-xs">standAside</span> (<span class="font-mono text-xs">java.util.Arrays</span>, <span class="font-mono text-xs">sg.annualva.submission.SubmissionState</span>).</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-3 text-sm text-slate-600 border-t border-slate-100">
+          <p class="font-medium text-slate-700">Resolved since the review (verified at a37f2e0)</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li><strong>L3 (core).</strong> <span class="font-mono text-xs">Applied.withdrawn</span> used to count what the preview planned. <span class="font-mono text-xs">InFlightWork.withdraw</span> now returns the count that <span class="font-mono text-xs">SubmissionStore.withdraw</span> actually moved, and the apply sums those counts (thermo-nuclear round-1 M4).</li>
+          </ul>
+        </div>
+      </details>
+    </main>
+  </body>
+</html>

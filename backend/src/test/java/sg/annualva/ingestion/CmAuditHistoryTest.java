@@ -89,8 +89,8 @@ class CmAuditHistoryTest extends ReviewSeam1 {
         String query = "submission=" + draft.submissionId();
         assertThat(items(history(cm, query))).isNotEmpty();
 
-        registered(List.of(listed("SYS-F1", "File one", SMO_A, CM_OTHER, "Q3"),
-                listed("SYS-F2", "File two", SMO_B, CM, "Q3")), List.of());
+        // Release 2's mid-cycle transfer: Release 1 blocks it while the VA Submission is in flight (ADR 0049).
+        registeredMidCycle(listed("SYS-F1", "File one", SMO_A, CM_OTHER, "Q3"), listed("SYS-F2", "File two", SMO_B, CM, "Q3"));
 
         assertNotFound(history(cm, query));
         assertThat(items(history(cm, ""))).as("nothing else to read").isEmpty();

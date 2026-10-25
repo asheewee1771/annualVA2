@@ -40,6 +40,7 @@ enum MailTemplate {
             case SYSTEM_MOVED -> mailed(REGISTER_CHANGE, "Moved to another Quarter");
             case SYSTEM_TRANSFERRED_TO_YOU -> mailed(REGISTER_CHANGE, "Transferred to you");
             case SYSTEM_TRANSFERRED_FROM_YOU -> mailed(REGISTER_CHANGE, "Transferred from you");
+            case WITHDRAWN -> mailed(REGISTER_CHANGE, "Withdrawn");
             case REVIEW, ENDORSE, NOT_ENDORSED, DECIDE_EXEMPTION, EXEMPTION_APPROVED, EXEMPTION_REJECTED ->
                     Optional.empty();
         };

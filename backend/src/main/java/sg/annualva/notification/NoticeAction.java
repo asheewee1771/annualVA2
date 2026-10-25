@@ -45,7 +45,12 @@ public enum NoticeAction {
     /** To the SMO/Tech Lead, once a VA POC approves their Exemption. */
     EXEMPTION_APPROVED("A VA POC approved the Exemption: this System is Exempted."),
     /** To the SMO/Tech Lead, once a VA POC rejects their Exemption and the VA Submission is back where it was. */
-    EXEMPTION_REJECTED("A VA POC rejected the Exemption: the VA Submission is back where it was before the request.");
+    EXEMPTION_REJECTED("A VA POC rejected the Exemption: the VA Submission is back where it was before the request."),
+    /**
+     * To the SMO/Tech Lead the Register last named, once a Register apply retired the System and its in-flight VA
+     * Submission became Withdrawn (ticket 43, story 94): nothing more is due from them.
+     */
+    WITHDRAWN("The System Register retired this System, so its VA Submission is Withdrawn: nothing more is due.");
 
     private final String message;
 

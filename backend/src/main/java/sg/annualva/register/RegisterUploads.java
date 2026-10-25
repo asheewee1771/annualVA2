@@ -52,9 +52,11 @@ public class RegisterUploads {
     private final CurrentUser user;
     private final Clock clock;
     private final TransactionTemplate transaction;
+    private final WorkEffects effects;
 
     RegisterUploads(RegisterStore store, MalwareScan scan, AuditLog audit, AuditActor actor, CurrentUser user,
-            Clock clock, TransactionTemplate transaction) {
+            Clock clock, TransactionTemplate transaction, WorkEffects effects) {
+        this.effects = effects;
         this.store = store;
         this.scan = scan;
         this.audit = audit;
@@ -112,7 +114,8 @@ public class RegisterUploads {
         Set<String> ids = new HashSet<>(PreviewBuilder.matchable(rows));
         existing.forEach(system -> ids.add(system.code()));
         Map<String, String> keys = store.foldedIds(ids);
-        List<PreviewRow> changes = PreviewBuilder.build(rows, existing, signedIn, id -> keys.getOrDefault(id, id));
+        List<PreviewRow> built = PreviewBuilder.build(rows, existing, signedIn, id -> keys.getOrDefault(id, id));
+        List<PreviewRow> changes = effects.preview(built, now);
         Instant expiresAt = now.plus(PREVIEW_LIFETIME);
         UUID id = store.insertUpload(user.id(), now, expiresAt, changes);
         audit.record(actor.attribute(AuditEvent.of(AuditAction.REGISTER_PREVIEWED, AuditOutcome.SUCCESS)

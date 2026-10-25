@@ -97,7 +97,7 @@ class CmInboxTest extends CyberManagerSeam1 {
         registered(listed("SYS-S1", "Once theirs", switched, CM, "Q3"), listed("SYS-S2", "Never theirs", SMO_A, CM, "Q3"));
         started(signedInAs(switched), "SYS-S1");
         started(signedInAs(SMO_A), "SYS-S2");
-        registered(listed("SYS-S1", "Once theirs", SMO_A, switched, "Q3"),
+        registeredMidCycle(listed("SYS-S1", "Once theirs", SMO_A, switched, "Q3"),
                 listed("SYS-S2", "Never theirs", SMO_A, switched, "Q3"));
 
         JsonNode inbox = cmInbox(signedInAs(switched));

@@ -44,6 +44,12 @@ class SubmitChecks implements SubmitReadiness {
         return readiness(submissionId).blockers();
     }
 
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public boolean filesScanning(UUID submissionId) {
+        return !files.of(submissionId).scanning().isEmpty();
+    }
+
     /**
      * The progress counts, the files whose age stands in the way, every reason it cannot be submitted now, and, from the
      * same counts and Scan Reports with no further query, what the Cyber Manager's return and pass to endorsement judge
