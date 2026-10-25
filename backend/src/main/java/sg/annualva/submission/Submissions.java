@@ -209,6 +209,11 @@ public class Submissions {
         }
     }
 
+    /** Starting and submitting: the SMO/Tech Lead, in Draft or Returned for Rework (a start has just made it a Draft). */
+    private static final Gate SUBMITTING = new Gate(SubmissionStep.SUBMIT,
+            Set.of(SubmissionState.DRAFT, SubmissionState.RETURNED_FOR_REWORK), "state-not-submittable",
+            "This VA Submission can be submitted only from Draft or Returned for Rework.");
+
     /** Reviewing, returning and passing to endorsement: the Cyber Manager, In Review. */
     private static final Gate REVIEWING = new Gate(SubmissionStep.REVIEW, Set.of(SubmissionState.IN_REVIEW),
             "state-not-reviewable",
@@ -338,7 +343,10 @@ public class Submissions {
     }
 
     /**
-     * Starts the VA Submission for a System the caller is SMO/Tech Lead of.
+     * Starts the VA Submission for a System the caller is SMO/Tech Lead of. Ownership comes first, then the Cycle and the
+     * Quarter ({@link #placed}); the VA Submission is then created in Draft (or a Not Started one taken) and passes the
+     * submitting step's gate ({@link #atStep}) as a submit does, which records the caller there. A refusal at the gate
+     * rolls the creation back.
      *
      * @param cycleYear the VA Cycle's year; null for the one running today (before the first live Cycle starts, that
      *     Cycle)
@@ -352,17 +360,15 @@ public class Submissions {
     @Transactional
     public Submission start(UUID systemId, @Nullable Integer cycleYear) {
         register.active(systemId, Need.SUBMIT);
-        AuditEvent refused = actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_STARTED, AuditOutcome.REFUSED))
-                .onSystem(systemId);
-        sod.require(SubmissionStep.SUBMIT, systemId, null, refused);
+        AuditEvent refusedAs = actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_STARTED, AuditOutcome.REFUSED));
+        AuditEvent refused = refusedAs.onSystem(systemId);
         Quarter quarter = placed(systemId, cycleYear, refused);
         Instant now = clock.instant();
-        UUID caller = user.id();
         UUID id = inserted(systemId, quarter, SubmissionState.DRAFT, now)
-                .or(() -> store.takeNotStarted(systemId, quarter.cycle(), now, calendar.dateOf(now), caller))
+                .or(() -> store.takeNotStarted(systemId, quarter.cycle(), now, calendar.dateOf(now), user.id()))
                 .orElseThrow(() -> refusedWith(refused, "already-started",
                         "This System already has a VA Submission in this VA Cycle."));
-        store.recordParticipation(id, caller, SubmissionStep.SUBMIT, now);
+        atStep(id, SUBMITTING, refusedAs, Hold.EXCLUSIVE);
         audit.record(actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_STARTED, AuditOutcome.SUCCESS))
                 .onSystem(systemId).onSubmission(id).with(DetailKey.STATE_TO, SubmissionState.DRAFT.name()));
         return view(id);
@@ -432,31 +438,22 @@ public class Submissions {
      *     {@code reasons}, the Declaration's included
      */
     @Transactional
-    public Submission submit(UUID id, DeclarationAnswer answer) {
-        UUID systemId = owned(id).systemId();
-        SubmissionStore.Located held = store.lockForMove(id).orElseThrow(ResourceNotFoundException::new);
-        sod.require(SubmissionStep.SUBMIT, systemId, id, refusedSubmit(id, systemId));
-        requireOpenCycle(held.cycleYear(), refusedSubmit(id, systemId));
-        requireEditable(held, id, systemId, this::notSubmittable);
-        SubmissionState from = SubmissionState.valueOf(held.state());
+    public Submission submit(UUID id, DeclarationAnswer answer) {        AtStep target = atStep(id, SUBMITTING,
+                actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_SUBMITTED, AuditOutcome.REFUSED)), Hold.EXCLUSIVE);
         Declarations.Text declaration = store.currentDeclarationText();
         List<SubmitReadiness.Blocker> blockers = new ArrayList<>(readiness.blockers(id));
         declarationBlocker(answer, declaration.version()).ifPresent(blockers::add);
         if (!blockers.isEmpty()) {
-            throw notReady(systemId, id, blockers);
+            throw notReady(target, blockers);
         }
         Instant now = clock.instant();
         UUID caller = user.id();
-        store.acceptDeclaration(id, declaration.version(), caller, now);
-        store.submitted(id, SubmissionState.IN_REVIEW, caller, now, calendar.dateOf(now));
-        store.recordParticipation(id, caller, SubmissionStep.SUBMIT, now);
-        audit.record(actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_SUBMITTED, AuditOutcome.SUCCESS))
-                .onSystem(systemId).onSubmission(id)
-                .with(DetailKey.STATE_FROM, from.name())
-                .with(DetailKey.STATE_TO, SubmissionState.IN_REVIEW.name())
-                .with(DetailKey.DECLARATION_VERSION, declaration.version()));
-        publish(id, systemId, from, SubmissionState.IN_REVIEW, now);
-        return view(id);
+        return moved(target, SubmissionState.IN_REVIEW, now, today -> {
+            store.acceptDeclaration(id, declaration.version(), caller, now);
+            store.submitted(id, SubmissionState.IN_REVIEW, caller, now, today);
+            return AuditEvent.of(AuditAction.SUBMISSION_SUBMITTED, AuditOutcome.SUCCESS)
+                    .with(DetailKey.DECLARATION_VERSION, declaration.version());
+        });
     }
 
     /** The Declaration stands in the way unless the current version was ticked. */
@@ -912,27 +909,14 @@ public class Submissions {
         return new RejectedRequestException(HttpStatus.CONFLICT, NOT_ALLOWED_NOW, detail);
     }
 
-    /** A submit of a VA Submission not in Draft or Returned for Rework: audited in a transaction of its own, then 409. */
-    private RejectedRequestException notSubmittable(UUID id, UUID systemId) {
-        audit.recordIndependently(refusedSubmit(id, systemId).with(DetailKey.REASON, "state-not-submittable"));
-        return new RejectedRequestException(HttpStatus.CONFLICT, NOT_ALLOWED_NOW,
-                "This VA Submission can be submitted only from Draft or Returned for Rework.");
-    }
-
     /**
      * A submit with something in the way: audited in a transaction of its own with how many reasons there are, then 409
      * {@code not-ready} listing them.
      */
-    private RejectedRequestException notReady(UUID systemId, UUID id, List<SubmitReadiness.Blocker> blockers) {
-        audit.recordIndependently(refusedSubmit(id, systemId).with(DetailKey.REASON, "not-ready")
+    private RejectedRequestException notReady(AtStep target, List<SubmitReadiness.Blocker> blockers) {
+        audit.recordIndependently(target.refused().with(DetailKey.REASON, "not-ready")
                 .with(DetailKey.COUNT, blockers.size()));
         return RejectedRequestException.withReasons(HttpStatus.CONFLICT, "not-ready",
                 "This VA Submission cannot be submitted yet. Each reason says what to do.", blockers);
-    }
-
-    /** A refused submit's entry, before its reason: attributed to the caller, about the System and the VA Submission. */
-    private AuditEvent refusedSubmit(UUID id, UUID systemId) {
-        return actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_SUBMITTED, AuditOutcome.REFUSED))
-                .onSystem(systemId).onSubmission(id);
     }
 }
