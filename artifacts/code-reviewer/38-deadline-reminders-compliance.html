@@ -60,7 +60,7 @@
               <td class="px-4 py-2">Carried over (round 1)</td>
               <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
               <td class="px-4 py-2 font-mono text-xs">0 / 0 / 3 / 10</td>
-              <td class="px-4 py-2">S1 (shared OpenQuarters) and P2 (weekly cadence from the flag day) addressed in 70af445. P1 (copies on weekly reminders only) and P3 (VA POC copy pairing) remain provisional decisions in ADR 0051.</td>
+              <td class="px-4 py-2">S1 (shared OpenQuarters) and P2 (weekly cadence from the flag day) addressed in 70af445. P1 (copies on weekly reminders only) and P3 (VA POC copy pairing) remain provisional decisions in ADR 0052.</td>
             </tr>
             <tr>
               <td class="px-4 py-2 font-medium">semgrep</td>
@@ -108,7 +108,7 @@
             <li><strong>springboot M2</strong> (no rule limits <span class="font-mono text-xs">WaitingWork</span>): addressed in 70af445. An ArchUnit rule now limits <span class="font-mono text-xs">WaitingWork</span> to the planner. This also covers im8 ac-1 (L-1).</li>
             <li><strong>code-review P2</strong> (weekly cadence anchored to the due date): addressed in 70af445. The weekly cadence now counts from the day the Overdue flag was set.</li>
             <li><strong>code-review S1</strong> (duplicated Cycle/Quarter traversal): addressed in 70af445 by the shared <span class="font-mono text-xs">OpenQuarters</span>.</li>
-            <li><strong>code-review P1</strong> (Cyber Manager copied on the weekly Overdue reminders only) and the <strong>copy / VA POC pairing</strong> (code-review P3): remain <strong>provisional decisions</strong> recorded in ADR 0051, awaiting a human decision.</li>
+            <li><strong>code-review P1</strong> (Cyber Manager copied on the weekly Overdue reminders only) and the <strong>copy / VA POC pairing</strong> (code-review P3): remain <strong>provisional decisions</strong> recorded in ADR 0052, awaiting a human decision.</li>
           </ul>
         </div>
       </div>
@@ -236,7 +236,7 @@
               <td class="px-4 py-3 text-amber-600">Medium</td>
               <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/DeadlineReminders.java</td>
               <td class="px-4 py-3">84-87, 96-99</td>
-              <td class="px-4 py-3"><strong>P1. Copies go on the weekly Overdue reminders only</strong>; story 89 can be read as every SMO reminder. <span class="text-amber-700 font-semibold">Provisional decision in ADR 0051</span>, awaiting a human decision.</td>
+              <td class="px-4 py-3"><strong>P1. Copies go on the weekly Overdue reminders only</strong>; story 89 can be read as every SMO reminder. <span class="text-amber-700 font-semibold">Provisional decision in ADR 0052</span>, awaiting a human decision.</td>
             </tr>
             <tr>
               <td class="px-4 py-3 text-amber-600">Medium</td>
@@ -296,7 +296,7 @@
               <td class="px-4 py-3 text-slate-500">Low</td>
               <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/Notifications.java</td>
               <td class="px-4 py-3">86</td>
-              <td class="px-4 py-3"><strong>P3. VA POC copies are separate items nothing clears</strong>, departing from the spec&rsquo;s paired VA POC items. <span class="text-amber-700 font-semibold">Provisional decision in ADR 0051</span> (copy / VA POC pairing), awaiting sign-off.</td>
+              <td class="px-4 py-3"><strong>P3. VA POC copies are separate items nothing clears</strong>, departing from the spec&rsquo;s paired VA POC items. <span class="text-amber-700 font-semibold">Provisional decision in ADR 0052</span> (copy / VA POC pairing), awaiting sign-off.</td>
             </tr>
             <tr>
               <td class="px-4 py-3 text-slate-500">Low</td>
@@ -473,9 +473,9 @@
             </tr>
             <tr>
               <td class="px-4 py-3 text-slate-500">Low</td>
-              <td class="px-4 py-3 font-mono text-xs">backend/src/main/resources/db/migration/V144_43_38__deadline_reminders.sql</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/resources/db/migration/V149_42_38__deadline_reminders.sql</td>
               <td class="px-4 py-3">11</td>
-              <td class="px-4 py-3"><strong>L5.</strong> Full unique index on <span class="font-mono text-xs">(recipient_id, dedupe_key)</span> indexes every notification row; a partial index would do. (Round-2 thermo-nuclear reports a partial unique index on <span class="font-mono text-xs">reminder_on</span> in V149_38.)</td>
+              <td class="px-4 py-3"><strong>L5.</strong> Full unique index on <span class="font-mono text-xs">(recipient_id, dedupe_key)</span> indexes every notification row; a partial index would do. (Round-2 thermo-nuclear reports a partial unique index on <span class="font-mono text-xs">reminder_on</span> in V149_42_38.)</td>
             </tr>
             <tr>
               <td class="px-4 py-3 text-slate-500">Low</td>
