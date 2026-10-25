@@ -12,7 +12,7 @@ import tools.jackson.databind.JsonNode;
 /**
  * Stories 88, 89 and 90 (ticket 38): the daily planner reminds whoever's step it is before and on the last day of the
  * window their VA Submission (or Not Started System) waits on, then weekly while it is Overdue with a copy to the next
- * person up, and reminds both VA POCs 2 weeks and 1 week before the Quarter's last day. Q3 of VA Cycle 2027: the
+ * person up, and reminds both VA POCs 2 weeks and 1 week before endorsement is due (the Quarter's last day). Q3 of VA Cycle 2027: the
  * Submission Window ends on Sunday 15 August, the Review Window on Sunday 29 August and the Quarter on Sunday 31 October.
  * SYS-F1 (SMO_A, CM) has a VA Submission; SYS-F2 (SMO_B, CM_OTHER) is Not Started.
  */
@@ -157,7 +157,7 @@ class DeadlineReminderTest extends MailSeam1 {
     }
 
     @Test
-    void bothVaPocsAreRemindedTwoWeeksAndOneWeekBeforeTheQuarterEndsAndEitherEndorsingClearsItForBoth() {
+    void bothVaPocsAreRemindedTwoWeeksAndOneWeekBeforeEndorsementIsDueAndEitherEndorsingClearsItForBoth() {
         Draft draft = awaitingEndorsement();
         String sub = draft.submissionId();
 
