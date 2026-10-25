@@ -1,12 +1,12 @@
 package sg.annualva.export;
 
 import static sg.annualva.jdbc.Timestamps.instant;
+import static sg.annualva.jdbc.Timestamps.requiredInstant;
 import static sg.annualva.jdbc.Timestamps.utc;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -141,7 +141,7 @@ class ExportStore {
 
     private static Export export(ResultSet rs, int row) throws SQLException {
         return new Export(rs.getObject("id", UUID.class), rs.getObject("requested_by", UUID.class),
-                rs.getObject("requested_at", OffsetDateTime.class).toInstant(), ExportType.valueOf(rs.getString("export_type")),
+                requiredInstant(rs, "requested_at"), ExportType.valueOf(rs.getString("export_type")),
                 ExportFormat.valueOf(rs.getString("format")), rs.getInt("cycle"), rs.getObject("quarter", Integer.class),
                 Classification.valueOf(rs.getString("classification")), rs.getInt("system_count"),
                 ExportStatus.valueOf(rs.getString("status")), rs.getString("file_key"), instant(rs, "ready_at"),

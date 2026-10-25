@@ -1,11 +1,11 @@
 package sg.annualva.finding;
 
+import static sg.annualva.jdbc.Timestamps.requiredInstant;
 import static sg.annualva.jdbc.Timestamps.utc;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
@@ -243,6 +243,6 @@ class ReviewStore {
         return new ReviewView(id, ReviewDecision.valueOf(rs.getString("review_decision")),
                 rs.getString("review_comment"), proposalId, justification, justificationVersion,
                 rs.getObject("review_by", UUID.class),
-                rs.getObject("review_at", OffsetDateTime.class).toInstant());
+                requiredInstant(rs, "review_at"));
     }
 }

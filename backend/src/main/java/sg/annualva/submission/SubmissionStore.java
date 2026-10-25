@@ -1,12 +1,13 @@
 package sg.annualva.submission;
 
+import static sg.annualva.jdbc.Timestamps.instant;
+import static sg.annualva.jdbc.Timestamps.requiredInstant;
 import static sg.annualva.jdbc.Timestamps.utc;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -527,7 +528,7 @@ class SubmissionStore {
         return jdbc.sql(RETURNS).param("submission", submissionId).query((rs, row) -> {
             UUID id = rs.getObject("id", UUID.class);
             return new Submissions.Return(id, SubmissionStep.valueOf(rs.getString("step")), rs.getString("comment"),
-                    rs.getObject("returned_by", UUID.class), instant(rs, "returned_at"),
+                    rs.getObject("returned_by", UUID.class), requiredInstant(rs, "returned_at"),
                     findings.getOrDefault(id, List.of()), reports.getOrDefault(id, List.of()));
         }).list();
     }
@@ -585,7 +586,7 @@ class SubmissionStore {
         if (!systemIds.isEmpty()) {
             jdbc.sql(NOT_STARTED_OVERDUE).param("cycle", cycleYear).param("systems", ids(systemIds))
                     .query(rs -> {
-                        flagged.put(rs.getObject("system_id", UUID.class), instant(rs, "overdue_since"));
+                        flagged.put(rs.getObject("system_id", UUID.class), requiredInstant(rs, "overdue_since"));
                     });
         }
         return flagged;
@@ -639,7 +640,7 @@ class SubmissionStore {
     List<Submissions.Acted> participation(UUID submissionId) {
         return jdbc.sql(PARTICIPATION).param("id", submissionId).query((rs, row) -> new Submissions.Acted(
                 SubmissionStep.valueOf(rs.getString("step")), rs.getObject("user_id", UUID.class),
-                instant(rs, "first_at"))).list();
+                requiredInstant(rs, "first_at"))).list();
     }
 
     /** The current Declaration wording; V19 seeds a version, so there always is one. */
@@ -664,7 +665,7 @@ class SubmissionStore {
     Optional<Submissions.AcceptedDeclaration> latestDeclaration(UUID submissionId) {
         return jdbc.sql(LATEST_DECLARATION).param("submission", submissionId)
                 .query((rs, row) -> new Submissions.AcceptedDeclaration(rs.getInt("version"), rs.getString("text"),
-                        rs.getObject("accepted_by", UUID.class), instant(rs, "accepted_at")))
+                        rs.getObject("accepted_by", UUID.class), requiredInstant(rs, "accepted_at")))
                 .optional();
     }
 
@@ -804,19 +805,12 @@ class SubmissionStore {
                 rs.getInt("quarter"), SubmissionState.valueOf(rs.getString("state")), rs.getBoolean("overdue"),
                 rs.getBoolean("endorsed_late"), rs.getObject("submit_due", LocalDate.class),
                 rs.getObject("review_due", LocalDate.class), rs.getObject("endorse_due", LocalDate.class),
-                nullableInstant(rs, "started_at"), nullableInstant(rs, "submitted_at"), nullableInstant(rs, "overdue_since"),
-                rs.getObject("due_on", LocalDate.class), nullableInstant(rs, "passed_to_endorsement_at"),
-                nullableInstant(rs, "endorsed_at"), rs.getBoolean("exemption_lapsed"));
+                instant(rs, "started_at"), instant(rs, "submitted_at"), instant(rs, "overdue_since"),
+                rs.getObject("due_on", LocalDate.class), instant(rs, "passed_to_endorsement_at"),
+                instant(rs, "endorsed_at"), rs.getBoolean("exemption_lapsed"));
     }
 
-    private static @Nullable Instant nullableInstant(ResultSet rs, String column) throws SQLException {
-        OffsetDateTime value = rs.getObject(column, OffsetDateTime.class);
-        return value == null ? null : value.toInstant();
-    }
 
-    private static Instant instant(ResultSet rs, String column) throws SQLException {
-        return rs.getObject(column, OffsetDateTime.class).toInstant();
-    }
 
     private static String[] ids(Collection<UUID> ids) {
         return ids.stream().map(UUID::toString).toArray(String[]::new);

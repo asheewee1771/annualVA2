@@ -1,13 +1,13 @@
 package sg.annualva.notification;
 
 import static sg.annualva.jdbc.Timestamps.instant;
+import static sg.annualva.jdbc.Timestamps.requiredInstant;
 import static sg.annualva.jdbc.Timestamps.utc;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -116,7 +116,7 @@ class NotificationStore {
         return new Row(rs.getObject("id", UUID.class), rs.getObject("system_id", UUID.class),
                 rs.getObject("submission_id", UUID.class), SubmissionState.valueOf(rs.getString("state")),
                 NoticeAction.valueOf(rs.getString("action")), rs.getObject("due_on", LocalDate.class),
-                rs.getString("link"), rs.getObject("created_at", OffsetDateTime.class).toInstant(),
+                rs.getString("link"), requiredInstant(rs, "created_at"),
                 instant(rs, "read_at"), rs.getString("handled_by"), instant(rs, "handled_at"));
     }
 

@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.context.ApplicationEventPublisher;
@@ -80,7 +81,7 @@ class InFlightSubmissions implements InFlightWork {
     public int withdraw(Collection<UUID> submissionIds, UUID previewId, Instant now) {
         List<SubmissionStore.Finished> withdrawn = store.withdraw(submissionIds, calendar.dateOf(now));
         for (SubmissionStore.Finished item : withdrawn) {
-            SubmissionState from = java.util.Objects.requireNonNull(item.from(), "a withdrawn VA Submission had a state");
+            SubmissionState from = Objects.requireNonNull(item.from(), "a withdrawn VA Submission had a state");
             audit.record(actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_WITHDRAWN, AuditOutcome.SUCCESS))
                     .onSystem(item.systemId()).onSubmission(item.id())
                     .with(DetailKey.STATE_FROM, from.name())

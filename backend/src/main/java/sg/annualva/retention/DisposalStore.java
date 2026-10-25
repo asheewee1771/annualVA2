@@ -1,13 +1,13 @@
 package sg.annualva.retention;
 
 import static sg.annualva.jdbc.Timestamps.instant;
+import static sg.annualva.jdbc.Timestamps.requiredInstant;
 import static sg.annualva.jdbc.Timestamps.utc;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -321,7 +321,7 @@ class DisposalStore {
 
     private static ListRow list(ResultSet rs, int row) throws SQLException {
         return new ListRow(rs.getObject("id", UUID.class), ListStatus.valueOf(rs.getString("status")),
-                rs.getObject("computed_on", LocalDate.class), rs.getObject("created_at", OffsetDateTime.class).toInstant(),
+                rs.getObject("computed_on", LocalDate.class), requiredInstant(rs, "created_at"),
                 instant(rs, "cutoff"), rs.getObject("approved_by", UUID.class), instant(rs, "approved_at"),
                 instant(rs, "executed_at"));
     }

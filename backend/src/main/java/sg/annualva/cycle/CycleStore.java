@@ -1,10 +1,10 @@
 package sg.annualva.cycle;
 
+import static sg.annualva.jdbc.Timestamps.requiredInstant;
 import static sg.annualva.jdbc.Timestamps.utc;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -61,7 +61,7 @@ public class CycleStore {
     Map<Integer, Close> closes() {
         return jdbc.sql(CLOSED).query((rs, row) -> Map.entry(rs.getInt("year"), new Close(
                         rs.getObject("closes_on", LocalDate.class),
-                        rs.getObject("closed_at", OffsetDateTime.class).toInstant())))
+                        requiredInstant(rs, "closed_at"))))
                 .list().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 

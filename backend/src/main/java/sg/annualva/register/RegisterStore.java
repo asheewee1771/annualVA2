@@ -1,12 +1,13 @@
 package sg.annualva.register;
 
+import static sg.annualva.jdbc.Timestamps.instant;
+import static sg.annualva.jdbc.Timestamps.requiredInstant;
 import static sg.annualva.jdbc.Timestamps.utc;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -15,7 +16,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 import tools.jackson.core.type.TypeReference;
@@ -142,11 +142,12 @@ class RegisterStore {
     }
 
     /** These Systems, retired or not; an id no System has is left out. */
-    List<ExistingSystem> systems(java.util.Collection<UUID> ids) {
+    List<ExistingSystem> systems(Collection<UUID> ids) {
         if (ids.isEmpty()) {
             return List.of();
         }
-        return jdbc.sql(SYSTEMS_BY_ID).param("ids", ids.toArray(UUID[]::new)).query((rs, row) -> existing(rs)).list();
+        return jdbc.sql(SYSTEMS_BY_ID).param("ids", ids.stream().map(UUID::toString).toArray(String[]::new))
+                .query((rs, row) -> existing(rs)).list();
     }
 
     /** The Systems retired before this instant, in System ID order. */
@@ -157,7 +158,7 @@ class RegisterStore {
 
     /** When a VA POC last applied a Register upload, if one ever was (the role-holder review, ticket 47). */
     Optional<Instant> lastApplied() {
-        return jdbc.sql(LAST_APPLIED).query((rs, row) -> rs.getObject("applied_at", OffsetDateTime.class).toInstant())
+        return jdbc.sql(LAST_APPLIED).query((rs, row) -> requiredInstant(rs, "applied_at"))
                 .optional();
     }
 
@@ -169,7 +170,7 @@ class RegisterStore {
     private static ExistingSystem existing(ResultSet rs) throws SQLException {
         return new ExistingSystem(rs.getObject("id", UUID.class), rs.getString("code"), rs.getString("name"),
                 rs.getString("smo_email"), rs.getString("cm_email"), rs.getInt("quarter"), rs.getBoolean("retired"),
-                instant(rs.getObject("smo_unreachable_at", OffsetDateTime.class)));
+                instant(rs, "smo_unreachable_at"));
     }
 
     /**
@@ -211,8 +212,8 @@ class RegisterStore {
     Optional<Preview> preview(UUID id) {
         return jdbc.sql(UPLOAD).param("id", id).query((rs, row) -> new Preview(
                 rs.getObject("id", UUID.class), rs.getString("status"),
-                rs.getObject("created_at", OffsetDateTime.class).toInstant(),
-                rs.getObject("expires_at", OffsetDateTime.class).toInstant(),
+                requiredInstant(rs, "created_at"),
+                requiredInstant(rs, "expires_at"),
                 json.readValue(rs.getString("rows"), ROWS))).optional();
     }
 
@@ -302,8 +303,5 @@ class RegisterStore {
         return Optional.of(quarters);
     }
 
-    private static @Nullable Instant instant(@Nullable OffsetDateTime at) {
-        return at == null ? null : at.toInstant();
-    }
 
 }

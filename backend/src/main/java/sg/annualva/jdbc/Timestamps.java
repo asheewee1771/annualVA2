@@ -25,6 +25,11 @@ public final class Timestamps {
         return instant == null ? null : utc(instant);
     }
 
+    /** A {@code timestamptz} column of the current row that is never null (a NOT NULL column) as an instant. */
+    public static Instant requiredInstant(ResultSet rs, String column) throws SQLException {
+        return rs.getObject(column, OffsetDateTime.class).toInstant();
+    }
+
     /** A {@code timestamptz} column of the current row as an instant; null when the column is null. */
     public static @Nullable Instant instant(ResultSet rs, String column) throws SQLException {
         OffsetDateTime value = rs.getObject(column, OffsetDateTime.class);

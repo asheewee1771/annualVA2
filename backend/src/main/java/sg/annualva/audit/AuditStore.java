@@ -1,12 +1,12 @@
 package sg.annualva.audit;
 
+import static sg.annualva.jdbc.Timestamps.requiredInstant;
 import static sg.annualva.jdbc.Timestamps.utc;
 import static sg.annualva.jdbc.Timestamps.utcOrNull;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -95,7 +95,7 @@ class AuditStore {
     private AuditEntry map(ResultSet rs, int row) throws SQLException {
         return new AuditEntry(
                 rs.getObject("id", UUID.class),
-                rs.getObject("occurred_at", OffsetDateTime.class).toInstant(),
+                requiredInstant(rs, "occurred_at"),
                 rs.getObject("actor_id", UUID.class),
                 rs.getString("actor_role"),
                 AuditAction.valueOf(rs.getString("action")),

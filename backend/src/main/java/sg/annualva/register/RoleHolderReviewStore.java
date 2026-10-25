@@ -1,9 +1,9 @@
 package sg.annualva.register;
 
+import static sg.annualva.jdbc.Timestamps.requiredInstant;
 import static sg.annualva.jdbc.Timestamps.utc;
 
 import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -32,7 +32,7 @@ class RoleHolderReviewStore {
 
     Optional<CompletedReview> latest() {
         return jdbc.sql(LATEST).query((rs, row) -> new CompletedReview(
-                rs.getObject("reviewed_at", OffsetDateTime.class).toInstant(),
+                requiredInstant(rs, "reviewed_at"),
                 rs.getObject("reviewed_by", UUID.class),
                 rs.getInt("holders"))).optional();
     }
