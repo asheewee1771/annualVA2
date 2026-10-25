@@ -24,7 +24,7 @@ import sg.annualva.register.SmoReachability;
  * ({@link MailValues}), and otherwise hands the recipient, the relay's id of the template and the values to the relay.
  * The relay's message id is kept; a refused address is settled for good and flags SMO Unreachable every System naming it
  * as its SMO/Tech Lead, and a mail the relay takes clears that flag of its address, each in the transaction that writes
- * the outcome ({@link SmoReachability}, ADR 0052); a failure is tried again after a wait that doubles each time, up to
+ * the outcome ({@link SmoReachability}, ADR 0053); a failure is tried again after a wait that doubles each time, up to
  * {@code maxAttempts} attempts in all. Log lines carry the outbox id, the attempt and fixed codes: never a recipient address or a value of the mail (lm-19).
  */
 @Service
@@ -137,7 +137,7 @@ public class MailOutbox {
     }
 
     /**
-     * Writes a relay's answer and, when the claim was still held, what it tells of the address (SMO Unreachable, ADR 0052)
+     * Writes a relay's answer and, when the claim was still held, what it tells of the address (SMO Unreachable, ADR 0053)
      * in one transaction, so a flag is never set or cleared for an answer that was dropped.
      *
      * @return whether the claim was still held, so the answer was written

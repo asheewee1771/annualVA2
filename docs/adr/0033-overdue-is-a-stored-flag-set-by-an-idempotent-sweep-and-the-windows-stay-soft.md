@@ -20,3 +20,5 @@ Amends ADR 0019 item 4 (the inbox now answers `overdue`, for Not Started Systems
 Amended by ADR 0034: the Cyber Manager inbox lists Overdue first, then by the day the current window ends, read through `current_window_due`.
 
 Amended by ADR 0049: a Not Started System a Register apply moves to another Quarter has its flag cleared while the new Quarter's Submission Window has not passed.
+
+Amended by ADR 0052: the sweep and the deadline reminders look in the same open Quarters (`OpenQuarters`), and the weekly reminder reads the flag and goes every 7 days after the day it was set, while it stays set.

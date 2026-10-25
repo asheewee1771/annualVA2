@@ -220,9 +220,10 @@ class ArchitectureTest {
 
     /**
      * ADR 0033 and 0044: {@code RegisterSystems.everyActive} lists every System, of the Register or of one VA Cycle,
-     * without asking the access guard. Only the Overdue sweep and the VA Cycle lifecycle may call it: the sweep and the
-     * lifecycle job act for nobody, and the lifecycle's other caller, a VA POC's close, reaches every System anyway (a VA
-     * POC's scope is all Systems, ADR 0013) and moves a whole Cycle. So no other request can list Systems past the guard.
+     * without asking the access guard. Only the Overdue sweep, the open Quarters the sweep and the deadline reminders look
+     * in (ADR 0052) and the VA Cycle lifecycle may call it: the sweep, the reminder planner and the lifecycle job act for
+     * nobody, and the lifecycle's other caller, a VA POC's close, reaches every System anyway (a VA POC's scope is all
+     * Systems, ADR 0013) and moves a whole Cycle. So no other request can list Systems past the guard.
      * A later job that needs it adds itself here.
      */
     @Test
@@ -233,10 +234,31 @@ class ArchitectureTest {
         for (Class<?>[] parameters : new Class<?>[][] {{}, {int.class}}) {
             noClasses().that().doNotHaveFullyQualifiedName(sg.annualva.submission.OverdueSweep.class.getName())
                     .and().doNotHaveFullyQualifiedName(sg.annualva.submission.CycleLifecycle.class.getName())
+                    .and().doNotHaveFullyQualifiedName(Class.forName("sg.annualva.submission.OpenQuarters").getName())
                     .and().doNotHaveFullyQualifiedName(sg.annualva.submission.ExemptionLapse.class.getName())
                     .should().callMethod(register, register.getMethod(method, parameters).getName(), parameters)
                     .because("it skips the access guard, so only the jobs that act for nobody, and the Cycle close a VA POC "
                             + "whose scope is every System asks for, may list every System")
+                    .check(main);
+        }
+    }
+
+    /**
+     * ADR 0052: {@code WaitingWork} answers every System's waiting work, and holds a VA Submission's state, without asking
+     * the access guard, because the deadline reminders act for nobody. Only the reminder planner may use it, so no request
+     * can read every System's work past the guard (ADR 0013).
+     */
+    @Test
+    void onlyTheDeadlineRemindersReadWaitingWorkPastTheAccessGuard() throws Exception {
+        // Named by reflection, so a rename of a method breaks this test instead of emptying the rule.
+        Class<?> work = sg.annualva.submission.WaitingWork.class;
+        for (java.lang.reflect.Method method : new java.lang.reflect.Method[] {
+            work.getMethod("on", java.time.LocalDate.class),
+            work.getMethod("stillWaiting", sg.annualva.submission.WaitingWork.Waiting.class)}) {
+            noClasses().that().doNotHaveFullyQualifiedName(sg.annualva.notification.DeadlineReminders.class.getName())
+                    .should().callMethod(work, method.getName(), method.getParameterTypes())
+                    .because("it skips the access guard, so only the deadline reminders, which act for nobody, may "
+                            + "read it")
                     .check(main);
         }
     }
@@ -270,7 +292,7 @@ class ArchitectureTest {
     }
 
     /**
-     * ADR 0052: {@code SmoReachability.refused} and {@code accepted} flag and clear SMO Unreachable on the word of the mail
+     * ADR 0053: {@code SmoReachability.refused} and {@code accepted} flag and clear SMO Unreachable on the word of the mail
      * relay, without asking the access guard, because the mail dispatcher acts for nobody. Only the dispatcher may call
      * them, with the answer it has just written.
      */

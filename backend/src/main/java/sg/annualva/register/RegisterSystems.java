@@ -29,7 +29,7 @@ import sg.annualva.web.ResourceNotFoundException;
  * System; an SMO/Tech Lead or Cyber Manager sees only the Systems their roles name (ADR 0013). The Unlinked SMO flag is
  * read when asked, so it clears the moment the person signs in (ADR 0017), and is shown to the VA POCs only: it is
  * theirs to fix. So is the SMO Unreachable flag, with the date it was set, which is stored, since nothing but the mail
- * relay's answer tells it ({@link SmoReachability}, ADR 0052). A read of the list is not audited: it names no one
+ * relay's answer tells it ({@link SmoReachability}, ADR 0053). A read of the list is not audited: it names no one
  * System's reports and changes nothing.
  *
  * <p>The Register is one standing list whose Quarter column applies to every VA Cycle, so a Cycle's Systems are the
@@ -45,7 +45,7 @@ public class RegisterSystems {
      * @param quarter {@code Q1} to {@code Q4}
      * @param unlinkedSmo whether the SMO/Tech Lead's email matches no sign-in yet; null for anyone but a VA POC, and
      *     false for a retired System
-     * @param smoUnreachableOn the business date the System was flagged SMO Unreachable (ADR 0052); null while it is not,
+     * @param smoUnreachableOn the business date the System was flagged SMO Unreachable (ADR 0053); null while it is not,
      *     for a retired System, and for anyone but a VA POC
      */
     public record SystemView(
@@ -59,7 +59,7 @@ public class RegisterSystems {
      * @param systemId the System ID as the VA POC typed it
      * @param quarter 1 to 4
      * @param smoEmail the SMO/Tech Lead the Register names for it
-     * @param smoUnreachableOn the business date the System was flagged SMO Unreachable (ADR 0052), or null while it is
+     * @param smoUnreachableOn the business date the System was flagged SMO Unreachable (ADR 0053), or null while it is
      *     not; a read model shows it to the VA POCs only, whose flag it is to fix
      */
     public record ActiveSystem(UUID id, String systemId, String name, int quarter, String smoEmail,
@@ -216,7 +216,7 @@ public class RegisterSystems {
                 unreachableOn(system));
     }
 
-    /** The business date the System was flagged SMO Unreachable, or null while it is not (ADR 0052). */
+    /** The business date the System was flagged SMO Unreachable, or null while it is not (ADR 0053). */
     private @Nullable LocalDate unreachableOn(ExistingSystem system) {
         Instant at = system.smoUnreachableAt();
         return at == null ? null : calendar.dateOf(at);

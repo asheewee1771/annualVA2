@@ -18,7 +18,6 @@ import sg.annualva.audit.AuditOutcome;
 import sg.annualva.audit.DetailKey;
 import sg.annualva.cycle.CycleCalendar;
 import sg.annualva.cycle.CyclePhase;
-import sg.annualva.cycle.Quarter;
 import sg.annualva.cycle.VaCycle;
 import sg.annualva.register.RegisterSystems;
 import sg.annualva.register.SystemChangeEvent;
@@ -41,13 +40,15 @@ public class OverdueSweep {
     private final SubmissionStore store;
     private final RegisterSystems register;
     private final CycleCalendar calendar;
+    private final OpenQuarters openQuarters;
     private final AuditLog audit;
     private final Clock clock;
     private final ApplicationEventPublisher events;
 
-    OverdueSweep(SubmissionStore store, RegisterSystems register, CycleCalendar calendar, AuditLog audit, Clock clock,
-            ApplicationEventPublisher events) {
+    OverdueSweep(SubmissionStore store, RegisterSystems register, CycleCalendar calendar, OpenQuarters openQuarters,
+            AuditLog audit, Clock clock, ApplicationEventPublisher events) {
         this.store = store;
+        this.openQuarters = openQuarters;
         this.register = register;
         this.calendar = calendar;
         this.audit = audit;
@@ -82,8 +83,8 @@ public class OverdueSweep {
      * One pass: flags and audits whatever became Overdue since the last. Whether a window has passed is the store's one
      * Overdue rule (ADR 0033 item 4); this only says which VA Submissions and which Quarters are looked at. A VA
      * Submission is looked at whatever its Cycle's phase, because its windows all end before its Cycle closes and the
-     * close (ticket 41) moves what is left to a final state; a Not Started System only in a Cycle that has not closed, by
-     * its Quarter in that Cycle (an older Cycle keeps its Systems as they were when a newer one opened, ADR 0044).
+     * close (ticket 41) moves what is left to a final state; a Not Started System only in the open Quarters
+     * ({@link OpenQuarters}: a Cycle that has not closed, by the System's Quarter in that Cycle).
      */
     @Transactional
     public void sweep() {
@@ -92,18 +93,8 @@ public class OverdueSweep {
         List<RegisterSystems.ActiveSystem> systems = register.everyActive();
         List<SubmissionStore.Flagged> flagged = new ArrayList<>(
                 store.flagOverdue(systems.stream().map(RegisterSystems.ActiveSystem::id).toList(), today, now));
-        for (VaCycle cycle : calendar.cyclesOn(today)) {
-            if (cycle.phaseOn(today) == CyclePhase.CLOSED) {
-                continue;
-            }
-            List<RegisterSystems.ActiveSystem> members = register.everyActive(cycle.year());
-            for (Quarter quarter : cycle.quarters()) {
-                if (!quarter.handledOutsideApp()) {
-                    List<UUID> inQuarter = members.stream().filter(system -> system.quarter() == quarter.number())
-                            .map(RegisterSystems.ActiveSystem::id).toList();
-                    flagged.addAll(store.flagNotStarted(quarter, inQuarter, today, now));
-                }
-            }
+        for (OpenQuarters.InQuarter open : openQuarters.on(today)) {
+            flagged.addAll(store.flagNotStarted(open.quarter(), open.systems(), today, now));
         }
         flagged.forEach(flag -> recorded(flag, now));
     }

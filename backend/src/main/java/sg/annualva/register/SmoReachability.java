@@ -13,7 +13,7 @@ import sg.annualva.audit.AuditOutcome;
 import sg.annualva.audit.DetailKey;
 
 /**
- * SMO Unreachable (story 13, ADR 0052): what the mail relay answered about an address, kept on the Systems that name it
+ * SMO Unreachable (story 13, ADR 0053): what the mail relay answered about an address, kept on the Systems that name it
  * as their SMO/Tech Lead. A refused address flags every active System naming it, a later mail the relay takes clears
  * every flag of it, and a Register apply that adds a System or names another SMO/Tech Lead for it gives it the flag of
  * its new address, or none. The address is matched

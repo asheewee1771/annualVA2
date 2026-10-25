@@ -45,6 +45,12 @@ public final class Arrange {
         assertThat(client.post("/api/test/jobs/overdue").status()).isEqualTo(200);
     }
 
+    /** One pass of the deadline reminder planner, which a test runs by hand after moving the clock (ticket 38). */
+    public void reminders() {
+        var response = client.post("/api/test/jobs/reminders");
+        assertThat(response.status()).as(response.body()).isEqualTo(200);
+    }
+
     /** One pass of the VA Cycle lifecycle job, run by hand after the clock is moved, because scheduling is off in tests. */
     public void cycleLifecycle() {
         assertThat(client.post("/api/test/jobs/cycle-lifecycle").status()).isEqualTo(200);

@@ -1,4 +1,4 @@
--- SMO Unreachable (ticket 39, story 13, ADR 0052): the mail relay refused the address of a System's SMO/Tech Lead, so the
+-- SMO Unreachable (ticket 39, story 13, ADR 0053): the mail relay refused the address of a System's SMO/Tech Lead, so the
 -- System is flagged for the VA POCs to fix in the System Register.
 --
 -- va_system.smo_unreachable_at  when the relay first refused the SMO/Tech Lead's address (UTC) since a mail to it last

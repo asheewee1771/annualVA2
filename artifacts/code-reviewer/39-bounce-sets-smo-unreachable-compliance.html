@@ -77,7 +77,7 @@
               <td class="px-4 py-2 font-medium">springboot</td>
               <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
               <td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 6</td>
-              <td class="px-4 py-2">ADR 0052 guarantees (lost claim, refusal after acceptance) untested; Low concurrency, transaction-contract and ArchUnit hardening items.</td>
+              <td class="px-4 py-2">ADR 0053 guarantees (lost claim, refusal after acceptance) untested; Low concurrency, transaction-contract and ArchUnit hardening items.</td>
             </tr>
           </tbody>
         </table>
@@ -137,7 +137,7 @@
               <td class="px-4 py-3 text-amber-600">Medium</td>
               <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterSystems.java; backend/src/main/java/sg/annualva/dashboard/QuarterBoard.java</td>
               <td class="px-4 py-3">65, 214-222; 82, 91-95</td>
-              <td class="px-4 py-3">M1: a VA-POC-only display date now rides on the shared <span class="font-mono text-xs">ActiveSystem</span> read model (used by sweeps, matrix, exemptions), converted on every <span class="font-mono text-xs">everyActive()</span> call; every consumer must remember to null it, and <span class="font-mono text-xs">QuarterBoard</span> adds a <span class="font-mono text-xs">vaPoc</span> mode flag derived from <span class="font-mono text-xs">need == Need.ENDORSE</span>. Fix: a narrow <span class="font-mono text-xs">smoUnreachableOn(Collection&lt;UUID&gt;)</span> port called only for the endorse scope; amend ADR 0052 item 5.</td>
+              <td class="px-4 py-3">M1: a VA-POC-only display date now rides on the shared <span class="font-mono text-xs">ActiveSystem</span> read model (used by sweeps, matrix, exemptions), converted on every <span class="font-mono text-xs">everyActive()</span> call; every consumer must remember to null it, and <span class="font-mono text-xs">QuarterBoard</span> adds a <span class="font-mono text-xs">vaPoc</span> mode flag derived from <span class="font-mono text-xs">need == Need.ENDORSE</span>. Fix: a narrow <span class="font-mono text-xs">smoUnreachableOn(Collection&lt;UUID&gt;)</span> port called only for the endorse scope; amend ADR 0053 item 5.</td>
             </tr>
             <tr class="border-t border-slate-100 align-top">
               <td class="px-4 py-3 text-amber-600">Medium</td>
@@ -204,19 +204,19 @@
               <td class="px-4 py-3 text-amber-600">Medium</td>
               <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailOutbox.java</td>
               <td class="px-4 py-3">110-114, 145</td>
-              <td class="px-4 py-3">S1 (Standards, test gap): ADR 0052 item 2 promises no flag when the claim was lost, but only the SENT path has a lost-claim test. A broken guard in <span class="font-mono text-xs">recorded</span> would write the flag and audit entry undetected. Fix: a lease test where the refusal is re-claimed before it is recorded; assert exactly one flag and one audit entry.</td>
+              <td class="px-4 py-3">S1 (Standards, test gap): ADR 0053 item 2 promises no flag when the claim was lost, but only the SENT path has a lost-claim test. A broken guard in <span class="font-mono text-xs">recorded</span> would write the flag and audit entry undetected. Fix: a lease test where the refusal is re-claimed before it is recorded; assert exactly one flag and one audit entry.</td>
             </tr>
             <tr class="border-t border-slate-100 align-top">
               <td class="px-4 py-3 text-slate-500">Low</td>
               <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailOutbox.java</td>
               <td class="px-4 py-3">103-106, 145-153</td>
-              <td class="px-4 py-3">S2: SENT now shares a transaction with the flag clear; if clearing throws, the mail is resent. Allowed by ADR 0046 but not stated in ADR 0052. Fix: document it, or clear in a separate transaction.</td>
+              <td class="px-4 py-3">S2: SENT now shares a transaction with the flag clear; if clearing throws, the mail is resent. Allowed by ADR 0046 but not stated in ADR 0053. Fix: document it, or clear in a separate transaction.</td>
             </tr>
             <tr class="border-t border-slate-100 align-top">
               <td class="px-4 py-3 text-slate-500">Low</td>
               <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterStore.java</td>
               <td class="px-4 py-3">108-109</td>
-              <td class="px-4 py-3">S3: the <span class="font-mono text-xs">&lt;= :at</span> guard stops a late acceptance clearing a newer refusal but not an older refusal written after a newer acceptance; instance clock skew also matters. Fix: soften ADR 0052 item 3 wording, or store a last-accepted time.</td>
+              <td class="px-4 py-3">S3: the <span class="font-mono text-xs">&lt;= :at</span> guard stops a late acceptance clearing a newer refusal but not an older refusal written after a newer acceptance; instance clock skew also matters. Fix: soften ADR 0053 item 3 wording, or store a last-accepted time.</td>
             </tr>
             <tr class="border-t border-slate-100 align-top">
               <td class="px-4 py-3 text-slate-500">Low</td>
@@ -270,7 +270,7 @@
               <td class="px-4 py-3 text-slate-500">Low</td>
               <td class="px-4 py-3 font-mono text-xs">.scratch/annual-va/issues/39-bounce-sets-smo-unreachable.md</td>
               <td class="px-4 py-3">11</td>
-              <td class="px-4 py-3">P4 (info): the issue cites ADR 0014 for the limitation; it is recorded in ADR 0052 item 7. Optionally note the renumbering.</td>
+              <td class="px-4 py-3">P4 (info): the issue cites ADR 0014 for the limitation; it is recorded in ADR 0053 item 7. Optionally note the renumbering.</td>
             </tr>
           </tbody>
         </table>
@@ -326,7 +326,7 @@
               <td class="px-4 py-3 text-slate-500">Low</td>
               <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/notification/MailOutbox.java</td>
               <td class="px-4 py-3">102-106, 145-155</td>
-              <td class="px-4 py-3">lm-4 observation: SENT and the flag-clearing audit entries share one transaction, so a failed audit write rolls back SENT and the delivered mail is resent. Deliberate trade-off; optionally record it in ADR 0052 or clear in a follow-up transaction.</td>
+              <td class="px-4 py-3">lm-4 observation: SENT and the flag-clearing audit entries share one transaction, so a failed audit write rolls back SENT and the delivered mail is resent. Deliberate trade-off; optionally record it in ADR 0053 or clear in a follow-up transaction.</td>
             </tr>
           </tbody>
         </table>
@@ -376,13 +376,13 @@
               <td class="px-4 py-3 text-amber-600">Medium</td>
               <td class="px-4 py-3 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/SmoUnreachableTest.java (code: MailOutbox.java:145, RegisterStore.java:107)</td>
               <td class="px-4 py-3">45</td>
-              <td class="px-4 py-3">spring-test-review: ADR 0052 guarantees untested: (a) no flag set or cleared when the claim was lost; (b) a refusal written after an acceptance survives the <span class="font-mono text-xs">&lt;= :at</span> guard. Also untested: retired Systems never flagged, same-SMO UPDATE keeps the flag, case-insensitive match. Fix: Seam 1 cases using <span class="font-mono text-xs">mailRelay.beforeNextAnswer(...)</span> as in <span class="font-mono text-xs">MailLeaseTest</span>.</td>
+              <td class="px-4 py-3">spring-test-review: ADR 0053 guarantees untested: (a) no flag set or cleared when the claim was lost; (b) a refusal written after an acceptance survives the <span class="font-mono text-xs">&lt;= :at</span> guard. Also untested: retired Systems never flagged, same-SMO UPDATE keeps the flag, case-insensitive match. Fix: Seam 1 cases using <span class="font-mono text-xs">mailRelay.beforeNextAnswer(...)</span> as in <span class="font-mono text-xs">MailLeaseTest</span>.</td>
             </tr>
             <tr class="border-t border-slate-100 align-top">
               <td class="px-4 py-3 text-slate-500">Low</td>
               <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/register/RegisterStore.java; MailOutbox.java</td>
               <td class="px-4 py-3">99; 109-112</td>
-              <td class="px-4 py-3">spring-data-review: with concurrent dispatchers, an older refusal can commit after a newer acceptance's clear and leave a stale flag. Unlikely. Fix: guard on the last accepted instant, or document the window in ADR 0052 item 3.</td>
+              <td class="px-4 py-3">spring-data-review: with concurrent dispatchers, an older refusal can commit after a newer acceptance's clear and leave a stale flag. Unlikely. Fix: guard on the last accepted instant, or document the window in ADR 0053 item 3.</td>
             </tr>
             <tr class="border-t border-slate-100 align-top">
               <td class="px-4 py-3 text-slate-500">Low</td>

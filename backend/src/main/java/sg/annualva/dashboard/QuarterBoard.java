@@ -38,7 +38,7 @@ public class QuarterBoard {
      *     step, or are assigned to another step of its System (its SMO/Tech Lead, say)
      * @param exemptionLapsed whether a conditional Exemption of it lapsed (ticket 42)
      * @param smoUnreachableOn on a VA POC's board, the business date the System was flagged SMO Unreachable (ticket 39,
-     *     ADR 0052); null while it is not, and on a Cyber Manager's board
+     *     ADR 0053); null while it is not, and on a Cyber Manager's board
      */
     public record Card(
             UUID id, String systemId, String name, @Nullable UUID submissionId, boolean overdue, long confirmed,
