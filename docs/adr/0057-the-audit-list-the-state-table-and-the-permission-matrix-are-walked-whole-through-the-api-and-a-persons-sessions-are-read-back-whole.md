@@ -25,5 +25,6 @@ Consequences:
 - The three suites add about three minutes to the back-end gate; `OneSessionRuleTest` about 45 seconds.
 - A ticket that adds an endpoint, an audited action, a detail key or a state adds its row to the matching suite, or the build fails and says which.
 - `MailSeam1.returnedForRework` moved up to `ReturnSeam1`, which the new suites share.
+- The suites move the clock forward and leave audit entries dated later than the default day, so the Register tests that took the newest entry of an action as their own now read the log only up to their own business date (`RegisterSeam1.untilToday`), as `AuditSeam1` already does.
 
 Amends ADR 0008 (how the one-session rule reads the store).
