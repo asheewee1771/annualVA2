@@ -27,3 +27,5 @@ Consequences:
 - Every deployed profile needs `ANNUALVA_APP_URL` and the three template ids; `sit` has placeholders until ticket 57 records the real ones.
 
 Amends ADR 0043 item 1 (the outbox adds the retry it promised) and ADR 0016 (the Register's System ID and name rule is `RegisterText`, shared with the mail allow-list).
+
+Amended by ADR 0050: the deadline reminders are mailed with four more templates (`REMINDER_DUE_SOON`, `REMINDER_DUE`, `OVERDUE_WEEKLY`, `REMINDER_COPY`).
