@@ -86,6 +86,10 @@ annualva:
       returned-for-rework: ${ANNUALVA_MAIL_TEMPLATE_RETURNED_FOR_REWORK}
       overdue: ${ANNUALVA_MAIL_TEMPLATE_OVERDUE}
       register-change: ${ANNUALVA_MAIL_TEMPLATE_REGISTER_CHANGE}
+      reminder-due-soon: ${ANNUALVA_MAIL_TEMPLATE_REMINDER_DUE_SOON}
+      reminder-due: ${ANNUALVA_MAIL_TEMPLATE_REMINDER_DUE}
+      overdue-weekly: ${ANNUALVA_MAIL_TEMPLATE_OVERDUE_WEEKLY}
+      reminder-copy: ${ANNUALVA_MAIL_TEMPLATE_REMINDER_COPY}
   # MCC SSO: explicit endpoints (never issuer-uri discovery), private_key_jwt with the EC P-521 key below.
   mcc:
     issuer: ${ANNUALVA_MCC_ISSUER}

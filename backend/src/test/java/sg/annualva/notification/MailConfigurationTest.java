@@ -17,9 +17,13 @@ class MailConfigurationTest {
     private static final String REWORK = "annualva.mail.templates.returned-for-rework=t-rework";
     private static final String OVERDUE = "annualva.mail.templates.overdue=t-overdue";
     private static final String CHANGE = "annualva.mail.templates.register-change=t-change";
+    private static final String[] REMINDERS = {"annualva.mail.templates.reminder-due-soon=t-soon",
+        "annualva.mail.templates.reminder-due=t-due", "annualva.mail.templates.overdue-weekly=t-weekly",
+        "annualva.mail.templates.reminder-copy=t-copy"};
 
+    /** Every reminder template is configured in each case below, so each case is about what it names. */
     private final ApplicationContextRunner startup = new ApplicationContextRunner()
-            .withUserConfiguration(Bindings.class);
+            .withUserConfiguration(Bindings.class).withPropertyValues(REMINDERS);
 
     @EnableConfigurationProperties(MailProperties.class)
     static class Bindings {}
@@ -30,6 +34,7 @@ class MailConfigurationTest {
             assertThat(context).hasNotFailed();
             MailProperties mail = context.getBean(MailProperties.class);
             assertThat(mail.templateId(MailTemplate.REGISTER_CHANGE)).isEqualTo("t-change");
+            assertThat(mail.templateId(MailTemplate.REMINDER_COPY)).isEqualTo("t-copy");
             assertThat(mail.maxAttempts()).isEqualTo(5);
         });
     }
@@ -47,7 +52,15 @@ class MailConfigurationTest {
 
     @Test
     void noTemplatesAtAllIsRefused() {
-        startup.withPropertyValues(URL).run(context -> assertThat(context).hasFailed());
+        new ApplicationContextRunner().withUserConfiguration(Bindings.class).withPropertyValues(URL)
+                .run(context -> assertThat(context).hasFailed());
+    }
+
+    @Test
+    void aMissingReminderTemplateIdIsRefused() {
+        new ApplicationContextRunner().withUserConfiguration(Bindings.class)
+                .withPropertyValues(URL, REWORK, OVERDUE, CHANGE, REMINDERS[0], REMINDERS[1], REMINDERS[2])
+                .run(context -> assertThat(context).hasFailed());
     }
 
     @Test

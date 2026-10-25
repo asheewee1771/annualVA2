@@ -12,6 +12,9 @@ public final class Links {
     /** The SMO/Tech Lead's inbox: where a System with no VA Submission is started. */
     public static final String SMO_INBOX = "/smo";
 
+    /** The Cyber Manager's inbox: where a copy of an SMO/Tech Lead's reminder points, whatever the state (ticket 38). */
+    public static final String CYBER_MANAGER_INBOX = "/cyber-manager";
+
     /** The VA POCs' queue of pending Exemption requests. */
     public static final String EXEMPTION_QUEUE = "/va-poc/exemptions";
 

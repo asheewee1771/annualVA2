@@ -19,8 +19,8 @@ class NotificationStore {
 
     private static final String INSERT =
             "INSERT INTO notification (recipient_id, system_id, submission_id, state, action, due_on, link, created_at, "
-            + "group_key, awaits) VALUES (:recipient, :system, :submission, :state, :action, :dueOn, :link, :at, "
-            + ":groupKey, :awaits) RETURNING id";
+            + "group_key, awaits, dedupe_key) VALUES (:recipient, :system, :submission, :state, :action, :dueOn, :link, "
+            + ":at, :groupKey, :awaits, :once) ON CONFLICT (recipient_id, dedupe_key) DO NOTHING RETURNING id";
 
     /** Every open pair a VA POC's decision on the VA Submission handles: both rows of each, with who and when. */
     private static final String HANDLE =
@@ -55,11 +55,12 @@ class NotificationStore {
     }
 
     /**
-     * One person's row of a notice; {@code groupKey} and {@code awaits} are set together, for a VA POC pair only.
+     * One person's row of a notice; {@code groupKey} and {@code awaits} are set together, for a VA POC pair only. A
+     * reminder already written for this person under the same key is not written again (ticket 38).
      *
-     * @return the notification's id
+     * @return the notification's id; nothing when the reminder was written before
      */
-    UUID insert(UUID recipient, Notice notice, @Nullable UUID groupKey, @Nullable Awaits awaits) {
+    Optional<UUID> insert(UUID recipient, Notice notice, @Nullable UUID groupKey, @Nullable Awaits awaits) {
         return jdbc.sql(INSERT)
                 .param("recipient", recipient)
                 .param("system", notice.systemId())
@@ -71,8 +72,9 @@ class NotificationStore {
                 .param("at", utc(notice.at()))
                 .param("groupKey", groupKey)
                 .param("awaits", awaits == null ? null : awaits.name())
+                .param("once", notice.once())
                 .query(UUID.class)
-                .single();
+                .optional();
     }
 
     void handle(UUID submissionId, Awaits awaits, UUID handler, Instant at) {

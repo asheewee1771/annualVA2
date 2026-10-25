@@ -216,9 +216,10 @@ class ArchitectureTest {
 
     /**
      * ADR 0033 and 0044: {@code RegisterSystems.everyActive} lists every System, of the Register or of one VA Cycle,
-     * without asking the access guard. Only the Overdue sweep and the VA Cycle lifecycle may call it: the sweep and the
-     * lifecycle job act for nobody, and the lifecycle's other caller, a VA POC's close, reaches every System anyway (a VA
-     * POC's scope is all Systems, ADR 0013) and moves a whole Cycle. So no other request can list Systems past the guard.
+     * without asking the access guard. Only the Overdue sweep, the VA Cycle lifecycle and the waiting work the deadline
+     * reminders read (ADR 0050) may call it: the sweep, the reminder planner and the lifecycle job act for nobody, and the
+     * lifecycle's other caller, a VA POC's close, reaches every System anyway (a VA POC's scope is all Systems, ADR 0013)
+     * and moves a whole Cycle. So no other request can list Systems past the guard.
      * A later job that needs it adds itself here.
      */
     @Test
@@ -229,6 +230,7 @@ class ArchitectureTest {
         for (Class<?>[] parameters : new Class<?>[][] {{}, {int.class}}) {
             noClasses().that().doNotHaveFullyQualifiedName(sg.annualva.submission.OverdueSweep.class.getName())
                     .and().doNotHaveFullyQualifiedName(sg.annualva.submission.CycleLifecycle.class.getName())
+                    .and().doNotHaveFullyQualifiedName(sg.annualva.submission.WaitingWork.class.getName())
                     .should().callMethod(register, register.getMethod(method, parameters).getName(), parameters)
                     .because("it skips the access guard, so only the jobs that act for nobody, and the Cycle close a VA POC "
                             + "whose scope is every System asks for, may list every System")

@@ -50,7 +50,27 @@ public enum NoticeAction {
      * To the SMO/Tech Lead the Register last named, once a Register apply retired the System and its in-flight VA
      * Submission became Withdrawn (ticket 43, story 94): nothing more is due from them.
      */
-    WITHDRAWN("The System Register retired this System, so its VA Submission is Withdrawn: nothing more is due.");
+    WITHDRAWN("The System Register retired this System, so its VA Submission is Withdrawn: nothing more is due."),
+    /** A reminder (ticket 38, story 88) to the SMO/Tech Lead, 5 days before the window their step waits on ends. */
+    SUBMIT_DUE_SOON("Due in 5 days: prepare and submit the VA Submission."),
+    /** A reminder to the SMO/Tech Lead on the last day of the window their step waits on. */
+    SUBMIT_DUE_TODAY("Due today: prepare and submit the VA Submission."),
+    /** A reminder to the SMO/Tech Lead every week while their step is Overdue. */
+    SUBMIT_STILL_OVERDUE("Still Overdue: prepare and submit the VA Submission."),
+    /** The Cyber Manager's copy of the SMO/Tech Lead's weekly Overdue reminder (story 89). */
+    SUBMIT_OVERDUE_COPY("Copy for you: the SMO/Tech Lead's step on this VA Submission is still Overdue."),
+    /** A reminder (story 89) to the Cyber Manager, 5 days before the Review Window ends. */
+    REVIEW_DUE_SOON("Due in 5 days: review the VA Submission."),
+    /** A reminder to the Cyber Manager on the last day of the Review Window. */
+    REVIEW_DUE_TODAY("Due today: review the VA Submission."),
+    /** A reminder to the Cyber Manager every week while the review is Overdue. */
+    REVIEW_STILL_OVERDUE("Still Overdue: review the VA Submission."),
+    /** Each VA POC's copy of the Cyber Manager's weekly Overdue reminder (story 89). */
+    REVIEW_OVERDUE_COPY("Copy for you: the Cyber Manager's review of this VA Submission is still Overdue."),
+    /** A reminder (story 90) to both VA POCs, 2 weeks before the Quarter's last day. */
+    ENDORSE_DUE_IN_TWO_WEEKS("The Quarter ends in 2 weeks: endorse the VA Submission, or return it for rework."),
+    /** A reminder to both VA POCs, 1 week before the Quarter's last day. */
+    ENDORSE_DUE_IN_ONE_WEEK("The Quarter ends in 1 week: endorse the VA Submission, or return it for rework.");
 
     private final String message;
 
