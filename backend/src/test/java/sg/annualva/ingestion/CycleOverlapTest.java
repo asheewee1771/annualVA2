@@ -99,6 +99,21 @@ class CycleOverlapTest extends CycleLifecycleSeam1 {
     }
 
     @Test
+    void aMoveOfASystemWhoseOnlyInFlightWorkIsInTheOlderCycleIsAnOrdinaryUpdate() {
+        registerQ3AndQ4();
+        started(signedInAs(SMO_A), idOf("SYS-O4"));
+        today("2028-02-10");
+
+        JsonNode preview = preview(vaPoc(), file(List.of(listed("SYS-O3", "Overlap three", SMO_A, CM, "Q3"),
+                listed("SYS-O4", "Overlap four", SMO_A, CM, "Q1"))));
+
+        JsonNode moved = rowOf(preview, "SYS-O4");
+        assertThat(moved.get("outcome").asString()).isEqualTo("UPDATE");
+        assertThat(moved.get("effects")).as("Cycle 2027 keeps Q4 for it (ADR 0044), so the move touches no work").isEmpty();
+        assertThat(preview.get("canApply").asBoolean()).isTrue();
+    }
+
+    @Test
     void startingInTheOlderCycleUsesItsQuarterAndASystemAddedSinceIsNotInIt() {
         registerQ3AndQ4();
         today("2028-02-10");

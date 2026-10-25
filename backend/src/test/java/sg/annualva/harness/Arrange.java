@@ -145,6 +145,18 @@ public final class Arrange {
         assertThat(client.post("/api/test/submissions/" + submissionId + "/state/" + state).status()).isEqualTo(200);
     }
 
+    /**
+     * Stands every in-flight VA Submission aside as Endorsed; returns the state each was in, by id, to put it back with
+     * {@link #submissionState}.
+     */
+    public java.util.Map<String, String> standAsideInFlight() {
+        var response = client.post("/api/test/submissions/stand-aside");
+        assertThat(response.status()).isEqualTo(200);
+        java.util.Map<String, String> states = new java.util.LinkedHashMap<>();
+        ApiClient.json(response).properties().forEach(entry -> states.put(entry.getKey(), entry.getValue().asString()));
+        return states;
+    }
+
     /** Marks a VA Submission endorsed after its Quarter's last day, as the endorse command (ticket 34) does. */
     public void endorsedLate(String submissionId) {
         assertThat(client.postJson("/api/test/submissions/" + submissionId + "/milestones", "{\"endorsedLate\":true}")

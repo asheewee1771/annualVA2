@@ -76,7 +76,7 @@ class QuarterBoardTest extends CyberManagerSeam1 {
         List<String> findings = enteredFindings(smo, started(smo, "SYS-K2"), 2);
         findings.forEach(finding -> proposed(smo, finding));
         arrange.findingReview(findings.get(0), "CONFIRMED");
-        registered(listed("SYS-K1", "Once theirs", SMO_A, switched, "Q3"),
+        registeredMidCycle(listed("SYS-K1", "Once theirs", SMO_A, switched, "Q3"),
                 listed("SYS-K2", "Overdue", SMO_A, switched, "Q3"));
         today("2027-08-16");
         arrange.overdueSweep();

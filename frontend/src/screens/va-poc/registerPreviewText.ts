@@ -1,4 +1,16 @@
-import type { BlockReason, SystemSnapshot } from "../../api/systemRegister.ts";
+import type { BlockReason, PreviewRow, RegisterPreview, SystemSnapshot } from "../../api/systemRegister.ts";
+
+/** A key for a preview row: its sheet row (or that the file leaves it out), its System ID and its position. */
+export function rowKey(row: PreviewRow, index: number): string {
+  return `${row.sheetRow ?? "left-out"}-${row.systemId ?? ""}-${index}`;
+}
+
+/** Every VA Submission the apply would withdraw, each of which is confirmed on its own (story 6). */
+export function withdrawals(preview: RegisterPreview): string[] {
+  return preview.rows
+    .filter((row) => row.effects.includes("WILL_WITHDRAW"))
+    .flatMap((row) => row.inFlight.map((work) => work.submissionId));
+}
 
 /** What each Blocked reason means, in the words a VA POC fixing their file needs. The server sends only the code. */
 export const REASON_TEXT: Readonly<Record<BlockReason, string>> = {
@@ -15,6 +27,14 @@ export const REASON_TEXT: Readonly<Record<BlockReason, string>> = {
   CYBER_MANAGER_IS_SMO: "The Cyber Manager is the System's own SMO/Tech Lead. Name a different reviewer.",
   QUARTER_MISSING: "The Quarter is empty. Use Q1, Q2, Q3 or Q4.",
   QUARTER_INVALID: "The Quarter must be Q1, Q2, Q3 or Q4.",
+  FILES_SCANNING:
+    "A file of its VA Submission is still being checked. Wait until the check finishes, then upload the file again.",
+  MOVE_IN_FLIGHT:
+    "Its VA Submission is in progress. Moving it to another Quarter mid-cycle arrives with Release 2: keep its Quarter for now.",
+  TRANSFER_IN_FLIGHT:
+    "Its VA Submission is in progress. Changing its SMO/Tech Lead or Cyber Manager mid-cycle arrives with Release 2: keep them for now.",
+  SEGREGATION_OF_DUTIES:
+    "The change would give one person two steps of its VA Submission (for example its Cyber Manager becoming its SMO/Tech Lead).",
 };
 
 export interface FieldChange {

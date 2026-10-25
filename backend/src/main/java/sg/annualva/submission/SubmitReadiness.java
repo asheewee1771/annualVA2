@@ -19,6 +19,13 @@ public interface SubmitReadiness {
     String FILES_SCANNING = "files-scanning";
 
     /**
+     * Whether any file of the VA Submission is still on its way through the checks, a rescan included, without working out
+     * the other reasons: the Register's withdraw is held back by it (ADR 0049), as the submit and an Exemption request are
+     * refused by {@link #FILES_SCANNING}. Read where the files are kept. Must run in the caller's transaction.
+     */
+    boolean filesScanning(UUID submissionId);
+
+    /**
      * Every reason the VA Submission cannot be submitted now, in a fixed order; empty when nothing stands in the way. Must
      * run in the caller's transaction.
      */

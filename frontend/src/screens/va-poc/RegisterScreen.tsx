@@ -8,6 +8,7 @@ import {
   fetchSystems,
   uploadRegister,
   type AppliedRegister,
+  type ApplyRequest,
   type RegisterPreview,
 } from "../../api/systemRegister.ts";
 import { ClassifiedField } from "../../components/ClassifiedField.tsx";
@@ -15,6 +16,7 @@ import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { useResource } from "../../hooks/useResource.ts";
 import { saveFile } from "../shared/saveFile.ts";
 import { RegisterPreviewPanel } from "./RegisterPreviewPanel.tsx";
+import { withdrawals } from "./registerPreviewText.ts";
 import { RegisterTable } from "./RegisterTable.tsx";
 
 const UNREACHABLE: Problem = { type: "about:blank", title: "The server could not be reached", status: 0 };
@@ -138,38 +140,49 @@ function AppliedNotice({ applied }: { applied: AppliedRegister }) {
         <strong>The Register is updated.</strong> {applied.added} added, {applied.updated} updated, {applied.retired}{" "}
         retired, {applied.unchanged} unchanged. {applied.rolesGranted} role{applied.rolesGranted === 1 ? "" : "s"}{" "}
         granted and {applied.rolesRevoked} revoked.
+        {applied.withdrawn > 0
+          ? ` ${applied.withdrawn} VA Submission${applied.withdrawn === 1 ? "" : "s"} withdrawn.`
+          : null}
       </p>
     </div>
   );
 }
 
-/** The preview a person was about to apply when they left for a fresh sign-in; reopened when they come back. */
-function previewIdFrom(draft: unknown): string | undefined {
-  return typeof draft === "object" && draft !== null && "previewId" in draft && typeof draft.previewId === "string"
-    ? draft.previewId
-    : undefined;
+/**
+ * The preview a person was about to apply when they left for a fresh sign-in, and the withdrawals they had confirmed;
+ * reopened when they come back.
+ */
+function applyFrom(draft: unknown): ApplyRequest | undefined {
+  if (typeof draft !== "object" || draft === null || !("previewId" in draft) || typeof draft.previewId !== "string") {
+    return undefined;
+  }
+  const withdraw =
+    "withdraw" in draft && Array.isArray(draft.withdraw)
+      ? draft.withdraw.filter((id): id is string => typeof id === "string")
+      : [];
+  return { previewId: draft.previewId, withdraw };
 }
 
 /**
  * Read once as the page loads (a step-up round trip is a full page load) and forgotten once the preview is open
  * again, so going to another screen and back never reopens a preview.
  */
-let leftForSignIn = previewIdFrom(takeRestoredDraft("register-apply"));
+let leftForSignIn = applyFrom(takeRestoredDraft("register-apply"));
 
-/** Opens the preview a person left for the step-up sign-in, if they left one. */
+/** Opens the preview a person left for the step-up sign-in, with the withdrawals they confirmed, if they left one. */
 function useReopenedPreview(
-  onPreview: (preview: RegisterPreview) => void,
+  onPreview: (preview: RegisterPreview, confirmed: string[]) => void,
   onProblem: (problem: Problem) => void,
 ): void {
-  const [id] = useState(leftForSignIn);
+  const [left] = useState(leftForSignIn);
   useEffect(() => {
-    if (id === undefined) return;
+    if (left === undefined) return;
     let cancelled = false;
-    fetchRegisterPreview(id).then(
+    fetchRegisterPreview(left.previewId).then(
       (preview) => {
         if (cancelled) return;
         leftForSignIn = undefined;
-        onPreview(preview);
+        onPreview(preview, left.withdraw);
       },
       (failure: unknown) => {
         if (cancelled) return;
@@ -180,11 +193,52 @@ function useReopenedPreview(
     return () => {
       cancelled = true;
     };
-  }, [id, onPreview, onProblem]);
+  }, [left, onPreview, onProblem]);
 }
 
 /**
- * The System Register (stories 1 to 4, 12, 73 and 79): the VA POC downloads the fixed Excel template, fills it in with
+ * The VA Submissions confirmed for withdrawal (story 6), one tick each. A new preview starts with none, or with those
+ * confirmed before a step-up sign-in that this preview would still withdraw.
+ */
+function useConfirmations() {
+  const [confirmed, setConfirmed] = useState<ReadonlySet<string>>(new Set());
+  const confirm = useCallback((submissionId: string, ticked: boolean) => {
+    setConfirmed((current) => {
+      const next = new Set(current);
+      if (ticked) next.add(submissionId);
+      else next.delete(submissionId);
+      return next;
+    });
+  }, []);
+  const restart = useCallback((preview: RegisterPreview | undefined, alreadyConfirmed: string[]) => {
+    const allowed = new Set(preview ? withdrawals(preview) : []);
+    setConfirmed(new Set(alreadyConfirmed.filter((id) => allowed.has(id))));
+  }, []);
+  return { confirmed, confirm, restart };
+}
+
+/** What the Register is, and the template to fill in. */
+function RegisterIntro({ onProblem }: { onProblem: (problem: Problem | undefined) => void }) {
+  return (
+    <>
+      <h2>System Register</h2>
+      <p className="muted">
+        The Register lists every in-scope System with its SMO/Tech Lead, Cyber Manager and Quarter. Download the
+        template, fill in one row per System and keep each System ID the same on every upload.
+      </p>
+      <p>
+        <TemplateDownload onProblem={onProblem} />
+      </p>
+      <p className="muted">
+        Columns: System ID, System Name, SMO/Tech Lead email, Cyber Manager email, Quarter (Q1 to Q4). The first row is
+        an example to delete before you upload.
+      </p>
+    </>
+  );
+}
+
+/**
+ * The System Register (stories 1 to 4, 6, 12, 73 and 79): the VA POC downloads the fixed Excel template, fills it in with
  * each System, its SMO/Tech Lead, Cyber Manager and Quarter, uploads it and sees a preview of every change before
  * anything changes, then applies it with a fresh sign-in. The table beneath is the Register as it stands.
  */
@@ -193,12 +247,17 @@ export function RegisterScreen({ classification }: { classification: string }) {
   const [preview, setPreview] = useState<RegisterPreview | undefined>(undefined);
   const [applied, setApplied] = useState<AppliedRegister | undefined>(undefined);
   const [applying, setApplying] = useState(false);
+  const { confirmed, confirm, restart } = useConfirmations();
   const systems = useResource(fetchSystems);
 
-  const showPreview = useCallback((next: RegisterPreview | undefined) => {
-    setPreview(next);
-    setApplied(undefined);
-  }, []);
+  const showPreview = useCallback(
+    (next: RegisterPreview | undefined, alreadyConfirmed: string[] = []) => {
+      setPreview(next);
+      setApplied(undefined);
+      restart(next, alreadyConfirmed);
+    },
+    [restart],
+  );
   useReopenedPreview(showPreview, setProblem);
 
   async function apply() {
@@ -206,7 +265,7 @@ export function RegisterScreen({ classification }: { classification: string }) {
     setApplying(true);
     setProblem(undefined);
     try {
-      setApplied(await applyRegisterPreview(preview.id));
+      setApplied(await applyRegisterPreview(preview.id, [...confirmed]));
       setPreview(undefined);
       systems.reload();
     } catch (failure) {
@@ -222,23 +281,20 @@ export function RegisterScreen({ classification }: { classification: string }) {
 
   return (
     <div className="card">
-      <h2>System Register</h2>
-      <p className="muted">
-        The Register lists every in-scope System with its SMO/Tech Lead, Cyber Manager and Quarter. Download the
-        template, fill in one row per System and keep each System ID the same on every upload.
-      </p>
-      <p>
-        <TemplateDownload onProblem={setProblem} />
-      </p>
-      <p className="muted">
-        Columns: System ID, System Name, SMO/Tech Lead email, Cyber Manager email, Quarter (Q1 to Q4). The first row is
-        an example to delete before you upload.
-      </p>
+      <RegisterIntro onProblem={setProblem} />
       <h3>Upload the filled-in template</h3>
       <UploadForm classification={classification} onPreview={showPreview} onProblem={setProblem} />
       {problem ? <ErrorPanel problem={problem} /> : null}
       {applied ? <AppliedNotice applied={applied} /> : null}
-      {preview ? <RegisterPreviewPanel preview={preview} applying={applying} onApply={() => void apply()} /> : null}
+      {preview ? (
+        <RegisterPreviewPanel
+          preview={preview}
+          applying={applying}
+          confirmed={confirmed}
+          onConfirm={confirm}
+          onApply={() => void apply()}
+        />
+      ) : null}
       <h3>Systems in the Register</h3>
       {systems.error ? <ErrorPanel problem={systems.error.problem} /> : null}
       {systems.data ? <RegisterTable systems={systems.data} /> : null}

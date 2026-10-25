@@ -53,4 +53,12 @@ public enum SubmissionState {
             case NOT_STARTED, DRAFT, IN_REVIEW, RETURNED_FOR_REWORK, AWAITING_ENDORSEMENT, EXEMPTION_REQUESTED -> false;
         };
     }
+
+    /**
+     * In-flight work, which a Register change touches (ADR 0049): started and not final. A Not Started row (an Exemption
+     * request that was rejected) holds no work, so retiring, moving or transferring its System is an ordinary change.
+     */
+    public boolean inFlight() {
+        return this != NOT_STARTED && !isFinal();
+    }
 }

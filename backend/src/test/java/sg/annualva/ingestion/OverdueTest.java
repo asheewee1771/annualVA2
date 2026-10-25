@@ -69,7 +69,8 @@ class OverdueTest extends SubmitSeam1 {
     void theDraftOfARetiredSystemIsNeverFlagged() {
         Draft draft = draft();
         String sub = draft.submissionId();
-        registered(listed("SYS-F2", "File two", SMO_B, CM_OTHER, "Q3"));
+        // A retired System's Draft is withdrawn since ticket 43; one left over from before stays out of the sweep.
+        registeredMidCycle(listed("SYS-F2", "File two", SMO_B, CM_OTHER, "Q3"));
 
         sweepOn("2027-08-16");
 

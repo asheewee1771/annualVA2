@@ -35,6 +35,8 @@ import sg.annualva.submission.Submissions;
  *   <li>Overdue: the person whose step it is (the SMO/Tech Lead while it is Not Started, a Draft or Returned for Rework,
  *       the Cyber Manager In Review, both VA POCs Awaiting Endorsement);
  *   <li>moved to another Quarter or transferred by the Register: the SMO/Tech Lead, and on a transfer the former one too;
+ *   <li>Withdrawn because the Register retired the System (ticket 43): the SMO/Tech Lead it last named; a withdrawal from
+ *       Awaiting Endorsement clears the VA POC pair, as an endorsement would;
  *   <li>made Not Endorsed by its VA Cycle's close: the SMO/Tech Lead; a VA POC's close also clears the endorsement pair of
  *       a VA Submission that was Awaiting Endorsement, as an endorsement would (ticket 41, ADR 0044), and the pairs of one
  *       that was Exemption Requested;
@@ -67,6 +69,12 @@ class WorkflowNotices {
         UUID id = event.submissionId();
         handledBy(event.from(), event.to()).forEach(awaits -> notifications.handled(id, awaits, event.actorId(),
                 event.at()));
+        if (event.to() == SubmissionState.WITHDRAWN) {
+            // The Register retired the System (ticket 43), whatever state the VA Submission was in, so its SMO/Tech Lead
+            // lost it: their inbox is the link, as on a transfer.
+            notifications.toSmo(notice(event, NoticeAction.WITHDRAWN, Links.SMO_INBOX));
+            return;
+        }
         if (event.from() == SubmissionState.EXEMPTION_REQUESTED) {
             NoticeAction decided = event.to() == SubmissionState.EXEMPTED ? NoticeAction.EXEMPTION_APPROVED
                     : NoticeAction.EXEMPTION_REJECTED;
