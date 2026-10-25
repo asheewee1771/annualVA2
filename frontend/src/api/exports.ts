@@ -6,6 +6,17 @@ export type ExportStatus = "QUEUED" | "READY" | "FAILED" | "EXPIRED";
 /** The file an export is made as: an Excel workbook (ticket 44) or a PDF (ticket 45) of the same content. */
 export type ExportFormat = "XLSX" | "PDF";
 
+/** Each format: how a list names it, how the form offers it, and its file's extension. */
+export const EXPORT_FORMATS: Readonly<Record<ExportFormat, { short: string; option: string; extension: string }>> = {
+  XLSX: { short: "Excel", option: "Excel workbook", extension: "xlsx" },
+  PDF: { short: "PDF", option: "PDF, watermarked on every page", extension: "pdf" },
+};
+
+/** A format from an untyped value (a form field, a restored draft): PDF when it says so, otherwise Excel. */
+export function asExportFormat(value: unknown): ExportFormat {
+  return value === "PDF" ? "PDF" : "XLSX";
+}
+
 /** An export as its requester reads it (ticket 44). */
 export interface Export {
   id: string;
@@ -49,6 +60,6 @@ export function fetchExports(): Promise<Export[]> {
 export function downloadExport(row: Pick<Export, "id" | "format">): Promise<Download> {
   return download(
     `${EXPORTS}/${encodeURIComponent(row.id)}/download`,
-    `management-summary.${row.format === "PDF" ? "pdf" : "xlsx"}`,
+    `management-summary.${EXPORT_FORMATS[row.format].extension}`,
   );
 }

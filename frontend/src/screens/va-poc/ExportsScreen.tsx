@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { fetchCycleMatrix, type MatrixSystem } from "../../api/dashboards.ts";
 import {
+  asExportFormat,
   downloadExport,
+  EXPORT_FORMATS,
   fetchExports,
   requestExport,
   type Export,
@@ -28,11 +30,6 @@ const STATUS_LABELS: Readonly<Record<ExportStatus, string>> = {
   READY: "Ready",
   FAILED: "Failed: ask again",
   EXPIRED: "Expired",
-};
-
-const FORMAT_LABELS: Readonly<Record<ExportFormat, string>> = {
-  XLSX: "Excel",
-  PDF: "PDF",
 };
 
 const CLASSIFICATION_LABELS: Readonly<Record<Export["classification"], string>> = {
@@ -67,8 +64,12 @@ function restoredRequest(): Scope {
   const systems = Array.isArray(asked["systems"])
     ? asked["systems"].filter((id): id is string => typeof id === "string")
     : undefined;
-  const format: ExportFormat = asked["format"] === "PDF" ? "PDF" : "XLSX";
-  return { format, cycle: numberOr(asked["cycle"]), quarter: numberOr(asked["quarter"]), systems };
+  return {
+    format: asExportFormat(asked["format"]),
+    cycle: numberOr(asked["cycle"]),
+    quarter: numberOr(asked["quarter"]),
+    systems,
+  };
 }
 
 /**
@@ -120,13 +121,12 @@ function ScopeFields({
   return (
     <>
       <ClassifiedField label="File" classification={classification} id="export-format">
-        <select
-          id="export-format"
-          value={format}
-          onChange={(event) => onFormat(event.target.value === "PDF" ? "PDF" : "XLSX")}
-        >
-          <option value="XLSX">Excel workbook</option>
-          <option value="PDF">PDF, watermarked on every page</option>
+        <select id="export-format" value={format} onChange={(event) => onFormat(asExportFormat(event.target.value))}>
+          {(Object.keys(EXPORT_FORMATS) as ExportFormat[]).map((choice) => (
+            <option key={choice} value={choice}>
+              {EXPORT_FORMATS[choice].option}
+            </option>
+          ))}
         </select>
       </ClassifiedField>
       <ClassifiedField label="Quarter" classification={classification} id="export-quarter">
@@ -272,7 +272,7 @@ function SummaryForm({ classification, onQueued }: { classification: string; onQ
 
 /** What an export covers, in words. */
 function covers(row: Export): string {
-  return `${FORMAT_LABELS[row.format]}: VA Cycle ${row.cycle}${row.quarter === null ? "" : `, Q${row.quarter}`}, ${row.systemCount} Systems`;
+  return `${EXPORT_FORMATS[row.format].short}: VA Cycle ${row.cycle}${row.quarter === null ? "" : `, Q${row.quarter}`}, ${row.systemCount} Systems`;
 }
 
 function ExportRow({ row, onProblem }: { row: Export; onProblem: (problem: Problem | undefined) => void }) {
