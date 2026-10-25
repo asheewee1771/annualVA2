@@ -174,9 +174,9 @@ The preview says what each row would do to in-flight work (a VA Submission that 
 When the mail relay refuses an SMO/Tech Lead's address, every System naming them is flagged SMO Unreachable for a VA POC to fix in the Register (story 13, ADR 0051).
 
 - **Set:** a mail settled `REJECTED` (see Email below) flags every active System whose SMO/Tech Lead is that address (matched without regard to letter case), whoever the mail was for and whichever System it was about, from that instant. A System flagged already keeps the first date. Written in the transaction that settles the mail.
-- **Cleared:** a later mail the relay takes for that address clears every flag of it set no later than that mail; a Register apply that names another SMO/Tech Lead for a System clears that System's flag.
+- **Cleared:** a later mail the relay takes for that address clears every flag of it set no later than that mail; a Register apply that names another SMO/Tech Lead for a System clears that System's flag, unless another active System naming the new address is flagged: then it, like a System the apply adds with that address, is flagged from the same date.
 - **Shown:** `smoUnreachableOn` (the Singapore business date it was set, or `null`) on `GET /api/systems` and on the cards of `GET /api/dashboards/quarter-board`, to a VA POC only (`null` for anyone else and for a retired System). The Register table and the VA POC's Quarter board show "SMO Unreachable since 16 Aug 2027".
-- **Audit:** one `SMO_UNREACHABLE` entry per System flagged (no actor) and one `SMO_UNREACHABLE_CLEARED` per System cleared (`source` `mail-accepted` with no actor, or `register` by the VA POC who applied); never the address.
+- **Audit:** one `SMO_UNREACHABLE` entry per System flagged and one `SMO_UNREACHABLE_CLEARED` per System cleared: with no actor when the mail relay's answer did it (`source` `mail-accepted` for a clearing), or by the VA POC who applied the Register with `source` `register`; never the address.
 - **Limitation (for the PO):** MCNS answers only at hand-over. An address it accepts and that bounces later is never reported, so such a System is not flagged (ADR 0051).
 - **Migration:** V139 adds `va_system.smo_unreachable_at`.
 - **Tests:** `CapturingMailRelay.rejectAddress` refuses an address and `acceptAddress` takes it again.
