@@ -62,8 +62,13 @@ public abstract class RegisterSeam1 extends Seam1Test {
     /** A person who has signed in as this email, with whatever roles they hold, and a CSRF token. */
     protected ApiClient signedInAs(String email) {
         ApiClient browser = anotherBrowser();
-        SignIn.signedIn(browser, issuer, fresh(TestIdentity.of("af-r-" + Math.abs(email.hashCode()), email, "Person")));
+        SignIn.signedIn(browser, issuer, fresh(TestIdentity.of(ssoIdOf(email), email, "Person")));
         return browser.withCsrf();
+    }
+
+    /** The {@code afcas.uuid} the identity provider asserts for the person {@link #signedInAs} signs in. */
+    protected static String ssoIdOf(String email) {
+        return "af-r-" + Math.abs(email.hashCode());
     }
 
     /** One System as a VA POC's file lists it. */

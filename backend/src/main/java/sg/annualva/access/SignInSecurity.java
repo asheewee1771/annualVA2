@@ -50,7 +50,7 @@ public class SignInSecurity {
             OidcSignInUserService userService, SignInCallbackHandler callbackHandler,
             StepUpAuthenticationProvider stepUpProvider, SignOutHandler signOutHandler,
             SecurityContextRepository securityContextRepository, SessionRegistry sessionRegistry,
-            Clock clock, SignInProperties properties, RoleResolver roleResolver) {
+            Clock clock, SignInProperties properties, RoleResolver roleResolver, IdentityCheck identityCheck) {
         this.authorizationRequestResolver = authorizationRequestResolver;
         this.tokenResponseClient = tokenResponseClient;
         this.userService = userService;
@@ -59,7 +59,7 @@ public class SignInSecurity {
         this.signOutHandler = signOutHandler;
         this.securityContextRepository = securityContextRepository;
         this.sessionRegistry = sessionRegistry;
-        this.sessionLimitsFilter = new SessionLimitsFilter(clock, properties);
+        this.sessionLimitsFilter = new SessionLimitsFilter(clock, properties, identityCheck);
         this.roleResolutionFilter = new RoleResolutionFilter(roleResolver);
         this.clock = clock;
         this.properties = properties;

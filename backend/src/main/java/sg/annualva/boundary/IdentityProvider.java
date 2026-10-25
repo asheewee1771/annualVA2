@@ -22,6 +22,8 @@ public interface IdentityProvider {
      * @param authTime when the provider authenticated the person; null when absent (sign-in fails closed)
      * @param amr authentication method references, empty when absent
      * @param acr authentication context class reference; null when absent
+     * @param disabled true only when the provider says in the token that it has disabled the person's account
+     *     (ticket 47); the sign-in is then refused and every role of theirs suspended
      */
     record Identity(
             @Nullable String ssoId,
@@ -30,5 +32,6 @@ public interface IdentityProvider {
             @Nullable String displayName,
             @Nullable Instant authTime,
             List<String> amr,
-            @Nullable String acr) {}
+            @Nullable String acr,
+            boolean disabled) {}
 }

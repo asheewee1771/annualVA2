@@ -121,6 +121,9 @@ class RegisterStore {
             "UPDATE register_upload SET status = 'APPLIED', applied_at = :now, applied_by = :by "
             + "WHERE id = :id AND status = 'PREVIEW'";
 
+    private static final String LAST_APPLIED = "SELECT applied_at FROM register_upload WHERE applied_at IS NOT NULL "
+            + "ORDER BY applied_at DESC LIMIT 1";
+
     private static final TypeReference<List<PreviewRow>> ROWS = new TypeReference<>() {};
 
     private final JdbcClient jdbc;
@@ -139,6 +142,12 @@ class RegisterStore {
     List<ExistingSystem> retiredBefore(Instant before) {
         return jdbc.sql(RETIRED_BEFORE).param("before", before.atOffset(java.time.ZoneOffset.UTC))
                 .query((rs, row) -> existing(rs)).list();
+    }
+
+    /** When a VA POC last applied a Register upload, if one ever was (the role-holder review, ticket 47). */
+    Optional<Instant> lastApplied() {
+        return jdbc.sql(LAST_APPLIED).query((rs, row) -> rs.getObject("applied_at", OffsetDateTime.class).toInstant())
+                .optional();
     }
 
     /** One System, retired or not. */

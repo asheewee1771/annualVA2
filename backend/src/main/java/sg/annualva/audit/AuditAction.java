@@ -31,6 +31,23 @@ public enum AuditAction {
      * brought it back, or to nobody for a job or the startup. About the System for a per-System role.
      */
     ROLE_RETURNED("role-returned", "iam"),
+    /**
+     * A grant was suspended (ticket 47; SUCCESS, with the {@code role}, {@code source}, {@code grant_id} and the
+     * {@code reason}: {@code review} when a VA POC suspended it in the role-holder review, attributed to them, or
+     * {@code identity-provider} when the identity provider reported the person disabled, attributed to nobody), or a VA POC
+     * was refused (REFUSED, with a fixed reason such as {@code own-grant}). About the System for a per-System role.
+     */
+    ROLE_SUSPENDED("role-suspended", "iam"),
+    /**
+     * A VA POC lifted a grant's suspension (ticket 47; SUCCESS, with the {@code role}, {@code source} and {@code grant_id}),
+     * or was refused (REFUSED, with a fixed reason such as {@code own-grant}). About the System for a per-System role.
+     */
+    ROLE_RESTORED("role-restored", "iam"),
+    /**
+     * A VA POC recorded a completed role-holder review (IM8 ac-4, ticket 47; SUCCESS, with the {@code count} of role holders
+     * it listed). About no one System; never an email.
+     */
+    ROLE_HOLDERS_REVIEWED("role-holders-reviewed", "iam"),
     /** A VA POC downloaded the System Register template; it names no System and holds no data. */
     REGISTER_TEMPLATE_DOWNLOADED("register-template-downloaded", "file"),
     /** A VA POC uploaded a Register file and a preview of its changes was made; nothing in the Register changed. */

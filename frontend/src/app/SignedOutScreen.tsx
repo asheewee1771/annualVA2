@@ -9,6 +9,8 @@ const REFUSALS: Record<string, string> = {
   "email-not-verified":
     "Your email address is not verified at the single sign-on. Verify it there, then sign in again.",
   "missing-email": "Your sign-in carried no email address. Contact the VA POC.",
+  "account-disabled":
+    "The single sign-on reports your account disabled, so your roles here are suspended. Contact the VA POC once it is enabled again.",
 };
 const REFUSED_FALLBACK = "The sign-in could not be completed. Try again, and tell the VA POC if it keeps happening.";
 

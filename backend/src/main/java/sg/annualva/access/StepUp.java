@@ -50,11 +50,13 @@ public class StepUp {
     private final AppUserStore users;
     private final AccessAudit audit;
     private final OAuth2AuthorizationRequestResolver authorizationRequests;
+    private final IdentityDisablement disablement;
     private final HttpSessionOAuth2AuthorizationRequestRepository savedRequests =
             new HttpSessionOAuth2AuthorizationRequestRepository();
 
     StepUp(Clock clock, StepUpProperties properties, SignInProperties signIn, AppUserStore users, AccessAudit audit,
-            OAuth2AuthorizationRequestResolver authorizationRequests) {
+            OAuth2AuthorizationRequestResolver authorizationRequests, IdentityDisablement disablement) {
+        this.disablement = disablement;
         this.clock = clock;
         this.properties = properties;
         this.signIn = signIn;
@@ -146,6 +148,7 @@ public class StepUp {
         if (!samePerson) {
             throw new SignInRefusedException(IDENTITY_MISMATCH);
         }
+        disablement.admit(identity, current.id(), IdentityDisablement.SeenBy.STEP_UP);
         if (authTime.isBefore(started.startedAt().minus(properties.clockSkew()))) {
             throw new SignInRefusedException(STALE_AUTH_TIME);
         }

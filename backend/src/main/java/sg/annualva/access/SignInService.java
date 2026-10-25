@@ -12,7 +12,8 @@ import sg.annualva.boundary.IdentityProvider.Identity;
 /**
  * The sign-in rules: refuse when the token lacks the person's identifier, an {@code auth_time}
  * (fail closed, ADR 0004) or, where required, multi-factor evidence (ac-2); then link the
- * identity to a user by {@code sso_id}, else by a pre-registered email, else create one.
+ * identity to a user by {@code sso_id}, else by a pre-registered email, else create one. A person the token reports
+ * disabled is refused after linking, and loses every grant and session ({@link IdentityDisablement}).
  */
 @Service
 public class SignInService {
@@ -32,9 +33,12 @@ public class SignInService {
     private final DevIdentityProperties devIdentities;
     private final Clock clock;
     private final TransactionTemplate transaction;
+    private final IdentityDisablement disablement;
 
     SignInService(AppUserStore users, RoleGrantStore grants, SignInProperties properties,
-            DevIdentityProperties devIdentities, Clock clock, TransactionTemplate transaction) {
+            DevIdentityProperties devIdentities, Clock clock, TransactionTemplate transaction,
+            IdentityDisablement disablement) {
+        this.disablement = disablement;
         this.transaction = transaction;
         this.users = users;
         this.grants = grants;
@@ -76,7 +80,11 @@ public class SignInService {
         if (email == null) {
             throw new SignInRefusedException(MISSING_EMAIL);
         }
-        return linkOrRetryOnce(ssoId, email, authTime, identity);
+        SessionUser user = linkOrRetryOnce(ssoId, email, authTime, identity);
+        // Linked first, so that a person the token reports disabled (ticket 47) loses every grant, those made by email
+        // included, before the sign-in is refused.
+        disablement.admit(identity, user.id(), IdentityDisablement.SeenBy.SIGN_IN);
+        return user;
     }
 
     /**

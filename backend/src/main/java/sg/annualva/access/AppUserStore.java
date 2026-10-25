@@ -43,6 +43,16 @@ public class AppUserStore {
 
     private static final String ID_BY_EMAIL = "SELECT id FROM app_user WHERE email = CAST(:email AS citext)";
 
+    /** The identity provider reported the person disabled (ticket 47); the first report's time is kept. */
+    private static final String DISABLED =
+            "UPDATE app_user SET idp_disabled_at = COALESCE(idp_disabled_at, :now) WHERE id = :id";
+
+    /** The identity provider let the person sign in again. */
+    private static final String ENABLED =
+            "UPDATE app_user SET idp_disabled_at = NULL WHERE id = :id AND idp_disabled_at IS NOT NULL";
+
+    private static final String SSO_ID = "SELECT sso_id FROM app_user WHERE id = :id AND sso_id IS NOT NULL";
+
     private final JdbcClient jdbc;
 
     AppUserStore(JdbcClient jdbc) {
@@ -101,6 +111,19 @@ public class AppUserStore {
     AppUser refresh(UUID id, String email, @Nullable String displayName) {
         jdbc.sql(REFRESH).param("id", id).param("email", email).param("displayName", displayName).update();
         return byId(id);
+    }
+
+    void markDisabled(UUID id, Instant now) {
+        jdbc.sql(DISABLED).param("id", id).param("now", utc(now)).update();
+    }
+
+    void clearDisabled(UUID id) {
+        jdbc.sql(ENABLED).param("id", id).update();
+    }
+
+    /** The person's identifier at the identity provider, once they have signed in. */
+    Optional<String> ssoIdOf(UUID id) {
+        return jdbc.sql(SSO_ID).param("id", id).query(String.class).optional();
     }
 
     private AppUser byId(UUID id) {

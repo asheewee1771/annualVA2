@@ -367,6 +367,7 @@ class ArchitectureTest {
                 .should().implement(sg.annualva.boundary.MalwareScanner.class)
                 .orShould().implement(sg.annualva.boundary.FileStore.class)
                 .orShould().implement(sg.annualva.boundary.MailRelay.class)
+                .orShould().implement(sg.annualva.boundary.IdentityStatus.class)
                 .because("production implementations of the boundary ports live under sg.annualva.adapters")
                 .check(main);
     }
@@ -431,8 +432,10 @@ class ArchitectureTest {
 
     /**
      * Story 76 by construction: roles change only through the role store, and only the classes named
-     * here write to it. RegisterRoles is the Register apply's writer and RoleLapse the lapse's and its returns'; a new one (the role-holder review) is added to this list
-     * on purpose, in the ticket that brings it, and never a controller reached by a person's own request.
+     * here write to it. RegisterRoles is the Register apply's writer and RoleLapse the lapse's, its returns' and the
+     * suspensions'; RoleHolders reads every grant for the role-holder review and changes them only through RoleLapse. A new
+     * one is added to this list on purpose, in the ticket that brings it, and never a controller reached by a person's own
+     * request.
      */
     @Test
     void onlyNamedClassesWriteRoleGrants() {
@@ -441,11 +444,12 @@ class ArchitectureTest {
                 .and().doNotHaveFullyQualifiedName("sg.annualva.access.RoleResolver")
                 .and().doNotHaveFullyQualifiedName("sg.annualva.access.RegisterRoles")
                 .and().doNotHaveFullyQualifiedName("sg.annualva.access.RoleLapse")
+                .and().doNotHaveFullyQualifiedName("sg.annualva.access.RoleHolders")
                 .and().doNotHaveFullyQualifiedName("sg.annualva.access.SignInService")
                 .should().dependOnClassesThat().areAssignableTo(RoleGrantStore.class)
-                .because("roles are given only by configuration, a System Register apply and the role-holder review, and"
-                        + " lapse and come back only by the role lapse (ADR 0055); sign-in attaches grants made by email and"
-                        + " role resolution only reads them")
+                .because("roles are given only by configuration and a System Register apply, lapse, come back and are"
+                        + " suspended only by the role lapse (ADR 0055, 0056); sign-in attaches grants made by email, and role"
+                        + " resolution and the role-holder review only read them")
                 .check(main);
         noClasses().that().areAnnotatedWith(RestController.class)
                 .should().dependOnClassesThat().areAssignableTo(RoleGrantStore.class)

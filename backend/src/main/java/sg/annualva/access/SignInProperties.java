@@ -23,6 +23,8 @@ import sg.annualva.boundary.IdentityProvider.Identity;
  * @param absoluteTimeout as-11: the session ends this long after sign-in regardless of activity
  * @param anonymousSessionsPerMinute as-4: how many sessions one client address may start per minute without
  *     being signed in (sign-in start and CSRF bootstrap); each one is a row in the session store
+ * @param identityCheckInterval ac-3 (ticket 47): how often a signed-in session asks the identity provider whether the
+ *     person has been disabled there since; the sign-in itself counts as the first check
  */
 @ConfigurationProperties("annualva.sign-in")
 @Validated
@@ -33,7 +35,8 @@ public record SignInProperties(
         @DefaultValue List<String> mfaAcrValues,
         @NotNull Duration idleTimeout,
         @NotNull Duration absoluteTimeout,
-        @Positive int anonymousSessionsPerMinute) {
+        @Positive int anonymousSessionsPerMinute,
+        @DefaultValue("5m") @NotNull Duration identityCheckInterval) {
 
     /** True when the token shows multi-factor evidence by {@code amr} or {@code acr}. */
     boolean evidencesMfa(Identity identity) {
