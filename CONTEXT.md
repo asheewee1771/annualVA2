@@ -189,7 +189,11 @@ A role unused for 90 days stopping by itself, without disabling the person's sig
 _Avoid_: expiry (an Auditor grant expires at its time limit), deactivation
 
 **Role-holder review**:
-The VA POCs' check of every role holder against the System Register, at each upload and at least quarterly, whose only change is suspending a person's role for a System.
+The VA POCs' check of every role holder against the System Register, at each upload and at least quarterly, whose only change is suspending a person's role for a System (or lifting such a suspension).
+
+**Suspension**:
+A grant that stops counting until a VA POC restores it or a Register upload names someone else: by the role-holder review, for one System, or for every grant of a person the identity provider reports disabled.
+_Avoid_: revocation (a revoked grant is gone), lapse (a lapse comes back by itself)
 
 **Disposal list**:
 The records whose retention has ended (the VA Cycle plus 3 years, a superseded file once its VA Submission is Endorsed, an expired export), listed daily for a VA POC to approve with a step-up before they are hard-deleted.

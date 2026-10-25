@@ -27,3 +27,12 @@ The SFS scanner adapter built here is also what ticket 13 will put in front of t
 ### Note from ticket 37 (2026-10-25)
 
 The mail adapter implements `sg.annualva.boundary.MailRelay`: the template-id mapping and the value allow-list already run on the application side of the port (ADR 0046), so the adapter only speaks to MCNS. Its connect and read timeouts must stay well below the outbox lease (`annualva.mail.lease`, five minutes): a call that outlasts the lease lets another pass send the mail again, and a last attempt that does is recorded `FAILED` although MCNS took it. Answer `AddressRejected` for an address MCNS refuses (ticket 39), throw `BoundaryFailureException` for anything that may pass, and never log the recipient.
+
+### Note from ticket 47 (2026-10-25): the identity provider's account status
+
+Ticket 47 (ADR 0056) added the `sg.annualva.boundary.IdentityStatus` port and its stand-in `adapters.pending.UnwiredIdentityStatus`, which always throws, so the session check (IM8 ac-3) leaves every session alone in production until this ticket replaces it. The adapter belongs here because it needs the MCC service client:
+
+- implement `IdentityStatus.disabled(ssoId)` against MCC SSO's account status (what MCC SSO offers is part of the H4 onboarding), with connect and read timeouts of a few seconds, since it runs inside a request;
+- throw `BoundaryFailureException` for anything that is not a clear answer, and never log the `afcas.uuid`;
+- remove `UnwiredIdentityStatus` only together with this adapter: deleting the `adapters.pending` package without it leaves no `IdentityStatus` bean and the application does not start;
+- check against H4 that the sign-in token's `afcas.status` claim (provisional in ADR 0056 item 8) is what MCC SSO sends, or change `MccIdentityProvider` to what it does send.
