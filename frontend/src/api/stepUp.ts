@@ -37,6 +37,8 @@ const ACTIONS: Readonly<Record<string, string>> = {
   "export-mgmt-summary": "Asking for the management summary",
   "exemption-decide": "Deciding an Exemption",
   "disposal-approve": "Approving the disposal list",
+  "role-suspend": "Suspending a role",
+  "role-restore": "Restoring a suspended role",
 };
 
 export function describeAction(intent: string): string {
@@ -50,6 +52,7 @@ const REFUSALS: Readonly<Record<string, string>> = {
   "mfa-not-evidenced": "Multi-factor authentication was not shown at that sign-in.",
   "identity-mismatch": "You signed in as a different person than the one using this session.",
   "session-ended": "Your session ended before the sign-in finished.",
+  "account-disabled": "The single sign-on reports your account disabled, so your roles here are suspended.",
 };
 
 export function describeRefusal(reason: string | undefined): string {

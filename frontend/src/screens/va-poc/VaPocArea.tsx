@@ -10,6 +10,7 @@ import { ExemptionQueueScreen } from "./ExemptionQueueScreen.tsx";
 import { ExportsScreen } from "./ExportsScreen.tsx";
 import { endorsedSubmissionOf, endorsePath, VA_POC_PATH } from "./paths.ts";
 import { RegisterScreen } from "./RegisterScreen.tsx";
+import { RoleHolderReviewScreen } from "./RoleHolderReviewScreen.tsx";
 
 /** A VA POC reads the board for the endorsement, and a started System's card opens its VA Submission. */
 const ENDORSE_BOARD: BoardFor = { step: "endorse", linkOf: endorsePath };
@@ -21,6 +22,7 @@ const AUDIT_LOG_PATH = "/va-poc/audit-log";
 const REGISTER_PATH = "/va-poc/register";
 const EXPORTS_PATH = "/va-poc/exports";
 const DISPOSAL_PATH = "/va-poc/disposal";
+const ROLE_HOLDERS_PATH = "/va-poc/role-holders";
 
 /** A tab of the area: where it is, its name, and what it shows. */
 interface Tab {
@@ -58,7 +60,7 @@ function SubPage({ children }: { children: ReactNode }) {
 /**
  * The VA POC's working area (stories 45, 64 and 65): three tabs, the Quarter board of every System, the Cycle matrix and
  * the Exemption requests waiting on a decision, and, beneath the area, a VA Submission opened from the board (to
- * endorse it), the System Register, the exports and the audit log.
+ * endorse it), the System Register, the exports, the disposal lists, the role-holder review and the audit log.
  */
 export function VaPocArea({ path, classification }: AreaProps) {
   const endorsing = endorsedSubmissionOf(path);
@@ -83,6 +85,13 @@ export function VaPocArea({ path, classification }: AreaProps) {
     return (
       <SubPage>
         <DisposalScreen />
+      </SubPage>
+    );
+  }
+  if (path === ROLE_HOLDERS_PATH) {
+    return (
+      <SubPage>
+        <RoleHolderReviewScreen />
       </SubPage>
     );
   }
@@ -113,6 +122,9 @@ export function VaPocArea({ path, classification }: AreaProps) {
           </li>
           <li>
             <AppLink path={DISPOSAL_PATH}>Disposal</AppLink>
+          </li>
+          <li>
+            <AppLink path={ROLE_HOLDERS_PATH}>Role-holder review</AppLink>
           </li>
           <li>
             <AppLink path={AUDIT_LOG_PATH}>Audit log</AppLink>
