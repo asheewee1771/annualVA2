@@ -1,6 +1,6 @@
 # A Cyber Manager reads the audit history of what they reviewed, through a port the VA Submissions answer
 
-Status: accepted (items 2, 3 and 5 provisional, see the end)
+Status: accepted (items 2, 3 and 5 decided 2026-10-25, see the end; reads of the log are audited, built by ticket 50)
 
 Ticket 48 (story 85) lets a Cyber Manager read the audit history of the VA Submissions they reviewed, on Systems still assigned to them (the permissions matrix: "Read the audit log: Cyber Manager, submissions it reviewed"; spec decision "A Cyber Manager reads the audit history only of submissions they reviewed on Systems still assigned to them"). It adds no migration and no endpoint: it widens `GET /api/audit-entries` (ADR 0014) and adds one tab to the Cyber Manager's screens.
 
@@ -20,16 +20,17 @@ Ticket 48 (story 85) lets a Cyber Manager read the audit history of the VA Submi
 
 6. **The screen.** The Cyber Manager area gets a third tab, **Audit history** (`/cyber-manager/audit-history`), and the review screen links to the history of its own VA Submission (`/cyber-manager/submissions/{id}/audit-history`, the `submission` filter set and a link back; Clear returns to the filters the screen opened with). Both are the VA POC's audit log viewer (`AuditLogScreen`) with its own heading and the same filters, paging and columns; a Finding is an id. The action filter now names every action the log records, not only the first eleven, so a reader can pick `FINDING_REVIEWED` or `SUBMISSION_SUBMITTED`. A 404 is shown as the server's problem.
 
-Not done here, on purpose: auditing the reads of the log itself (the VA POC's reads are not audited either; the entries carry no report content), the Auditor's scope (Release 2), and any Playwright scenario (ticket 53).
+Not done here, on purpose: auditing the reads of the log itself (the VA POC's reads are not audited either; the entries carry no report content), the Auditor's scope (Release 2), and any Playwright scenario (ticket 53). Decided 2026-10-25 (docs/agents/reviewer-decisions.md): reading the log is audited after all, for a VA POC and a Cyber Manager alike, as an `AUDIT_LOG_VIEWED` entry carrying the filter ids only, built by ticket 50.
 
 Consequences:
 - A Cyber Manager reassigned away from a System loses its history with it, even of the reviews they made; a VA POC still reads it.
 - A Cyber Manager who has not reviewed anything reads an empty log rather than a `403`.
 - `Need` has a fifth value; the access guard answers it in one more case.
 
-Provisional, for a human to confirm:
+Decided 2026-10-25 by the user (docs/agents/reviewer-decisions.md), items 2, 3 and 5 as built:
 - **Item 2:** "acted at the reviewing step" is read as a committed review recorded in `submission_participation`. The alternative is any action of theirs on the VA Submission, a read included.
 - **Item 3:** without `submission=`, the history of every VA Submission reviewed is listed, so the "same filters" hold. The alternative is to require `submission=` from a Cyber Manager (`400` without it).
 - **Item 5:** the history lists every entry about the VA Submission, other people's reads included. The alternative is to leave out reads (`*_VIEWED`) by others and keep only the changes.
+- **Reads of the log:** audited (`AUDIT_LOG_VIEWED`, filter ids only), built by ticket 50; this ticket leaves them unaudited.
 
 Amends ADR 0014 (the log is read by a Cyber Manager too, within a scope) and ADR 0013 (a new `Need`, `AUDIT`).

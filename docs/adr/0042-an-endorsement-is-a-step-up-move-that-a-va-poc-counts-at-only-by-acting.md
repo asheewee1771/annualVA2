@@ -1,6 +1,6 @@
 # An endorsement is a step-up move, and a VA POC counts at the endorsing step only by acting
 
-Status: accepted (item 2 provisional, awaiting a human decision)
+Status: accepted (item 2 decided 2026-10-25, docs/agents/reviewer-decisions.md)
 
 Ticket 34 (stories 65, 67 and 70) lets a VA POC endorse a VA Submission Awaiting Endorsement. It adds one migration (V134), one endpoint, one screen and no module. The command is in `submission`, which owns the state machine and the segregation-of-duties guard (ADR 0035), and it builds the rule ADR 0039 item 5 recorded for how a VA POC counts.
 
@@ -14,13 +14,13 @@ Ticket 34 (stories 65, 67 and 70) lets a VA POC endorse a VA Submission Awaiting
 
    Checks 3 and 4 are the review commands' own (ADR 0035 item 2, ADR 0039 item 1), written once: `Submissions.atStep` takes a `Gate` (the step, whose need the access guard asks, the one state it acts from, and the fixed reason and sentence of a refusal in another state) and the hold. `REVIEWING` and `ENDORSING` are the two gates today; tickets 35 and 40 add theirs. `atStep` answers an `AtStep` that remembers the gate and the hold, and the one method that moves the state (`moved`) still refuses one held only shared (ADR 0039 item 1). `ReviewTarget` stays the review writes' type and no longer carries the hold.
 
-2. **How a VA POC counts for segregation of duties** (builds ADR 0039 item 5, still provisional). `SubmissionStep` gains `ENDORSE`, whose need is `Need.ENDORSE` but which has no Register assignment (`SubmissionStep.assignedBy()` is empty for it). So:
+2. **How a VA POC counts for segregation of duties** (builds ADR 0039 item 5; decided 2026-10-25). `SubmissionStep` gains `ENDORSE`, whose need is `Need.ENDORSE` but which has no Register assignment (`SubmissionStep.assignedBy()` is empty for it). So:
    - a VA POC is refused the endorsing step when they acted at another step of that VA Submission (`submission_participation`: they submitted it, or reviewed, returned or passed it as its Cyber Manager), or when the Register names them as its System's SMO/Tech Lead or Cyber Manager, even before they act;
    - holding the VA POC role puts nobody at the endorsing step, so a VA POC the Register names as a System's SMO/Tech Lead or Cyber Manager still starts, submits and reviews it, and only acting at the endorsing step (endorsing today; a VA POC's return, ticket 35, and an Exemption decision, ticket 40, will record the same step) counts against them.
 
    The rule is still the one component and the one query (ADR 0035 item 1); only which steps are assigned changed. `SegregationOfDuties` keeps refusing a scope over every System as an assignment, as a programming error, so a later step that names a VA POC's need as its assignment fails every test that reaches it. The other VA POC endorses a VA Submission one VA POC is refused (story 70); there is no delegation.
 
-   Open for a human: the glossary lists deciding an Exemption as a step of its own, while ADR 0039 item 5 puts it at the endorsing step. Built as ADR 0039 says (one VA POC step), so a VA POC who rejected an Exemption may still endorse the same VA Submission. V134 keeps `DECIDE` allowed in the step check, unused, for ticket 40 to use or drop.
+   Decided 2026-10-25 (docs/agents/reviewer-decisions.md), one VA POC step: the glossary lists deciding an Exemption as a step of its own, while ADR 0039 item 5 puts it at the endorsing step. Built as ADR 0039 says (one VA POC step), so a VA POC who rejected an Exemption may still endorse the same VA Submission. V134 keeps `DECIDE` allowed in the step check, unused, for ticket 40 to use or drop.
 
 3. **Endorsed Late and the milestones.** Each move has its own statement, setting only its own columns beside the state and `OVERDUE_AFTER_MOVE`: a return (`MOVED`), a pass to endorsement (`PASSED`, `passed_to_endorsement_at`) and an endorsement (`ENDORSED`, which sets `endorsed_at`, V133's endorsed milestone, to the clock's instant and `endorsed_late`, and returns `endorsed_late` for the audit entry). The command runs its statement through `moved`, which records the entry and publishes the event, so the shared path never branches on the target state. Endorsed Late is whether the window the old state, Awaiting Endorsement, waited on had passed on today's business date (Asia/Singapore), asked of V20's `window_passed`, so the Quarter's last day itself is on time and the day after is late; no due date is written out anywhere else. The flag uses `OVERDUE_AFTER_MOVE`, so the Overdue flag clears: Endorsed waits on no window, and Endorsed Late is the lasting mark of a late endorsement (reviewer decision of 2026-10-23, "Overdue clears when a submit moves into a window that has not passed").
 
