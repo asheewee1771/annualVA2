@@ -186,3 +186,7 @@ _Avoid_: reject, decline
 
 **Role-holder review**:
 The VA POCs' check of every role holder against the System Register, at each upload and at least quarterly, whose only change is suspending a person's role for a System.
+
+**Disposal list**:
+The records whose retention has ended (the VA Cycle plus 3 years, a superseded file once its VA Submission is Endorsed, an expired export), listed daily for a VA POC to approve with a step-up before they are hard-deleted.
+_Avoid_: purge list, deletion queue

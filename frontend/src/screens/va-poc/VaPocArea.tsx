@@ -4,6 +4,7 @@ import type { AreaProps } from "../shared/AreaProps.ts";
 import { AuditLogScreen } from "../shared/AuditLogScreen.tsx";
 import { QuarterBoardScreen, type BoardFor } from "../shared/QuarterBoardScreen.tsx";
 import { CycleMatrixScreen } from "./CycleMatrixScreen.tsx";
+import { DisposalScreen } from "./DisposalScreen.tsx";
 import { EndorseScreen } from "./EndorseScreen.tsx";
 import { ExemptionQueueScreen } from "./ExemptionQueueScreen.tsx";
 import { ExportsScreen } from "./ExportsScreen.tsx";
@@ -19,6 +20,7 @@ const EXEMPTIONS_PATH = "/va-poc/exemptions";
 const AUDIT_LOG_PATH = "/va-poc/audit-log";
 const REGISTER_PATH = "/va-poc/register";
 const EXPORTS_PATH = "/va-poc/exports";
+const DISPOSAL_PATH = "/va-poc/disposal";
 
 /** A tab of the area: where it is, its name, and what it shows. */
 interface Tab {
@@ -77,6 +79,13 @@ export function VaPocArea({ path, classification }: AreaProps) {
       </SubPage>
     );
   }
+  if (path === DISPOSAL_PATH) {
+    return (
+      <SubPage>
+        <DisposalScreen />
+      </SubPage>
+    );
+  }
   if (path === AUDIT_LOG_PATH) {
     return (
       <SubPage>
@@ -101,6 +110,9 @@ export function VaPocArea({ path, classification }: AreaProps) {
           </li>
           <li>
             <AppLink path={EXPORTS_PATH}>Exports</AppLink>
+          </li>
+          <li>
+            <AppLink path={DISPOSAL_PATH}>Disposal</AppLink>
           </li>
           <li>
             <AppLink path={AUDIT_LOG_PATH}>Audit log</AppLink>
