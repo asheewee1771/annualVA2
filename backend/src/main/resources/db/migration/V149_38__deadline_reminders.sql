@@ -1,16 +1,16 @@
--- Deadline reminders (ticket 38, stories 88, 89 and 90, ADR 0051). A daily planner reminds whoever's step it is before
--- and on the last day of the window their work waits on (V20 current_window_due), then weekly while it is Overdue with a
--- copy to the next person up, and reminds both VA POCs 2 weeks and 1 week before the Quarter's last day. A reminder is a
--- notification like any other (V136) and is mailed through the outbox (V137). Numbered after V144_43, which rebuilt
--- notification_action_check last; the rebuild lists every action allowed before.
+-- Deadline reminders (ticket 38, stories 88, 89 and 90, ADR 0051). A planner reminds whoever's step it is before and on
+-- the last day of the window their work waits on (V20 current_window_due), then weekly while it is Overdue with a copy to
+-- the next person up, and reminds both VA POCs 2 weeks and 1 week before the Quarter's last day. A reminder is a
+-- notification like any other (V136) and is mailed through the outbox (V137). Numbered after V149 and V144_43 (which
+-- rebuilt notification_action_check last); the rebuild lists every action allowed before.
 --
--- notification.dedupe_key: a reminder's key (its action, System, due date and the day it is for); a person gets at most
--- one notification per key, so a rerun of the planner, or a second instance's run, writes and mails nothing more. Null
--- for the notice of a move, which is told once because the move happens once (NULLs never conflict).
-ALTER TABLE notification ADD COLUMN dedupe_key text;
-ALTER TABLE notification ADD CONSTRAINT notification_dedupe_key UNIQUE (recipient_id, dedupe_key);
-ALTER TABLE notification ADD CONSTRAINT notification_dedupe_key_check
-    CHECK (dedupe_key ~ '^[A-Z_]{1,40}:[0-9a-f-]{36}:[0-9]{4}-[0-9]{2}-[0-9]{2}:[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+-- notification.reminder_on: for a reminder, the business day it is for; null for the notice of a move. A person gets at
+-- most one reminder with the same action, System, due date and day, so a later pass of the planner, or a second
+-- instance's pass, writes and mails nothing more. A reminder always names the due date it reminds of.
+ALTER TABLE notification ADD COLUMN reminder_on date;
+ALTER TABLE notification ADD CONSTRAINT notification_reminder_due_check CHECK (reminder_on IS NULL OR due_on IS NOT NULL);
+CREATE UNIQUE INDEX notification_reminder_once_idx ON notification (recipient_id, action, system_id, due_on, reminder_on)
+    WHERE reminder_on IS NOT NULL;
 
 -- The reminders' actions:
 --   SUBMIT_DUE_SOON, SUBMIT_DUE_TODAY, SUBMIT_STILL_OVERDUE  to the SMO/Tech Lead (Not Started, Draft, Returned for Rework)

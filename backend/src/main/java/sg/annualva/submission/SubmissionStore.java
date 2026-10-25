@@ -142,8 +142,14 @@ class SubmissionStore {
     private static final String NOT_STARTED_DUE = "SELECT " + NOT_STARTED_DUE_ON;
 
     private static final String NOT_STARTED_OVERDUE =
-            "SELECT system_id FROM not_started_overdue WHERE cycle_year = :cycle "
+            "SELECT system_id, overdue_since FROM not_started_overdue WHERE cycle_year = :cycle "
             + "AND system_id = ANY(CAST(:systems AS uuid[]))";
+
+    /**
+     * A VA Submission's state, held against any move until the reader's transaction ends: a move's UPDATE waits for it, so
+     * whatever the move clears after its commit (a VA POC pair) is written before the move clears it.
+     */
+    private static final String STATE_HELD = "SELECT state FROM va_submission WHERE id = :id FOR SHARE";
 
     private static final String INSERT_PARTICIPATION =
             "INSERT INTO submission_participation (submission_id, user_id, step, first_at) "
@@ -547,11 +553,25 @@ class SubmissionStore {
 
     /** The Systems among these the sweep flagged Overdue while they were Not Started in the Cycle. */
     Set<UUID> notStartedOverdue(Collection<UUID> systemIds, int cycleYear) {
-        if (systemIds.isEmpty()) {
-            return Set.of();
+        return notStartedOverdueSince(systemIds, cycleYear).keySet();
+    }
+
+    /** The same, each with when the sweep flagged it. */
+    Map<UUID, Instant> notStartedOverdueSince(Collection<UUID> systemIds, int cycleYear) {
+        Map<UUID, Instant> flagged = new HashMap<>();
+        if (!systemIds.isEmpty()) {
+            jdbc.sql(NOT_STARTED_OVERDUE).param("cycle", cycleYear).param("systems", ids(systemIds))
+                    .query(rs -> {
+                        flagged.put(rs.getObject("system_id", UUID.class), instant(rs, "overdue_since"));
+                    });
         }
-        return Set.copyOf(jdbc.sql(NOT_STARTED_OVERDUE).param("cycle", cycleYear).param("systems", ids(systemIds))
-                .query(UUID.class).list());
+        return flagged;
+    }
+
+    /** The VA Submission's state, held until the caller's transaction ends ({@link #STATE_HELD}). */
+    Optional<SubmissionState> stateHeld(UUID id) {
+        return jdbc.sql(STATE_HELD).param("id", id).query((rs, row) -> SubmissionState.valueOf(rs.getString("state")))
+                .optional();
     }
 
     Optional<Row> find(UUID id) {

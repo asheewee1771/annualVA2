@@ -174,6 +174,7 @@ class DeadlineReminderTest extends MailSeam1 {
         assertThat(twoWeeks.get("message").asString())
                 .isEqualTo("The Quarter ends in 2 weeks: endorse the VA Submission, or return it for rework.");
         assertThat(actions(signedInAs(CM))).as("the Cyber Manager's step is done").containsExactly("REVIEW");
+        assertThat(actions(signedInAs(SMO_A))).as("nor is it the SMO/Tech Lead's").isEmpty();
 
         endorsed(otherVaPoc(), sub);
 
@@ -227,10 +228,15 @@ class DeadlineReminderTest extends MailSeam1 {
         applyConfirming(poc, preview(poc, file(List.of(F2, listed("SYS-F3", "File three", SMO_A, CM, "Q4")))),
                 List.of(draft.submissionId()));
 
-        plannedOn("2027-08-10");
+        for (String day : List.of("2027-08-10", "2027-08-15", "2027-08-16", "2027-08-23")) {
+            plannedOn(day);
+            arrange.overdueSweep();
+        }
 
         assertThat(actions(signedInAs(SMO_A))).containsExactly("WITHDRAWN");
-        assertThat(actions(signedInAs(SMO_B))).containsExactly("SUBMIT_DUE_SOON");
+        assertThat(actions(signedInAs(CM))).as("no copy for the retired System").isEmpty();
+        assertThat(actions(signedInAs(SMO_B))).containsExactly("SUBMIT_STILL_OVERDUE", "SUBMIT_OVERDUE",
+                "SUBMIT_DUE_TODAY", "SUBMIT_DUE_SOON");
     }
 
     @Test
@@ -244,21 +250,43 @@ class DeadlineReminderTest extends MailSeam1 {
         plannedOn("2027-05-16");
 
         assertThat(actions(signedInAs(SMO_A))).isEmpty();
-        assertThat(outboxOf(SMO_A)).isEmpty();
+        assertThat(actions(signedInAs(CM))).isEmpty();
+        assertThat(actions(vaPoc())).isEmpty();
+        assertThat(arrange.mailOutbox()).isEmpty();
     }
 
     @Test
-    void aSystemAddedAfterItsSubmissionWindowIsOverdueAtOnceAndRemindedWeeklyByItsQuartersWindow() {
+    void aSystemAddedAfterItsSubmissionWindowIsOverdueAtOnceAndRemindedEveryWeekAfter() {
         // Reviewer decisions, 2026-10-23: until Release 2 gives an added System its own windows, its SMO/Tech Lead is
-        // told at once, and va_system.added_on does not hold it back.
+        // told at once, and va_system.added_on does not hold it back. The weekly reminder counts from that message.
         today("2027-08-20");
         registered(F2);
         arrange.overdueSweep();
 
         plannedOn("2027-08-23");
+        assertThat(actions(signedInAs(SMO_B))).as("not 3 days after the Overdue message").containsExactly(
+                "SUBMIT_OVERDUE");
+        plannedOn("2027-08-27");
 
-        assertThat(actions(signedInAs(SMO_B))).containsExactly("SUBMIT_STILL_OVERDUE", "SUBMIT_OVERDUE");
+        JsonNode weekly = only(signedInAs(SMO_B), "SUBMIT_STILL_OVERDUE");
+        assertThat(weekly.get("dueOn").asString()).as("still due by its Quarter's window").isEqualTo("2027-08-15");
         assertThat(actions(signedInAs(CM_OTHER))).containsExactly("SUBMIT_OVERDUE_COPY");
+    }
+
+    @Test
+    void aReviewThatKeptTheFlagOfItsDraftIsRemindedWeeklyFromTheDayTheFlagWasSet() {
+        Draft draft = draft();
+        today("2027-08-16");
+        arrange.overdueSweep();
+        // Submitted after the Review Window too: the flag stays (ADR 0033 item 4), so the Cyber Manager's weekly
+        // reminders keep the week of the day it was set.
+        arrange.submissionState(draft.submissionId(), "IN_REVIEW");
+
+        plannedOn("2027-08-30");
+
+        assertThat(actions(signedInAs(CM))).containsExactly("REVIEW_STILL_OVERDUE");
+        assertThat(actions(signedInAs(SMO_A))).as("not the SMO/Tech Lead's step any more").containsExactly(
+                "SUBMIT_OVERDUE");
     }
 
     @Test

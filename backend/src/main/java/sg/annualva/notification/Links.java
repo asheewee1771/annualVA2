@@ -1,6 +1,8 @@
 package sg.annualva.notification;
 
+import java.util.Objects;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import sg.annualva.submission.SubmissionState;
 
 /**
@@ -23,13 +25,15 @@ public final class Links {
     /**
      * Where the SMO/Tech Lead takes up a VA Submission in this state: their inbox while it is Not Started (to start it),
      * the rework queue once it is Returned for Rework, and otherwise the VA Submission itself.
+     *
+     * @param submissionId null for a System with no VA Submission, which is Not Started
      */
-    public static String forSmo(SubmissionState state, UUID submissionId) {
-        return switch (state) {
-            case NOT_STARTED -> SMO_INBOX;
-            case RETURNED_FOR_REWORK -> rework(submissionId);
-            default -> prepare(submissionId);
-        };
+    public static String forSmo(SubmissionState state, @Nullable UUID submissionId) {
+        if (state == SubmissionState.NOT_STARTED) {
+            return SMO_INBOX;
+        }
+        UUID id = Objects.requireNonNull(submissionId, "a state after Not Started has a VA Submission");
+        return state == SubmissionState.RETURNED_FOR_REWORK ? rework(id) : prepare(id);
     }
 
     /** Where the SMO/Tech Lead prepares a VA Submission. */

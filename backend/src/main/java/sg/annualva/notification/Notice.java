@@ -15,11 +15,12 @@ import org.jspecify.annotations.Nullable;
  * @param dueOn the last day of the window the state waits on; null when none applies
  * @param link the app path that opens the item ({@link Links})
  * @param at when it happened (the clock bean's instant of the move it reports)
- * @param once for a reminder (ticket 38), the key it is written under at most once per person, however often the planner
- *     runs; null for a notice of a move, which is told once because the move happens once
+ * @param reminderOn for a deadline reminder (ADR 0051), the business day it is for: a person gets at most one
+ *     notification with the same action, System, due date and day, however often the planner runs; null for a notice of
+ *     a move, which is told once because the move happens once
  */
 public record Notice(UUID systemId, @Nullable UUID submissionId, String state, NoticeAction action,
-        @Nullable LocalDate dueOn, String link, Instant at, @Nullable String once) {
+        @Nullable LocalDate dueOn, String link, Instant at, @Nullable LocalDate reminderOn) {
 
     /** A notice of a move. */
     public Notice(UUID systemId, @Nullable UUID submissionId, String state, NoticeAction action,
@@ -27,18 +28,15 @@ public record Notice(UUID systemId, @Nullable UUID submissionId, String state, N
         this(systemId, submissionId, state, action, dueOn, link, at, null);
     }
 
-    /** The same notice with another action. */
-    public Notice as(NoticeAction other) {
-        return new Notice(systemId, submissionId, state, other, dueOn, link, at, once);
+    /** A deadline reminder for a business day: it always has the due date it reminds of. */
+    static Notice reminder(UUID systemId, @Nullable UUID submissionId, String state, NoticeAction action,
+            LocalDate dueOn, String link, Instant at, LocalDate day) {
+        return new Notice(systemId, submissionId, state, action, dueOn, link, at, day);
     }
 
-    /**
-     * The same notice as the reminder of this business day: written at most once per person with its action, its System,
-     * the window it is due by and the day, so a rerun of the planner, or a second instance's run, sends nothing more.
-     */
-    Notice remindingOn(LocalDate day) {
-        return new Notice(systemId, submissionId, state, action, dueOn, link, at,
-                action.name() + ":" + systemId + ":" + dueOn + ":" + day);
+    /** The same notice with another action. */
+    public Notice as(NoticeAction other) {
+        return new Notice(systemId, submissionId, state, other, dueOn, link, at, reminderOn);
     }
 
     /**
@@ -46,6 +44,6 @@ public record Notice(UUID systemId, @Nullable UUID submissionId, String state, N
      * as the link, since what it pointed at is no longer theirs.
      */
     public Notice leaving() {
-        return new Notice(systemId, submissionId, state, action, null, Links.SMO_INBOX, at, once);
+        return new Notice(systemId, submissionId, state, action, null, Links.SMO_INBOX, at, reminderOn);
     }
 }

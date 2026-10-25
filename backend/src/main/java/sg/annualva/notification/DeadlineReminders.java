@@ -4,133 +4,153 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 import sg.annualva.cycle.CycleCalendar;
-import sg.annualva.submission.SubmissionState;
+import sg.annualva.submission.SubmissionStep;
 import sg.annualva.submission.WaitingWork;
+import sg.annualva.submission.WaitingWork.Waiting;
 
 /**
- * The deadline reminders (stories 88, 89 and 90, ADR 0051). Once a day ({@code DeadlineReminderJob}, 08:00 in Singapore)
- * the planner reads where every piece of waiting work stands ({@link WaitingWork}) and reminds whoever's step it is:
+ * The deadline reminders (stories 88, 89 and 90, ADR 0051). Each pass ({@code DeadlineReminderJob}: 08:00 in Singapore,
+ * then hourly to the end of the day) reads where every piece of waiting work stands ({@link WaitingWork}) and reminds the
+ * person whose step it is, by the one table below ({@link #schedule}):
  *
  * <ul>
- *   <li>the SMO/Tech Lead (Not Started, Draft, Returned for Rework) and the Cyber Manager (In Review) 5 days before and
- *       on the last day of the window their step waits on, then every 7 days after the Overdue message while the flag
- *       stays set, with a copy to the next person up as a message of its own (the relay has no cc): the Cyber Manager
- *       for the SMO/Tech Lead's, each VA POC for the Cyber Manager's;
- *   <li>both VA POCs, as a pair that their endorsement or return clears, 2 weeks and 1 week before the Quarter's last
- *       day, for a VA Submission Awaiting Endorsement.
+ *   <li>submitting (the SMO/Tech Lead) and reviewing (the Cyber Manager): 5 days before the window their step waits on
+ *       ends and on its last day, then every 7 days after the day the Overdue sweep flagged it while the flag stays set,
+ *       each weekly reminder with a copy, a message of its own since the relay has no cc, to the next person up: the
+ *       Cyber Manager for submitting, each VA POC for reviewing;
+ *   <li>endorsing (both VA POCs, as a pair that either one's endorsement or return clears): 2 weeks and 1 week before
+ *       the Quarter's last day.
  * </ul>
  *
- * Each reminder is written under a key of its action, System, due date and day ({@link Notice#remindingOn}), so a rerun
- * of the same day, or a second instance's run, writes and mails nothing more. Each is written in a transaction of its own,
- * so one that cannot be written is logged by ids and left for a rerun, and the rest still go out.
+ * A reminder is for its business day: a person gets at most one with the same action, System, due date and day, so the
+ * later passes of a day, or a second instance's pass, write and mail nothing more, and they write what an earlier pass
+ * of the day could not. Each piece of work is reminded in a transaction of its own that first checks it is still where it
+ * was read, so a failure leaves the rest to go out, and a reminder is never about a state already left.
  */
 @Service
 public class DeadlineReminders {
 
     private static final Logger log = LoggerFactory.getLogger(DeadlineReminders.class);
 
-    /** How many days before its window ends a step's owner is first reminded. */
-    private static final int DUE_SOON_DAYS = 5;
+    /** How often, in days, a step that stays Overdue is reminded again. */
+    private static final int OVERDUE_CADENCE_DAYS = 7;
 
-    /** How often a step that stays Overdue is reminded. */
-    private static final int WEEK = 7;
+    /** Who is told: a route of the {@link Notifications} port. */
+    private interface Route extends BiConsumer<Notifications, Notice> {}
+
+    /** The weekly reminder while a step is Overdue, and its copy to the next person up. */
+    private record Weekly(NoticeAction action, NoticeAction copy, Route copyTo, Function<Waiting, String> copyLink) {}
+
+    /**
+     * How a step is reminded: its person, the link that opens their work, the reminder for each number of days left
+     * before the window ends, and the weekly one while it is Overdue (none for endorsing: story 90 asks for none, and the
+     * sweep's Overdue message tells both VA POCs).
+     */
+    private record Schedule(Route to, Function<Waiting, String> link, Map<Long, NoticeAction> daysBefore,
+            @Nullable Weekly weekly) {}
 
     private final WaitingWork work;
     private final Notifications notifications;
     private final CycleCalendar calendar;
     private final Clock clock;
+    private final TransactionTemplate transaction;
 
-    DeadlineReminders(WaitingWork work, Notifications notifications, CycleCalendar calendar, Clock clock) {
+    DeadlineReminders(WaitingWork work, Notifications notifications, CycleCalendar calendar, Clock clock,
+            TransactionTemplate transaction) {
         this.work = work;
         this.notifications = notifications;
         this.calendar = calendar;
         this.clock = clock;
+        this.transaction = transaction;
     }
 
-    /** One pass: every reminder due on today's business date, read once from the clock. */
+    /** The reminder schedule of each step, written once. */
+    private static Schedule schedule(SubmissionStep step) {
+        return switch (step) {
+            case SUBMIT -> new Schedule(Notifications::toSmo,
+                    waiting -> Links.forSmo(waiting.state(), waiting.submissionId()),
+                    Map.of(5L, NoticeAction.SUBMIT_DUE_SOON, 0L, NoticeAction.SUBMIT_DUE_TODAY),
+                    new Weekly(NoticeAction.SUBMIT_STILL_OVERDUE, NoticeAction.SUBMIT_OVERDUE_COPY,
+                            Notifications::toCyberManager, waiting -> Links.CYBER_MANAGER_INBOX));
+            case REVIEW -> new Schedule(Notifications::toCyberManager, waiting -> Links.review(waiting.started()),
+                    Map.of(5L, NoticeAction.REVIEW_DUE_SOON, 0L, NoticeAction.REVIEW_DUE_TODAY),
+                    new Weekly(NoticeAction.REVIEW_STILL_OVERDUE, NoticeAction.REVIEW_OVERDUE_COPY,
+                            Notifications::toEachVaPoc, waiting -> Links.endorse(waiting.started())));
+            case ENDORSE -> new Schedule((port, notice) -> port.toVaPocs(notice, Awaits.ENDORSEMENT),
+                    waiting -> Links.endorse(waiting.started()),
+                    Map.of(14L, NoticeAction.ENDORSE_DUE_IN_TWO_WEEKS, 7L, NoticeAction.ENDORSE_DUE_IN_ONE_WEEK), null);
+        };
+    }
+
+    /**
+     * One pass: every reminder due on today's business date, read once from the clock. Logs one line with how much work
+     * waited and how many pieces could not be reminded (ids, counts and an exception type only).
+     */
     public void plan() {
         Instant now = clock.instant();
         LocalDate today = calendar.dateOf(now);
-        for (WaitingWork.Waiting waiting : work.on(today)) {
+        int waiting = 0;
+        int failed = 0;
+        @Nullable String failure = null;
+        for (Waiting item : work.on(today)) {
+            waiting++;
             try {
-                remind(waiting, today, now);
+                transaction.executeWithoutResult(status -> {
+                    if (work.stillWaiting(item)) {
+                        remind(item, today, now);
+                    }
+                });
             } catch (RuntimeException e) {
-                log.atError().setMessage("A reminder could not be written; a rerun writes it")
-                        .addKeyValue("event.action", "reminder-failed")
-                        .addKeyValue("labels.system_id", waiting.systemId())
-                        .addKeyValue("error.type", e.getClass().getName()).log();
+                failed++;
+                failure = e.getClass().getName();
             }
         }
+        if (failure != null) {
+            log.atError().setMessage("Reminders could not be written; a later pass today writes them")
+                    .addKeyValue("event.action", "reminder-failed").addKeyValue("labels.count", failed)
+                    .addKeyValue("error.type", failure).log();
+        }
+        log.atInfo().setMessage("Deadline reminders planned").addKeyValue("event.action", "reminders-planned")
+                .addKeyValue("labels.waiting", waiting).addKeyValue("labels.failed", failed).log();
     }
 
-    private void remind(WaitingWork.Waiting waiting, LocalDate today, Instant now) {
-        long daysLeft = ChronoUnit.DAYS.between(today, waiting.dueOn());
-        UUID id = waiting.submissionId();
-        switch (waiting.state()) {
-            case NOT_STARTED, DRAFT, RETURNED_FOR_REWORK -> {
-                String link = id == null ? Links.SMO_INBOX : Links.forSmo(waiting.state(), id);
-                NoticeAction action = stepAction(daysLeft, waiting.overdue(), NoticeAction.SUBMIT_DUE_SOON,
-                        NoticeAction.SUBMIT_DUE_TODAY, NoticeAction.SUBMIT_STILL_OVERDUE);
-                if (action != null) {
-                    notifications.toSmo(notice(waiting, action, link, today, now));
-                }
-                if (action == NoticeAction.SUBMIT_STILL_OVERDUE) {
-                    notifications.toCyberManager(notice(waiting, NoticeAction.SUBMIT_OVERDUE_COPY,
-                            Links.CYBER_MANAGER_INBOX, today, now));
-                }
-            }
-            case IN_REVIEW -> {
-                UUID submission = Objects.requireNonNull(id, "a review has a VA Submission");
-                NoticeAction action = stepAction(daysLeft, waiting.overdue(), NoticeAction.REVIEW_DUE_SOON,
-                        NoticeAction.REVIEW_DUE_TODAY, NoticeAction.REVIEW_STILL_OVERDUE);
-                if (action != null) {
-                    notifications.toCyberManager(notice(waiting, action, Links.review(submission), today, now));
-                }
-                if (action == NoticeAction.REVIEW_STILL_OVERDUE) {
-                    notifications.toEachVaPoc(notice(waiting, NoticeAction.REVIEW_OVERDUE_COPY,
-                            Links.endorse(submission), today, now));
-                }
-            }
-            case AWAITING_ENDORSEMENT -> {
-                UUID submission = Objects.requireNonNull(id, "an endorsement has a VA Submission");
-                NoticeAction action = daysLeft == 2 * WEEK ? NoticeAction.ENDORSE_DUE_IN_TWO_WEEKS
-                        : daysLeft == WEEK ? NoticeAction.ENDORSE_DUE_IN_ONE_WEEK : null;
-                if (action != null) {
-                    notifications.toVaPocs(notice(waiting, action, Links.endorse(submission), today, now),
-                            Awaits.ENDORSEMENT);
-                }
-            }
-            // WaitingWork answers only the states that wait on a window.
-            default -> { }
+    private void remind(Waiting waiting, LocalDate today, Instant now) {
+        Schedule schedule = schedule(waiting.step());
+        NoticeAction before = schedule.daysBefore().get(ChronoUnit.DAYS.between(today, waiting.dueOn()));
+        if (before != null) {
+            schedule.to().accept(notifications, notice(waiting, before, schedule.link(), today, now));
+        }
+        Weekly weekly = schedule.weekly();
+        if (weekly != null && weeklyDue(waiting.overdueOn(), today)) {
+            schedule.to().accept(notifications, notice(waiting, weekly.action(), schedule.link(), today, now));
+            weekly.copyTo().accept(notifications, notice(waiting, weekly.copy(), weekly.copyLink(), today, now));
         }
     }
 
     /**
-     * The reminder of a step owned by one person on a day, if any: 5 days before its window ends, on the last day, and
-     * every 7 days after the day the Overdue message went (the day after the last), while the flag stays set.
+     * Every 7 days after the day the sweep flagged the work, while it stays flagged: the sweep's own Overdue message went
+     * on that day, so a weekly reminder never repeats it.
      */
-    private static @Nullable NoticeAction stepAction(long daysLeft, boolean overdue, NoticeAction soon,
-            NoticeAction dueToday, NoticeAction stillOverdue) {
-        if (daysLeft == DUE_SOON_DAYS) {
-            return soon;
+    private static boolean weeklyDue(@Nullable LocalDate overdueOn, LocalDate today) {
+        if (overdueOn == null) {
+            return false;
         }
-        if (daysLeft == 0) {
-            return dueToday;
-        }
-        long sinceOverdueMessage = -daysLeft - 1;
-        return overdue && sinceOverdueMessage > 0 && sinceOverdueMessage % WEEK == 0 ? stillOverdue : null;
+        long daysOverdue = ChronoUnit.DAYS.between(overdueOn, today);
+        return daysOverdue > 0 && daysOverdue % OVERDUE_CADENCE_DAYS == 0;
     }
 
-    private static Notice notice(WaitingWork.Waiting waiting, NoticeAction action, String link, LocalDate today,
+    private static Notice notice(Waiting waiting, NoticeAction action, Function<Waiting, String> link, LocalDate today,
             Instant now) {
-        return new Notice(waiting.systemId(), waiting.submissionId(), waiting.state().name(), action, waiting.dueOn(),
-                link, now).remindingOn(today);
+        return Notice.reminder(waiting.systemId(), waiting.submissionId(), waiting.state().name(), action,
+                waiting.dueOn(), link.apply(waiting), now, today);
     }
 }

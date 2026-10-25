@@ -73,24 +73,28 @@ public class Notifications {
     @Transactional
     public void toVaPocs(Notice notice, Awaits awaits) {
         UUID groupKey = UUID.randomUUID();
-        Set<String> people = new LinkedHashSet<>();
-        vaPocs.vaPocs().forEach(email -> people.add(email.toLowerCase(Locale.ROOT)));
-        people.forEach(email -> write(email, notice, groupKey, awaits));
+        vaPocEmails().forEach(email -> write(email, notice, groupKey, awaits));
     }
 
     /**
-     * To each VA POC as an item of their own, which nothing clears: a copy for their information (ticket 38), not a
+     * To each VA POC as an item of their own, which nothing clears: a copy for their information (ADR 0051), not a
      * decision they await.
      */
     @Transactional
     public void toEachVaPoc(Notice notice) {
-        vaPocs.vaPocs().stream().map(email -> email.toLowerCase(Locale.ROOT)).distinct()
-                .forEach(email -> write(email, notice, null, null));
+        vaPocEmails().forEach(email -> write(email, notice, null, null));
+    }
+
+    /** The configured VA POCs, each once, by lower-case email. */
+    private Set<String> vaPocEmails() {
+        Set<String> people = new LinkedHashSet<>();
+        vaPocs.vaPocs().forEach(email -> people.add(email.toLowerCase(Locale.ROOT)));
+        return people;
     }
 
     /**
      * One person's notification, and its mail when the notice is a required message, in the caller's transaction; a
-     * reminder written for them before under the same key is neither written nor mailed again.
+     * reminder they already have for the same day is neither written nor mailed again.
      */
     private void write(String email, Notice notice, @Nullable UUID groupKey, @Nullable Awaits awaits) {
         store.insert(users.known(email, notice.at()), notice, groupKey, awaits)
