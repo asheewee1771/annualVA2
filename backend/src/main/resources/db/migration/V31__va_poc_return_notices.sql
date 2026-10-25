@@ -1,5 +1,5 @@
--- The notices of a VA POC's return (ticket 35, ADR 0047). Numbered after V141, which rebuilt the CHECK last, because
--- the notification table (V136) does not exist yet when V135 runs on a fresh database.
+-- The notices of a VA POC's return (ticket 35, ADR 0047). Numbered after V30, which rebuilt the CHECK last, because
+-- the notification table (V27) does not exist yet when V26 runs on a fresh database.
 --
 -- VA_POC_REWORK    to the SMO/Tech Lead: a VA POC returned the VA Submission; the REWORK sentence names a Dispute,
 --                  which a VA POC's return does not carry

@@ -1,7 +1,7 @@
 -- Deadline reminders (ticket 38, stories 88, 89 and 90, ADR 0052). A planner reminds whoever's step it is before and on
 -- the last day of the window their work waits on (V20 current_window_due), then weekly while it is Overdue with a copy to
 -- the next person up, and reminds both VA POCs 2 weeks and 1 week before the Quarter's last day. A reminder is a
--- notification like any other (V136) and is mailed through the outbox (V137). Numbered after V149 and V149_42 (which
+-- notification like any other (V27) and is mailed through the outbox (V28). Numbered after V36 and V37 (which
 -- rebuilt notification_action_check last); the rebuild lists every action allowed before.
 --
 -- notification.reminder_on: for a reminder, the business day it is for; null for the notice of a move. A person gets at

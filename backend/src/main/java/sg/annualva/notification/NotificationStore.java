@@ -13,7 +13,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
-/** The notification table (V136). Constant SQL, named parameters (as-2). */
+/** The notification table (V27). Constant SQL, named parameters (as-2). */
 @Repository
 class NotificationStore {
 

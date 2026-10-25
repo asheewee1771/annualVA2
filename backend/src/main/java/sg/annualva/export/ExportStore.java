@@ -14,7 +14,7 @@ import org.springframework.stereotype.Repository;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * The exports table (V144). Constant SQL, named parameters (as-2). What a queued export will hold is kept whole as one
+ * The exports table (V32). Constant SQL, named parameters (as-2). What a queued export will hold is kept whole as one
  * JSON document, as a Register preview is: it is written once, read whole by the export job and removed once the file is
  * made or the export fails. Each move of an export is guarded by the status it moves from, so two passes of the job that
  * reach the same export change it once.

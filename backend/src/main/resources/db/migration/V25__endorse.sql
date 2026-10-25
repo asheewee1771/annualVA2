@@ -4,7 +4,7 @@
 -- returns or decides an Exemption) on a VA Submission. A VA POC counts at it only once they act; no Register assignment
 -- puts anyone there (ADR 0039 item 5). DECIDE stays allowed and unused, for ticket 40 to keep or drop.
 --
--- va_submission.endorsed_late and endorsed_at (V8, V133) are written by the endorse command; nothing else is new there.
+-- va_submission.endorsed_late and endorsed_at (V8, V24) are written by the endorse command; nothing else is new there.
 ALTER TABLE submission_participation DROP CONSTRAINT submission_participation_step_check;
 ALTER TABLE submission_participation ADD CONSTRAINT submission_participation_step_check
     CHECK (step IN ('SUBMIT', 'REVIEW', 'ENDORSE', 'DECIDE'));

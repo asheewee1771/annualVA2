@@ -3,9 +3,7 @@
 -- lapses_on (the Quarter's last day plus 3 months) the lapse job puts the VA Submission back where the request froze it,
 -- with new windows, or makes it Not Endorsed once its VA Cycle has closed.
 --
--- Numbered 149.42, not V142: it rebuilds the notification CHECKs that V144_40 (ticket 40) and V144_43 (ticket 43)
--- rebuilt last, so it must run after them, and it sorts after V149 (ticket 49), merged first, so a database that has run
--- V149 takes it in order.
+-- Runs after V33 (ticket 40) and V34 (ticket 43): it rebuilds the notification CHECKs they rebuilt last.
 --
 -- exemption gains, each written once:
 --   va_happened_on   the business date (Asia/Singapore) the SMO/Tech Lead says the scheduled VA happened
@@ -36,7 +34,7 @@ ALTER TABLE exemption
 CREATE INDEX exemption_lapsing_idx ON exemption (lapses_on)
     WHERE lapses_on IS NOT NULL AND va_recorded_at IS NULL AND lapsed_at IS NULL;
 
--- The notifications (V136, V141, V141_35, V144_40, V144_43) learn the recorded VA to both VA POCs, as a pair that clears once
+-- The notifications (V27, V30, V31, V33, V34) learn the recorded VA to both VA POCs, as a pair that clears once
 -- either confirms it; the confirmation to the SMO/Tech Lead; and the lapse to the SMO/Tech Lead, back where it was or Not
 -- Endorsed.
 ALTER TABLE notification DROP CONSTRAINT notification_action_check;

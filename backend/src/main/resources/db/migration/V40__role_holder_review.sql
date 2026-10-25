@@ -1,5 +1,5 @@
 -- Role-holder review, suspension and identity-provider disablement (ticket 47, story 80a, IM8 ac-3 and ac-4, ADR 0056).
--- Numbered 149.47 so it sorts after every migration already merged (the latest, V149_46, changed role_grant too).
+-- Runs after V39, which changed role_grant too.
 --
 -- role_grant: V4 already holds when a grant was suspended; a suspension now also records who suspended it and why.
 --   suspended_by      the VA POC whose review suspended it; null when the identity provider reported the person disabled

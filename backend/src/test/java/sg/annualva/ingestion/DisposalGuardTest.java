@@ -14,7 +14,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * The one deliberate path through the append-only tables (V149, ADR 0050), proved on the application's own database
+ * The one deliberate path through the append-only tables (V36, ADR 0050), proved on the application's own database
  * connection, as the audit log's append-only test is: whatever the application's code or a bug in it tried, a delete goes
  * through only inside a transaction that names a list a VA POC has approved, an update or a truncate never, the
  * Declaration wordings never, and an audit entry only before the approved list's cutoff. Every other removal is a soft

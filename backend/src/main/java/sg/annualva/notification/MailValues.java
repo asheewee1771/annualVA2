@@ -13,7 +13,7 @@ import sg.annualva.submission.SubmissionState;
  * ID and name, the state, the action, the due date, the link and, for a Register change, what changed. There is no other
  * key, so nothing a person types into a VA Submission and nothing read from a report can reach a mail. The action, the
  * change and the due date are built from typed fields in the app's own words. Of the values read from the database as
- * text, the state and the link are held to the app's states and paths by the notification table's own CHECKs (V136); the
+ * text, the state and the link are held to the app's states and paths by the notification table's own CHECKs (V27); the
  * System ID and name are the Register's, which the Register checks only on upload, so they are checked here against its
  * plain-text rule ({@link RegisterText}) before every mail.
  */
@@ -61,7 +61,7 @@ final class MailValues {
         return values;
     }
 
-    /** A state code (one V136's CHECK allows) as the screens name it. */
+    /** A state code (one V27's CHECK allows) as the screens name it. */
     private static String stateLabel(String code) {
         return SubmissionState.valueOf(code).label();
     }

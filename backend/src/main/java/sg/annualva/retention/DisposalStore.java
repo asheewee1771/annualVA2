@@ -17,7 +17,7 @@ import org.springframework.stereotype.Repository;
 import sg.annualva.boundary.FileStore;
 
 /**
- * The disposal lists (V149) and what they are computed from. Constant SQL, named parameters (as-2). Every move of a list
+ * The disposal lists (V36) and what they are computed from. Constant SQL, named parameters (as-2). Every move of a list
  * is guarded by the status it moves from, so two passes of the job, or two VA POCs, change it once.
  */
 @Repository
@@ -147,7 +147,7 @@ class DisposalStore {
     /**
      * The disposal, in foreign-key order (ADR 0050): what names a record goes before it, and a rescan and the file it
      * replaced go in one statement. The proposals, batches, reviews, returns, Declarations and audit entries are
-     * append-only; V149 lets these deletes through only while the list named by {@link #RUNNING} is APPROVED. A schema test
+     * append-only; V36 lets these deletes through only while the list named by {@link #RUNNING} is APPROVED. A schema test
      * checks that every table naming a table deleted from here is deleted from here too.
      */
     static final List<Step> STEPS = List.of(

@@ -3,7 +3,7 @@
 --
 -- va_system.smo_unreachable_at  when the relay first refused the SMO/Tech Lead's address (UTC) since a mail to it last
 --                               went through; null while the address is not known to be refused. Set on every active
---                               System naming that address when a mail to it is settled REJECTED (V137), cleared on
+--                               System naming that address when a mail to it is settled REJECTED (V28), cleared on
 --                               every System naming it when a later mail to it is SENT. A Register apply that adds a
 --                               System or names another SMO/Tech Lead for it gives it the earliest flag of the other
 --                               active Systems naming the new address, or none. Unlike Unlinked SMO (V6), it is

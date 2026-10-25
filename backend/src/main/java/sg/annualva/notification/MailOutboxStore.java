@@ -13,7 +13,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 /**
- * The mail outbox (V137). Constant SQL, named parameters (as-2). Each statement stands alone, so the dispatcher holds no
+ * The mail outbox (V28). Constant SQL, named parameters (as-2). Each statement stands alone, so the dispatcher holds no
  * row lock while it calls the relay (ADR 0012): a claim takes the next due row with {@code SKIP LOCKED}, counts the
  * attempt and leases the row, and an outcome is written only while the row is still the claim it read (same attempt,
  * still pending). A claim takes only rows whose template and action this build knows, so an instance running an older

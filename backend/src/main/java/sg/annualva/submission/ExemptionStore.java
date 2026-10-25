@@ -14,7 +14,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
-/** The Exemption requests and their decisions (V144_40). Constant SQL, named parameters (as-2). */
+/** The Exemption requests and their decisions (V33). Constant SQL, named parameters (as-2). */
 @Repository
 class ExemptionStore {
 
@@ -28,7 +28,7 @@ class ExemptionStore {
             @Nullable UUID confirmedBy, @Nullable Instant confirmedAt, @Nullable Instant lapsedAt) {
 
         /**
-         * A conditional Exemption (story 47): approved on a scheduled VA (only such a one has a lapse date, V144_40),
+         * A conditional Exemption (story 47): approved on a scheduled VA (only such a one has a lapse date, V33),
          * with its VA not confirmed and not lapsed.
          */
         boolean conditional() {

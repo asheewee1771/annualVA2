@@ -1,7 +1,7 @@
 package sg.annualva.retention;
 
 /**
- * What one item of a disposal list disposes of (V149 {@code disposal_item.kind}).
+ * What one item of a disposal list disposes of (V36 {@code disposal_item.kind}).
  *
  * <ul>
  *   <li>{@code SUBMISSION}: a VA Submission and everything that hangs off it

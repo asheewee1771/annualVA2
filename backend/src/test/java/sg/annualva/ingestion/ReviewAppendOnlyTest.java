@@ -31,7 +31,7 @@ class ReviewAppendOnlyTest extends ReviewSeam1 {
         String before = findingById(cm, sub, finding).toString() + report(cm, sub, BURP_SUITE);
 
         for (String table : new String[] {"finding_review", "report_review"}) {
-            // CASCADE: the returns (V130) refer to the reviews, and a plain TRUNCATE is refused for that before any trigger.
+            // CASCADE: the returns (V23) refer to the reviews, and a plain TRUNCATE is refused for that before any trigger.
             for (String sql : new String[] {"UPDATE " + table + " SET comment = 'changed'", "DELETE FROM " + table,
                     "TRUNCATE " + table + " CASCADE"}) {
                 assertThatThrownBy(() -> application.sql(sql).update()).as(sql)

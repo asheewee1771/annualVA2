@@ -3,8 +3,7 @@
 -- Submission is frozen in Exemption Requested until a VA POC approves it (Exempted) or rejects it (back to exactly the
 -- state it was in).
 --
--- Numbered 144.40, not V140: it rebuilds CHECKs that V141 (ticket 41) and V144 (ticket 44), merged first, rebuilt, so it
--- must run after them.
+-- Runs after V30 (ticket 41) and V32 (ticket 44): it rebuilds the CHECKs they rebuilt last.
 --
 -- exemption: one row per request; the request's columns are never changed, the decision's are written once.
 --   submission_id          the VA Submission it freezes; a request on a Not Started System creates it (state NOT_STARTED)
@@ -68,7 +67,7 @@ ALTER TABLE audit_entry ADD CONSTRAINT audit_entry_detail_check
                               'export_type', 'format', 'classification', 'cycle', 'quarter',
                               'exemption_id', 'basis'] = '{}'::jsonb);
 
--- The notifications (V136, V141) learn the request to both VA POCs, as a pair that clears once either decides, and the
+-- The notifications (V27, V30) learn the request to both VA POCs, as a pair that clears once either decides, and the
 -- decision to the SMO/Tech Lead.
 ALTER TABLE notification DROP CONSTRAINT notification_action_check;
 ALTER TABLE notification ADD CONSTRAINT notification_action_check CHECK (action IN ('REVIEW', 'REWORK', 'ENDORSE',

@@ -8,7 +8,7 @@ import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
-/** The role_holder_review table (V149_47): the completed role-holder reviews. Constant SQL, named parameters (as-2). */
+/** The role_holder_review table (V40): the completed role-holder reviews. Constant SQL, named parameters (as-2). */
 @Repository
 class RoleHolderReviewStore {
 

@@ -248,15 +248,15 @@ public class TestEndpoints {
                 jdbc.sql("DROP TRIGGER IF EXISTS test_fault ON report_file").update();
                 jdbc.sql("DROP TRIGGER IF EXISTS test_finding_fault ON finding_occurrence").update();
                 jdbc.sql("DROP TRIGGER IF EXISTS test_finding_late ON report_file").update();
-                // The notifications (V136) name the Systems and the VA Submissions, so they go before both.
+                // The notifications (V27) name the Systems and the VA Submissions, so they go before both.
                 jdbc.sql("DROP TRIGGER IF EXISTS test_notification_fault ON notification").update();
-                // The mail outbox (V137) names the notifications, so it goes before them.
+                // The mail outbox (V28) names the notifications, so it goes before them.
                 jdbc.sql("DELETE FROM mail_outbox").update();
                 jdbc.sql("DELETE FROM notification").update();
-                // The Exemption requests (V144_40) name the VA Submissions and their evidence files.
+                // The Exemption requests (V33) name the VA Submissions and their evidence files.
                 jdbc.sql("DELETE FROM exemption").update();
                 jdbc.sql("DELETE FROM finding_occurrence").update();
-                // The returns (V130) name the reviews, and the reviews (V21, V129) name the proposals, the batches and the
+                // The returns (V23) name the reviews, and the reviews (V21, V22) name the proposals, the batches and the
                 // Scan Reports, so they go first, a return before the reviews it names and a Finding's review before the
                 // batch review it names; all are append-only.
                 for (String review : new String[] {"submission_return_item", "submission_return", "finding_review",
@@ -293,7 +293,7 @@ public class TestEndpoints {
                 }
                 jdbc.sql("DELETE FROM submission_participation").update();
                 jdbc.sql("DELETE FROM not_started_overdue").update();
-                // The VA Cycle lifecycle's records (V141): what the opening kept of the Register, and the opens and closes.
+                // The VA Cycle lifecycle's records (V30): what the opening kept of the Register, and the opens and closes.
                 jdbc.sql("DELETE FROM cycle_register_system").update();
                 jdbc.sql("DELETE FROM cycle_register").update();
                 jdbc.sql("DELETE FROM va_cycle").update();
@@ -311,7 +311,7 @@ public class TestEndpoints {
                 jdbc.sql("DELETE FROM role_holder_review").update();
                 jdbc.sql("DELETE FROM register_upload").update();
                 jdbc.sql("DELETE FROM export_request").update();
-                // The disposal lists (V149) name no other row by key; at most one may wait at a time.
+                // The disposal lists (V36) name no other row by key; at most one may wait at a time.
                 jdbc.sql("DELETE FROM disposal_item").update();
                 jdbc.sql("DELETE FROM disposal_list").update();
                 jdbc.sql("DELETE FROM va_system").update();

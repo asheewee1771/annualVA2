@@ -1,6 +1,6 @@
 -- The notice of a withdrawal (ticket 43, story 94, ADR 0049): a Register apply retired a System and its in-flight VA
 -- Submission became Withdrawn, so its SMO/Tech Lead is told, in the app and by mail with the REGISTER_CHANGE template
--- (V137 already allows it). Numbered after V144_40, which rebuilt the CHECK last; it lists every action allowed before.
+-- (V28 already allows it). Numbered after V33, which rebuilt the CHECK last; it lists every action allowed before.
 --
 -- WITHDRAWN  to the SMO/Tech Lead the Register last named for the retired System: nothing more is due
 ALTER TABLE notification DROP CONSTRAINT notification_action_check;

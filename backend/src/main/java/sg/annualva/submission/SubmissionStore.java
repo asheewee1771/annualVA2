@@ -212,7 +212,7 @@ class SubmissionStore {
 
     /**
      * A Cycle's close: each of these Systems of one Quarter that has no VA Submission in the Cycle (Not Started) gets one,
-     * Not Endorsed, with the Quarter's windows, that nobody started (V141).
+     * Not Endorsed, with the Quarter's windows, that nobody started (V30).
      */
     private static final String NOT_ENDORSE_NOT_STARTED =
             "INSERT INTO va_submission (system_id, cycle_year, quarter, state, submit_due, review_due, endorse_due) "
@@ -308,14 +308,14 @@ class SubmissionStore {
 
     /**
      * A pass to endorsement: Awaiting Endorsement, the flag with it, and when the review ended
-     * ({@code passed_to_endorsement_at}, V133, the Cycle matrix's "reviewed").
+     * ({@code passed_to_endorsement_at}, V24, the Cycle matrix's "reviewed").
      */
     private static final String PASSED =
             "UPDATE va_submission SET state = :state, passed_to_endorsement_at = :now, " + OVERDUE_AFTER_MOVE
             + " WHERE id = :id";
 
     /**
-     * An endorsement: Endorsed, the flag with it, when (V133, the Cycle matrix's "endorsed"), and whether it was late:
+     * An endorsement: Endorsed, the flag with it, when (V24, the Cycle matrix's "endorsed"), and whether it was late:
      * whether the window the old state waited on, the Quarter's last day, had passed by the Overdue rule (V20; an
      * {@code UPDATE} reads the old state).
      */
@@ -509,7 +509,7 @@ class SubmissionStore {
 
     /**
      * The returns of the VA Submission, the latest first, each with what it attached in the order it was attached. An
-     * item is a Finding or a not-applicable justification, never both (V130).
+     * item is a Finding or a not-applicable justification, never both (V23).
      */
     List<Submissions.Return> returns(UUID submissionId) {
         Map<UUID, List<ReviewProgress.DisputedFinding>> findings = new HashMap<>();

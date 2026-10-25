@@ -1,6 +1,6 @@
 -- Ticket 50 (Q11, IM8 lm-4, ADR 0057): a read of the audit log is itself an entry, AUDIT_LOG_VIEWED, with what it asked
 -- for: the actor, action, System and VA Submission filtered on, the business dates and the page, as ids, codes and
--- numbers only. The CHECK is rebuilt from the union of every key added before it (the latest rebuild was V149) and the
+-- numbers only. The CHECK is rebuilt from the union of every key added before it (the latest rebuild was V36) and the
 -- seven new ones; it must sort after every migration that rebuilt it.
 ALTER TABLE audit_entry DROP CONSTRAINT audit_entry_detail_check;
 ALTER TABLE audit_entry ADD CONSTRAINT audit_entry_detail_check
