@@ -223,15 +223,38 @@ class RoleLapseTest extends ExemptionSeam1 {
     }
 
     @Test
-    void aRejectedExemptionHandsNothingOverAndReturnsNobody() {
-        Draft draft = draft();
+    void aRejectedExemptionThatPutsItBackInReviewReturnsNobody() {
+        Draft draft = inReview();
         String id = requested(draft.smo(), draft.systemId(), priorVa()).get("id").asString();
-        arrange.lapse(grantOf(SMO_A, "SMO"));
+        arrange.lapse(grantOf(CM, "CYBER_MANAGER"));
 
         rejected(vaPoc(), id);
 
-        assertThat(roles(signedInAs(SMO_A))).isEmpty();
+        assertThat(submission(draft.smo(), draft.submissionId()).get("state").asString()).isEqualTo("IN_REVIEW");
+        assertThat(roles(signedInAs(CM))).as("not a submit: the SMO/Tech Lead asked for the Exemption").isEmpty();
         assertThat(entries(RETURNED, draft.systemId())).isEmpty();
+    }
+
+    @Test
+    void aConditionalExemptionThatLapsesToNotEndorsedReturnsNobody() {
+        // Q4 of VA Cycle 2027 ends on 6 February 2028 and the Cycle closes at the end of 5 March 2028, so a Q4 conditional
+        // Exemption lapses by 6 May 2028, after the close, to Not Endorsed with no new windows.
+        registered(listed("SYS-Q4", "Fourth", SMO_A, CM, "Q4"), listed("SYS-F1", "File one", SMO_B, CM_OTHER, "Q3"));
+        String system = idOf("SYS-Q4");
+        JsonNode request = requested(signedInAs(SMO_A), system,
+                exemption(SCHEDULED_VA, "2028-03-20", "Third-party VA booked with Acme, PO 4472.", null));
+        approved(vaPoc(), request.get("id").asString());
+        today("2028-03-06");
+        arrange.cycleLifecycle();
+        today("2028-05-07");
+        roleLapse();
+
+        lapse();
+
+        assertThat(submission(vaPoc(), request.get("submissionId").asString()).get("state").asString())
+                .isEqualTo("NOT_ENDORSED");
+        assertThat(roles(signedInAs(SMO_A))).isEmpty();
+        assertThat(entries(RETURNED, system)).isEmpty();
     }
 
     private String grantOf(String email, String role) {
