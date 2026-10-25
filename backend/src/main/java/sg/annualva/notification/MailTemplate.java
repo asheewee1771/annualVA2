@@ -14,7 +14,15 @@ enum MailTemplate {
     /** A window passed: the person whose step it is. */
     OVERDUE,
     /** The System Register moved or transferred the System. */
-    REGISTER_CHANGE;
+    REGISTER_CHANGE,
+    /** A deadline reminder before the window ends (ticket 38): 5 days before, or 2 and 1 weeks before for the VA POCs. */
+    REMINDER_DUE_SOON,
+    /** A deadline reminder on the window's last day. */
+    REMINDER_DUE,
+    /** The weekly reminder while the step is Overdue. */
+    OVERDUE_WEEKLY,
+    /** The copy of a weekly Overdue reminder to the next person up: the relay has no cc, so it is a mail of its own. */
+    REMINDER_COPY;
 
     /**
      * How a notification is mailed: its template and, for a Register change, what changed in the app's words.
@@ -43,6 +51,11 @@ enum MailTemplate {
             case SYSTEM_TRANSFERRED_TO_YOU -> mailed(REGISTER_CHANGE, "Transferred to you");
             case SYSTEM_TRANSFERRED_FROM_YOU -> mailed(REGISTER_CHANGE, "Transferred from you");
             case WITHDRAWN -> mailed(REGISTER_CHANGE, "Withdrawn");
+            case SUBMIT_DUE_SOON, REVIEW_DUE_SOON, ENDORSE_DUE_IN_TWO_WEEKS, ENDORSE_DUE_IN_ONE_WEEK ->
+                    mailed(REMINDER_DUE_SOON, null);
+            case SUBMIT_DUE_TODAY, REVIEW_DUE_TODAY -> mailed(REMINDER_DUE, null);
+            case SUBMIT_STILL_OVERDUE, REVIEW_STILL_OVERDUE -> mailed(OVERDUE_WEEKLY, null);
+            case SUBMIT_OVERDUE_COPY, REVIEW_OVERDUE_COPY -> mailed(REMINDER_COPY, null);
             case REVIEW, ENDORSE, NOT_ENDORSED, DECIDE_EXEMPTION, EXEMPTION_APPROVED, EXEMPTION_REJECTED, CONFIRM_VA,
                     VA_CONFIRMED, EXEMPTION_LAPSED, EXEMPTION_LAPSED_NOT_ENDORSED -> Optional.empty();
         };

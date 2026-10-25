@@ -60,6 +60,10 @@ annualva:
       returned-for-rework: dev-returned-for-rework
       overdue: dev-overdue
       register-change: dev-register-change
+      reminder-due-soon: dev-reminder-due-soon
+      reminder-due: dev-reminder-due
+      overdue-weekly: dev-overdue-weekly
+      reminder-copy: dev-reminder-copy
   dev:
     # MockPass personas carry a uuid but no email; the System Register works by email.
     identities:

@@ -34,3 +34,5 @@ Consequences:
 Amends ADR 0032 item 3 and ADR 0033 (the events they publish now carry the due date; the sweep publishes one), and ADR 0018 (the apply publishes a change event for a move or a transfer).
 
 Amended by ADR 0049: a withdrawal is heard as a `SubmissionEvent` to Withdrawn, not a `SystemChangeEvent`, and tells the SMO/Tech Lead (`WITHDRAWN`).
+
+Amended by ADR 0052: a reminder carries the business day it is for and is written at most once per person, action, System, due date and day; `toEachVaPoc` sends a copy to each VA POC that no decision clears.
