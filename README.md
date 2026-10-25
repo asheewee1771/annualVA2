@@ -337,6 +337,18 @@ Every sign-in, sign-out, failed sign-in, step-up step and refused request (401 o
 - **Adding an action:** add a constant to `AuditAction`; add any new detail key to both `DetailKey` and the CHECK constraint `audit_entry_detail_check` (a new migration); call `record` from the command's transaction. A detail value must be a short code, an id or a number (`AuditDetail` refuses anything else).
 - **Retention:** entries are kept for the VA Cycle plus 3 years and then deleted only by an approved disposal list, before its cutoff (see "Retention and disposal", ADR 0050). Nothing in the application can switch the trigger off.
 
+## Completeness suites (ticket 50)
+
+Three Seam 1 suites in `backend/src/test/java/sg/annualva/ingestion/` hold the spec's lists as tables and walk them through the HTTP API (ADR 0057):
+
+- `StateTableTest`: every VA Submission state (and a System with none) reached through the real commands; every command the state table does not allow answers `409 invalid-transition`, changes nothing and is audited as refused; every allowed move lands where the table says; the Overdue flag after the sweep at the end of week 2, week 4 and the Quarter.
+- `AuditCompletenessTest`: one walk through a VA Cycle's life, then one dynamic test per audited action (actor, role, outcome, ids, fixed detail, never free text).
+- `PermissionMatrixTest`: every endpoint against every role (`OK`, `401`, `403`, `404`, step-up), each `401` and `403` found in the audit log by its correlation id, and the step-up list stale and fresh.
+
+Each fails the build when the code grows past it: a new endpoint needs a matrix row, a new `AuditAction` a row of the walk (or the name of the test that covers it), a new state its moves. `CompletenessSchemaTest` checks that the audit detail-key and state CHECK constraints match `DetailKey` and `SubmissionState`.
+
+The one-session rule reads a person's sessions with Spring Session's query ordered by session id (`SessionStoreConfig`): without the order, a store holding many of one person's rows returned sessions split in parts, an older session stayed live, and the person's next step-up signed them out (`OneSessionRuleTest`). The Seam 1 reset no longer deletes signed-in sessions.
+
 ## Quality gates
 
 | Gate | Command | Passes when |
