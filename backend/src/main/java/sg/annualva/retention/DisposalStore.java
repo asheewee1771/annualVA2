@@ -13,9 +13,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
+import sg.annualva.audit.AuditAction;
 import sg.annualva.boundary.FileStore;
 
 /**
@@ -84,7 +87,9 @@ class DisposalStore {
             + "UNION SELECT cycle_year FROM cycle_register_system WHERE system_id = :system";
 
     /** The disposals' own entries are kept whatever the cutoff: they are the record that records were disposed of. */
-    private static final String KEPT_ACTIONS = "('DISPOSAL_LISTED', 'DISPOSAL_APPROVED', 'DISPOSAL_EXECUTED')";
+    private static final String KEPT_ACTIONS = Stream.of(AuditAction.DISPOSAL_LISTED,
+            AuditAction.DISPOSAL_APPROVED, AuditAction.DISPOSAL_EXECUTED).map(action -> "'" + action.name() + "'")
+            .collect(Collectors.joining(", ", "(", ")"));
 
     private static final String AUDIT_BEFORE = "SELECT count(*) FROM audit_entry WHERE occurred_at < :before "
             + "AND action NOT IN " + KEPT_ACTIONS;
