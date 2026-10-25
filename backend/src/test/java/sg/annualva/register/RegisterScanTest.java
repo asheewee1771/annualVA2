@@ -27,10 +27,6 @@ class RegisterScanTest extends RegisterSeam1 {
                 .row(systemId, "Scanned", "scan.smo@ci.annualva.test", "scan.cm@ci.annualva.test", "Q1").build();
     }
 
-    private static String userId(ApiClient browser) {
-        return ApiClient.json(browser.get("/api/session")).get("uuid").asString();
-    }
-
     /** How many previews this VA POC has been audited as making. */
     private long previews(ApiClient poc) {
         var response = otherVaPoc().get("/api/audit-entries?size=1&action=REGISTER_PREVIEWED&actor=" + userId(poc));

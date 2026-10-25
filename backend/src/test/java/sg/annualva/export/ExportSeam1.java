@@ -14,6 +14,7 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import sg.annualva.dashboard.CyberManagerSeam1;
 import sg.annualva.harness.ApiClient;
+import sg.annualva.harness.AuditEntries;
 import tools.jackson.databind.JsonNode;
 
 /**
@@ -112,17 +113,9 @@ abstract class ExportSeam1 extends CyberManagerSeam1 {
         return all.toString();
     }
 
-    protected static String userId(ApiClient browser) {
-        return ApiClient.json(browser.get("/api/session")).get("uuid").asString();
-    }
-
     /** The entries of this action by this person, newest first; the log is the whole suite's. */
     protected List<JsonNode> entries(String action, String actor) {
-        var response = otherVaPoc().get("/api/audit-entries?size=200&action=" + action + "&actor=" + actor);
-        assertThat(response.status()).as(response.body()).isEqualTo(200);
-        List<JsonNode> items = new ArrayList<>();
-        ApiClient.json(response).get("items").forEach(items::add);
-        return items;
+        return AuditEntries.all(otherVaPoc(), "action=" + action + "&actor=" + actor);
     }
 
     /** Those of them about this export. */

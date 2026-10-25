@@ -27,10 +27,6 @@ class RegisterApplyAuditTest extends RegisterSeam1 {
     private static final Set<String> KEYS = Set.of("preview_id", "added", "updated", "retired", "unchanged",
             "roles_granted", "roles_revoked", "role", "source", "grant_id", "intent", "status", "reason");
 
-    private static String userId(ApiClient browser) {
-        return ApiClient.json(browser.get("/api/session")).get("uuid").asString();
-    }
-
     private JsonNode entries(ApiClient reader, String action, String filter) {
         var response = reader.get("/api/audit-entries?size=200&action=" + action + filter + untilToday());
         assertThat(response.status()).as(response.body()).isEqualTo(200);

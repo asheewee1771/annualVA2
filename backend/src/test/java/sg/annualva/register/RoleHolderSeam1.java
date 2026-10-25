@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.ArrayList;
 import java.util.List;
 import sg.annualva.harness.ApiClient;
+import sg.annualva.harness.AuditEntries;
 import tools.jackson.databind.JsonNode;
 
 /**
@@ -55,21 +56,10 @@ public abstract class RoleHolderSeam1 extends RegisterSeam1 {
         return names;
     }
 
-    protected static String userId(ApiClient browser) {
-        return ApiClient.json(browser.get("/api/session")).get("uuid").asString();
-    }
-
     /** The audit entries of one action about one grant, newest first. */
     protected static List<JsonNode> entries(ApiClient reader, String action, String grantId) {
-        var response = reader.get("/api/audit-entries?size=200&action=" + action);
-        assertThat(response.status()).as(response.body()).isEqualTo(200);
-        List<JsonNode> items = new ArrayList<>();
-        ApiClient.json(response).get("items").forEach(entry -> {
-            if (entry.path("detail").path("grant_id").asString("").equals(grantId)) {
-                items.add(entry);
-            }
-        });
-        return items;
+        return AuditEntries.all(reader, "action=" + action).stream()
+                .filter(entry -> entry.path("detail").path("grant_id").asString("").equals(grantId)).toList();
     }
 
     protected static ApiClient.Response suspend(ApiClient poc, String grantId) {

@@ -41,11 +41,6 @@ public abstract class SubmissionSeam1 extends RegisterSeam1 {
         throw new AssertionError("no System " + systemId);
     }
 
-    /** The user id of whoever is signed in in this browser. */
-    protected static String userId(ApiClient browser) {
-        return ApiClient.json(browser.get("/api/session")).get("uuid").asString();
-    }
-
     protected static ApiClient.Response start(ApiClient client, String systemUuid) {
         return client.postJson(SUBMISSIONS, "{\"systemId\":\"" + systemUuid + "\"}");
     }

@@ -79,4 +79,9 @@ public abstract class Seam1Test {
                 TestIdentity.of("af-5001", "poc.one@ci.annualva.test", "POC One").withAuthTime(clock.instant()));
         return browser.withCsrf();
     }
+
+    /** The id the app gave whoever is signed in in this browser (their session's {@code uuid}). */
+    protected static String userId(ApiClient browser) {
+        return ApiClient.json(browser.get("/api/session")).get("uuid").asString();
+    }
 }

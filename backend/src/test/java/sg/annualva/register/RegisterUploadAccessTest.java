@@ -96,10 +96,6 @@ class RegisterUploadAccessTest extends RegisterSeam1 {
         assertThat(response.status()).isEqualTo(201);
     }
 
-    private static String userId(ApiClient browser) {
-        return ApiClient.json(browser.get("/api/session")).get("uuid").asString();
-    }
-
     private static JsonNode entries(ApiClient reader, String action, String actor) {
         var response = reader.get("/api/audit-entries?size=200&action=" + action + (actor == null ? "" : "&actor=" + actor));
         assertThat(response.status()).as(response.body()).isEqualTo(200);
