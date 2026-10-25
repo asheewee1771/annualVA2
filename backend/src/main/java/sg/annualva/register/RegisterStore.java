@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 import tools.jackson.core.type.TypeReference;
@@ -29,7 +30,7 @@ class RegisterStore {
 
     private static final String SYSTEM_COLUMNS =
             "SELECT id, code::text AS code, name, smo_email::text AS smo_email, cm_email::text AS cm_email, quarter, "
-            + "retired_at IS NOT NULL AS retired FROM va_system ";
+            + "retired_at IS NOT NULL AS retired, smo_unreachable_at FROM va_system ";
 
     private static final String SYSTEMS = SYSTEM_COLUMNS + "ORDER BY code";
 
@@ -91,6 +92,25 @@ class RegisterStore {
     private static final String RETIRE_SYSTEM =
             "UPDATE va_system SET retired_at = :now WHERE id = :id AND retired_at IS NULL";
 
+    /**
+     * Flags SMO Unreachable every active System naming this address as its SMO/Tech Lead that is not flagged already, so a
+     * flag keeps the time of the first refusal; returns the Systems it flagged.
+     */
+    private static final String FLAG_UNREACHABLE =
+            "UPDATE va_system SET smo_unreachable_at = :at WHERE smo_email = CAST(:email AS citext) "
+            + "AND retired_at IS NULL AND smo_unreachable_at IS NULL RETURNING id";
+
+    /**
+     * Clears the flag of every System naming this address that was set no later than a mail the relay took, so a refusal
+     * recorded after that mail stands; returns the Systems it cleared.
+     */
+    private static final String CLEAR_REACHED =
+            "UPDATE va_system SET smo_unreachable_at = NULL WHERE smo_email = CAST(:email AS citext) "
+            + "AND smo_unreachable_at <= :at RETURNING id";
+
+    private static final String CLEAR_SYSTEM =
+            "UPDATE va_system SET smo_unreachable_at = NULL WHERE id = :id AND smo_unreachable_at IS NOT NULL";
+
     private static final String MARK_APPLIED =
             "UPDATE register_upload SET status = 'APPLIED', applied_at = :now, applied_by = :by "
             + "WHERE id = :id AND status = 'PREVIEW'";
@@ -122,7 +142,8 @@ class RegisterStore {
 
     private static ExistingSystem existing(ResultSet rs) throws SQLException {
         return new ExistingSystem(rs.getObject("id", UUID.class), rs.getString("code"), rs.getString("name"),
-                rs.getString("smo_email"), rs.getString("cm_email"), rs.getInt("quarter"), rs.getBoolean("retired"));
+                rs.getString("smo_email"), rs.getString("cm_email"), rs.getInt("quarter"), rs.getBoolean("retired"),
+                instant(rs.getObject("smo_unreachable_at", OffsetDateTime.class)));
     }
 
     /**
@@ -208,6 +229,21 @@ class RegisterStore {
         jdbc.sql(RETIRE_SYSTEM).param("id", id).param("now", utc(now)).update();
     }
 
+    /** Flags SMO Unreachable the active Systems naming this address and not flagged yet; their ids. */
+    List<UUID> flagUnreachable(String email, Instant at) {
+        return jdbc.sql(FLAG_UNREACHABLE).param("email", email).param("at", utc(at)).query(UUID.class).list();
+    }
+
+    /** Clears the flags of the Systems naming this address that were set no later than {@code at}; their ids. */
+    List<UUID> clearReached(String email, Instant at) {
+        return jdbc.sql(CLEAR_REACHED).param("email", email).param("at", utc(at)).query(UUID.class).list();
+    }
+
+    /** Clears one System's flag; whether it was flagged. */
+    boolean clearUnreachable(UUID id) {
+        return jdbc.sql(CLEAR_SYSTEM).param("id", id).update() == 1;
+    }
+
     /** Marks the preview applied; false when it was not waiting any more. */
     boolean markApplied(UUID id, Instant now, UUID by) {
         return jdbc.sql(MARK_APPLIED).param("id", id).param("now", utc(now)).param("by", by).update() == 1;
@@ -233,6 +269,10 @@ class RegisterStore {
                     quarters.put(rs.getObject("system_id", UUID.class), rs.getInt("quarter"));
                 });
         return Optional.of(quarters);
+    }
+
+    private static @Nullable Instant instant(@Nullable OffsetDateTime at) {
+        return at == null ? null : at.toInstant();
     }
 
     private static OffsetDateTime utc(Instant instant) {
