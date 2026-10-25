@@ -5,6 +5,8 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
+import sg.annualva.audit.AuditEvent;
+import sg.annualva.audit.DetailKey;
 
 /**
  * One row of the role store: a person (by email, and by user once they have signed in) holds a role,
@@ -29,4 +31,15 @@ public record RoleGrant(
 
     @Serial
     private static final long serialVersionUID = 1L;
+
+    /**
+     * The same audit event about this grant, as every role change records it: the role, the source and the grant id,
+     * about its System for a per-System role; never the email (lm-19).
+     */
+    AuditEvent describe(AuditEvent event) {
+        AuditEvent described = event.with(DetailKey.ROLE, role.name())
+                .with(DetailKey.SOURCE, source.name())
+                .with(DetailKey.GRANT_ID, id);
+        return systemId == null ? described : described.onSystem(systemId);
+    }
 }

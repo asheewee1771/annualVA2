@@ -206,6 +206,34 @@ class RoleLapseTest extends ExemptionSeam1 {
         assertThat(onlyEntry(returned, "CYBER_MANAGER").get("actorId").isNull()).as("the job acts for nobody").isTrue();
     }
 
+    @Test
+    void anExemptionLapseBackToAwaitingEndorsementReturnsTheSmoButNotTheCyberManager() {
+        Draft draft = awaitingEndorsement();
+        approved(vaPoc(), requested(draft.smo(), draft.systemId(), scheduledVa()).get("id").asString());
+        today("2028-02-01");
+        roleLapse();
+
+        lapse();
+
+        assertThat(roles(signedInAs(SMO_A))).as("told, with new windows").containsExactly("SMO");
+        assertThat(roles(signedInAs(CM))).as("the VA POCs act next").isEmpty();
+        JsonNode returned = entries(RETURNED, draft.systemId());
+        assertThat(returned).hasSize(1);
+        assertThat(returned.get(0).get("detail").get("role").asString()).isEqualTo("SMO");
+    }
+
+    @Test
+    void aRejectedExemptionHandsNothingOverAndReturnsNobody() {
+        Draft draft = draft();
+        String id = requested(draft.smo(), draft.systemId(), priorVa()).get("id").asString();
+        arrange.lapse(grantOf(SMO_A, "SMO"));
+
+        rejected(vaPoc(), id);
+
+        assertThat(roles(signedInAs(SMO_A))).isEmpty();
+        assertThat(entries(RETURNED, draft.systemId())).isEmpty();
+    }
+
     private String grantOf(String email, String role) {
         for (JsonNode grant : arrange.grantsOf(email)) {
             if (grant.get("role").asString().equals(role) && !grant.get("revoked").asBoolean()) {

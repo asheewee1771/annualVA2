@@ -50,8 +50,9 @@ public class RoleGrantStore {
     private static final String REVOKE = "UPDATE role_grant SET revoked_at = :now WHERE id = :id AND revoked_at IS NULL";
 
     /**
-     * The one lapse rule (ADR 0053): a grant that still counts, whose last use, grant or return (GREATEST skips a null) is
-     * before the cutoff. The job reads with it and then lapses with it, so a request that used the grant in between wins.
+     * Unused since the cutoff (ADR 0054): a grant that still counts, whose last use, grant or return (GREATEST skips a
+     * null) is before it. The job reads with it and then lapses with it, so a request that used the grant in between wins.
+     * It is the store's half of the lapse rule; {@link RoleLapse#pass} adds the other, a Quarter of the System begun since.
      */
     private static final String UNUSED_SINCE = "revoked_at IS NULL AND lapsed_at IS NULL AND suspended_at IS NULL "
             + "AND (expires_at IS NULL OR expires_at > :now) AND GREATEST(granted_at, last_used_at, returned_at) < :cutoff";
@@ -63,6 +64,10 @@ public class RoleGrantStore {
 
     private static final String LAPSED = "SELECT " + COLUMNS + " FROM role_grant WHERE role = :role AND source = :source "
             + "AND lapsed_at IS NOT NULL AND revoked_at IS NULL ORDER BY granted_at, id";
+
+    private static final String LAPSED_ON = "SELECT " + COLUMNS + " FROM role_grant WHERE role = :role "
+            + "AND source = 'REGISTER' AND system_id = :systemId AND lapsed_at IS NOT NULL AND revoked_at IS NULL "
+            + "ORDER BY granted_at, id";
 
     private static final String RETURN = "UPDATE role_grant SET lapsed_at = NULL, returned_at = :now, "
             + "return_trigger = :trigger WHERE id = :id AND lapsed_at IS NOT NULL AND revoked_at IS NULL";
@@ -135,6 +140,12 @@ public class RoleGrantStore {
     /** The lapsed grants, not revoked, of a role that came from one source. */
     List<RoleGrant> lapsed(Role role, GrantSource source) {
         return jdbc.sql(LAPSED).param("role", role.name()).param("source", source.name())
+                .query(RoleGrantStore::map).list();
+    }
+
+    /** The lapsed Register grants, not revoked, of a role for one System. */
+    List<RoleGrant> lapsedOn(Role role, UUID systemId) {
+        return jdbc.sql(LAPSED_ON).param("role", role.name()).param("systemId", systemId)
                 .query(RoleGrantStore::map).list();
     }
 
