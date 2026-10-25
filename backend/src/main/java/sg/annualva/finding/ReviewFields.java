@@ -106,18 +106,11 @@ final class ReviewFields {
     }
 
     private static @Nullable String comment(ReviewDecision decision, @Nullable String raw) {
-        String cleaned = raw == null ? "" : ReportText.cleanLongText(raw);
-        if (cleaned.isEmpty()) {
-            if (decision == ReviewDecision.DISPUTED) {
-                throw RejectedRequestException.invalidField(COMMENT,
-                        "The field 'comment' is required to Dispute: say what is wrong.");
-            }
-            return null;
+        var comment = ReportText.longText(COMMENT, raw, MAX_COMMENT, RejectedRequestException::invalidField);
+        if (decision == ReviewDecision.DISPUTED) {
+            return comment.orElseThrow(() -> RejectedRequestException.invalidField(COMMENT,
+                    "The field 'comment' is required to Dispute: say what is wrong."));
         }
-        if (!ReportText.fits(cleaned, MAX_COMMENT)) {
-            throw RejectedRequestException.invalidField(COMMENT,
-                    "The field 'comment' must be at most " + MAX_COMMENT + " characters.");
-        }
-        return cleaned;
+        return comment.orElse(null);
     }
 }

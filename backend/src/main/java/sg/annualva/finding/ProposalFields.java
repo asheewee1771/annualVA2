@@ -154,14 +154,9 @@ final class ProposalFields {
     }
 
     private static String text(Field field, String raw, FindingStatus status, int max, boolean singleLine) {
-        String cleaned = singleLine ? ReportText.cleanOneLine(raw) : ReportText.cleanLongText(raw);
-        if (cleaned.isEmpty()) {
-            throw refused(field, "is required for " + status.label() + ".");
-        }
-        if (!ReportText.fits(cleaned, max)) {
-            throw refused(field, "must be at most " + max + " characters.");
-        }
-        return cleaned;
+        var cleaned = singleLine ? ReportText.oneLine(field.name, raw, max, RejectedRequestException::invalidField)
+                : ReportText.longText(field.name, raw, max, RejectedRequestException::invalidField);
+        return cleaned.orElseThrow(() -> refused(field, "is required for " + status.label() + "."));
     }
 
     private static UUID id(Field field, String raw) {

@@ -770,19 +770,13 @@ public class Submissions {
      * when none was given or nothing is left once cleaned, which a {@code required} comment (a VA POC's) refuses.
      */
     private static @Nullable String returnComment(@Nullable String raw, boolean required) {
-        String cleaned = raw == null ? "" : ReportText.cleanLongText(raw);
-        if (cleaned.isEmpty()) {
-            if (required) {
-                throw RejectedRequestException.invalidField("comment",
-                        "The field 'comment' is required: say what the SMO/Tech Lead should rework.");
-            }
-            return null;
+        Optional<String> comment = ReportText.longText("comment", raw, ReportText.MAX_LONG_TEXT,
+                RejectedRequestException::invalidField);
+        if (required) {
+            return comment.orElseThrow(() -> RejectedRequestException.invalidField("comment",
+                    "The field 'comment' is required: say what the SMO/Tech Lead should rework."));
         }
-        if (!ReportText.fits(cleaned, ReportText.MAX_LONG_TEXT)) {
-            throw RejectedRequestException.invalidField("comment",
-                    "The field 'comment' must be at most " + ReportText.MAX_LONG_TEXT + " characters.");
-        }
-        return cleaned;
+        return comment.orElse(null);
     }
 
     /**
