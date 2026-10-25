@@ -36,6 +36,8 @@ class RegisterStore {
 
     private static final String SYSTEM = SYSTEM_COLUMNS + "WHERE id = :id";
 
+    private static final String SYSTEMS_BY_ID = SYSTEM_COLUMNS + "WHERE id = ANY(CAST(:ids AS uuid[]))";
+
     private static final String RETIRED_BEFORE = SYSTEM_COLUMNS + "WHERE retired_at < :before ORDER BY code";
 
     /**
@@ -136,6 +138,14 @@ class RegisterStore {
 
     List<ExistingSystem> systems() {
         return jdbc.sql(SYSTEMS).query((rs, row) -> existing(rs)).list();
+    }
+
+    /** These Systems, retired or not; an id no System has is left out. */
+    List<ExistingSystem> systems(java.util.Collection<UUID> ids) {
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        return jdbc.sql(SYSTEMS_BY_ID).param("ids", ids.toArray(UUID[]::new)).query((rs, row) -> existing(rs)).list();
     }
 
     /** The Systems retired before this instant, in System ID order. */

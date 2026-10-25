@@ -3,7 +3,10 @@ package sg.annualva.notification;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
@@ -114,7 +117,7 @@ public class Notifications {
     @Transactional(readOnly = true)
     public Page<NotificationView> mine(int page, int size) {
         UUID caller = user.id();
-        return new Page<>(store.page(caller, page, size), page, size, store.count(caller));
+        return new Page<>(views(store.page(caller, page, size)), page, size, store.count(caller));
     }
 
     /**
@@ -127,6 +130,22 @@ public class Notifications {
         if (!store.markRead(id, caller, clock.instant())) {
             throw new ResourceNotFoundException();
         }
-        return store.find(id, caller).orElseThrow(ResourceNotFoundException::new);
+        return views(List.of(store.find(id, caller).orElseThrow(ResourceNotFoundException::new))).getFirst();
+    }
+
+    /**
+     * The notifications as their reader lists them: each with its System's ID and name as the Register holds them now,
+     * read through the Register's module, retired Systems included.
+     */
+    private List<NotificationView> views(List<NotificationStore.Row> rows) {
+        Map<UUID, RegisterSystems.Named> systems = register.named(rows.stream().map(NotificationStore.Row::systemId)
+                .toList());
+        return rows.stream().map(row -> {
+            RegisterSystems.Named system = Objects.requireNonNull(systems.get(row.systemId()),
+                    "a notification's System is in the Register (V27's foreign key)");
+            return new NotificationView(row.id(), row.systemId(), system.systemId(), system.name(),
+                    row.submissionId(), row.state(), row.action().name(), row.action().message(), row.dueOn(),
+                    row.link(), row.createdAt(), row.readAt(), row.handledBy(), row.handledAt());
+        }).toList();
     }
 }

@@ -285,11 +285,13 @@ class ArchitectureTest {
      */
     @Test
     void onlyTheNotificationsReadTheNamedPeoplePastTheAccessGuard() throws Exception {
-        String method = sg.annualva.register.RegisterSystems.class.getMethod("named", java.util.UUID.class).getName();
-        noClasses().that().resideOutsideOfPackage("sg.annualva.notification..")
-                .should().callMethod(sg.annualva.register.RegisterSystems.class, method, java.util.UUID.class)
-                .because("it skips the access guard, so only the notifications, which act for nobody, may read it")
-                .check(main);
+        for (Class<?> parameter : new Class<?>[] {java.util.UUID.class, java.util.Collection.class}) {
+            String method = sg.annualva.register.RegisterSystems.class.getMethod("named", parameter).getName();
+            noClasses().that().resideOutsideOfPackage("sg.annualva.notification..")
+                    .should().callMethod(sg.annualva.register.RegisterSystems.class, method, parameter)
+                    .because("it skips the access guard, so only the notifications, which act for nobody, may read it")
+                    .check(main);
+        }
     }
 
     /**

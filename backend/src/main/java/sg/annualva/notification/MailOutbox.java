@@ -13,6 +13,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import sg.annualva.boundary.MailRelay;
 import sg.annualva.notification.MailOutboxStore.Claimed;
 import sg.annualva.notification.MailOutboxStore.Settled;
+import sg.annualva.register.RegisterSystems;
 import sg.annualva.register.SmoReachability;
 
 /**
@@ -42,9 +43,11 @@ public class MailOutbox {
     private final Clock clock;
     private final SmoReachability reachability;
     private final TransactionTemplate transaction;
+    private final RegisterSystems register;
 
     MailOutbox(MailOutboxStore store, MailRelay relay, MailProperties properties, Clock clock,
-            SmoReachability reachability, TransactionTemplate transaction) {
+            SmoReachability reachability, TransactionTemplate transaction, RegisterSystems register) {
+        this.register = register;
         this.reachability = reachability;
         this.transaction = transaction;
         this.store = store;
@@ -82,7 +85,9 @@ public class MailOutbox {
     }
 
     private void send(Claimed mail) {
-        Optional<String> refusal = MailValues.refusal(mail);
+        RegisterSystems.Named system = register.named(mail.systemId()).orElseThrow(
+                () -> new IllegalStateException("a notification's System is in the Register (V27's foreign key)"));
+        Optional<String> refusal = MailValues.refusal(system);
         if (refusal.isPresent()) {
             settled(mail, Settled.REFUSED);
             log.atWarn().setMessage("A mail was not sent: a value is outside the allow-list")
@@ -93,7 +98,7 @@ public class MailOutbox {
         MailRelay.Receipt receipt;
         try {
             receipt = relay.send(mail.recipient(), properties.templateId(mail.template()),
-                    MailValues.of(mail, properties.appUrl()));
+                    MailValues.of(mail, system, properties.appUrl()));
         } catch (RuntimeException e) {
             failed(mail, e);
             return;

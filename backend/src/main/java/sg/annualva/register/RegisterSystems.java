@@ -3,6 +3,8 @@ package sg.annualva.register;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -189,8 +191,24 @@ public class RegisterSystems {
      */
     @Transactional(readOnly = true)
     public Optional<Named> named(UUID systemId) {
-        return store.system(systemId).map(system -> new Named(system.id(), system.code(), system.name(),
-                system.smoEmail(), system.cyberManagerEmail(), system.quarter()));
+        return store.system(systemId).map(RegisterSystems::named);
+    }
+
+    /**
+     * As {@link #named}, for several Systems at once, by id: for the notifications, which show each item's System ID and
+     * name as the Register holds them now. It skips the access guard, so it is never for a request: the architecture test
+     * names its callers.
+     */
+    @Transactional(readOnly = true)
+    public Map<UUID, Named> named(Collection<UUID> systemIds) {
+        Map<UUID, Named> named = new HashMap<>();
+        store.systems(Set.copyOf(systemIds)).forEach(system -> named.put(system.id(), named(system)));
+        return named;
+    }
+
+    private static Named named(ExistingSystem system) {
+        return new Named(system.id(), system.code(), system.name(), system.smoEmail(), system.cyberManagerEmail(),
+                system.quarter());
     }
 
     /**

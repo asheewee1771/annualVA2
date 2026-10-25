@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import sg.annualva.register.RegisterSystems;
 import sg.annualva.register.RegisterText;
 import sg.annualva.submission.SubmissionState;
 
@@ -32,11 +33,11 @@ final class MailValues {
     private MailValues() {}
 
     /** The key of the first value that breaks its rule; empty when every value passes. */
-    static Optional<String> refusal(MailOutboxStore.Claimed mail) {
-        if (!RegisterText.systemId(mail.systemCode())) {
+    static Optional<String> refusal(RegisterSystems.Named system) {
+        if (!RegisterText.systemId(system.systemId())) {
             return Optional.of(SYSTEM_ID);
         }
-        if (!RegisterText.systemName(mail.systemName())) {
+        if (!RegisterText.systemName(system.name())) {
             return Optional.of(SYSTEM_NAME);
         }
         return Optional.empty();
@@ -46,10 +47,10 @@ final class MailValues {
      * What a notification says, as its template's values, once {@link #refusal} found nothing. A due date is left out
      * when none applies (a transfer's former SMO/Tech Lead), and the link is the app's address in front of the path.
      */
-    static Map<String, String> of(MailOutboxStore.Claimed mail, String appUrl) {
+    static Map<String, String> of(MailOutboxStore.Claimed mail, RegisterSystems.Named system, String appUrl) {
         Map<String, String> values = new HashMap<>();
-        values.put(SYSTEM_ID, mail.systemCode());
-        values.put(SYSTEM_NAME, mail.systemName());
+        values.put(SYSTEM_ID, system.systemId());
+        values.put(SYSTEM_NAME, system.name());
         values.put(STATE, stateLabel(mail.state()));
         values.put(ACTION, mail.action().message());
         if (mail.dueOn() != null) {
