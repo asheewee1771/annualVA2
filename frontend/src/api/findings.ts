@@ -1,4 +1,5 @@
 import { request } from "./client.ts";
+import type { Page } from "./page.ts";
 import type { ReportType } from "./reportFiles.ts";
 import type { Reason } from "./problem.ts";
 
@@ -121,15 +122,6 @@ export function reviewFinding(findingId: string, proposalId: string, input: Revi
   return request<Review>("POST", `/api/findings/${encodeURIComponent(findingId)}/reviews`, { ...input, proposalId });
 }
 
-export interface FindingPage {
-  items: Finding[];
-  /** Zero-based. */
-  page: number;
-  size: number;
-  /** How many Findings there are in all. */
-  total: number;
-}
-
 /**
  * What a proposal sends: the status and the fields it requires and no others (the server refuses a field the status does not
  * use, and names a missing one).
@@ -188,8 +180,8 @@ export function fetchFindings(
   filter: FindingFilter,
   page: number,
   size: number,
-): Promise<FindingPage> {
-  return request<FindingPage>("GET", findingsPath(submissionId, filter, page, size));
+): Promise<Page<Finding>> {
+  return request<Page<Finding>>("GET", findingsPath(submissionId, filter, page, size));
 }
 
 /**
@@ -351,13 +343,8 @@ export interface ReworkItem {
 }
 
 /** A page of the rework queue and how many Findings each stage holds, an empty stage included, in queue order. */
-export interface ReworkQueue {
+export interface ReworkQueue extends Page<ReworkItem> {
   stages: { stage: ReworkStage; count: number }[];
-  items: ReworkItem[];
-  page: number;
-  size: number;
-  /** How many Findings the whole queue holds. */
-  total: number;
 }
 
 /**

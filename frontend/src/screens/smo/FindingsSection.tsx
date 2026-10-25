@@ -5,10 +5,10 @@ import {
   MAX_BATCH_SIZE,
   type Finding,
   type FindingFilter,
-  type FindingPage,
   type NamedFile,
   type Readiness,
 } from "../../api/findings.ts";
+import type { Page } from "../../api/page.ts";
 import { ApiError, type Problem } from "../../api/problem.ts";
 import type { ReportFile } from "../../api/reportFiles.ts";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
@@ -222,7 +222,7 @@ function FindingsList({
   submissionId: string;
   filter: FindingFilter;
   chip: ChipKey;
-  findings: Resource<FindingPage>;
+  findings: Resource<Page<Finding>>;
   page: number;
   onPage: (page: number) => void;
   selection: Selection;
@@ -270,7 +270,7 @@ function FindingsList({
  * Keeps the page inside the list. A chip such as Needs attention shrinks when a status is proposed, so after a reload the
  * page asked for can be past the end; the server then answers no items, and the page moves to the last one there is.
  */
-function useClampedPage(data: FindingPage | undefined, page: number, setPage: (page: number) => void) {
+function useClampedPage(data: Page<Finding> | undefined, page: number, setPage: (page: number) => void) {
   useEffect(() => {
     if (data && data.page === page && page > 0 && data.items.length === 0 && data.total > 0) {
       setPage(Math.ceil(data.total / data.size) - 1);
