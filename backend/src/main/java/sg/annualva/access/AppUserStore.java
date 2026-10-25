@@ -113,11 +113,11 @@ public class AppUserStore {
         return byId(id);
     }
 
-    void disabled(UUID id, Instant now) {
+    void markDisabled(UUID id, Instant now) {
         jdbc.sql(DISABLED).param("id", id).param("now", utc(now)).update();
     }
 
-    void enabled(UUID id) {
+    void clearDisabled(UUID id) {
         jdbc.sql(ENABLED).param("id", id).update();
     }
 

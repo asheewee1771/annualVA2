@@ -59,8 +59,8 @@ public class SignInSecurity {
         this.signOutHandler = signOutHandler;
         this.securityContextRepository = securityContextRepository;
         this.sessionRegistry = sessionRegistry;
-        this.sessionLimitsFilter = new SessionLimitsFilter(clock, properties);
-        this.roleResolutionFilter = new RoleResolutionFilter(roleResolver, identityCheck);
+        this.sessionLimitsFilter = new SessionLimitsFilter(clock, properties, identityCheck);
+        this.roleResolutionFilter = new RoleResolutionFilter(roleResolver);
         this.clock = clock;
         this.properties = properties;
     }

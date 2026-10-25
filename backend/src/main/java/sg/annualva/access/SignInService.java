@@ -81,12 +81,9 @@ public class SignInService {
             throw new SignInRefusedException(MISSING_EMAIL);
         }
         SessionUser user = linkOrRetryOnce(ssoId, email, authTime, identity);
-        // The provider vouches for who the person is but reports them disabled (ticket 47): linked, so that every grant
-        // of theirs, those made by email included, is suspended and every session ended; then refused.
-        if (identity.disabled()) {
-            disablement.disabled(user.id(), "sign-in");
-            throw new SignInRefusedException(IdentityDisablement.ACCOUNT_DISABLED);
-        }
+        // Linked first, so that a person the token reports disabled (ticket 47) loses every grant, those made by email
+        // included, before the sign-in is refused.
+        disablement.admit(identity, user.id(), IdentityDisablement.SeenBy.SIGN_IN);
         return user;
     }
 
@@ -117,10 +114,6 @@ public class SignInService {
                 .orElseGet(() -> users.create(ssoId, email, identity.displayName(), now));
         // A role granted by email before this person had signed in attaches now, to this user and no other.
         grants.attachPending(user.id(), user.email());
-        if (!identity.disabled()) {
-            // The provider let them in, so it no longer reports them disabled; a suspended grant stays suspended.
-            users.enabled(user.id());
-        }
         return new SessionUser(user.id(), user.email(), user.displayName(), authTime, now);
     }
 }

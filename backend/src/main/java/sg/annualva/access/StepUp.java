@@ -148,10 +148,7 @@ public class StepUp {
         if (!samePerson) {
             throw new SignInRefusedException(IDENTITY_MISMATCH);
         }
-        if (identity.disabled()) {
-            disablement.disabled(current.id(), "step-up");
-            throw new SignInRefusedException(IdentityDisablement.ACCOUNT_DISABLED);
-        }
+        disablement.admit(identity, current.id(), IdentityDisablement.SeenBy.STEP_UP);
         if (authTime.isBefore(started.startedAt().minus(properties.clockSkew()))) {
             throw new SignInRefusedException(STALE_AUTH_TIME);
         }

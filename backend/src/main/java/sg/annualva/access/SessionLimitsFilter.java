@@ -15,7 +15,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
  * as-11, by the application clock: a signed-in session ends 30 minutes after its last request and
- * 8 hours after sign-in regardless. Runs before the security context is loaded, so an ended session
+ * 8 hours after sign-in regardless; and ac-3 (ticket 47): it ends when the session check finds the person disabled at
+ * the identity provider ({@link IdentityCheck}). Runs before the security context is loaded, so an ended session
  * is simply absent for the rest of the request. The session store's own wall-clock expiry remains a
  * backstop. Added to the filter chain by {@link SignInSecurity}; not a bean, so the container does
  * not register it a second time.
@@ -24,15 +25,18 @@ final class SessionLimitsFilter extends OncePerRequestFilter {
 
     static final String IDLE_TIMEOUT = "idle-timeout";
     static final String ABSOLUTE_LIMIT = "absolute-limit";
+    static final String IDENTITY_DISABLED = "identity-provider-disabled";
 
     private static final Logger log = LoggerFactory.getLogger(SessionLimitsFilter.class);
 
     private final Clock clock;
     private final SignInProperties properties;
+    private final IdentityCheck identityCheck;
 
-    SessionLimitsFilter(Clock clock, SignInProperties properties) {
+    SessionLimitsFilter(Clock clock, SignInProperties properties, IdentityCheck identityCheck) {
         this.clock = clock;
         this.properties = properties;
+        this.identityCheck = identityCheck;
     }
 
     @Override
@@ -52,6 +56,8 @@ final class SessionLimitsFilter extends OncePerRequestFilter {
             end(session, ABSOLUTE_LIMIT);
         } else if (now.isAfter(lastSeenAt.plus(properties.idleTimeout()))) {
             end(session, IDLE_TIMEOUT);
+        } else if (!identityCheck.stillEnabled(session, signedInAt, now)) {
+            end(session, IDENTITY_DISABLED);
         } else if (!now.equals(lastSeenAt)) {
             session.setAttribute(SessionAttributes.LAST_SEEN_AT, now);
         }
