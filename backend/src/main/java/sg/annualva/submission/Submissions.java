@@ -893,7 +893,7 @@ public class Submissions {
      * After its VA Cycle closes no transition is accepted (story 68, ADR 0044): neither once the close is recorded nor
      * after the Cycle's close date before the lifecycle job records it. Audited in an entry of its own as {@code refused}
      * with {@code reason} {@code cycle-closed}, then 409 {@code invalid-transition}. The one exception, a Q4 conditional
-     * Exemption's VA recorded, confirmed or lapsed after the close (ADR 0050), passes a {@link Gate#afterClose} gate or
+     * Exemption's VA recorded, confirmed or lapsed after the close (ADR 0051), passes a {@link Gate#afterClose} gate or
      * is the lapse job, neither of which asks this.
      */
     private void requireOpenCycle(int cycleYear, AuditEvent refused) {

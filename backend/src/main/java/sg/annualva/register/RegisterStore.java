@@ -35,6 +35,8 @@ class RegisterStore {
 
     private static final String SYSTEM = SYSTEM_COLUMNS + "WHERE id = :id";
 
+    private static final String RETIRED_BEFORE = SYSTEM_COLUMNS + "WHERE retired_at < :before ORDER BY code";
+
     /**
      * Which of these System IDs are the same System, by the column's own citext rules: each value with the smallest of
      * the values equal to it, so two IDs share a key exactly when citext says they are equal.
@@ -105,6 +107,12 @@ class RegisterStore {
 
     List<ExistingSystem> systems() {
         return jdbc.sql(SYSTEMS).query((rs, row) -> existing(rs)).list();
+    }
+
+    /** The Systems retired before this instant, in System ID order. */
+    List<ExistingSystem> retiredBefore(Instant before) {
+        return jdbc.sql(RETIRED_BEFORE).param("before", before.atOffset(java.time.ZoneOffset.UTC))
+                .query((rs, row) -> existing(rs)).list();
     }
 
     /** One System, retired or not. */

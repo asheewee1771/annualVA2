@@ -36,6 +36,7 @@ const ACTIONS: Readonly<Record<string, string>> = {
   "submission-return": "Returning a VA Submission for rework",
   "export-mgmt-summary": "Asking for the management summary",
   "exemption-decide": "Deciding an Exemption",
+  "disposal-approve": "Approving the disposal list",
 };
 
 export function describeAction(intent: string): string {

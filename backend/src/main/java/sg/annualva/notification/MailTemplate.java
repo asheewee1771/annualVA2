@@ -32,7 +32,7 @@ enum MailTemplate {
      * Return for Rework for both people it tells: the SMO/Tech Lead who reworks it and the Cyber Manager it comes back to.
      * An Exemption's request and decision (ticket 40) are in-app only (provisional, ADR 0048): the spec names neither a
      * required message. So are a conditional Exemption's recorded VA, its confirmation and its lapse (ticket 42,
-     * provisional, ADR 0050): the lapse's new Submission Window is mailed by the deadline reminders (ticket 38) and, once
+     * provisional, ADR 0051): the lapse's new Submission Window is mailed by the deadline reminders (ticket 38) and, once
      * it passes, as Overdue.
      */
     static Optional<Mailing> of(NoticeAction action) {

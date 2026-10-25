@@ -196,6 +196,28 @@ function ReplaceForm({
   );
 }
 
+/** A replaced file says so, and says when its content has been disposed of (its record is kept, ticket 49). */
+function ReplacedFlags({ file }: { file: ReportFile }) {
+  if (file.supersededBy === null) return null;
+  return (
+    <>
+      {" "}
+      <span className="flag">Replaced by a rescan</span>
+      {file.contentDisposedAt === null ? null : (
+        <>
+          {" "}
+          <span className="flag">Content disposed of</span>
+        </>
+      )}
+    </>
+  );
+}
+
+/** A file whose content is held and may be downloaded: it passed every check and has not been disposed of. */
+function isDownloadable(file: ReportFile): boolean {
+  return isAccepted(file) && file.contentDisposedAt === null;
+}
+
 /**
  * One file with its pipeline status and, when it was rejected, the server's plain message; a rescan names the file it
  * replaces, a replaced file says so, and a report file that can be replaced offers Replace.
@@ -228,13 +250,8 @@ function FileRow({
     <li>
       <strong>{file.name}</strong> <span className="muted">({megabytes(file.sizeBytes)})</span>{" "}
       <span className={isRejected(file) ? "flag flag--danger" : "flag"}>{STATUS_LABELS[file.status]}</span>
-      {file.supersededBy !== null ? (
-        <>
-          {" "}
-          <span className="flag">Replaced by a rescan</span>
-        </>
-      ) : null}
-      {isAccepted(file) ? (
+      <ReplacedFlags file={file} />
+      {isDownloadable(file) ? (
         <>
           {" "}
           <button type="button" className="button button--secondary" onClick={() => void save()}>

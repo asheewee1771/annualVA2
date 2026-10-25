@@ -1,10 +1,11 @@
--- Conditional Exemptions (ticket 42, story 47, ADR 0050): an approved Exemption resting on a scheduled VA stays
+-- Conditional Exemptions (ticket 42, story 47, ADR 0051): an approved Exemption resting on a scheduled VA stays
 -- conditional until its SMO/Tech Lead records that the VA happened and a VA POC confirms it; if nothing is recorded by
 -- lapses_on (the Quarter's last day plus 3 months) the lapse job puts the VA Submission back where the request froze it,
 -- with new windows, or makes it Not Endorsed once its VA Cycle has closed.
 --
--- Numbered 144.43.42, not V142: it rebuilds the notification CHECKs that V144_40 (ticket 40) and V144_43 (ticket 43)
--- rebuilt last, so it must run after them.
+-- Numbered 149.42, not V142: it rebuilds the notification CHECKs that V144_40 (ticket 40) and V144_43 (ticket 43)
+-- rebuilt last, so it must run after them, and it sorts after V149 (ticket 49), merged first, so a database that has run
+-- V149 takes it in order.
 --
 -- exemption gains, each written once:
 --   va_happened_on   the business date (Asia/Singapore) the SMO/Tech Lead says the scheduled VA happened

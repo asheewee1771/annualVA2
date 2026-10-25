@@ -44,6 +44,8 @@ import sg.annualva.access.RoleGrantStore;
 import sg.annualva.export.ExportWorker;
 import sg.annualva.ingestion.ScanPoller;
 import sg.annualva.notification.MailOutbox;
+import sg.annualva.retention.DisposalExecutor;
+import sg.annualva.retention.DisposalPlanner;
 import sg.annualva.submission.CycleLifecycle;
 import sg.annualva.submission.ExemptionLapse;
 import sg.annualva.submission.OverdueSweep;
@@ -118,12 +120,17 @@ public class TestEndpoints {
         private final CycleLifecycle cycleLifecycle;
         private final ExportWorker exportWorker;
         private final ExemptionLapse exemptionLapse;
+        private final DisposalExecutor disposalExecutor;
+        private final DisposalPlanner disposalPlanner;
 
         public TestController(AppUserStore users, RoleGrantStore grants, AccessGuard guard, StepUp stepUp, JdbcClient jdbc,
                 Clock clock, AuditLog audit, TransactionTemplate transaction, ScanPoller scanPoller,
                 OverdueSweep overdueSweep, MailOutbox mailOutbox, CycleLifecycle cycleLifecycle,
-                ExportWorker exportWorker, ExemptionLapse exemptionLapse) {
+                ExportWorker exportWorker, ExemptionLapse exemptionLapse, DisposalExecutor disposalExecutor,
+                DisposalPlanner disposalPlanner) {
             this.exemptionLapse = exemptionLapse;
+            this.disposalExecutor = disposalExecutor;
+            this.disposalPlanner = disposalPlanner;
             this.cycleLifecycle = cycleLifecycle;
             this.scanPoller = scanPoller;
             this.overdueSweep = overdueSweep;
@@ -290,6 +297,9 @@ public class TestEndpoints {
                 jdbc.sql("DELETE FROM role_grant WHERE system_id IS NOT NULL").update();
                 jdbc.sql("DELETE FROM register_upload").update();
                 jdbc.sql("DELETE FROM export_request").update();
+                // The disposal lists (V149) name no other row by key; at most one may wait at a time.
+                jdbc.sql("DELETE FROM disposal_item").update();
+                jdbc.sql("DELETE FROM disposal_list").update();
                 jdbc.sql("DELETE FROM va_system").update();
             });
             systems.clear();
@@ -392,6 +402,33 @@ public class TestEndpoints {
         public Map<String, String> exports() {
             exportWorker.run();
             return Map.of("ran", "exports");
+        }
+
+        /**
+         * One pass of the retention job, which {@code annualva.scheduling.enabled=false} keeps from running by itself in
+         * tests: the executor disposes of an approved list, then the listing writes what is due.
+         */
+        @PostMapping("/api/test/jobs/retention")
+        public Map<String, String> retention() {
+            disposalExecutor.execute();
+            disposalPlanner.plan();
+            return Map.of("ran", "retention");
+        }
+
+        /**
+         * Observation of what a disposal leaves in the database: how many rows every table of the schema holds, by name.
+         * The suite resets the domain tables before every test, so a test that disposes of everything it made expects the
+         * counts it can name. There is no read of the append-only history tables (the proposals, batches, reviews and
+         * returns) once their VA Submission is gone, so only the tables themselves can show that they are empty.
+         */
+        @GetMapping("/api/test/rows")
+        public Map<String, Long> rows() {
+            Map<String, Long> rows = new java.util.TreeMap<>();
+            for (String table : jdbc.sql("SELECT table_name FROM information_schema.tables WHERE table_schema = "
+                    + "current_schema() AND table_type = 'BASE TABLE'").query(String.class).list()) {
+                rows.put(table, jdbc.sql("SELECT count(*) FROM \"" + table + "\"").query(Long.class).single());
+            }
+            return rows;
         }
 
         /** Makes what a queued export will hold unreadable, as a row written before its shape changed would be. */

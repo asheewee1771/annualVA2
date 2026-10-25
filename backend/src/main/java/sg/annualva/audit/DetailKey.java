@@ -77,7 +77,17 @@ public enum DetailKey {
     /** The Exemption an entry is about (ticket 40): its id, never its evidence. */
     EXEMPTION_ID,
     /** What an Exemption rests on (ticket 40): {@code PRIOR_VA} or {@code SCHEDULED_VA}, never the date. */
-    BASIS;
+    BASIS,
+    /** The disposal list an entry is about (ticket 49). */
+    DISPOSAL_LIST_ID,
+    /** What a disposal deleted: VA Submissions, Scan Report files (rows and content), superseded files' content only. */
+    SUBMISSIONS,
+    FILES,
+    SUPERSEDED_FILES,
+    /** What a disposal deleted: export rows, retired Systems and audit entries before its cutoff. */
+    EXPORTS,
+    SYSTEMS,
+    AUDIT_ENTRIES;
 
     /** The key as stored: lower-case with underscores. */
     String json() {

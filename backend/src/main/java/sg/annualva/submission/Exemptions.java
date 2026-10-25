@@ -34,7 +34,7 @@ import sg.annualva.web.ResourceNotFoundException;
  * Overdue flag it had). Both are step commands through {@link Submissions#atStep}: the request at the submitting step,
  * the decision at the VA POC's endorsing step, each with segregation of duties, the closed-Cycle refusal and the row held
  * exclusively, and each move published for the notifications. A decision is a step-up action (IM8 ac-2). An approval on
- * a scheduled VA is a conditional Exemption (story 47, ADR 0050): its SMO/Tech Lead records that the VA happened, at the
+ * a scheduled VA is a conditional Exemption (story 47, ADR 0051): its SMO/Tech Lead records that the VA happened, at the
  * submitting step, and a VA POC confirms it, at the endorsing step after a fresh sign-in; both are allowed after the VA
  * Cycle has closed, and one with nothing recorded by its lapse date lapses ({@link ExemptionLapse}). The evidence a person
  * wrote is kept and shown as data, and never logged or audited.

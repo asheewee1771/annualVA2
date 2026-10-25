@@ -21,7 +21,7 @@ import sg.annualva.cycle.VaCycle;
 import sg.annualva.register.RegisterSystems;
 
 /**
- * The conditional Exemption lapse (story 47, ADR 0050). A conditional Exemption whose VA its SMO/Tech Lead has not
+ * The conditional Exemption lapse (story 47, ADR 0051). A conditional Exemption whose VA its SMO/Tech Lead has not
  * recorded by its lapse date (the Quarter's last day plus 3 months) lapses the next day: while its VA Cycle is open the
  * VA Submission goes back to the state the request froze (Not Started when the request created it), flagged as lapsed,
  * with a Submission Window ending 13 days from today, a Review Window 14 days after that, and the endorsement due by the
@@ -100,7 +100,7 @@ public class ExemptionLapse {
             Quarter quarter = openCycle.quarters().get(due.quarter() - 1);
             LocalDate endorseDue = later(quarter.endsOn(), openCycle.closesOn());
             // The windows end in order, as V8 checks, so ones that would run past the endorsement are cut to end the
-            // day before it (ADR 0050 item 5): the Cycle's close ends every window anyway.
+            // day before it (ADR 0051 item 5): the Cycle's close ends every window anyway.
             LocalDate reviewDue = earlier(today.plusDays(SUBMIT_DAYS + REVIEW_DAYS), endorseDue.minusDays(1));
             LocalDate submitDue = earlier(today.plusDays(SUBMIT_DAYS), reviewDue.minusDays(1));
             store.lapsedBack(id, to, submitDue, reviewDue, endorseDue, today);

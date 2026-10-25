@@ -44,7 +44,7 @@ import sg.annualva.submission.Submissions;
  *       open. Decided: the request's pair clears for both, an approval clears the endorsement pair too, and the SMO/Tech
  *       Lead is told (ticket 40, ADR 0048);
  *   <li>a conditional Exemption's VA recorded: both VA POCs, as a pair; confirmed: the pair clears and the SMO/Tech Lead
- *       is told; lapsed: the SMO/Tech Lead, and whoever's step the restored state waits on (ticket 42, ADR 0050).
+ *       is told; lapsed: the SMO/Tech Lead, and whoever's step the restored state waits on (ticket 42, ADR 0051).
  * </ul>
  */
 @Component
