@@ -25,7 +25,8 @@ import sg.annualva.register.RegisterSystems;
  * recorded by its lapse date (the Quarter's last day plus 3 months) lapses the next day: while its VA Cycle is open the
  * VA Submission goes back to the state the request froze (Not Started when the request created it), flagged as lapsed,
  * with a Submission Window ending 13 days from today, a Review Window 14 days after that, and the endorsement due by the
- * later of the Quarter's last day and the Cycle's close; once the Cycle has closed it becomes Not Endorsed and keeps its
+ * later of the Quarter's last day and the Cycle's close, a window that would end on or after the next one's last day
+ * being cut to end the day before it; once the Cycle has closed it becomes Not Endorsed and keeps its
  * windows (spec: a Q4 conditional Exemption resolves after the close, the one change allowed to a closed Cycle). Each
  * lapse is audited, for nobody, and published for the notifications. A pass lapses only what has not lapsed, so running
  * it again changes nothing more (as the Overdue sweep, ADR 0033); a VA Submission whose row a record or a confirmation
@@ -87,7 +88,9 @@ public class ExemptionLapse {
      */
     private void lapse(ExemptionStore.Lapsing due, @Nullable VaCycle openCycle, LocalDate today, Instant now) {
         UUID id = due.submissionId();
-        exemptions.lapsed(due.exemptionId(), now);
+        if (!exemptions.lapsed(due.exemptionId(), now)) {
+            return; // Recorded or lapsed meanwhile: the claim holds the row, so this guards a change of locking only.
+        }
         SubmissionState to;
         if (openCycle == null) {
             to = SubmissionState.NOT_ENDORSED;
@@ -95,10 +98,12 @@ public class ExemptionLapse {
         } else {
             to = due.previousState();
             Quarter quarter = openCycle.quarters().get(due.quarter() - 1);
-            LocalDate submitDue = today.plusDays(SUBMIT_DAYS);
-            LocalDate endorseDue = quarter.endsOn().isAfter(openCycle.closesOn()) ? quarter.endsOn()
-                    : openCycle.closesOn();
-            store.lapsedBack(id, to, submitDue, submitDue.plusDays(REVIEW_DAYS), endorseDue, today);
+            LocalDate endorseDue = later(quarter.endsOn(), openCycle.closesOn());
+            // The windows end in order, as V8 checks, so ones that would run past the endorsement are cut to end the
+            // day before it (ADR 0050 item 5): the Cycle's close ends every window anyway.
+            LocalDate reviewDue = earlier(today.plusDays(SUBMIT_DAYS + REVIEW_DAYS), endorseDue.minusDays(1));
+            LocalDate submitDue = earlier(today.plusDays(SUBMIT_DAYS), reviewDue.minusDays(1));
+            store.lapsedBack(id, to, submitDue, reviewDue, endorseDue, today);
         }
         audit.record(AuditEvent.of(AuditAction.EXEMPTION_LAPSED, AuditOutcome.SUCCESS).onSystem(due.systemId())
                 .onSubmission(id)
@@ -108,5 +113,13 @@ public class ExemptionLapse {
         LocalDate dueOn = store.find(id).map(SubmissionStore.Row::dueOn).orElse(null);
         events.publishEvent(new ExemptionEvent(ExemptionEvent.Kind.LAPSED, due.exemptionId(), id, due.systemId(), to,
                 dueOn, null, now));
+    }
+
+    private static LocalDate later(LocalDate one, LocalDate other) {
+        return one.isAfter(other) ? one : other;
+    }
+
+    private static LocalDate earlier(LocalDate one, LocalDate other) {
+        return one.isBefore(other) ? one : other;
     }
 }

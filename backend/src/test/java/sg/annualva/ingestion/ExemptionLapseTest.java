@@ -139,6 +139,40 @@ class ExemptionLapseTest extends ExemptionSeam1 {
     }
 
     @Test
+    void aVaSubmissionAwaitingEndorsementLapsesBackToBothVaPocs() {
+        Draft draft = awaitingEndorsement();
+        conditionallyExempted(draft.smo(), draft.systemId(), scheduledVa());
+        today("2028-02-01");
+
+        lapse();
+
+        ApiClient poc = otherVaPoc();
+        assertThat(submission(poc, draft.submissionId()).get("state").asString()).isEqualTo(AWAITING_ENDORSEMENT);
+        assertThat(openActions(poc)).as("asked to endorse it again").containsExactly("ENDORSE");
+        assertThat(endorsed(poc, draft.submissionId()).get("state").asString()).isEqualTo(ENDORSED);
+    }
+
+    @Test
+    void newWindowsThatWouldRunPastTheCyclesCloseEndTheDayBeforeIt() {
+        // VA Cycle 2028: Q3 ends on 5 November 2028 and Q4, 13 weeks long, on 4 February 2029, so the Cycle closes at
+        // the end of 4 March 2029; a Q3 conditional Exemption lapses by 5 February 2029 and is flagged on the 6th.
+        today("2028-08-07");
+        registered(List.of(listed("SYS-N3", "Next three", SMO_A, CM, "Q3")), List.of());
+        JsonNode request = requested(signedInAs(SMO_A), idOf("SYS-N3"),
+                exemption(SCHEDULED_VA, "2028-12-01", "Third-party VA booked with Acme, PO 4473.", null));
+        approved(vaPoc(), request.get("id").asString());
+        today("2029-02-06");
+
+        lapse();
+
+        JsonNode back = submission(signedInAs(SMO_A), request.get("submissionId").asString());
+        assertThat(back.get("state").asString()).isEqualTo("NOT_STARTED");
+        assertThat(back.get("submitDue").asString()).isEqualTo("2029-02-19");
+        assertThat(back.get("reviewDue").asString()).as("cut to the day before the close").isEqualTo("2029-03-03");
+        assertThat(back.get("endorseDue").asString()).isEqualTo("2029-03-04");
+    }
+
+    @Test
     void aQ4ConditionalExemptionLapsesAfterTheCycleHasClosedAndIsNotEndorsedWithNoNewWindows() {
         registered(List.of(listed("SYS-Q4", "Fourth", SMO_A, CM, "Q4")), List.of());
         String system = idOf("SYS-Q4");

@@ -246,25 +246,34 @@ public class Exemptions {
      */
     @Transactional
     public Exemption recordVa(UUID exemptionId, VaHappened happened) {
-        ExemptionStore.Row exemption = exemptions.find(exemptionId).orElseThrow(ResourceNotFoundException::new);
-        Submissions.AtStep target = submissions.atStep(exemption.submissionId(), RECORDING,
+        UUID submissionId = exemptions.find(exemptionId).orElseThrow(ResourceNotFoundException::new).submissionId();
+        Submissions.AtStep target = submissions.atStep(submissionId, RECORDING,
                 refusedAs(AuditAction.EXEMPTION_VA_RECORDED, exemptionId), Submissions.Hold.EXCLUSIVE);
+        // Read again with the VA Submission held, so a record that committed meanwhile is seen.
+        ExemptionStore.Row exemption = exemptions.find(exemptionId).orElseThrow(ResourceNotFoundException::new);
         LocalDate today = calendar.today();
         LocalDate lapsesOn = exemption.lapsesOn();
-        if (lapsesOn == null || exemption.confirmedAt() != null) {
+        if (lapsesOn == null) {
             throw refused(target, "not-conditional", "This Exemption is not conditional: there is no VA to record.");
         }
         if (exemption.vaRecordedAt() != null) {
-            throw refused(target, "already-recorded", "This Exemption's VA has been recorded already.");
+            throw alreadyRecorded(target);
         }
-        if (exemption.lapsedAt() != null || today.isAfter(lapsesOn)) {
+        if (today.isAfter(lapsesOn)) {
+            // A lapsed Exemption's lapse date has passed too.
             throw refused(target, "exemption-lapsed",
                     "This conditional Exemption lapsed: its VA was not recorded by its lapse date.");
         }
         ExemptionFields.Happened fields = ExemptionFields.happened(happened, quarterOf(target), today);
         Instant now = clock.instant();
-        exemptions.recordVa(exemptionId, fields.vaDate(), fields.evidence(), user.id(), now);
+        if (!exemptions.recordVa(exemptionId, fields.vaDate(), fields.evidence(), user.id(), now)) {
+            throw alreadyRecorded(target);
+        }
         return succeeded(target, AuditAction.EXEMPTION_VA_RECORDED, ExemptionEvent.Kind.VA_RECORDED, exemptionId, now);
+    }
+
+    private RejectedRequestException alreadyRecorded(Submissions.AtStep target) {
+        return refused(target, "already-recorded", "This Exemption's VA has been recorded already.");
     }
 
     /**
