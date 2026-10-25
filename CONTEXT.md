@@ -168,7 +168,7 @@ A time-limited, read-only role over a chosen scope of Quarters and Systems.
 _Avoid_: viewer
 
 **Segregation of duties**:
-The rule that no person acts at more than one step (submitting, reviewing, endorsing or deciding an Exemption) on the same VA Submission.
+The rule that no person acts at more than one step (submitting, reviewing or endorsing) on the same VA Submission. Deciding an Exemption is part of the endorsing step, so a VA POC who decided one may still endorse.
 
 **Step-up**:
 A fresh multi-factor sign-in required immediately before a sensitive action; it does not extend the session.
