@@ -5,6 +5,7 @@ import { ApiError, type Problem } from "../../api/problem.ts";
 import type { ConditionalExemption } from "../../api/submissions.ts";
 import { ClassifiedField } from "../../components/ClassifiedField.tsx";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
+import { LapsedFlag } from "../shared/LapsedFlag.tsx";
 
 const UNREACHABLE: Problem = { type: "about:blank", title: "The server could not be reached", status: 0 };
 
@@ -99,9 +100,9 @@ export function ConditionalExemptionPanel({
     return (
       <div className="notice" role="status">
         <p>
-          <span className="flag flag--danger">Exemption lapsed</span> The scheduled VA was not recorded by{" "}
-          {dayLabel(exemption.lapsesOn)}, so the conditional Exemption lapsed. The VA Submission is back where it was
-          before the request, with the new windows above, or Not Endorsed if its VA Cycle had closed.
+          <LapsedFlag lapsed /> The scheduled VA was not recorded by {dayLabel(exemption.lapsesOn)}, so the conditional
+          Exemption lapsed. The VA Submission is back where it was before the request, with the new windows above, or
+          Not Endorsed if its VA Cycle had closed.
         </p>
       </div>
     );
