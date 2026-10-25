@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
+import sg.annualva.submission.SubmissionState;
 
 /**
  * What a notification says, before it is addressed: the System, the state, the action, the due date and a link, and
@@ -11,7 +12,7 @@ import org.jspecify.annotations.Nullable;
  * notification.
  *
  * @param submissionId the VA Submission it is about; null for a Not Started System
- * @param state the fixed state code: {@code NOT_STARTED} or a VA Submission state
+ * @param state {@code NOT_STARTED} for a System with no VA Submission, or the VA Submission's state
  * @param dueOn the last day of the window the state waits on; null when none applies
  * @param link the app path that opens the item ({@link Links})
  * @param at when it happened (the clock bean's instant of the move it reports)
@@ -19,17 +20,17 @@ import org.jspecify.annotations.Nullable;
  *     notification with the same action, System, due date and day, however often the planner runs; null for a notice of
  *     a move, which is told once because the move happens once
  */
-public record Notice(UUID systemId, @Nullable UUID submissionId, String state, NoticeAction action,
+public record Notice(UUID systemId, @Nullable UUID submissionId, SubmissionState state, NoticeAction action,
         @Nullable LocalDate dueOn, String link, Instant at, @Nullable LocalDate reminderOn) {
 
     /** A notice of a move. */
-    public Notice(UUID systemId, @Nullable UUID submissionId, String state, NoticeAction action,
+    public Notice(UUID systemId, @Nullable UUID submissionId, SubmissionState state, NoticeAction action,
             @Nullable LocalDate dueOn, String link, Instant at) {
         this(systemId, submissionId, state, action, dueOn, link, at, null);
     }
 
     /** A deadline reminder for a business day: it always has the due date it reminds of. */
-    static Notice reminder(UUID systemId, @Nullable UUID submissionId, String state, NoticeAction action,
+    static Notice reminder(UUID systemId, @Nullable UUID submissionId, SubmissionState state, NoticeAction action,
             LocalDate dueOn, String link, Instant at, LocalDate day) {
         return new Notice(systemId, submissionId, state, action, dueOn, link, at, day);
     }

@@ -12,6 +12,7 @@ import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
+import sg.annualva.submission.SubmissionState;
 
 /**
  * The notification table (V27). Constant SQL, named parameters (as-2). A notification names its System by id only: its
@@ -25,7 +26,7 @@ class NotificationStore {
      *
      * @param handledBy the name of the VA POC who handled a pair (their email when the identity provider gave no name)
      */
-    record Row(UUID id, UUID systemId, @Nullable UUID submissionId, String state, NoticeAction action,
+    record Row(UUID id, UUID systemId, @Nullable UUID submissionId, SubmissionState state, NoticeAction action,
             @Nullable LocalDate dueOn, String link, Instant createdAt, @Nullable Instant readAt,
             @Nullable String handledBy, @Nullable Instant handledAt) {}
 
@@ -74,7 +75,7 @@ class NotificationStore {
                 .param("recipient", recipient)
                 .param("system", notice.systemId())
                 .param("submission", notice.submissionId())
-                .param("state", notice.state())
+                .param("state", notice.state().name())
                 .param("action", notice.action().name())
                 .param("dueOn", notice.dueOn())
                 .param("link", notice.link())
@@ -111,7 +112,7 @@ class NotificationStore {
 
     private static Row row(ResultSet rs) throws SQLException {
         return new Row(rs.getObject("id", UUID.class), rs.getObject("system_id", UUID.class),
-                rs.getObject("submission_id", UUID.class), rs.getString("state"),
+                rs.getObject("submission_id", UUID.class), SubmissionState.valueOf(rs.getString("state")),
                 NoticeAction.valueOf(rs.getString("action")), rs.getObject("due_on", LocalDate.class),
                 rs.getString("link"), rs.getObject("created_at", OffsetDateTime.class).toInstant(),
                 instant(rs, "read_at"), rs.getString("handled_by"), instant(rs, "handled_at"));

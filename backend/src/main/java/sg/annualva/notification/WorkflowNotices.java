@@ -117,7 +117,7 @@ class WorkflowNotices {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     void on(ExemptionEvent event) {
         UUID id = event.submissionId();
-        Notice notice = new Notice(event.systemId(), id, event.state().name(), NoticeAction.CONFIRM_VA, event.dueOn(),
+        Notice notice = new Notice(event.systemId(), id, event.state(), NoticeAction.CONFIRM_VA, event.dueOn(),
                 Links.EXEMPTION_QUEUE, event.at());
         switch (event.kind()) {
             case VA_RECORDED -> notifications.toVaPocs(notice, Awaits.VA_CONFIRMATION);
@@ -150,7 +150,7 @@ class WorkflowNotices {
     @TransactionalEventListener
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     void on(OverdueEvent event) {
-        SubmissionState state = SubmissionState.valueOf(event.state());
+        SubmissionState state = event.state();
         if (state == SubmissionState.NOT_STARTED) {
             // A System with no VA Submission, or one a rejected Exemption request left: started from the inbox.
             notifications.toSmo(overdue(event, NoticeAction.SUBMIT_OVERDUE, Links.SMO_INBOX));
@@ -183,7 +183,7 @@ class WorkflowNotices {
                 handledBy(from, SubmissionState.NOT_ENDORSED).forEach(awaits -> notifications.handled(
                         item.submissionId(), awaits, closedBy, event.at()));
             }
-            notifications.toSmo(new Notice(item.systemId(), item.submissionId(), SubmissionState.NOT_ENDORSED.name(),
+            notifications.toSmo(new Notice(item.systemId(), item.submissionId(), SubmissionState.NOT_ENDORSED,
                     NoticeAction.NOT_ENDORSED, null, Links.prepare(item.submissionId()), event.at()));
         }
     }
@@ -217,10 +217,10 @@ class WorkflowNotices {
         Submissions.Summary started = submissions.inCycle(List.of(system.id()), cycle.year()).get(system.id());
         if (started == null) {
             Quarter quarter = cycle.quarters().get(system.quarter() - 1);
-            return new Notice(system.id(), null, SubmissionState.NOT_STARTED.name(), NoticeAction.SYSTEM_MOVED,
+            return new Notice(system.id(), null, SubmissionState.NOT_STARTED, NoticeAction.SYSTEM_MOVED,
                     submissions.notStartedDueOn(quarter), Links.SMO_INBOX, event.at());
         }
-        return new Notice(system.id(), started.id(), started.state().name(), NoticeAction.SYSTEM_MOVED, started.dueOn(),
+        return new Notice(system.id(), started.id(), started.state(), NoticeAction.SYSTEM_MOVED, started.dueOn(),
                 Links.prepare(started.id()), event.at());
     }
 
@@ -241,7 +241,7 @@ class WorkflowNotices {
     }
 
     private static Notice notice(SubmissionEvent event, NoticeAction action, String link) {
-        return new Notice(event.systemId(), event.submissionId(), event.to().name(), action, event.dueOn(), link,
+        return new Notice(event.systemId(), event.submissionId(), event.to(), action, event.dueOn(), link,
                 event.at());
     }
 

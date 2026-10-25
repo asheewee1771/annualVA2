@@ -168,14 +168,13 @@ public class CycleLifecycle {
         records.close(year, closesOn, now, by);
         List<CycleClosed.NotEndorsed> notEndorsed = new ArrayList<>();
         for (SubmissionStore.Finished item : moved) {
-            String from = item.from() == null ? SubmissionStore.NOT_STARTED : item.from();
+            SubmissionState from = item.from() == null ? SubmissionState.NOT_STARTED : item.from();
             audit.record(attributed(AuditEvent.of(AuditAction.SUBMISSION_NOT_ENDORSED, AuditOutcome.SUCCESS), by)
                     .onSystem(item.systemId()).onSubmission(item.id())
-                    .with(DetailKey.STATE_FROM, from)
+                    .with(DetailKey.STATE_FROM, from.name())
                     .with(DetailKey.STATE_TO, SubmissionState.NOT_ENDORSED.name())
                     .with(DetailKey.CYCLE, year));
-            notEndorsed.add(new CycleClosed.NotEndorsed(item.id(), item.systemId(),
-                    item.from() == null ? null : SubmissionState.valueOf(item.from())));
+            notEndorsed.add(new CycleClosed.NotEndorsed(item.id(), item.systemId(), item.from()));
         }
         audit.record(attributed(AuditEvent.of(AuditAction.CYCLE_CLOSED, AuditOutcome.SUCCESS), by)
                 .with(DetailKey.CYCLE, year).with(DetailKey.COUNT, notEndorsed.size()));

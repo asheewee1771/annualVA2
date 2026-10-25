@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Optional;
 import sg.annualva.register.RegisterSystems;
 import sg.annualva.register.RegisterText;
-import sg.annualva.submission.SubmissionState;
 
 /**
  * The values a mail carries, and the allow-list they pass before the relay is called (story 91, ADR 0046): the System's
@@ -51,7 +50,7 @@ final class MailValues {
         Map<String, String> values = new HashMap<>();
         values.put(SYSTEM_ID, system.systemId());
         values.put(SYSTEM_NAME, system.name());
-        values.put(STATE, stateLabel(mail.state()));
+        values.put(STATE, mail.state().label());
         values.put(ACTION, mail.action().message());
         if (mail.dueOn() != null) {
             values.put(DUE_DATE, DUE.format(mail.dueOn()));
@@ -60,10 +59,5 @@ final class MailValues {
         MailTemplate.of(mail.action()).map(MailTemplate.Mailing::changeKind)
                 .ifPresent(change -> values.put(CHANGE_KIND, change));
         return values;
-    }
-
-    /** A state code (one V27's CHECK allows) as the screens name it. */
-    private static String stateLabel(String code) {
-        return SubmissionState.valueOf(code).label();
     }
 }

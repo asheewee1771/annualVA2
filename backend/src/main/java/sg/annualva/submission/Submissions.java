@@ -576,7 +576,7 @@ public class Submissions {
         }
         SubmissionStore.Located located = store.locate(id).orElseThrow(ResourceNotFoundException::new);
         return !reviewing.contains(located.systemId())
-                || ENDORSING.from().contains(SubmissionState.valueOf(located.state()));
+                || ENDORSING.from().contains(located.state());
     }
 
     /**
@@ -727,7 +727,7 @@ public class Submissions {
         if (gate.openCycleOnly()) {
             requireOpenCycle(held.cycleYear(), refused);
         }
-        SubmissionState from = SubmissionState.valueOf(held.state());
+        SubmissionState from = held.state();
         if (!gate.from().contains(from)) {
             audit.recordIndependently(refused.with(DetailKey.REASON, gate.refusedReason()));
             throw new RejectedRequestException(HttpStatus.CONFLICT, NOT_ALLOWED_NOW, gate.refusedSentence());
@@ -873,11 +873,10 @@ public class Submissions {
     }
 
     /**
-     * The states in which the SMO/Tech Lead is still preparing the VA Submission (story 20). Read as the table holds them,
-     * so a state no constant names yet is simply not editable.
+     * The states in which the SMO/Tech Lead is still preparing the VA Submission (story 20): those it is submitted from.
      */
-    private static boolean editable(String state) {
-        return SubmissionState.DRAFT.name().equals(state) || SubmissionState.RETURNED_FOR_REWORK.name().equals(state);
+    private static boolean editable(SubmissionState state) {
+        return SUBMITTING.from().contains(state);
     }
 
     /**

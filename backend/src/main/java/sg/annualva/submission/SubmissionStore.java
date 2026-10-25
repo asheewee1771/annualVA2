@@ -24,11 +24,8 @@ import sg.annualva.cycle.Quarter;
 @Repository
 class SubmissionStore {
 
-    /**
-     * Where a VA Submission is: its System, its state as text, so a state no constant names yet can still be read, and its
-     * VA Cycle's year.
-     */
-    record Located(UUID systemId, String state, int cycleYear) {}
+    /** Where a VA Submission is: its System, its state and its VA Cycle's year. */
+    record Located(UUID systemId, SubmissionState state, int cycleYear) {}
 
     /**
      * What a VA Submission is as the table holds it.
@@ -44,16 +41,17 @@ class SubmissionStore {
 
     /**
      * What the Overdue sweep has just flagged: a VA Submission, or a System with none (Not Started, no {@code id}), with
-     * the state it was in as the table holds it and the last day of the window that passed (the one rule, V20).
+     * the state it was in ({@code NOT_STARTED} for a System with none) and the last day of the window that passed (the one
+     * rule, V20).
      */
-    record Flagged(@Nullable UUID id, UUID systemId, String state, @Nullable LocalDate dueOn) {}
+    record Flagged(@Nullable UUID id, UUID systemId, SubmissionState state, @Nullable LocalDate dueOn) {}
 
     /**
      * What a statement has just moved to a final state (a Cycle's close to Not Endorsed, a Register apply to Withdrawn): a
-     * VA Submission, with the state it was in as the table held it, or, for a close, a System that had none ({@code from}
-     * null), now with a Not Endorsed row of its own ({@code id}).
+     * VA Submission, with the state it was in, or, for a close, a System that had none ({@code from} null), now with a Not
+     * Endorsed row of its own ({@code id}).
      */
-    record Finished(UUID id, UUID systemId, @Nullable String from) {}
+    record Finished(UUID id, UUID systemId, @Nullable SubmissionState from) {}
 
     /**
      * An in-flight VA Submission (started and not in a final state, {@link SubmissionState#inFlight}) of a System a
@@ -540,7 +538,7 @@ class SubmissionStore {
         }
         return jdbc.sql(FLAG_OVERDUE).param("systems", ids(activeSystems)).param("today", today).param("now", utc(now))
                 .query((rs, row) -> new Flagged(rs.getObject("id", UUID.class), rs.getObject("system_id", UUID.class),
-                        rs.getString("state"), rs.getObject("due_on", LocalDate.class)))
+                        SubmissionState.valueOf(rs.getString("state")), rs.getObject("due_on", LocalDate.class)))
                 .list();
     }
 
@@ -560,7 +558,7 @@ class SubmissionStore {
                 .param("endorseDue", quarter.endorseDue())
                 .param("today", today)
                 .param("now", utc(now))
-                .query((rs, row) -> new Flagged(null, rs.getObject("system_id", UUID.class), NOT_STARTED,
+                .query((rs, row) -> new Flagged(null, rs.getObject("system_id", UUID.class), SubmissionState.NOT_STARTED,
                         rs.getObject("due_on", LocalDate.class)))
                 .list();
     }
@@ -725,7 +723,7 @@ class SubmissionStore {
                 .param("inFlight", inFlightStates())
                 .param("today", today)
                 .query((rs, row) -> new Finished(rs.getObject("id", UUID.class), rs.getObject("system_id", UUID.class),
-                        rs.getString("state_from")))
+                        SubmissionState.valueOf(rs.getString("state_from"))))
                 .list();
     }
 
@@ -770,7 +768,7 @@ class SubmissionStore {
                 .param("systems", ids(activeSystems))
                 .param("today", today)
                 .query((rs, row) -> new Finished(rs.getObject("id", UUID.class), rs.getObject("system_id", UUID.class),
-                        rs.getString("state_from")))
+                        SubmissionState.valueOf(rs.getString("state_from"))))
                 .list();
     }
 
@@ -794,7 +792,8 @@ class SubmissionStore {
 
     private Optional<Located> located(String sql, UUID id) {
         return jdbc.sql(sql).param("id", id)
-                .query((rs, row) -> new Located(rs.getObject("system_id", UUID.class), rs.getString("state"),
+                .query((rs, row) -> new Located(rs.getObject("system_id", UUID.class),
+                        SubmissionState.valueOf(rs.getString("state")),
                         rs.getInt("cycle_year")))
                 .optional();
     }

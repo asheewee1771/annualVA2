@@ -11,6 +11,7 @@ import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
+import sg.annualva.submission.SubmissionState;
 
 /**
  * The mail outbox (V28). Constant SQL, named parameters (as-2). Each statement stands alone, so the dispatcher holds no
@@ -64,7 +65,7 @@ class MailOutboxStore {
      * @param recipient the address; never logged
      */
     record Claimed(UUID id, MailTemplate template, int attempts, String recipient, UUID systemId,
-            String state, NoticeAction action, @Nullable LocalDate dueOn, String link) {
+            SubmissionState state, NoticeAction action, @Nullable LocalDate dueOn, String link) {
 
         /** Ids and counts only: the address stays out of any log line a framework writes about it (lm-19). */
         @Override
@@ -105,7 +106,8 @@ class MailOutboxStore {
                 .param("templates", TEMPLATES).param("actions", ACTIONS)
                 .query((rs, row) -> new Claimed(rs.getObject("id", UUID.class),
                         MailTemplate.valueOf(rs.getString("template")), rs.getInt("attempts"),
-                        rs.getString("recipient"), rs.getObject("system_id", UUID.class), rs.getString("state"), NoticeAction.valueOf(rs.getString("action")),
+                        rs.getString("recipient"), rs.getObject("system_id", UUID.class),
+                        SubmissionState.valueOf(rs.getString("state")), NoticeAction.valueOf(rs.getString("action")),
                         rs.getObject("due_on", LocalDate.class), rs.getString("link")))
                 .optional();
     }

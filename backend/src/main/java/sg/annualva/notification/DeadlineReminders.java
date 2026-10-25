@@ -150,7 +150,7 @@ public class DeadlineReminders {
 
     private static Notice notice(Waiting waiting, NoticeAction action, Function<Waiting, String> link, LocalDate today,
             Instant now) {
-        return Notice.reminder(waiting.systemId(), waiting.submissionId(), waiting.state().name(), action,
+        return Notice.reminder(waiting.systemId(), waiting.submissionId(), waiting.state(), action,
                 waiting.dueOn(), link.apply(waiting), now, today);
     }
 }

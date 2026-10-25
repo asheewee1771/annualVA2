@@ -105,7 +105,7 @@ public class OverdueSweep {
      */
     private void recorded(SubmissionStore.Flagged flagged, Instant now) {
         AuditEvent event = AuditEvent.of(AuditAction.SUBMISSION_OVERDUE, AuditOutcome.SUCCESS)
-                .onSystem(flagged.systemId()).with(DetailKey.STATE, flagged.state());
+                .onSystem(flagged.systemId()).with(DetailKey.STATE, flagged.state().name());
         UUID submission = flagged.id();
         audit.record(submission == null ? event : event.onSubmission(submission));
         events.publishEvent(new OverdueEvent(submission, flagged.systemId(), flagged.state(), flagged.dueOn(), now));

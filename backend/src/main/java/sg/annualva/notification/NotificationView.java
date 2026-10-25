@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
+import sg.annualva.submission.SubmissionState;
 
 /**
  * A notification as its reader lists it: the System, the state, the action, the due date and a link (story 91), when it
@@ -20,6 +21,6 @@ import org.jspecify.annotations.Nullable;
  * @param handledAt when they did (UTC)
  */
 public record NotificationView(
-        UUID id, UUID systemId, String systemCode, String systemName, @Nullable UUID submissionId, String state,
+        UUID id, UUID systemId, String systemCode, String systemName, @Nullable UUID submissionId, SubmissionState state,
         String action, String message, @Nullable LocalDate dueOn, String link, Instant createdAt,
         @Nullable Instant readAt, @Nullable String handledBy, @Nullable Instant handledAt) {}
