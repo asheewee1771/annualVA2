@@ -31,8 +31,8 @@ class RegisterApplyAuditTest extends RegisterSeam1 {
         return ApiClient.json(browser.get("/api/session")).get("uuid").asString();
     }
 
-    private static JsonNode entries(ApiClient reader, String action, String filter) {
-        var response = reader.get("/api/audit-entries?size=200&action=" + action + filter);
+    private JsonNode entries(ApiClient reader, String action, String filter) {
+        var response = reader.get("/api/audit-entries?size=200&action=" + action + filter + untilToday());
         assertThat(response.status()).as(response.body()).isEqualTo(200);
         return ApiClient.json(response).get("items");
     }

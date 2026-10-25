@@ -142,8 +142,8 @@ class RegisterUploadAuditTest extends RegisterSeam1 {
         return ApiClient.json(browser.get("/api/session")).get("uuid").asString();
     }
 
-    private static JsonNode entries(ApiClient reader, String action, String actor) {
-        var response = reader.get("/api/audit-entries?size=200&action=" + action + "&actor=" + actor);
+    private JsonNode entries(ApiClient reader, String action, String actor) {
+        var response = reader.get("/api/audit-entries?size=200&action=" + action + "&actor=" + actor + untilToday());
         assertThat(response.status()).as(response.body()).isEqualTo(200);
         return ApiClient.json(response);
     }
