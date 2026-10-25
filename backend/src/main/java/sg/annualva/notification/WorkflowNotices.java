@@ -14,6 +14,7 @@ import sg.annualva.cycle.VaCycle;
 import sg.annualva.register.RegisterSystems;
 import sg.annualva.register.SystemChangeEvent;
 import sg.annualva.submission.CycleClosed;
+import sg.annualva.submission.ExemptionEvent;
 import sg.annualva.submission.OverdueEvent;
 import sg.annualva.submission.SubmissionEvent;
 import sg.annualva.submission.SubmissionState;
@@ -39,7 +40,9 @@ import sg.annualva.submission.Submissions;
  *       that was Exemption Requested;
  *   <li>an Exemption requested: both VA POCs, as a pair; a request from Awaiting Endorsement leaves the endorsement pair
  *       open. Decided: the request's pair clears for both, an approval clears the endorsement pair too, and the SMO/Tech
- *       Lead is told (ticket 40, ADR 0048).
+ *       Lead is told (ticket 40, ADR 0048);
+ *   <li>a conditional Exemption's VA recorded: both VA POCs, as a pair; confirmed: the pair clears and the SMO/Tech Lead
+ *       is told; lapsed: the SMO/Tech Lead, and whoever's step the restored state waits on (ticket 42, ADR 0050).
  * </ul>
  */
 @Component
@@ -95,6 +98,45 @@ class WorkflowNotices {
                     : Set.of(Awaits.EXEMPTION, Awaits.ENDORSEMENT);
             default -> Set.of();
         };
+    }
+
+    /**
+     * A conditional Exemption (ticket 42): a recorded VA asks both VA POCs, as a pair, to confirm it; a confirmation clears
+     * the pair and tells the SMO/Tech Lead. A lapse tells the SMO/Tech Lead, and whoever's step the restored state waits
+     * on as if it had just moved there: the Cyber Manager In Review, both VA POCs Awaiting Endorsement.
+     */
+    @TransactionalEventListener
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    void on(ExemptionEvent event) {
+        UUID id = event.submissionId();
+        Notice notice = new Notice(event.systemId(), id, event.state().name(), NoticeAction.CONFIRM_VA, event.dueOn(),
+                Links.EXEMPTION_QUEUE, event.at());
+        switch (event.kind()) {
+            case VA_RECORDED -> notifications.toVaPocs(notice, Awaits.VA_CONFIRMATION);
+            case VA_CONFIRMED -> {
+                notifications.handled(id, Awaits.VA_CONFIRMATION, Objects.requireNonNull(event.actorId(),
+                        "a confirmation has its VA POC"), event.at());
+                notifications.toSmo(notice.linked(NoticeAction.VA_CONFIRMED, Links.prepare(id)));
+            }
+            case LAPSED -> lapsed(event, notice);
+        }
+    }
+
+    private void lapsed(ExemptionEvent event, Notice notice) {
+        UUID id = event.submissionId();
+        switch (event.state()) {
+            case NOT_ENDORSED -> notifications.toSmo(notice.linked(NoticeAction.EXEMPTION_LAPSED_NOT_ENDORSED,
+                    Links.prepare(id)));
+            case IN_REVIEW -> {
+                notifications.toSmo(notice.linked(NoticeAction.EXEMPTION_LAPSED, Links.forSmo(event.state(), id)));
+                notifications.toCyberManager(notice.linked(NoticeAction.REVIEW, Links.review(id)));
+            }
+            case AWAITING_ENDORSEMENT -> {
+                notifications.toSmo(notice.linked(NoticeAction.EXEMPTION_LAPSED, Links.forSmo(event.state(), id)));
+                notifications.toVaPocs(notice.linked(NoticeAction.ENDORSE, Links.endorse(id)), Awaits.ENDORSEMENT);
+            }
+            default -> notifications.toSmo(notice.linked(NoticeAction.EXEMPTION_LAPSED, Links.forSmo(event.state(), id)));
+        }
     }
 
     @TransactionalEventListener

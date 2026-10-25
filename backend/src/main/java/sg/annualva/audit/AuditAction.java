@@ -257,6 +257,26 @@ public enum AuditAction {
      */
     EXEMPTIONS_VIEWED("exemptions-viewed", "database"),
     /**
+     * An SMO/Tech Lead recorded that a conditional Exemption's scheduled VA happened (story 47; SUCCESS, with the
+     * {@code exemption_id}), or was refused: segregation of duties, the state, an Exemption not conditional, already
+     * recorded or lapsed (REFUSED, with the {@code exemption_id} and a fixed reason). About the System and the VA
+     * Submission; never what they wrote.
+     */
+    EXEMPTION_VA_RECORDED("exemption-va-recorded", "database"),
+    /**
+     * A VA POC confirmed a conditional Exemption's recorded VA, so it is no longer conditional (story 47; SUCCESS, with the
+     * {@code exemption_id}), or was refused: segregation of duties, the state, nothing recorded or already confirmed
+     * (REFUSED, with the {@code exemption_id} and a fixed reason). A refusal for want of a fresh sign-in is the
+     * {@code REQUEST_REFUSED} entry of every step-up. About the System and the VA Submission.
+     */
+    EXEMPTION_VA_CONFIRMED("exemption-va-confirmed", "database"),
+    /**
+     * The lapse job lapsed a conditional Exemption whose VA was not recorded by its lapse date (story 47; SUCCESS, no
+     * actor, with {@code state_from} Exempted, {@code state_to}, the state the request froze or Not Endorsed once the VA
+     * Cycle has closed, and the {@code exemption_id}). About the System and the VA Submission.
+     */
+    EXEMPTION_LAPSED("exemption-lapsed", "database"),
+    /**
      * A VA POC asked for an export (ticket 44, stories 81 and 84; SUCCESS, with the {@code export_id}, the
      * {@code export_type}, the {@code format}, the {@code classification}, the {@code cycle}, the {@code quarter} when it
      * covers one, and the {@code count} of Systems it lists). A refusal for want of a fresh sign-in is the

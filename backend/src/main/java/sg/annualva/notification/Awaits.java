@@ -8,5 +8,7 @@ public enum Awaits {
     /** Endorsing a VA Submission Awaiting Endorsement, or returning it for rework. */
     ENDORSEMENT,
     /** Approving or rejecting an Exemption request (ticket 40). */
-    EXEMPTION
+    EXEMPTION,
+    /** Confirming the VA an SMO/Tech Lead recorded for a conditional Exemption (ticket 42). */
+    VA_CONFIRMATION
 }

@@ -46,11 +46,12 @@ public class SmoInbox {
      * @param nextAction what is next; null once it is in a final state
      * @param nextActionDueOn the last day of the window the state waits on; null when no window runs (frozen, or final)
      * @param overdue whether its window passed without the next step; nothing locks
+     * @param exemptionLapsed whether a conditional Exemption of it lapsed, its VA not recorded in time (ticket 42)
      */
     public record Item(
             UUID id, String systemId, String name, int quarter, SystemState state, @Nullable UUID submissionId,
             LocalDate submitDue, LocalDate reviewDue, LocalDate endorseDue, @Nullable NextAction nextAction,
-            @Nullable LocalDate nextActionDueOn, InboxGroup group, boolean overdue) {}
+            @Nullable LocalDate nextActionDueOn, InboxGroup group, boolean overdue, boolean exemptionLapsed) {}
 
     /** @param cycle the VA Cycle's year */
     public record Inbox(int cycle, List<Item> systems, List<HandledOutside> handledOutsideApp) {}
@@ -78,7 +79,7 @@ public class SmoInbox {
         NextAction next = nextAction(row.state());
         return new Item(row.system().id(), row.system().systemId(), row.system().name(), row.system().quarter(),
                 row.state(), row.submissionId(), row.submitDue(), row.reviewDue(), row.endorseDue(), next, row.dueOn(),
-                group(next), row.overdue());
+                group(next), row.overdue(), row.exemptionLapsed());
     }
 
     /**

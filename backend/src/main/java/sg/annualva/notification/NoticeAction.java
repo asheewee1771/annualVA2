@@ -45,7 +45,23 @@ public enum NoticeAction {
     /** To the SMO/Tech Lead, once a VA POC approves their Exemption. */
     EXEMPTION_APPROVED("A VA POC approved the Exemption: this System is Exempted."),
     /** To the SMO/Tech Lead, once a VA POC rejects their Exemption and the VA Submission is back where it was. */
-    EXEMPTION_REJECTED("A VA POC rejected the Exemption: the VA Submission is back where it was before the request.");
+    EXEMPTION_REJECTED("A VA POC rejected the Exemption: the VA Submission is back where it was before the request."),
+    /**
+     * To both VA POCs, once the SMO/Tech Lead records that a conditional Exemption's scheduled VA happened (ticket 42);
+     * either one's confirmation clears it.
+     */
+    CONFIRM_VA("Confirm the VA the SMO/Tech Lead recorded for this conditional Exemption."),
+    /** To the SMO/Tech Lead, once a VA POC confirms the recorded VA. */
+    VA_CONFIRMED("A VA POC confirmed the VA: the Exemption is no longer conditional."),
+    /**
+     * To the SMO/Tech Lead, once a conditional Exemption lapsed while its VA Cycle is open: the VA Submission is back where
+     * it was before the request, with new windows.
+     */
+    EXEMPTION_LAPSED("The conditional Exemption lapsed because its VA was not recorded in time: the VA Submission is "
+            + "back where it was before the request, with new windows."),
+    /** To the SMO/Tech Lead, once a conditional Exemption lapsed after its VA Cycle closed. */
+    EXEMPTION_LAPSED_NOT_ENDORSED("The conditional Exemption lapsed because its VA was not recorded in time, after the "
+            + "VA Cycle closed: it is Not Endorsed.");
 
     private final String message;
 

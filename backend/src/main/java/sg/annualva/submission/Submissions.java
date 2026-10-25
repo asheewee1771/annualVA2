@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -77,12 +78,29 @@ public class Submissions {
      * @param overdueSince when the Overdue flag was set (UTC); null while it is clear
      * @param declaration the Declaration accepted at its latest submit; null until it is submitted
      * @param acted who acted at which step, in the order they first did
+     * @param conditionalExemption its latest Exemption approved on a scheduled VA (ticket 42): still conditional,
+     *     confirmed or lapsed; null when it has none
      */
     public record Submission(
             UUID id, UUID systemId, int cycle, int quarter, SubmissionState state, boolean overdue, boolean endorsedLate,
             LocalDate submitDue, LocalDate reviewDue, LocalDate endorseDue, @Nullable Instant startedAt,
             @Nullable Instant submittedAt, @Nullable Instant overdueSince, @Nullable AcceptedDeclaration declaration,
-            List<Acted> acted) {}
+            List<Acted> acted, @Nullable ConditionalExemption conditionalExemption) {}
+
+    /**
+     * Where a VA Submission's Exemption approved on a scheduled VA stands (story 47), for the SMO/Tech Lead's screen: ids,
+     * dates and times only, never what a person wrote (the VA POCs read that in their queue, which is audited).
+     *
+     * @param id the Exemption
+     * @param vaDate the day the VA was scheduled for
+     * @param lapsesOn the last day its VA may be recorded by
+     * @param vaHappenedOn the day the SMO/Tech Lead recorded it happened; null until then
+     * @param conditional neither confirmed nor lapsed yet
+     */
+    public record ConditionalExemption(
+            UUID id, LocalDate vaDate, LocalDate lapsesOn, @Nullable LocalDate vaHappenedOn,
+            @Nullable Instant vaRecordedAt, @Nullable Instant confirmedAt, @Nullable Instant lapsedAt,
+            boolean conditional) {}
 
     /**
      * A VA Submission someone may see, for a read of what hangs off it (its files, Findings and Scan Reports). It grants
@@ -169,10 +187,25 @@ public class Submissions {
      * from, and the fixed reason and sentence of a refusal in any other state (ADR 0035 item 2, ADR 0042 item 1). The
      * access guard's need is the step's own.
      */
-    record Gate(SubmissionStep step, Set<SubmissionState> from, String refusedReason, String refusedSentence) {
+    record Gate(SubmissionStep step, Set<SubmissionState> from, String refusedReason, String refusedSentence,
+            boolean openCycleOnly) {
 
         Gate {
             from = Set.copyOf(from);
+        }
+
+        /** A gate refused once the VA Submission's Cycle has closed (ADR 0044 item 6): every transition's. */
+        Gate(SubmissionStep step, Set<SubmissionState> from, String refusedReason, String refusedSentence) {
+            this(step, from, refusedReason, refusedSentence, true);
+        }
+
+        /**
+         * The one kind of gate a closed Cycle does not refuse: a conditional Exemption's VA recorded or confirmed (ticket
+         * 42), which the spec lets a Q4 System resolve after the close. It moves no state.
+         */
+        static Gate afterClose(SubmissionStep step, Set<SubmissionState> from, String refusedReason,
+                String refusedSentence) {
+            return new Gate(step, from, refusedReason, refusedSentence, false);
         }
     }
 
@@ -213,10 +246,12 @@ public class Submissions {
      *     final or frozen state, which waits on none
      * @param endorsedLate whether it was endorsed after the Quarter's last day
      * @param reached when it reached each milestone
+     * @param exemptionLapsed whether a conditional Exemption of it lapsed (ticket 42)
      */
     public record Summary(
             UUID id, SubmissionState state, LocalDate submitDue, LocalDate reviewDue, LocalDate endorseDue,
-            boolean overdue, @Nullable LocalDate dueOn, boolean endorsedLate, Milestones reached) {}
+            boolean overdue, @Nullable LocalDate dueOn, boolean endorsedLate, Milestones reached,
+            boolean exemptionLapsed) {}
 
     /**
      * When a VA Submission last reached each of its milestones (UTC), each null until it has (ADR 0037): submitted for
@@ -280,10 +315,13 @@ public class Submissions {
     private final SegregationOfDuties sod;
     private final ReviewProgress progress;
     private final StepUp stepUp;
+    private final ExemptionStore exemptions;
 
     Submissions(SubmissionStore store, RegisterSystems register, CycleCalendar calendar, AccessGuard guard,
             CurrentUser user, AuditActor actor, AuditLog audit, Clock clock, SubmitReadiness readiness,
-            ApplicationEventPublisher events, SegregationOfDuties sod, ReviewProgress progress, StepUp stepUp) {
+            ApplicationEventPublisher events, SegregationOfDuties sod, ReviewProgress progress, StepUp stepUp,
+            ExemptionStore exemptions) {
+        this.exemptions = exemptions;
         this.store = store;
         this.register = register;
         this.calendar = calendar;
@@ -689,7 +727,9 @@ public class Submissions {
                 .orElseThrow(ResourceNotFoundException::new);
         AuditEvent refused = refusedAs.onSystem(held.systemId()).onSubmission(id);
         sod.require(gate.step(), held.systemId(), id, refused);
-        requireOpenCycle(held.cycleYear(), refused);
+        if (gate.openCycleOnly()) {
+            requireOpenCycle(held.cycleYear(), refused);
+        }
         SubmissionState from = SubmissionState.valueOf(held.state());
         if (!gate.from().contains(from)) {
             audit.recordIndependently(refused.with(DetailKey.REASON, gate.refusedReason()));
@@ -784,7 +824,13 @@ public class Submissions {
         guard.requireSystem(row.systemId(), Need.VIEW);
         return new Submission(row.id(), row.systemId(), row.cycleYear(), row.quarter(), row.state(), row.overdue(),
                 row.endorsedLate(), row.submitDue(), row.reviewDue(), row.endorseDue(), row.startedAt(),
-                row.submittedAt(), row.overdueSince(), store.latestDeclaration(id).orElse(null), store.participation(id));
+                row.submittedAt(), row.overdueSince(), store.latestDeclaration(id).orElse(null), store.participation(id),
+                exemptions.latestConditional(id).map(Submissions::conditionalExemption).orElse(null));
+    }
+
+    private static ConditionalExemption conditionalExemption(ExemptionStore.Row row) {
+        return new ConditionalExemption(row.id(), row.vaDate(), Objects.requireNonNull(row.lapsesOn()),
+                row.vaHappenedOn(), row.vaRecordedAt(), row.confirmedAt(), row.lapsedAt(), row.conditional());
     }
 
     /**
@@ -799,7 +845,8 @@ public class Submissions {
             started.put(row.systemId(),
                     new Summary(row.id(), row.state(), row.submitDue(), row.reviewDue(), row.endorseDue(),
                             row.overdue(), row.dueOn(), row.endorsedLate(),
-                            new Milestones(row.submittedAt(), row.passedToEndorsementAt(), row.endorsedAt())));
+                            new Milestones(row.submittedAt(), row.passedToEndorsementAt(), row.endorsedAt()),
+                            row.exemptionLapsed()));
         }
         return started;
     }
@@ -846,7 +893,8 @@ public class Submissions {
      * After its VA Cycle closes no transition is accepted (story 68, ADR 0044): neither once the close is recorded nor
      * after the Cycle's close date before the lifecycle job records it. Audited in an entry of its own as {@code refused}
      * with {@code reason} {@code cycle-closed}, then 409 {@code invalid-transition}. The one exception, a Q4 conditional
-     * Exemption's VA recorded, confirmed or lapsed after the close, is ticket 42's command, which does not ask this.
+     * Exemption's VA recorded, confirmed or lapsed after the close (ADR 0050), passes a {@link Gate#afterClose} gate or
+     * is the lapse job, neither of which asks this.
      */
     private void requireOpenCycle(int cycleYear, AuditEvent refused) {
         boolean closed = calendar.cycle(cycleYear).map(cycle -> cycle.phaseOn(calendar.today()) == CyclePhase.CLOSED)

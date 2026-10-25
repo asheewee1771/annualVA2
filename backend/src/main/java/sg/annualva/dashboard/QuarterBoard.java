@@ -35,10 +35,11 @@ public class QuarterBoard {
      * @param sodConflict whether segregation of duties refuses the caller the step the board is read for, the review
      *     (ticket 28) or, on a VA POC's board, the endorsement (ticket 34): they acted on the VA Submission at another
      *     step, or are assigned to another step of its System (its SMO/Tech Lead, say)
+     * @param exemptionLapsed whether a conditional Exemption of it lapsed (ticket 42)
      */
     public record Card(
             UUID id, String systemId, String name, @Nullable UUID submissionId, boolean overdue, long confirmed,
-            long awaitingReview, boolean sodConflict) {}
+            long awaitingReview, boolean sodConflict, boolean exemptionLapsed) {}
 
     /** The Systems in one state, in System ID order. */
     public record Column(SystemState state, List<Card> systems) {}
@@ -87,6 +88,6 @@ public class QuarterBoard {
 
     private static Card card(DashboardSystems.Row row, ReviewMarkers.Marker marker) {
         return new Card(row.system().id(), row.system().systemId(), row.system().name(), row.submissionId(),
-                row.overdue(), marker.confirmed(), marker.awaitingReview(), marker.sodConflict());
+                row.overdue(), marker.confirmed(), marker.awaitingReview(), marker.sodConflict(), row.exemptionLapsed());
     }
 }
