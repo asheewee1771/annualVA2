@@ -5,7 +5,9 @@
  * preview that changes nothing ({@code POST /api/system-register/uploads}, ADR 0017), applies a confirmed preview with a
  * fresh sign-in ({@code POST /api/system-register/previews/{id}/apply}, ADR 0018) and lists the Systems
  * ({@code GET /api/systems}). A preview names each row's effects on in-flight work, and the apply withdraws what the VA POC
- * confirmed (ADR 0049), through {@link sg.annualva.register.InFlightWork}, which the submissions implement.
+ * confirmed (ADR 0049), through {@link sg.annualva.register.InFlightWork}, which the submissions implement. It holds the
+ * SMO Unreachable flag (story 13, ADR 0053), which {@link sg.annualva.register.SmoReachability} sets and clears on the
+ * mail relay's answers, and an apply naming another SMO/Tech Lead clears.
  * Depends on access, audit, cycle, scan and web only.
  */
 package sg.annualva.register;

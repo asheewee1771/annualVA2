@@ -28,7 +28,9 @@ import sg.annualva.web.ResourceNotFoundException;
  * Quarter, whether it is retired and, for a VA POC, whether its SMO/Tech Lead is an Unlinked SMO. A VA POC sees every
  * System; an SMO/Tech Lead or Cyber Manager sees only the Systems their roles name (ADR 0013). The Unlinked SMO flag is
  * read when asked, so it clears the moment the person signs in (ADR 0017), and is shown to the VA POCs only: it is
- * theirs to fix. A read of the list is not audited: it names no one System's reports and changes nothing.
+ * theirs to fix. So is the SMO Unreachable flag, with the date it was set, which is stored, since nothing but the mail
+ * relay's answer tells it ({@link SmoReachability}, ADR 0053). A read of the list is not audited: it names no one
+ * System's reports and changes nothing.
  *
  * <p>The Register is one standing list whose Quarter column applies to every VA Cycle, so a Cycle's Systems are the
  * Register's, until a newer Cycle opens: from then on the older Cycle keeps its Systems and their Quarters as they were,
@@ -43,10 +45,12 @@ public class RegisterSystems {
      * @param quarter {@code Q1} to {@code Q4}
      * @param unlinkedSmo whether the SMO/Tech Lead's email matches no sign-in yet; null for anyone but a VA POC, and
      *     false for a retired System
+     * @param smoUnreachableOn the business date the System was flagged SMO Unreachable (ADR 0053); null while it is not,
+     *     for a retired System, and for anyone but a VA POC
      */
     public record SystemView(
             UUID id, String systemId, String name, String smoEmail, String cyberManagerEmail, String quarter,
-            boolean retired, @Nullable Boolean unlinkedSmo) {}
+            boolean retired, @Nullable Boolean unlinkedSmo, @Nullable LocalDate smoUnreachableOn) {}
 
     /**
      * A System that is still in the Register, for another module's read model.
@@ -55,8 +59,17 @@ public class RegisterSystems {
      * @param systemId the System ID as the VA POC typed it
      * @param quarter 1 to 4
      * @param smoEmail the SMO/Tech Lead the Register names for it
+     * @param smoUnreachableOn the business date the System was flagged SMO Unreachable (ADR 0053), or null while it is
+     *     not; a read model shows it to the VA POCs only, whose flag it is to fix
      */
-    public record ActiveSystem(UUID id, String systemId, String name, int quarter, String smoEmail) {}
+    public record ActiveSystem(UUID id, String systemId, String name, int quarter, String smoEmail,
+            @Nullable LocalDate smoUnreachableOn) {
+
+        /** The same System in another Quarter: the one a VA Cycle kept for it (ADR 0044). */
+        ActiveSystem inQuarter(int kept) {
+            return new ActiveSystem(id, systemId, name, kept, smoEmail, smoUnreachableOn);
+        }
+    }
 
     /**
      * A System with the people the Register names for it, for a consumer that tells them something.
@@ -165,10 +178,7 @@ public class RegisterSystems {
         Optional<Map<UUID, Integer>> kept = store.frozen(cycleYear);
         return activeWhere(id -> include.test(id) && kept.map(quarters -> quarters.containsKey(id)).orElse(true))
                 .stream()
-                .map(system -> kept.map(quarters -> quarters.get(system.id()))
-                        .map(quarter -> new ActiveSystem(system.id(), system.systemId(), system.name(), quarter,
-                                system.smoEmail()))
-                        .orElse(system))
+                .map(system -> kept.map(quarters -> quarters.get(system.id())).map(system::inQuarter).orElse(system))
                 .toList();
     }
 
@@ -197,9 +207,19 @@ public class RegisterSystems {
     private List<ActiveSystem> activeWhere(Predicate<UUID> include) {
         return store.systems().stream()
                 .filter(system -> !system.retired() && include.test(system.id()))
-                .map(system -> new ActiveSystem(system.id(), system.code(), system.name(), system.quarter(),
-                        system.smoEmail()))
+                .map(this::active)
                 .toList();
+    }
+
+    private ActiveSystem active(ExistingSystem system) {
+        return new ActiveSystem(system.id(), system.code(), system.name(), system.quarter(), system.smoEmail(),
+                unreachableOn(system));
+    }
+
+    /** The business date the System was flagged SMO Unreachable, or null while it is not (ADR 0053). */
+    private @Nullable LocalDate unreachableOn(ExistingSystem system) {
+        Instant at = system.smoUnreachableAt();
+        return at == null ? null : calendar.dateOf(at);
     }
 
     /**
@@ -211,16 +231,16 @@ public class RegisterSystems {
         guard.requireSystem(systemId, need);
         return store.systems().stream()
                 .filter(system -> !system.retired() && system.id().equals(systemId))
-                .map(system -> new ActiveSystem(system.id(), system.code(), system.name(), system.quarter(),
-                        system.smoEmail()))
+                .map(this::active)
                 .findFirst()
                 .orElseThrow(ResourceNotFoundException::new);
     }
 
-    private static SystemView view(ExistingSystem system, boolean vaPoc, Set<String> signedIn) {
+    private SystemView view(ExistingSystem system, boolean vaPoc, Set<String> signedIn) {
         SystemSnapshot snapshot = system.snapshot();
         Boolean unlinked = vaPoc ? !system.retired() && !signedIn.contains(snapshot.smoEmail()) : null;
+        LocalDate unreachable = vaPoc && !system.retired() ? unreachableOn(system) : null;
         return new SystemView(system.id(), system.code(), snapshot.name(), snapshot.smoEmail(),
-                snapshot.cyberManagerEmail(), snapshot.quarter(), system.retired(), unlinked);
+                snapshot.cyberManagerEmail(), snapshot.quarter(), system.retired(), unlinked, unreachable);
     }
 }
