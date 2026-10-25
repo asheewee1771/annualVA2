@@ -6,6 +6,7 @@ import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { useResource } from "../../hooks/useResource.ts";
 import { useSelectedCycle } from "../../app/CycleChoice.tsx";
 import { HandledOutsideSection } from "../shared/HandledOutsideSection.tsx";
+import { LapsedFlag } from "../shared/LapsedFlag.tsx";
 import { findingsLabel, ReviewFlags } from "../shared/ReviewFlags.tsx";
 import { STATE_LABELS } from "../shared/systemStates.ts";
 import { reviewPath } from "./paths.ts";
@@ -22,6 +23,7 @@ function InboxRow({ system }: { system: CmInboxSystem }) {
       <td>
         <span className="mono">{system.systemId}</span> {system.name}
         <ReviewFlags overdue={system.overdue} sodConflict={system.sodConflict} />
+        <LapsedFlag lapsed={system.exemptionLapsed} />
         {system.submissionId ? (
           <>
             <br />

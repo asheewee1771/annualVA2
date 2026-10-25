@@ -15,6 +15,7 @@ import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { useResource } from "../../hooks/useResource.ts";
 import { useSelectedCycle } from "../../app/CycleChoice.tsx";
 import { HandledOutsideSection } from "../shared/HandledOutsideSection.tsx";
+import { LapsedFlag } from "../shared/LapsedFlag.tsx";
 import { STATE_LABELS } from "../shared/systemStates.ts";
 import { exemptionRequestPath, reworkPath, submissionPath } from "./paths.ts";
 
@@ -130,6 +131,7 @@ function InboxRow({
             <span className="flag flag--danger">Not Endorsed</span>
           </>
         ) : null}
+        <LapsedFlag lapsed={system.exemptionLapsed} />
       </td>
       <td>Q{system.quarter}</td>
       <td>{STATE_LABELS[system.state]}</td>

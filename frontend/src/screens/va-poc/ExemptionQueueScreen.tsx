@@ -1,6 +1,12 @@
 import { useCallback, useState } from "react";
 import { dayLabel } from "../../api/cycles.ts";
-import { BASIS_LABELS, decideExemption, fetchExemptionQueue, type QueuedExemption } from "../../api/exemptions.ts";
+import {
+  BASIS_LABELS,
+  confirmVa,
+  decideExemption,
+  fetchExemptionQueue,
+  type QueuedExemption,
+} from "../../api/exemptions.ts";
 import { ApiError, type Problem } from "../../api/problem.ts";
 import { fetchReportFileContent } from "../../api/reportFiles.ts";
 import { useSelectedCycle } from "../../app/CycleChoice.tsx";
@@ -8,6 +14,7 @@ import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { useResource } from "../../hooks/useResource.ts";
 import { saveFile } from "../shared/saveFile.ts";
 import { STATE_LABELS } from "../shared/systemStates.ts";
+import { VaConfirmations } from "./VaConfirmations.tsx";
 
 const UNREACHABLE: Problem = { type: "about:blank", title: "The server could not be reached", status: 0 };
 
@@ -87,7 +94,8 @@ function QueueRow({
  * The Exemption requests waiting on a VA POC (stories 45 and 46), oldest first, with what the SMO/Tech Lead sent: an
  * approval Exempts the VA Submission (conditional for a scheduled VA), a rejection puts it back where it was. Deciding
  * needs a sign-in from the last five minutes: without one the app explains the fresh sign-in and brings the VA POC back
- * here to press it again. Every refusal is the server's; the list is read again after each decision and each 409.
+ * here to press it again. Below them, the recorded VAs of conditional Exemptions to confirm (story 47), a step-up action
+ * too. Every refusal is the server's; the lists are read again after each command and each 409.
  */
 export function ExemptionQueueScreen() {
   const cycle = useSelectedCycle();
@@ -97,11 +105,12 @@ export function ExemptionQueueScreen() {
   const [problem, setProblem] = useState<Problem | undefined>(undefined);
   const { reload } = queue;
 
-  async function decide(request: QueuedExemption, decision: "approve" | "reject") {
-    setBusyId(request.exemptionId);
+  /** Runs one VA POC command on an Exemption, then reads the queue again; a 409 reads it again too. */
+  async function act(exemptionId: string, command: () => Promise<unknown>) {
+    setBusyId(exemptionId);
     setProblem(undefined);
     try {
-      await decideExemption(request.exemptionId, decision);
+      await command();
       reload();
     } catch (failure) {
       const refused = failure instanceof ApiError ? failure.problem : UNREACHABLE;
@@ -146,13 +155,22 @@ export function ExemptionQueueScreen() {
                   key={request.exemptionId}
                   request={request}
                   busy={busyId !== undefined}
-                  onDecide={(chosen, decision) => void decide(chosen, decision)}
+                  onDecide={(chosen, decision) =>
+                    void act(chosen.exemptionId, () => decideExemption(chosen.exemptionId, decision))
+                  }
                   onProblem={setProblem}
                 />
               ))}
             </tbody>
           </table>
         </div>
+      ) : null}
+      {queue.data ? (
+        <VaConfirmations
+          confirmations={queue.data.confirmations}
+          busy={busyId !== undefined}
+          onConfirm={(chosen) => void act(chosen.exemptionId, () => confirmVa(chosen.exemptionId))}
+        />
       ) : null}
     </div>
   );
