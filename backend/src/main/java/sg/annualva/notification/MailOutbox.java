@@ -85,9 +85,9 @@ public class MailOutbox {
     }
 
     private void send(Claimed mail) {
-        RegisterSystems.Named system = register.named(mail.systemId()).orElseThrow(
-                () -> new IllegalStateException("a notification's System is in the Register (V27's foreign key)"));
-        Optional<String> refusal = MailValues.refusal(system);
+        // V27's foreign key keeps the System in the Register; were it gone, the mail is refused on its System ID.
+        Optional<RegisterSystems.Named> named = register.named(mail.systemId());
+        Optional<String> refusal = named.map(MailValues::refusal).orElse(Optional.of(MailValues.SYSTEM_ID));
         if (refusal.isPresent()) {
             settled(mail, Settled.REFUSED);
             log.atWarn().setMessage("A mail was not sent: a value is outside the allow-list")
@@ -95,6 +95,7 @@ public class MailOutbox {
                     .addKeyValue("event.reason", refusal.get()).log();
             return;
         }
+        RegisterSystems.Named system = named.orElseThrow();
         MailRelay.Receipt receipt;
         try {
             receipt = relay.send(mail.recipient(), properties.templateId(mail.template()),
