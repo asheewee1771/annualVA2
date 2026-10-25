@@ -16,6 +16,7 @@ import sg.annualva.access.AppUserStore;
 import sg.annualva.access.CurrentUser;
 import sg.annualva.access.VaPocProperties;
 import sg.annualva.register.RegisterSystems;
+import sg.annualva.submission.SubmissionStep;
 import sg.annualva.web.Page;
 import sg.annualva.web.ResourceNotFoundException;
 
@@ -61,6 +62,20 @@ public class Notifications {
     @Transactional
     public void toCyberManager(Notice notice) {
         register.named(notice.systemId()).ifPresent(system -> to(system.cyberManagerEmail(), notice));
+    }
+
+    /**
+     * To whoever acts at this step of the System's VA Submission (ADR 0052), the one recipient rule of every notice to
+     * whoever acts next: the SMO/Tech Lead at the submitting step, the Cyber Manager at the reviewing step, both VA POCs
+     * as an endorsement pair at the endorsing step. {@link Links#forStep} is the matching link rule.
+     */
+    @Transactional
+    public void toStep(SubmissionStep step, Notice notice) {
+        switch (step) {
+            case SUBMIT -> toSmo(notice);
+            case REVIEW -> toCyberManager(notice);
+            case ENDORSE -> toVaPocs(notice, Awaits.ENDORSEMENT);
+        }
     }
 
     /** To one person, known by email (a transfer's former SMO/Tech Lead, whom the Register no longer names). */

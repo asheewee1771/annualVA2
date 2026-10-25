@@ -4,6 +4,7 @@ import java.util.Objects;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import sg.annualva.submission.SubmissionState;
+import sg.annualva.submission.SubmissionStep;
 
 /**
  * The app paths a notification links to, the same paths the React app routes (its {@code paths.ts} per role): fixed
@@ -34,6 +35,22 @@ public final class Links {
         }
         UUID id = Objects.requireNonNull(submissionId, "a state after Not Started has a VA Submission");
         return state == SubmissionState.RETURNED_FOR_REWORK ? rework(id) : prepare(id);
+    }
+
+    /**
+     * Where the person who acts at this step takes up a VA Submission in this state (ADR 0052): the SMO/Tech Lead's place
+     * for it ({@link #forSmo}) at the submitting step, the review at the reviewing step and the endorsement at the
+     * endorsing step. The one link rule of every notice to whoever acts next: a move, an Overdue flag, a lapse and a
+     * deadline reminder; {@link Notifications#toStep} is the matching recipient rule.
+     *
+     * @param submissionId null for a System with no VA Submission, which is Not Started
+     */
+    public static String forStep(SubmissionStep step, SubmissionState state, @Nullable UUID submissionId) {
+        return switch (step) {
+            case SUBMIT -> forSmo(state, submissionId);
+            case REVIEW -> review(Objects.requireNonNull(submissionId, "a VA Submission in review has an id"));
+            case ENDORSE -> endorse(Objects.requireNonNull(submissionId, "a VA Submission at endorsement has an id"));
+        };
     }
 
     /** Where the SMO/Tech Lead prepares a VA Submission. */

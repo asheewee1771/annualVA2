@@ -203,6 +203,22 @@ class ExemptionDecisionTest extends ExemptionSeam1 {
     }
 
     @Test
+    void aMoveOfASystemWhoseVaSubmissionARejectionLeftNotStartedLinksTheSmoToTheirInbox() {
+        draft();
+        ApiClient smoB = signedInAs(SMO_B);
+        String system = idOf("SYS-F2");
+        JsonNode requested = requested(smoB, system, priorVa());
+        rejected(vaPoc(), requested.get("id").asString());
+
+        registered(listed("SYS-F1", "File one", SMO_A, CM, "Q3"), listed("SYS-F2", "File two", SMO_B, CM_OTHER, "Q4"));
+
+        JsonNode moved = only(smoB, "SYSTEM_MOVED");
+        assertThat(moved.get("state").asString()).isEqualTo("NOT_STARTED");
+        assertThat(moved.get("link").asString()).as("a Not Started VA Submission is started from the inbox")
+                .isEqualTo("/smo");
+    }
+
+    @Test
     void decidingNeedsAFreshSignInAndChangesNothingWithoutOne() {
         Draft draft = draft();
         String id = requested(draft.smo(), draft.systemId(), priorVa()).get("id").asString();

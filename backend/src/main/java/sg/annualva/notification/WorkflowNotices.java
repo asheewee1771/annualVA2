@@ -18,6 +18,7 @@ import sg.annualva.submission.ExemptionEvent;
 import sg.annualva.submission.OverdueEvent;
 import sg.annualva.submission.SubmissionEvent;
 import sg.annualva.submission.SubmissionState;
+import sg.annualva.submission.SubmissionStep;
 import sg.annualva.submission.Submissions;
 
 /**
@@ -69,28 +70,46 @@ class WorkflowNotices {
         UUID id = event.submissionId();
         handledBy(event.from(), event.to()).forEach(awaits -> notifications.handled(id, awaits, event.actorId(),
                 event.at()));
+        // Linked where the SMO/Tech Lead takes it up in the new state; each case below sets the action it tells.
+        Notice moved = new Notice(event.systemId(), id, event.to(), NoticeAction.WITHDRAWN, event.dueOn(),
+                Links.forSmo(event.to(), id), event.at());
         if (event.to() == SubmissionState.WITHDRAWN) {
             // The Register retired the System (ticket 43), whatever state the VA Submission was in, so its SMO/Tech Lead
             // lost it: their inbox is the link, as on a transfer.
-            notifications.toSmo(notice(event, NoticeAction.WITHDRAWN, Links.SMO_INBOX));
+            notifications.toSmo(moved.linked(NoticeAction.WITHDRAWN, Links.SMO_INBOX));
             return;
         }
         if (event.from() == SubmissionState.EXEMPTION_REQUESTED) {
-            NoticeAction decided = event.to() == SubmissionState.EXEMPTED ? NoticeAction.EXEMPTION_APPROVED
-                    : NoticeAction.EXEMPTION_REJECTED;
-            notifications.toSmo(notice(event, decided, Links.forSmo(event.to(), id)));
+            notifications.toSmo(moved.as(event.to() == SubmissionState.EXEMPTED ? NoticeAction.EXEMPTION_APPROVED
+                    : NoticeAction.EXEMPTION_REJECTED));
             return;
         }
         switch (event.to()) {
-            case IN_REVIEW -> notifications.toCyberManager(notice(event, NoticeAction.REVIEW, Links.review(id)));
-            case RETURNED_FOR_REWORK -> returned(event);
-            case AWAITING_ENDORSEMENT -> notifications.toVaPocs(notice(event, NoticeAction.ENDORSE, Links.endorse(id)),
-                    Awaits.ENDORSEMENT);
+            case IN_REVIEW, AWAITING_ENDORSEMENT -> arrived(moved);
+            case RETURNED_FOR_REWORK -> returned(event.from(), moved);
             case EXEMPTION_REQUESTED -> notifications.toVaPocs(
-                    notice(event, NoticeAction.DECIDE_EXEMPTION, Links.EXEMPTION_QUEUE), Awaits.EXEMPTION);
+                    moved.linked(NoticeAction.DECIDE_EXEMPTION, Links.EXEMPTION_QUEUE), Awaits.EXEMPTION);
             // Endorsed is an FYI for the weekly digest (story 93, Release 2); the other states arrive with their tickets.
             default -> { }
         }
+    }
+
+    /**
+     * Tells whoever acts at this step about the notice's VA Submission, with this action, at the link that opens their
+     * work there: the one recipient rule ({@link Notifications#toStep}) and the one link rule ({@link Links#forStep}).
+     */
+    private void toStep(SubmissionStep step, Notice about, NoticeAction action) {
+        notifications.toStep(step, about.linked(action, Links.forStep(step, about.state(), about.submissionId())));
+    }
+
+    /**
+     * Tells the person whose step the notice's state now waits on that it is theirs, after a step of someone else: the
+     * Cyber Manager to review it In Review, both VA POCs to endorse it Awaiting Endorsement. A state the SMO/Tech Lead
+     * acts on is told in words of its own (a return, a lapse), and one that waits on nobody tells nobody.
+     */
+    private void arrived(Notice about) {
+        about.state().nextStep().filter(step -> step != SubmissionStep.SUBMIT).ifPresent(step -> toStep(step, about,
+                step == SubmissionStep.REVIEW ? NoticeAction.REVIEW : NoticeAction.ENDORSE));
     }
 
     /**
@@ -124,48 +143,37 @@ class WorkflowNotices {
             case VA_CONFIRMED -> {
                 notifications.handled(id, Awaits.VA_CONFIRMATION, Objects.requireNonNull(event.actorId(),
                         "a confirmation has its VA POC"), event.at());
-                notifications.toSmo(notice.linked(NoticeAction.VA_CONFIRMED, Links.prepare(id)));
+                notifications.toSmo(notice.linked(NoticeAction.VA_CONFIRMED, Links.forSmo(event.state(), id)));
             }
-            case LAPSED -> lapsed(event, notice);
+            case LAPSED -> lapsed(notice.linked(NoticeAction.EXEMPTION_LAPSED, Links.forSmo(event.state(), id)));
         }
     }
 
-    private void lapsed(ExemptionEvent event, Notice notice) {
-        UUID id = event.submissionId();
-        switch (event.state()) {
-            case NOT_ENDORSED -> notifications.toSmo(notice.linked(NoticeAction.EXEMPTION_LAPSED_NOT_ENDORSED,
-                    Links.prepare(id)));
-            case IN_REVIEW -> {
-                notifications.toSmo(notice.linked(NoticeAction.EXEMPTION_LAPSED, Links.forSmo(event.state(), id)));
-                notifications.toCyberManager(notice.linked(NoticeAction.REVIEW, Links.review(id)));
-            }
-            case AWAITING_ENDORSEMENT -> {
-                notifications.toSmo(notice.linked(NoticeAction.EXEMPTION_LAPSED, Links.forSmo(event.state(), id)));
-                notifications.toVaPocs(notice.linked(NoticeAction.ENDORSE, Links.endorse(id)), Awaits.ENDORSEMENT);
-            }
-            default -> notifications.toSmo(notice.linked(NoticeAction.EXEMPTION_LAPSED, Links.forSmo(event.state(), id)));
-        }
+    /**
+     * A lapse tells the SMO/Tech Lead, and whoever's step the restored state waits on as if it had just moved there,
+     * unless that is the SMO/Tech Lead already told.
+     */
+    private void lapsed(Notice lapse) {
+        notifications.toSmo(lapse.state() == SubmissionState.NOT_ENDORSED
+                ? lapse.as(NoticeAction.EXEMPTION_LAPSED_NOT_ENDORSED) : lapse);
+        arrived(lapse);
     }
 
+    /**
+     * Overdue tells whoever's step the flagged state waits on (the Overdue rule, V20, flags no final or frozen state): the
+     * SMO/Tech Lead for a System Not Started (with no VA Submission or one a rejected Exemption request left), a Draft or
+     * one Returned for Rework, the Cyber Manager In Review, both VA POCs Awaiting Endorsement.
+     */
     @TransactionalEventListener
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     void on(OverdueEvent event) {
-        SubmissionState state = event.state();
-        if (state == SubmissionState.NOT_STARTED) {
-            // A System with no VA Submission, or one a rejected Exemption request left: started from the inbox.
-            notifications.toSmo(overdue(event, NoticeAction.SUBMIT_OVERDUE, Links.SMO_INBOX));
-            return;
-        }
-        UUID id = Objects.requireNonNull(event.submissionId(), "a flagged VA Submission has an id");
-        switch (state) {
-            case DRAFT -> notifications.toSmo(overdue(event, NoticeAction.SUBMIT_OVERDUE, Links.prepare(id)));
-            case RETURNED_FOR_REWORK -> notifications.toSmo(overdue(event, NoticeAction.SUBMIT_OVERDUE, Links.rework(id)));
-            case IN_REVIEW -> notifications.toCyberManager(overdue(event, NoticeAction.REVIEW_OVERDUE, Links.review(id)));
-            case AWAITING_ENDORSEMENT -> notifications.toVaPocs(
-                    overdue(event, NoticeAction.ENDORSE_OVERDUE, Links.endorse(id)), Awaits.ENDORSEMENT);
-            // The Overdue rule (V20) flags no other state: a final or frozen one waits on no window.
-            default -> { }
-        }
+        Notice flagged = new Notice(event.systemId(), event.submissionId(), event.state(), NoticeAction.SUBMIT_OVERDUE,
+                event.dueOn(), Links.forSmo(event.state(), event.submissionId()), event.at());
+        event.state().nextStep().ifPresent(step -> toStep(step, flagged, switch (step) {
+            case SUBMIT -> NoticeAction.SUBMIT_OVERDUE;
+            case REVIEW -> NoticeAction.REVIEW_OVERDUE;
+            case ENDORSE -> NoticeAction.ENDORSE_OVERDUE;
+        }));
     }
 
     /**
@@ -184,7 +192,8 @@ class WorkflowNotices {
                         item.submissionId(), awaits, closedBy, event.at()));
             }
             notifications.toSmo(new Notice(item.systemId(), item.submissionId(), SubmissionState.NOT_ENDORSED,
-                    NoticeAction.NOT_ENDORSED, null, Links.prepare(item.submissionId()), event.at()));
+                    NoticeAction.NOT_ENDORSED, null, Links.forSmo(SubmissionState.NOT_ENDORSED, item.submissionId()),
+                    event.at()));
         }
     }
 
@@ -210,7 +219,8 @@ class WorkflowNotices {
 
     /**
      * Where the System stands in the VA Cycle running today, as the apply's caller (a VA POC, who sees every System) reads
-     * it: its VA Submission's state and due date, or Not Started and due by its Quarter's Submission Window.
+     * it: its VA Submission's state and due date, or Not Started and due by its Quarter's Submission Window, linked where
+     * the SMO/Tech Lead takes it up in that state ({@link Links#forSmo}).
      */
     private Notice standing(RegisterSystems.Named system, SystemChangeEvent event) {
         VaCycle cycle = calendar.running(null);
@@ -218,35 +228,23 @@ class WorkflowNotices {
         if (started == null) {
             Quarter quarter = cycle.quarters().get(system.quarter() - 1);
             return new Notice(system.id(), null, SubmissionState.NOT_STARTED, NoticeAction.SYSTEM_MOVED,
-                    submissions.notStartedDueOn(quarter), Links.SMO_INBOX, event.at());
+                    submissions.notStartedDueOn(quarter), Links.forSmo(SubmissionState.NOT_STARTED, null), event.at());
         }
         return new Notice(system.id(), started.id(), started.state(), NoticeAction.SYSTEM_MOVED, started.dueOn(),
-                Links.prepare(started.id()), event.at());
+                Links.forSmo(started.state(), started.id()), event.at());
     }
 
     /**
-     * A return for rework: the Cyber Manager's (from In Review) tells the SMO/Tech Lead to rework what is Disputed; a VA
-     * POC's (from Awaiting Endorsement, ticket 35) tells the SMO/Tech Lead to read the VA POC's comment, and the Cyber
-     * Manager that the resubmission comes back to them.
+     * A return for rework, linked to the rework queue: the Cyber Manager's (from In Review) tells the SMO/Tech Lead to
+     * rework what is Disputed; a VA POC's (from Awaiting Endorsement, ticket 35) tells the SMO/Tech Lead to read the VA
+     * POC's comment, and the Cyber Manager that the resubmission comes back to them.
      */
-    private void returned(SubmissionEvent event) {
-        UUID id = event.submissionId();
-        switch (event.from()) {
-            case AWAITING_ENDORSEMENT -> {
-                notifications.toSmo(notice(event, NoticeAction.VA_POC_REWORK, Links.rework(id)));
-                notifications.toCyberManager(notice(event, NoticeAction.VA_POC_RETURNED, Links.review(id)));
-            }
-            default -> notifications.toSmo(notice(event, NoticeAction.REWORK, Links.rework(id)));
+    private void returned(SubmissionState from, Notice returned) {
+        if (from == SubmissionState.AWAITING_ENDORSEMENT) {
+            notifications.toSmo(returned.as(NoticeAction.VA_POC_REWORK));
+            toStep(SubmissionStep.REVIEW, returned, NoticeAction.VA_POC_RETURNED);
+        } else {
+            notifications.toSmo(returned.as(NoticeAction.REWORK));
         }
-    }
-
-    private static Notice notice(SubmissionEvent event, NoticeAction action, String link) {
-        return new Notice(event.systemId(), event.submissionId(), event.to(), action, event.dueOn(), link,
-                event.at());
-    }
-
-    private static Notice overdue(OverdueEvent event, NoticeAction action, String link) {
-        return new Notice(event.systemId(), event.submissionId(), event.state(), action, event.dueOn(), link,
-                event.at());
     }
 }

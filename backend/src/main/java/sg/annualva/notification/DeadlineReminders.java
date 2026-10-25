@@ -51,12 +51,12 @@ public class DeadlineReminders {
     private record Weekly(NoticeAction action, NoticeAction copy, Route copyTo, Function<Waiting, String> copyLink) {}
 
     /**
-     * How a step is reminded: its person, the link that opens their work, the reminder for each number of days left
-     * before the window ends, and the weekly one while it is Overdue (none for endorsing: story 90 asks for none, and the
-     * sweep's Overdue message tells both VA POCs).
+     * How a step is reminded: the reminder for each number of days left before the window ends, and the weekly one while
+     * it is Overdue (none for endorsing: story 90 asks for none, and the sweep's Overdue message tells both VA POCs). Who
+     * is reminded, and where their link points, are every notice's rules ({@link Notifications#toStep},
+     * {@link Links#forStep}).
      */
-    private record Schedule(Route to, Function<Waiting, String> link, Map<Long, NoticeAction> daysBefore,
-            @Nullable Weekly weekly) {}
+    private record Schedule(Map<Long, NoticeAction> daysBefore, @Nullable Weekly weekly) {}
 
     private final WaitingWork work;
     private final Notifications notifications;
@@ -76,19 +76,21 @@ public class DeadlineReminders {
     /** The reminder schedule of each step, written once. */
     private static Schedule schedule(SubmissionStep step) {
         return switch (step) {
-            case SUBMIT -> new Schedule(Notifications::toSmo,
-                    waiting -> Links.forSmo(waiting.state(), waiting.submissionId()),
-                    Map.of(5L, NoticeAction.SUBMIT_DUE_SOON, 0L, NoticeAction.SUBMIT_DUE_TODAY),
+            case SUBMIT -> new Schedule(Map.of(5L, NoticeAction.SUBMIT_DUE_SOON, 0L, NoticeAction.SUBMIT_DUE_TODAY),
                     new Weekly(NoticeAction.SUBMIT_STILL_OVERDUE, NoticeAction.SUBMIT_OVERDUE_COPY,
                             Notifications::toCyberManager, waiting -> Links.CYBER_MANAGER_INBOX));
-            case REVIEW -> new Schedule(Notifications::toCyberManager, waiting -> Links.review(waiting.started()),
-                    Map.of(5L, NoticeAction.REVIEW_DUE_SOON, 0L, NoticeAction.REVIEW_DUE_TODAY),
+            case REVIEW -> new Schedule(Map.of(5L, NoticeAction.REVIEW_DUE_SOON, 0L, NoticeAction.REVIEW_DUE_TODAY),
                     new Weekly(NoticeAction.REVIEW_STILL_OVERDUE, NoticeAction.REVIEW_OVERDUE_COPY,
                             Notifications::toEachVaPoc, waiting -> Links.endorse(waiting.started())));
-            case ENDORSE -> new Schedule((port, notice) -> port.toVaPocs(notice, Awaits.ENDORSEMENT),
-                    waiting -> Links.endorse(waiting.started()),
+            case ENDORSE -> new Schedule(
                     Map.of(14L, NoticeAction.ENDORSE_DUE_IN_TWO_WEEKS, 7L, NoticeAction.ENDORSE_DUE_IN_ONE_WEEK), null);
         };
+    }
+
+    /** The person whose step the work waits on, at the link that opens it there. */
+    private void toStep(Waiting waiting, NoticeAction action, LocalDate today, Instant now) {
+        notifications.toStep(waiting.step(), notice(waiting, action,
+                item -> Links.forStep(item.step(), item.state(), item.submissionId()), today, now));
     }
 
     /**
@@ -127,11 +129,11 @@ public class DeadlineReminders {
         Schedule schedule = schedule(waiting.step());
         NoticeAction before = schedule.daysBefore().get(ChronoUnit.DAYS.between(today, waiting.dueOn()));
         if (before != null) {
-            schedule.to().accept(notifications, notice(waiting, before, schedule.link(), today, now));
+            toStep(waiting, before, today, now);
         }
         Weekly weekly = schedule.weekly();
         if (weekly != null && weeklyDue(waiting.overdueOn(), today)) {
-            schedule.to().accept(notifications, notice(waiting, weekly.action(), schedule.link(), today, now));
+            toStep(waiting, weekly.action(), today, now);
             weekly.copyTo().accept(notifications, notice(waiting, weekly.copy(), weekly.copyLink(), today, now));
         }
     }
