@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review &mdash; 45-management-summary-pdf</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall: PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">build WARN &middot; C0 H0 M0 L3</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN &middot; C0 H0 M1 L7</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN &middot; C0 H0 M4 L10</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">semgrep PASS &middot; C0 H0 M0 L0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN &middot; C0 H0 M1 L1</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react WARN &middot; C0 H0 M0 L3</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN &middot; C0 H0 M1 L4</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">impl/45-management-summary-pdf</span>
+    </div>
+
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report</h1>
+          <p class="text-sm text-slate-600 mt-1">Ticket 45: management summary as a PDF. Round 2, HEAD <span class="font-mono">bf3d237</span>, diff <span class="font-mono">integration/annual-va-r1...HEAD</span> (20 files, +1012 / -136).</p>
+        </div>
+
+        <div class="rounded-md border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 space-y-2">
+          <p class="font-semibold text-slate-900">About this round</p>
+          <p>Round 1 failed only on thermo-nuclear (one High: positional table fragments shared between the two renderers). Under the approved speed-up, only <span class="font-mono">thermo-nuclear</span> and <span class="font-mono">build</span> were re-run against <span class="font-mono">bf3d237</span>. The <span class="font-mono">code-review</span>, <span class="font-mono">semgrep</span>, <span class="font-mono">im8</span>, <span class="font-mono">react</span> and <span class="font-mono">springboot</span> results are carried over from round 1, which reviewed HEAD <span class="font-mono">3e9eb79</span> (16 files). Their line numbers refer to that HEAD.</p>
+          <p>Since round 1 the branch rebuilt the summary tables once for both formats (<span class="font-mono">670fe99</span>), strengthened the PDF test with non-zero counts, open Deviations and a sentinel Finding, checked audit entries for names and emails (<span class="font-mono">f47b06e</span>), narrowed the front-end format in one place (<span class="font-mono">29eca63</span>), added the ADR 0045 back-reference (<span class="font-mono">dec9c50</span>) and fixed the <span class="font-mono">ClassifiedPdf</span> lifecycle and header fit check. Carried-over findings plainly about those changes are marked <em>addressed after round 1</em>. The PDF ADR was renumbered from 0053 to 0054 after a merge (<span class="font-mono">bf3d237</span>); carried-over references to "ADR 0053" mean today's ADR 0054.</p>
+          <p>Semgrep did not scan the files added after round 1 (for example <span class="font-mono">ExportTable.java</span>).</p>
+        </div>
+
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Executive Summary</h2>
+          <p class="text-xs text-slate-500 mt-1">Overall compliance evaluation status across all active checks. No check has a Critical or High finding, so the overall verdict is PASS. Six checks carry Medium or Low findings (WARN).</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Check</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Round</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Status</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">C / H / M / L</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2">Summary of gaps</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-2 font-medium">build</td>
+              <td class="px-4 py-2">2 (re-run)</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 3</td>
+              <td class="px-4 py-2">All gates pass: 1075 tests, JaCoCo 97.22 % lines and 91.99 % branches, front-end check green. Low: untested page-break and error branches in <span class="font-mono text-xs">ClassifiedPdf</span>, minor guard gaps, and fallow flags <span class="font-mono text-xs">ExportsScreen.tsx</span> as a risk file.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">thermo-nuclear</td>
+              <td class="px-4 py-2">2 (re-run)</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 7</td>
+              <td class="px-4 py-2">Round 1's High is fixed: <span class="font-mono text-xs">ExportTable</span> with a sealed <span class="font-mono text-xs">Cell</span> drives both renderers. Medium: the document's shape is written twice, and only the PDF has a reusable classified host. Lows are small tidy-ups.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">code-review</td>
+              <td class="px-4 py-2">1 (carried over)</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 4 / 10</td>
+              <td class="px-4 py-2">Still open: ADR 0054 items 2 (PDFBox) and 5 (<span class="font-mono text-xs">?</span> for non-Windows-1252 characters) are provisional and need a human decision (S1, P4, P5). P1 (test-strength gap) and seven Lows were addressed or superseded after round 1.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">semgrep</td>
+              <td class="px-4 py-2">1 (carried over)</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 0</td>
+              <td class="px-4 py-2">No findings. 328 rules (<span class="font-mono text-xs">p/security-audit</span>, <span class="font-mono text-xs">p/default</span>) ran on the 15 round-1 files. Cross-file taint analysis did not run.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">im8</td>
+              <td class="px-4 py-2">1 (carried over)</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 1</td>
+              <td class="px-4 py-2">Medium, carried over from ticket 44: the download has no step-up of its own (ac-2, ADR 0045 item 6 still provisional), and PDFs now inherit that. Low: no <span class="font-mono text-xs">@Valid</span> on the request body (project convention).</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">react</td>
+              <td class="px-4 py-2">1 (carried over)</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 3</td>
+              <td class="px-4 py-2">Only Lows. L1 (narrowing written twice) was addressed after round 1. Still open: no label fallback for an unknown format, and two wordings for the format choice.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-medium">springboot</td>
+              <td class="px-4 py-2">1 (carried over)</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 4</td>
+              <td class="px-4 py-2">M1 (counts and open Deviations not asserted), L3 (lifecycle) and L4 (header fit) were addressed after round 1. Still open: shared mutable <span class="font-mono text-xs">PDRectangle</span>, and PDF bytes that are not reproducible.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-600">No Critical or High findings in any check. The round-1 High (thermo-nuclear, positional table fragments) is resolved by <span class="font-mono text-xs">ExportTable</span>.</p>
+          <p class="text-sm text-slate-600">Open Medium items that need a human decision, not a code fix:</p>
+          <ul class="list-disc pl-6 text-sm text-slate-700 space-y-1">
+            <li><span class="font-mono text-xs">docs/adr/0054-the-management-summary-pdf-is-a-second-renderer-of-the-stored-summary-with-pdfbox.md:3</span>: items 2 (PDFBox instead of OpenPDF) and 5 (non-embedded Helvetica writes non-Windows-1252 characters as <span class="font-mono text-xs">?</span>) are still provisional (code-review S1, P4, P5).</li>
+            <li><span class="font-mono text-xs">backend/src/main/java/sg/annualva/export/Exports.java</span> (<span class="font-mono text-xs">download</span>): no step-up on download, ADR 0045 item 6 still provisional (im8 #1, carried over from ticket 44).</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- build -->
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build (round 2, re-run)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">Evidence reused from the implementer's logs for HEAD <span class="font-mono text-xs">bf3d237</span>: <span class="font-mono text-xs">./mvnw -B -ntp clean verify</span> BUILD SUCCESS (1075 tests, 0 failures; JaCoCo gate met) and <span class="font-mono text-xs">npm run check</span> exit 0 (Prettier, <span class="font-mono text-xs">tsc -b</span>, <span class="font-mono text-xs">vite build</span>, no-raw-html, depcruise, fallow). The check itself reported PASS; it is WARN here because it lists Low findings.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/export/ClassifiedPdf.java</td>
+              <td class="px-4 py-3 font-mono text-xs">71-76, 108-110, 135-136, 148-149, 161-162, 175, 192-193</td>
+              <td class="px-4 py-3">90.9 % lines and 90.5 % branches. The empty-table branch, the "heading and header do not fit" page break, the mid-page break triggered by <span class="font-mono text-xs">line(...)</span> and the defensive close-and-rethrow handlers never run. No test asserts the label on a continuation page or the rows around a break; a Seam 1 case with enough Systems to span pages would cover it.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/export/ExportTable.java; SummaryText.java</td>
+              <td class="px-4 py-3 font-mono text-xs">17-19; 109</td>
+              <td class="px-4 py-3">The row-width guard and the <span class="font-mono text-xs">WITHDRAWN</span> label are never exercised. Trivial; the gate is met.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">frontend/src/screens/va-poc/ExportsScreen.tsx</td>
+              <td class="px-4 py-3 font-mono text-xs">&mdash;</td>
+              <td class="px-4 py-3">Information only: fallow health lists it as a risk file (365 LOC, fan-out 10, risk 110, churn 437 over 4 commits). Below threshold.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <!-- thermo-nuclear -->
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear (round 2, re-run)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">The fix for round 1's High holds: <span class="font-mono text-xs">ExportTable</span> (named <span class="font-mono text-xs">Column</span>s with widths, rows of a sealed <span class="font-mono text-xs">Cell</span>, row-width invariant) is built once in <span class="font-mono text-xs">SummaryText</span>, and both renderers walk it with one loop. <span class="font-mono text-xs">ManagementSummaryXlsx</span> shrank from 152 to 94 lines. No file nears 1,000 lines and no conditionals were added to unrelated flows.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-3 text-amber-600">Medium</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/export/ManagementSummaryXlsx.java; ManagementSummaryPdf.java</td>
+              <td class="px-4 py-3 font-mono text-xs">24-37; 18-27</td>
+              <td class="px-4 py-3">M1. Both renderers hard-code the same document shape (title, "As at", Summary, Systems). Only the PDF has a generic classified host; the workbook's <span class="font-mono text-xs">classified(...)</span>, row arithmetic and <span class="font-mono text-xs">createFreezePane(0, 2)</span> are private to this summary, so ADR 0054's reuse claim holds only for the PDF. Suggested: an <span class="font-mono text-xs">ExportDocument</span> value from <span class="font-mono text-xs">SummaryText</span> and a generic <span class="font-mono text-xs">ClassifiedXlsx</span> beside <span class="font-mono text-xs">ClassifiedPdf</span>.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/export/SummaryText.java</td>
+              <td class="px-4 py-3 font-mono text-xs">26-30, 58-72</td>
+              <td class="px-4 py-3">L1. <span class="font-mono text-xs">QuarterColumn</span>/<span class="font-mono text-xs">SystemColumn</span> and <span class="font-mono text-xs">quarters()</span>/<span class="font-mono text-xs">systems()</span> differ only by type; one generic <span class="font-mono text-xs">Field&lt;L&gt;</span> and one builder would do. The class name no longer fits. <span class="font-mono text-xs">text(...)</span> wraps <span class="font-mono text-xs">Cell.Text</span> but counts are built inline.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/export/ClassifiedPdf.java</td>
+              <td class="px-4 py-3 font-mono text-xs">109-111, 115-118, 192-194</td>
+              <td class="px-4 py-3">L2. The page-break test is written three times; one <span class="font-mono text-xs">room(float needed)</span> would own the content area's bottom edge.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/export/ManagementSummaryPdf.java; ClassifiedPdf.java</td>
+              <td class="px-4 py-3 font-mono text-xs">12-14, 19-20; 42-43</td>
+              <td class="px-4 py-3">L3. Type sizes are split between the caller (title, text, gap) and <span class="font-mono text-xs">ClassifiedPdf</span> (table name, cells), and the title is passed twice.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/export/ClassifiedPdf.java</td>
+              <td class="px-4 py-3 font-mono text-xs">65-78</td>
+              <td class="px-4 py-3">L4. The constructor's dual <span class="font-mono text-xs">catch</span> duplicates <span class="font-mono text-xs">unchecked(...)</span>; route it through one conversion path.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/export/ManagementSummaryXlsx.java</td>
+              <td class="px-4 py-3 font-mono text-xs">35-36</td>
+              <td class="px-4 py-3">L5. The sheet just created is looked up again with <span class="font-mono text-xs">getSheet</span> to set a literal freeze pane. Side note: Summary sheet widths for Quarter, Starts and Ends changed (12 to 9/11.5/11.5), a visible workbook change.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/export/SummaryText.java</td>
+              <td class="px-4 py-3 font-mono text-xs">99-112</td>
+              <td class="px-4 py-3">L6. <span class="font-mono text-xs">label(SystemState)</span> repeats <span class="font-mono text-xs">SubmissionState</span>'s labels (moved, not new debt) and could be <span class="font-mono text-xs">private</span>.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">frontend/src/api/exports.ts; frontend/src/screens/va-poc/ExportsScreen.tsx</td>
+              <td class="px-4 py-3 font-mono text-xs">16-18; 89-101, 122</td>
+              <td class="px-4 py-3">L7. <span class="font-mono text-xs">asExportFormat</span> still hard-codes the XLSX fallback and <span class="font-mono text-xs">Object.keys(...) as ExportFormat[]</span> hides the source of truth; derive both from one <span class="font-mono text-xs">as const</span> list. <span class="font-mono text-xs">summaryRequest</span> takes five positional arguments, four of them <span class="font-mono text-xs">Scope</span>'s fields.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <!-- code-review -->
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review (round 1, carried over)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">Reviewed HEAD <span class="font-mono text-xs">3e9eb79</span> against <span class="font-mono text-xs">integration/annual-va-r1</span>. Standards: no documented standard broken (Seam 1 tests, no report content in logs, Conventional Commits, glossary, V145 constraint name, ArchUnit PDFBox rule). Spec: format, worker switch, V145 and the Excel/PDF picker are all in place; step-up, role and requester-only rules cover the PDF unchanged. "ADR 0053" below means today's ADR 0054.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-3 text-amber-600">Medium</td>
+              <td class="px-4 py-3 font-mono text-xs">docs/adr/0054-the-management-summary-pdf-is-a-second-renderer-of-the-stored-summary-with-pdfbox.md</td>
+              <td class="px-4 py-3 font-mono text-xs">3</td>
+              <td class="px-4 py-3">S1. Items 2 and 5 are "provisional, awaiting a human decision" (still so at <span class="font-mono text-xs">bf3d237</span>). Under item 5 a System name in a classified document is silently changed (non-Windows-1252 characters become <span class="font-mono text-xs">?</span>). No decision recorded in <span class="font-mono text-xs">reviewer-decisions.md</span> and no ready-for-human ticket tracks it.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-amber-600">Medium</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/pom.xml; ADR 0054 item 2</td>
+              <td class="px-4 py-3 font-mono text-xs">74</td>
+              <td class="px-4 py-3">P4. Spec says "the PDF library chosen in ADR 0016", but ADR 0016 is the Register template ADR. The branch picks PDFBox 3.0.8 instead of the OpenPDF named in the plan and marks it provisional; the criterion cannot be ticked until the PO accepts it.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-amber-600">Medium</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/export/ClassifiedPdf.java; ADR 0054 item 5</td>
+              <td class="px-4 py-3 font-mono text-xs">23-39 (round 1)</td>
+              <td class="px-4 py-3">P5. Helvetica is not embedded, so characters outside Windows-1252 (CJK, for example) in a System name or email are written as <span class="font-mono text-xs">?</span>; the PDF then differs from the workbook, and a test locks this in. Needs a PO decision (same root issue as S1).</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-amber-600">Medium</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/test/java/sg/annualva/export/ManagementSummaryPdfTest.java</td>
+              <td class="px-4 py-3 font-mono text-xs">49-69 (round 1)</td>
+              <td class="px-4 py-3">P1. <strong>Addressed after round 1</strong> (<span class="font-mono text-xs">f47b06e</span>: the PDF test now has non-zero counts and open Deviations). Round 1: the test never put non-zero values in the PDF and never asserted the Summary counts or Total.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">docs/adr/0045-a-management-summary-is-read-when-asked-for-and-made-into-a-file-for-its-requester-alone.md</td>
+              <td class="px-4 py-3 font-mono text-xs">&mdash;</td>
+              <td class="px-4 py-3">S2. <strong>Addressed after round 1</strong> (ADR 0045 now reads "Amended by ADR 0054"). Round 1: no back-reference, unlike ADRs 0014, 0043 and 0046.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/export/ClassifiedPdf.java</td>
+              <td class="px-4 py-3 font-mono text-xs">52, 107-110 (round 1)</td>
+              <td class="px-4 py-3">S3. <strong>Addressed after round 1</strong> (<span class="font-mono text-xs">ClassifiedPdf</span> lifecycle). Round 1: the <span class="font-mono text-xs">PDDocument</span> could leak if <span class="font-mono text-xs">content.close()</span> or the constructor's <span class="font-mono text-xs">nextPage()</span> threw.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/export/ClassifiedPdf.java</td>
+              <td class="px-4 py-3 font-mono text-xs">~79 (round 1)</td>
+              <td class="px-4 py-3">S4. <strong>Addressed after round 1</strong> (header fit check). Round 1: the header row was drawn without checking the space left, so it could reach the footer.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/export/ClassifiedPdf.java</td>
+              <td class="px-4 py-3 font-mono text-xs">~141, ~166 (round 1)</td>
+              <td class="px-4 py-3">S5. Superseded by the table refactor (<span class="font-mono text-xs">670fe99</span>); the round-2 thermo-nuclear review finds every cell is now wrapped once. Round 1: <span class="font-mono text-xs">row()</span> and <span class="font-mono text-xs">height()</span> each wrapped every cell.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/export/SummaryText.java</td>
+              <td class="px-4 py-3 font-mono text-xs">~46, ~64 (round 1)</td>
+              <td class="px-4 py-3">S6. Superseded by the table refactor (<span class="font-mono text-xs">670fe99</span>): column order and Endorsed Late placement now live in one list. Round 1: <span class="font-mono text-xs">quarterHeaders()</span> and <span class="font-mono text-xs">quarterCounts()</span> repeated the same loop.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/export/ManagementSummaryPdf.java</td>
+              <td class="px-4 py-3 font-mono text-xs">16 (round 1)</td>
+              <td class="px-4 py-3">S7. Superseded by the table refactor (<span class="font-mono text-xs">670fe99</span>): widths now sit on each <span class="font-mono text-xs">Column</span>. Round 1: <span class="font-mono text-xs">SYSTEM_WIDTHS</span> and the XLSX widths matched the headers by position only.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">frontend/src/screens/va-poc/ExportsScreen.tsx; frontend/src/api/exports.ts</td>
+              <td class="px-4 py-3 font-mono text-xs">~70, ~126; ~52 (round 1)</td>
+              <td class="px-4 py-3">S8. <strong>Addressed after round 1</strong> (<span class="font-mono text-xs">29eca63</span>: format narrowing in one place). The remaining hard-coded XLSX fallback in <span class="font-mono text-xs">asExportFormat</span> is thermo-nuclear L7. Round 1 also noted the extension mapping duplicates the back end's <span class="font-mono text-xs">ExportFormat.extension</span>.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/export/SummaryText.java; ManagementSummaryPdf.java; ClassifiedPdf.java</td>
+              <td class="px-4 py-3 font-mono text-xs">~59; ~54 (round 1)</td>
+              <td class="px-4 py-3">S9. Names that do not say what they hold: <span class="font-mono text-xs">strip</span>, <span class="font-mono text-xs">left</span>, <span class="font-mono text-xs">rule</span>. Not re-checked against <span class="font-mono text-xs">bf3d237</span>.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/test/java/sg/annualva/export/ManagementSummaryPdfTest.java</td>
+              <td class="px-4 py-3 font-mono text-xs">68 (round 1)</td>
+              <td class="px-4 py-3">P2. <strong>Addressed after round 1</strong> (<span class="font-mono text-xs">f47b06e</span>: sentinel Finding added). Round 1: no sentinel Finding with a Risk Accepted or Remediation Planned proposal, so plan text and package/rule were never checked.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/test/java/sg/annualva/export/ManagementSummaryPdfTest.java</td>
+              <td class="px-4 py-3 font-mono text-xs">134 (round 1)</td>
+              <td class="px-4 py-3">P3. <strong>Addressed after round 1</strong> (<span class="font-mono text-xs">f47b06e</span>: audit entries checked for names and emails). Round 1: only <span class="font-mono text-xs">EXPORT_DOWNLOADED</span> was checked for System names.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <!-- semgrep -->
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep (round 1, carried over)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">Semgrep 1.179.0 (Docker), <span class="font-mono text-xs">p/security-audit</span> and <span class="font-mono text-xs">p/default</span>, 328 rules on the 15 code files of the round-1 diff, 0 parse errors. Anonymous rulesets only, so Pro rules and cross-file taint analysis did not run; files added after round 1 (for example <span class="font-mono text-xs">ExportTable.java</span>) were not scanned.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <!-- im8 -->
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8 (round 1, carried over)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">MR risk column. The change weakens no control. PASS on as-2, as-3, as-7/ac-1, as-9, as-13, dp-8, lm-4, lm-15, lm-16, lm-19, dp-3 and pm-6; as-12 and as-14 N/A (the PDF is generated, never parsed; ArchUnit keeps PDFBox inside <span class="font-mono text-xs">sg.annualva.export</span>). Manual items: run <span class="font-mono text-xs">/dependency-vuln-scan</span> on PDFBox 3.0.8 and its transitive artifacts before release; confirm a 15 % text watermark meets the marking standard; ticket 51 SSE-KMS for <span class="font-mono text-xs">FileStore.Zone.EXPORT</span>.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-3 text-amber-600">Medium</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/export/Exports.java; ExportController.java</td>
+              <td class="px-4 py-3 font-mono text-xs">146; 58-59</td>
+              <td class="px-4 py-3">ac-2, carried over from ticket 44. Step-up guards only the request; for 24 hours any session holding the requester's cookie can download a READY export, possibly Confidential, and that can now be a PDF. ADR 0045 item 6 is still provisional. Fix: step-up on download or bind it to the requesting session, or record the human decision and drop "provisional".</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/export/ExportController.java; Exports.java</td>
+              <td class="px-4 py-3 font-mono text-xs">34; 103-104</td>
+              <td class="px-4 py-3">as-1, carried over (project convention). <span class="font-mono text-xs">@RequestBody</span> has no <span class="font-mono text-xs">@Valid</span>; <span class="font-mono text-xs">format</span> is checked against an exact enum allowlist in the service with a fixed 400 message, which is sound but not at the earliest entry point.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <!-- react -->
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react (round 1, carried over)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">Render purity, state, controlled inputs, effects, keys, step-up draft round trip and output safety are sound. The check reported PASS; it is WARN here because it lists Low findings.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">frontend/src/screens/va-poc/ExportsScreen.tsx</td>
+              <td class="px-4 py-3 font-mono text-xs">70, 126 (round 1)</td>
+              <td class="px-4 py-3">L1. <strong>Addressed after round 1</strong> (<span class="font-mono text-xs">29eca63</span>: format narrowing in one place). Round 1: the string-to-<span class="font-mono text-xs">ExportFormat</span> narrowing was written twice.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">frontend/src/screens/va-poc/ExportsScreen.tsx</td>
+              <td class="px-4 py-3 font-mono text-xs">275 (round 1)</td>
+              <td class="px-4 py-3">L2. <span class="font-mono text-xs">FORMAT_LABELS[row.format]</span> has no fallback, so an unknown server format would read <span class="font-mono text-xs">undefined</span>. Same pattern as the other label maps; <span class="font-mono text-xs">?? row.format</span> would degrade to the code.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">frontend/src/screens/va-poc/ExportsScreen.tsx</td>
+              <td class="px-4 py-3 font-mono text-xs">33-36, 128-129 (round 1)</td>
+              <td class="px-4 py-3">L3. Two wordings for the same choice ("Excel workbook" / "PDF, watermarked on every page" in the select; "Excel" / "PDF" in the list). Cosmetic. Not re-checked against <span class="font-mono text-xs">29eca63</span>, which describes each format once.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <!-- springboot -->
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot (round 1, carried over)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">All seven Spring skills ran. No findings from web, data, batch, security or logging: no controller or security config changes, <span class="font-mono text-xs">showText</span> escapes content, render failures log only the exception type, V145 widens the auto-named constraint, and the tests use the shared Seam 1 base.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead>
+            <tr>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th>
+              <th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-4 py-3 text-amber-600">Medium</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/test/java/sg/annualva/export/ManagementSummaryPdfTest.java</td>
+              <td class="px-4 py-3 font-mono text-xs">&mdash; (round 1)</td>
+              <td class="px-4 py-3">M1 (spring-test). <strong>Addressed after round 1</strong> (<span class="font-mono text-xs">f47b06e</span>: non-zero counts, open Deviations and a sentinel Finding). Round 1: the PDF's Summary counts and open Deviations were never asserted.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/export/ClassifiedPdf.java</td>
+              <td class="px-4 py-3 font-mono text-xs">32, 183</td>
+              <td class="px-4 py-3">L1 (spring-core). One static mutable <span class="font-mono text-xs">PDRectangle PAGE</span> is attached to every page of every document (<span class="font-mono text-xs">new PDPage(PAGE)</span>); PDFBox mutates its update state. Harmless on today's single scheduler thread, a latent race if exports render concurrently. Still present at <span class="font-mono text-xs">bf3d237</span>. Fix: build a rectangle per page.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/export/ClassifiedPdf.java</td>
+              <td class="px-4 py-3 font-mono text-xs"><span class="font-mono">finish()</span></td>
+              <td class="px-4 py-3">L2 (spring-core / spring-data). PDFBox generates the trailer <span class="font-mono text-xs">/ID</span> from <span class="font-mono text-xs">System.currentTimeMillis()</span>, so two passes write different bytes, contrary to ADR 0045 item 5's "the same bytes" wording. Optional: set a deterministic ID, or reword the ADR.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/export/ClassifiedPdf.java</td>
+              <td class="px-4 py-3 font-mono text-xs">79-84, 138-145 (round 1)</td>
+              <td class="px-4 py-3">L3 (spring-core). <strong>Addressed after round 1</strong> (<span class="font-mono text-xs">ClassifiedPdf</span> lifecycle). Round 1: the <span class="font-mono text-xs">PDDocument</span> could stay unclosed if the constructor's <span class="font-mono text-xs">nextPage()</span> or <span class="font-mono text-xs">content.close()</span> threw.</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-slate-500">Low</td>
+              <td class="px-4 py-3 font-mono text-xs">backend/src/main/java/sg/annualva/export/ClassifiedPdf.java</td>
+              <td class="px-4 py-3 font-mono text-xs">110-119 (round 1)</td>
+              <td class="px-4 py-3">L4 (spring-core). <strong>Addressed after round 1</strong> (header fit check; widths are now scaled to the page from each <span class="font-mono text-xs">Column</span>). Round 1: the header row was not kept with its first row or inside the content area, and <span class="font-mono text-xs">SYSTEM_WIDTHS</span> overran the right margin by about 0.1 pt.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+    </main>
+  </body>
+</html>

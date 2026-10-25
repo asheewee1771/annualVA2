@@ -1,8 +1,9 @@
 package sg.annualva.export;
 
-/** The file an export is made as. The PDF (ticket 45) adds its own. */
+/** The file an export is made as: an Excel workbook (ticket 44) or a PDF (ticket 45) of the same content. */
 public enum ExportFormat {
-    XLSX("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx");
+    XLSX("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx"),
+    PDF("application/pdf", "pdf");
 
     private final String mediaType;
     private final String extension;

@@ -15,22 +15,6 @@ import sg.annualva.harness.ApiClient;
  */
 class ManagementSummaryContentTest extends ExportSeam1 {
 
-    private static final String SENTINEL = "CVE-9999-SENTINEL";
-
-    /** Enters a Finding by hand whose every text field is the sentinel; its id. */
-    private static String sentinelFinding(ApiClient smo, String submissionId) {
-        var response = smo.postJson("/api/submissions/" + submissionId + "/findings/manual",
-                "{\"reportType\":\"DEPENDENCY_CHECK\",\"title\":\"" + SENTINEL + "\",\"identifier\":\"" + SENTINEL
-                        + "\",\"packageOrRule\":\"" + SENTINEL + " 1.0\",\"severity\":\"CRITICAL\"}");
-        assertThat(response.status()).as(response.body()).isEqualTo(201);
-        return ApiClient.json(response).get("id").asString();
-    }
-
-    private static void proposedAs(ApiClient smo, String findingId, String body) {
-        var response = smo.postJson("/api/findings/" + findingId + "/proposals", body);
-        assertThat(response.status()).as(response.body()).isEqualTo(201);
-    }
-
     @Test
     void theSummaryCountsEachQuarterByStateAndListsEachSystemWithItsSmoStateOverdueAndOpenDeviations() {
         registered(listed("SYS-C1", "Not started", SMO_A, CM, "Q3"), listed("SYS-C2", "Draft", SMO_A, CM, "Q3"),

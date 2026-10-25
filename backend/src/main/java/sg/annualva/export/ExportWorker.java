@@ -61,6 +61,7 @@ public class ExportWorker {
             ManagementSummary summary = store.summary(queued);
             file = switch (queued.format()) {
                 case XLSX -> ManagementSummaryXlsx.render(summary);
+                case PDF -> ManagementSummaryPdf.render(summary);
             };
             files.put(FileStore.Zone.EXPORT, key(queued.id()), file);
         } catch (RuntimeException e) {

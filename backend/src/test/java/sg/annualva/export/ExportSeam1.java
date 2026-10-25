@@ -27,6 +27,23 @@ abstract class ExportSeam1 extends CyberManagerSeam1 {
     static final String WHOLE_CYCLE = "{\"type\":\"MGMT_SUMMARY\",\"format\":\"XLSX\"}";
     static final String XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
+    /** The text of every field of {@link #sentinelFinding}: no export may ever hold it. */
+    static final String SENTINEL = "CVE-9999-SENTINEL";
+
+    /** Enters a Finding by hand whose every text field is the sentinel; its id. */
+    protected static String sentinelFinding(ApiClient smo, String submissionId) {
+        var response = smo.postJson("/api/submissions/" + submissionId + "/findings/manual",
+                "{\"reportType\":\"DEPENDENCY_CHECK\",\"title\":\"" + SENTINEL + "\",\"identifier\":\"" + SENTINEL
+                        + "\",\"packageOrRule\":\"" + SENTINEL + " 1.0\",\"severity\":\"CRITICAL\"}");
+        assertThat(response.status()).as(response.body()).isEqualTo(201);
+        return ApiClient.json(response).get("id").asString();
+    }
+
+    protected static void proposedAs(ApiClient smo, String findingId, String body) {
+        var response = smo.postJson("/api/findings/" + findingId + "/proposals", body);
+        assertThat(response.status()).as(response.body()).isEqualTo(201);
+    }
+
     /** Asks for an export and expects it queued (202); the export as answered. */
     protected static JsonNode requested(ApiClient client, String body) {
         var response = client.postJson(EXPORTS, body);

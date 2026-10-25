@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { fetchCycleMatrix, type MatrixSystem } from "../../api/dashboards.ts";
 import {
+  asExportFormat,
   downloadExport,
+  EXPORT_FORMATS,
   fetchExports,
   requestExport,
   type Export,
+  type ExportFormat,
   type ExportRequest,
   type ExportStatus,
 } from "../../api/exports.ts";
@@ -38,15 +41,16 @@ function problemOf(failure: unknown): Problem {
   return failure instanceof ApiError ? failure.problem : UNREACHABLE;
 }
 
-/** What the form holds: the Cycle (the shell's choice, the running one when not chosen), the Quarter (the whole Cycle when none), the Systems. */
+/** What the form holds: the file, the Cycle (the shell's choice, the running one when not chosen), the Quarter (the whole Cycle when none), the Systems. */
 interface Scope {
+  format: ExportFormat;
   cycle: number | undefined;
   quarter: number | undefined;
   /** The Systems chosen one by one, or undefined for every System. */
   systems: string[] | undefined;
 }
 
-const EMPTY: Scope = { cycle: undefined, quarter: undefined, systems: undefined };
+const EMPTY: Scope = { format: "XLSX", cycle: undefined, quarter: undefined, systems: undefined };
 
 function numberOr(value: unknown): number | undefined {
   return typeof value === "number" ? value : undefined;
@@ -60,7 +64,12 @@ function restoredRequest(): Scope {
   const systems = Array.isArray(asked["systems"])
     ? asked["systems"].filter((id): id is string => typeof id === "string")
     : undefined;
-  return { cycle: numberOr(asked["cycle"]), quarter: numberOr(asked["quarter"]), systems };
+  return {
+    format: asExportFormat(asked["format"]),
+    cycle: numberOr(asked["cycle"]),
+    quarter: numberOr(asked["quarter"]),
+    systems,
+  };
 }
 
 /**
@@ -78,27 +87,32 @@ function listedIn(systems: MatrixSystem[] | undefined, quarter: number | undefin
 
 /** The body of the request: only the chosen Systems that are still listed for the Quarter asked for. */
 function summaryRequest(
+  format: ExportFormat,
   cycle: number | undefined,
   quarter: number | undefined,
   chosen: string[] | undefined,
   listed: MatrixSystem[],
 ): ExportRequest {
-  const asked: ExportRequest = { type: "MGMT_SUMMARY", format: "XLSX" };
+  const asked: ExportRequest = { type: "MGMT_SUMMARY", format };
   if (cycle !== undefined) asked.cycle = cycle;
   if (quarter !== undefined) asked.quarter = quarter;
   if (chosen !== undefined) asked.systems = chosen.filter((id) => listed.some((system) => system.id === id));
   return asked;
 }
 
-/** The Quarter the summary is about, and whether it covers every System or those chosen. */
+/** The file it is made as, the Quarter the summary is about, and whether it covers every System or those chosen. */
 function ScopeFields({
   classification,
+  format,
+  onFormat,
   quarter,
   onQuarter,
   some,
   onSome,
 }: {
   classification: string;
+  format: ExportFormat;
+  onFormat: (format: ExportFormat) => void;
   quarter: number | undefined;
   onQuarter: (quarter: number | undefined) => void;
   some: boolean;
@@ -106,6 +120,15 @@ function ScopeFields({
 }) {
   return (
     <>
+      <ClassifiedField label="File" classification={classification} id="export-format">
+        <select id="export-format" value={format} onChange={(event) => onFormat(asExportFormat(event.target.value))}>
+          {(Object.keys(EXPORT_FORMATS) as ExportFormat[]).map((choice) => (
+            <option key={choice} value={choice}>
+              {EXPORT_FORMATS[choice].option}
+            </option>
+          ))}
+        </select>
+      </ClassifiedField>
       <ClassifiedField label="Quarter" classification={classification} id="export-quarter">
         <select
           id="export-quarter"
@@ -183,6 +206,7 @@ function SummaryForm({ classification, onQueued }: { classification: string; onQ
   const choice = useCycleChoice();
   const cycle = choice?.selected;
   const select = choice?.select;
+  const [format, setFormat] = useState(restored.format);
   const [quarter, setQuarter] = useState(restored.quarter);
   const [chosen, setChosen] = useState(restored.systems);
   const [busy, setBusy] = useState(false);
@@ -201,7 +225,7 @@ function SummaryForm({ classification, onQueued }: { classification: string; onQ
     setBusy(true);
     setProblem(undefined);
     try {
-      await requestExport(summaryRequest(cycle, quarter, chosen, listed));
+      await requestExport(summaryRequest(format, cycle, quarter, chosen, listed));
       onQueued();
     } catch (failure) {
       const refused = problemOf(failure);
@@ -214,16 +238,19 @@ function SummaryForm({ classification, onQueued }: { classification: string; onQ
 
   return (
     <form className="card" aria-labelledby="summary-title" onSubmit={(event) => void ask(event)}>
-      <h3 id="summary-title">Management summary (Excel)</h3>
+      <h3 id="summary-title">Management summary</h3>
       <p className="muted">
         Counts by Quarter and state with Endorsed Late, and a table of Systems with their SMO/Tech Lead, state, Overdue
-        and open Deviations. It holds no vulnerability detail. Every System of the Quarter or Cycle makes it
-        Confidential; some of them make it Restricted / Sensitive-Normal. You need to have signed in within the last
-        five minutes. It is made in the background and kept for 24 hours, for you alone to download.
+        and open Deviations, as an Excel workbook or a PDF. It holds no vulnerability detail. Every System of the
+        Quarter or Cycle makes it Confidential; some of them make it Restricted / Sensitive-Normal. You need to have
+        signed in within the last five minutes. It is made in the background and kept for 24 hours, for you alone to
+        download.
       </p>
       {matrix.data ? <p className="muted">For VA Cycle {matrix.data.cycle}.</p> : null}
       <ScopeFields
         classification={classification}
+        format={format}
+        onFormat={setFormat}
         quarter={quarter}
         onQuarter={setQuarter}
         some={chosen !== undefined}
@@ -245,7 +272,7 @@ function SummaryForm({ classification, onQueued }: { classification: string; onQ
 
 /** What an export covers, in words. */
 function covers(row: Export): string {
-  return `VA Cycle ${row.cycle}${row.quarter === null ? "" : `, Q${row.quarter}`}, ${row.systemCount} Systems`;
+  return `${EXPORT_FORMATS[row.format].short}: VA Cycle ${row.cycle}${row.quarter === null ? "" : `, Q${row.quarter}`}, ${row.systemCount} Systems`;
 }
 
 function ExportRow({ row, onProblem }: { row: Export; onProblem: (problem: Problem | undefined) => void }) {
@@ -255,7 +282,7 @@ function ExportRow({ row, onProblem }: { row: Export; onProblem: (problem: Probl
     setBusy(true);
     onProblem(undefined);
     try {
-      saveFile(await downloadExport(row.id));
+      saveFile(await downloadExport(row));
     } catch (failure) {
       onProblem(problemOf(failure));
     } finally {
