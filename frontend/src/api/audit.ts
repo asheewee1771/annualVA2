@@ -52,6 +52,8 @@ const ACTION_LABELS: Readonly<Record<string, string>> = {
   REQUEST_REFUSED: "Request refused",
   ROLE_GRANTED: "Role granted",
   ROLE_REVOKED: "Role revoked",
+  ROLE_LAPSED: "Role lapsed",
+  ROLE_RETURNED: "Role returned",
   REGISTER_TEMPLATE_DOWNLOADED: "System Register template downloaded",
   REGISTER_PREVIEWED: "System Register previewed",
   REGISTER_PREVIEW_VIEWED: "System Register preview viewed",

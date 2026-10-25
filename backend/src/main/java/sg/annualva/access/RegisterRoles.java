@@ -16,7 +16,6 @@ import sg.annualva.audit.AuditAction;
 import sg.annualva.audit.AuditEvent;
 import sg.annualva.audit.AuditLog;
 import sg.annualva.audit.AuditOutcome;
-import sg.annualva.audit.DetailKey;
 
 /**
  * Makes the role store agree with the System Register (stories 73 and 79, IM8 ac-3): every active System has an SMO/Tech
@@ -25,10 +24,10 @@ import sg.annualva.audit.DetailKey;
  * longer names, or a retired System, loses the grant in the same transaction, so their next request is refused (roles
  * are read per request, ADR 0011).
  *
- * <p>It is the only writer of REGISTER grants, and the Register apply is its only caller. Each grant given or revoked is
+ * <p>It is the only class that gives or revokes REGISTER grants, and the Register apply is its only caller. Each grant given or revoked is
  * an audit entry about the System, written in the caller's transaction with the role, the source and the grant id; the
- * person's email is never in an entry (lm-19). A grant that already stands, and a lapsed or suspended one (those states
- * belong to the role lifecycle, tickets 46 and 47), is left as it is.
+ * person's email is never in an entry (lm-19). A grant that already stands is left as it is, except that a lapsed one
+ * comes back, because the apply names the person again (story 80a, ADR 0055); a suspended one stays suspended (ticket 47).
  */
 @Component
 public class RegisterRoles {
@@ -46,8 +45,11 @@ public class RegisterRoles {
     private final AuditActor actor;
     private final CurrentUser user;
     private final Clock clock;
+    private final RoleLapse lapse;
 
-    RegisterRoles(RoleGrantStore grants, AuditLog audit, AuditActor actor, CurrentUser user, Clock clock) {
+    RegisterRoles(RoleGrantStore grants, AuditLog audit, AuditActor actor, CurrentUser user, Clock clock,
+            RoleLapse lapse) {
+        this.lapse = lapse;
         this.grants = grants;
         this.audit = audit;
         this.actor = actor;
@@ -73,6 +75,9 @@ public class RegisterRoles {
                 Held held = new Held(role, lower(grant.email()), grant.systemId());
                 if (wanted.contains(held)) {
                     standing.add(held);
+                    if (grant.lapsedAt() != null) {
+                        lapse.returned(grant, ReturnTrigger.REGISTER, now);
+                    }
                 } else {
                     grants.revoke(grant.id(), now);
                     record(AuditAction.ROLE_REVOKED, grant);
@@ -94,11 +99,7 @@ public class RegisterRoles {
     }
 
     private void record(AuditAction action, RoleGrant grant) {
-        audit.record(actor.attribute(AuditEvent.of(action, AuditOutcome.SUCCESS))
-                .onSystem(grant.systemId())
-                .with(DetailKey.ROLE, grant.role().name())
-                .with(DetailKey.SOURCE, grant.source().name())
-                .with(DetailKey.GRANT_ID, grant.id()));
+        audit.record(actor.attribute(grant.describe(AuditEvent.of(action, AuditOutcome.SUCCESS))));
     }
 
     /** A fixed order, so two applies of the same Register write their entries in the same order. */

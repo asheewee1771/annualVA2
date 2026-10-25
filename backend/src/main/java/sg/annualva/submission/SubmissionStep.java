@@ -2,7 +2,9 @@ package sg.annualva.submission;
 
 import java.util.Arrays;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import sg.annualva.access.Need;
+import sg.annualva.access.Role;
 
 /**
  * The steps of a VA Submission at which a person acts; segregation of duties allows one person only one of them. The
@@ -12,16 +14,16 @@ import sg.annualva.access.Need;
  */
 public enum SubmissionStep {
     /** Starting and submitting: the SMO/Tech Lead. */
-    SUBMIT(Need.SUBMIT, true),
+    SUBMIT(Need.SUBMIT, Role.SMO),
     /** Confirming or Disputing Findings, returning and passing to endorsement: the Cyber Manager (ticket 28). */
-    REVIEW(Need.REVIEW, true),
+    REVIEW(Need.REVIEW, Role.CYBER_MANAGER),
     /** Endorsing and returning (tickets 34 and 35), and later Exemption decisions: a VA POC, by acting only. */
-    ENDORSE(Need.ENDORSE, false);
+    ENDORSE(Need.ENDORSE, null);
 
     private final Need need;
-    private final boolean assignedInRegister;
+    private final @Nullable Role assignedInRegister;
 
-    SubmissionStep(Need need, boolean assignedInRegister) {
+    SubmissionStep(Need need, @Nullable Role assignedInRegister) {
         this.need = need;
         this.assignedInRegister = assignedInRegister;
     }
@@ -36,7 +38,12 @@ public enum SubmissionStep {
      * the endorsing step.
      */
     Optional<Need> assignedBy() {
-        return assignedInRegister ? Optional.of(need) : Optional.empty();
+        return assignedInRegister == null ? Optional.empty() : Optional.of(need);
+    }
+
+    /** The Register role assigned to the step, whose holder work at the step is handed to; none for the endorsing step. */
+    Optional<Role> assignedRole() {
+        return Optional.ofNullable(assignedInRegister);
     }
 
     /**

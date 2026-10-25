@@ -50,6 +50,7 @@ import sg.annualva.retention.DisposalPlanner;
 import sg.annualva.submission.CycleLifecycle;
 import sg.annualva.submission.ExemptionLapse;
 import sg.annualva.submission.OverdueSweep;
+import sg.annualva.submission.RoleLapses;
 import sg.annualva.web.ProblemResponses;
 import sg.annualva.web.ResourceNotFoundException;
 
@@ -124,12 +125,14 @@ public class TestEndpoints {
         private final DisposalExecutor disposalExecutor;
         private final DisposalPlanner disposalPlanner;
         private final DeadlineReminders reminders;
+        private final RoleLapses roleLapses;
 
         public TestController(AppUserStore users, RoleGrantStore grants, AccessGuard guard, StepUp stepUp, JdbcClient jdbc,
                 Clock clock, AuditLog audit, TransactionTemplate transaction, ScanPoller scanPoller,
                 OverdueSweep overdueSweep, MailOutbox mailOutbox, CycleLifecycle cycleLifecycle,
                 ExportWorker exportWorker, ExemptionLapse exemptionLapse, DisposalExecutor disposalExecutor,
-                DisposalPlanner disposalPlanner, DeadlineReminders reminders) {
+                DisposalPlanner disposalPlanner, DeadlineReminders reminders, RoleLapses roleLapses) {
+            this.roleLapses = roleLapses;
             this.exemptionLapse = exemptionLapse;
             this.disposalExecutor = disposalExecutor;
             this.disposalPlanner = disposalPlanner;
@@ -298,6 +301,10 @@ public class TestEndpoints {
                 jdbc.sql("DELETE FROM va_cycle").update();
                 jdbc.sql("DELETE FROM va_submission").update();
                 jdbc.sql("DELETE FROM role_grant WHERE system_id IS NOT NULL").update();
+                // The organisation-wide grants (the VA POCs') stay between tests, so the role lapse (ticket 46) starts again
+                // from their grant: one a test lapsed stands again, and a use or return at a later test's clock is forgotten.
+                jdbc.sql("UPDATE role_grant SET lapsed_at = NULL, last_used_at = NULL, returned_at = NULL, "
+                        + "return_trigger = NULL WHERE system_id IS NULL").update();
                 jdbc.sql("DELETE FROM register_upload").update();
                 jdbc.sql("DELETE FROM export_request").update();
                 // The disposal lists (V149) name no other row by key; at most one may wait at a time.
@@ -405,6 +412,13 @@ public class TestEndpoints {
         public Map<String, String> exemptionLapse() {
             exemptionLapse.run();
             return Map.of("ran", "exemption-lapse");
+        }
+
+        /** One pass of the role lapse job (ticket 46), which scheduling being off keeps from running. */
+        @PostMapping("/api/test/jobs/role-lapse")
+        public Map<String, String> roleLapse() {
+            roleLapses.run();
+            return Map.of("ran", "role-lapse");
         }
 
         /** One pass of the export job, which {@code annualva.scheduling.enabled=false} keeps from running by itself in tests. */

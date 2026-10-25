@@ -15,14 +15,15 @@ import sg.annualva.audit.AuditAction;
 import sg.annualva.audit.AuditEvent;
 import sg.annualva.audit.AuditLog;
 import sg.annualva.audit.AuditOutcome;
-import sg.annualva.audit.DetailKey;
 
 /**
  * Makes the role store agree with the deployment's configuration at startup: each configured VA POC
  * holds a VA_POC grant with source CONFIG, and a CONFIG grant for anyone no longer configured is
  * revoked, so changing the configuration through its change request is the way a VA POC is replaced.
  * Runs before the server accepts requests. Each grant given or revoked is an audit entry written in the
- * same transaction (no actor: the deployment is the actor); a sync that changes nothing writes none.
+ * same transaction (no actor: the deployment is the actor); a sync that changes nothing writes none. A configured VA POC
+ * whose grant lapsed after 90 days unused gets it back only when {@code annualva.va-poc-role-returns} names them (story 80a,
+ * ADR 0055): nothing else returns a VA POC.
  * Emails stay out of the log and the audit entries: they carry the grant id.
  */
 @Component
@@ -35,9 +36,11 @@ class VaPocSync implements SmartInitializingSingleton {
     private final AuditLog audit;
     private final Clock clock;
     private final TransactionTemplate transaction;
+    private final RoleLapse lapse;
 
     VaPocSync(VaPocProperties properties, RoleGrantStore grants, AuditLog audit, Clock clock,
-            TransactionTemplate transaction) {
+            TransactionTemplate transaction, RoleLapse lapse) {
+        this.lapse = lapse;
         this.properties = properties;
         this.grants = grants;
         this.audit = audit;
@@ -68,10 +71,15 @@ class VaPocSync implements SmartInitializingSingleton {
                     revoked++;
                 }
             }
+            Set<String> returns = properties.vaPocRoleReturns().stream()
+                    .map(email -> email.toLowerCase(Locale.ROOT))
+                    .collect(Collectors.toSet());
             for (String email : properties.vaPocs()) {
                 RoleGrant grant = grants.grant(Role.VA_POC, email, null, GrantSource.CONFIG, null, null, now);
                 if (!alreadyHeld.contains(email.toLowerCase(Locale.ROOT))) {
                     record(AuditAction.ROLE_GRANTED, grant);
+                } else if (grant.lapsedAt() != null && returns.contains(email.toLowerCase(Locale.ROOT))) {
+                    lapse.returned(grant, ReturnTrigger.CONFIGURATION, now);
                 }
             }
             log.atInfo()
@@ -85,9 +93,6 @@ class VaPocSync implements SmartInitializingSingleton {
     }
 
     private void record(AuditAction action, RoleGrant grant) {
-        audit.record(AuditEvent.of(action, AuditOutcome.SUCCESS)
-                .with(DetailKey.ROLE, grant.role().name())
-                .with(DetailKey.SOURCE, grant.source().name())
-                .with(DetailKey.GRANT_ID, grant.id()));
+        audit.record(grant.describe(AuditEvent.of(action, AuditOutcome.SUCCESS)));
     }
 }

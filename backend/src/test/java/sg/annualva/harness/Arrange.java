@@ -56,6 +56,11 @@ public final class Arrange {
         assertThat(client.post("/api/test/jobs/cycle-lifecycle").status()).isEqualTo(200);
     }
 
+    /** One pass of the role lapse job (ticket 46), run by hand after the clock is moved. */
+    public void roleLapse() {
+        assertThat(client.post("/api/test/jobs/role-lapse").status()).isEqualTo(200);
+    }
+
     /** One pass of the conditional Exemption lapse job (ticket 42), run by hand after the clock is moved. */
     public void exemptionLapse() {
         assertThat(client.post("/api/test/jobs/exemption-lapse").status()).isEqualTo(200);

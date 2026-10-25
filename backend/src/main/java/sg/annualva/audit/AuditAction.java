@@ -19,6 +19,18 @@ public enum AuditAction {
     REQUEST_REFUSED("request-refused", "web"),
     ROLE_GRANTED("role-granted", "iam"),
     ROLE_REVOKED("role-revoked", "iam"),
+    /**
+     * The role lapse job lapsed a grant unused for 90 days (story 80a, IM8 ac-3, ticket 46; SUCCESS, with the {@code role},
+     * {@code source} and {@code grant_id}). Written by the job, so it has no actor. About the System for a per-System role.
+     */
+    ROLE_LAPSED("role-lapsed", "iam"),
+    /**
+     * A lapsed grant came back by itself (ticket 46; SUCCESS, with the {@code role}, {@code source}, {@code grant_id} and the
+     * {@code reason}, a fixed code: {@code register}, {@code quarter-start}, {@code return-for-rework},
+     * {@code submitted-for-review}, {@code exemption-lapse} or {@code configuration}). Attributed to whoever's command
+     * brought it back, or to nobody for a job or the startup. About the System for a per-System role.
+     */
+    ROLE_RETURNED("role-returned", "iam"),
     /** A VA POC downloaded the System Register template; it names no System and holds no data. */
     REGISTER_TEMPLATE_DOWNLOADED("register-template-downloaded", "file"),
     /** A VA POC uploaded a Register file and a preview of its changes was made; nothing in the Register changed. */

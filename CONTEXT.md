@@ -184,6 +184,10 @@ A System whose SMO/Tech Lead's notification emails fail to deliver, flagged for 
 The act, by the Cyber Manager or a VA POC, of sending a VA Submission back to the SMO/Tech Lead with comments.
 _Avoid_: reject, decline
 
+**Role lapse**:
+A role unused for 90 days stopping by itself, without disabling the person's sign-in; it comes back automatically when the System Register, the start of their System's Quarter or work handed to them names the person, and a VA POC's only through configuration.
+_Avoid_: expiry (an Auditor grant expires at its time limit), deactivation
+
 **Role-holder review**:
 The VA POCs' check of every role holder against the System Register, at each upload and at least quarterly, whose only change is suspending a person's role for a System.
 
