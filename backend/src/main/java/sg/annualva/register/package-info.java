@@ -4,7 +4,8 @@
  * ({@code GET /api/system-register/template}, VA POC only, audited) and reads an uploaded file into a Register change
  * preview that changes nothing ({@code POST /api/system-register/uploads}, ADR 0017), applies a confirmed preview with a
  * fresh sign-in ({@code POST /api/system-register/previews/{id}/apply}, ADR 0018) and lists the Systems
- * ({@code GET /api/systems}).
- * Depends on access, audit, cycle and web only.
+ * ({@code GET /api/systems}). A preview names each row's effects on in-flight work, and the apply withdraws what the VA POC
+ * confirmed (ADR 0049), through {@link sg.annualva.register.InFlightWork}, which the submissions implement.
+ * Depends on access, audit, cycle, scan and web only.
  */
 package sg.annualva.register;

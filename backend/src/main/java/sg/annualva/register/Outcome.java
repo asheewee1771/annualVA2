@@ -11,6 +11,9 @@ public enum Outcome {
     /** The System is no longer listed: it is marked retired and keeps its history. */
     RETIRE,
     NO_CHANGE,
-    /** The row cannot be applied; while any row is BLOCKED the preview cannot be applied. */
+    /**
+     * The row breaks a rule of the file; while any row is BLOCKED the preview cannot be applied. A RETIRE or an UPDATE its
+     * in-flight work holds back keeps its outcome and carries its reasons instead (ADR 0049).
+     */
     BLOCKED
 }

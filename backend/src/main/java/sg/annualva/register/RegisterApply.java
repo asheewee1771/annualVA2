@@ -3,6 +3,7 @@ package sg.annualva.register;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -39,16 +40,23 @@ import sg.annualva.web.ResourceNotFoundException;
  * most once and for an hour. All of it, the audit entries included, commits or rolls back together (ADR 0014). A VA
  * POC's scope is every System, so no ownership check applies (ADR 0013). While two VA Cycles overlap it changes only
  * the newer one: the older one keeps its Systems and Quarters as they were when the newer one opened (ADR 0044).
+ *
+ * <p>In-flight work (stories 5 to 7, ADR 0049): the apply holds the VA Submissions its rows touch and classifies the rows
+ * again ({@link WorkEffects}), refusing when that differs from what the preview showed, and withdraws a retired System's
+ * in-flight VA Submissions only when the VA POC confirmed each one.
  */
 @Service
 public class RegisterApply {
 
     static final String STEP_UP_INTENT = "register-apply";
 
-    /** What an apply did, as the counts it audits. */
+    /**
+     * What an apply did, as the counts it audits, and how many VA Submissions it withdrew (each audited on its own).
+     */
     public record Applied(UUID previewId, Instant appliedAt, int added, int updated, int retired, int unchanged,
-            int rolesGranted, int rolesRevoked) {}
+            int rolesGranted, int rolesRevoked, int withdrawn) {}
 
+    private final WorkEffects effects;
     private final RegisterStore store;
     private final RegisterRoles roles;
     private final StepUp stepUp;
@@ -62,7 +70,8 @@ public class RegisterApply {
 
     RegisterApply(RegisterStore store, RegisterRoles roles, StepUp stepUp, AuditLog audit, AuditActor actor,
             CurrentUser user, CycleCalendar calendar, Clock clock, RegisterSystems systems,
-            ApplicationEventPublisher events) {
+            ApplicationEventPublisher events, WorkEffects effects) {
+        this.effects = effects;
         this.systems = systems;
         this.store = store;
         this.roles = roles;
@@ -76,12 +85,15 @@ public class RegisterApply {
     }
 
     /**
+     * @param confirmedWithdrawals the VA Submissions the VA POC confirmed withdrawing, one by one (story 6): exactly those
+     *     of the preview's Will withdraw rows
      * @throws ResourceNotFoundException for an id that is not a preview
-     * @throws RejectedRequestException 409 when the preview was applied already, has expired, has a blocked row, or was
-     *     made against a Register that has changed since
+     * @throws RejectedRequestException 409 when the preview was applied already, has expired, has a blocked row, was made
+     *     against a Register that has changed since, or the in-flight work it touches has changed since
+     *     ({@code work-changed}); 400 {@code withdrawal-unconfirmed} when the confirmations are not exactly its withdrawals
      */
     @Transactional
-    public Applied apply(UUID previewId) {
+    public Applied apply(UUID previewId, Collection<UUID> confirmedWithdrawals) {
         stepUp.require(STEP_UP_INTENT);
         store.lockApply();
         Preview preview = store.preview(previewId).orElseThrow(ResourceNotFoundException::new);
@@ -101,10 +113,20 @@ public class RegisterApply {
         if (!stillTrue(preview.rows(), baseline)) {
             throw conflict("register-changed", "The Register has changed since this preview was made. Upload the file again.");
         }
+        // The in-flight work as it is now, held until the commit, must be what the preview showed and the VA POC confirmed.
+        if (!WorkEffects.sameEffects(preview.rows(), effects.held(preview.rows(), now))) {
+            throw conflict("work-changed",
+                    "VA Submissions this preview touches have changed since it was made. Upload the file again.");
+        }
+        if (!preview.withdrawals().equals(Set.copyOf(confirmedWithdrawals))) {
+            throw new RejectedRequestException(HttpStatus.BAD_REQUEST, "withdrawal-unconfirmed",
+                    "Confirm each VA Submission this apply withdraws, and only those, before applying it.");
+        }
 
         int added = 0;
         int updated = 0;
         int unchanged = 0;
+        int withdrawn = 0;
         List<UUID> retiredSystems = new ArrayList<>();
         for (PreviewRow row : preview.rows()) {
             switch (row.outcome()) {
@@ -124,6 +146,7 @@ public class RegisterApply {
                 case RETIRE -> {
                     store.retireSystem(row.existingSystemId(), now);
                     retiredSystems.add(row.existingSystemId());
+                    withdrawn += effects.withdraw(row, previewId, now);
                 }
                 case NO_CHANGE -> unchanged++;
                 case BLOCKED -> throw new IllegalStateException("A blocked row cannot be applied");
@@ -151,7 +174,7 @@ public class RegisterApply {
                 .with(DetailKey.ROLES_GRANTED, changes.granted())
                 .with(DetailKey.ROLES_REVOKED, changes.revoked()));
         return new Applied(previewId, now, added, updated, retiredSystems.size(), unchanged, changes.granted(),
-                changes.revoked());
+                changes.revoked(), withdrawn);
     }
 
     /**
@@ -192,13 +215,14 @@ public class RegisterApply {
 
     /**
      * Publishes what an updated System's SMO/Tech Lead is told about (story 94): a move to another Quarter, and a transfer
-     * to another SMO/Tech Lead, each heard by the notifications after the commit (ADR 0043).
+     * to another SMO/Tech Lead, each heard by the notifications after the commit (ADR 0043). The submissions hear a move
+     * inside the apply's transaction too, and let a Not Started System's Overdue flag follow its new Quarter (ADR 0049).
      */
     private void announce(UUID systemId, SystemSnapshot before, SystemSnapshot after, Instant now) {
-        if (!before.quarter().equals(after.quarter())) {
+        if (before.movesIn(after)) {
             events.publishEvent(new SystemChangeEvent(systemId, SystemChangeEvent.Change.MOVED, null, now));
         }
-        if (!before.smoEmail().equals(after.smoEmail())) {
+        if (before.changesSmoIn(after)) {
             events.publishEvent(
                     new SystemChangeEvent(systemId, SystemChangeEvent.Change.TRANSFERRED, before.smoEmail(), now));
         }

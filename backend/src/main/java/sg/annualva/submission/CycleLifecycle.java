@@ -89,7 +89,7 @@ public class CycleLifecycle {
         open(cycles, today, now);
         for (VaCycle cycle : cycles) {
             if (cycle.closedAt() == null && today.isAfter(cycle.closesOn())) {
-                store.lockCycleForClose(cycle.year());
+                store.lockCycle(cycle.year());
                 VaCycle held = calendar.cycle(cycle.year()).orElseThrow();
                 if (held.closedAt() == null) {
                     closeNow(held, null, null, now, today);
@@ -116,7 +116,7 @@ public class CycleLifecycle {
         Instant now = clock.instant();
         LocalDate today = calendar.dateOf(now);
         open(calendar.cyclesOn(today), today, now);
-        store.lockCycleForClose(year);
+        store.lockCycle(year);
         VaCycle cycle = calendar.running(year);
         if (cycle.closedAt() != null) {
             throw refusedClose(year, "cycle-closed", "This VA Cycle is already closed.");
@@ -143,7 +143,7 @@ public class CycleLifecycle {
     }
 
     /**
-     * The close itself, for a Cycle the caller holds ({@link SubmissionStore#lockCycleForClose}) and has opened.
+     * The close itself, for a Cycle the caller holds ({@link SubmissionStore#lockCycle}) and has opened.
      *
      * @param by the VA POC who closes it, to whom every entry is attributed; null for the lifecycle job
      * @param closesOn an early close's date; null to keep the Cycle's own
@@ -153,7 +153,7 @@ public class CycleLifecycle {
         int year = cycle.year();
         Integer firstLive = cycle.firstLiveQuarter();
         List<RegisterSystems.ActiveSystem> members = register.everyActive(year);
-        List<SubmissionStore.NotEndorsed> moved = new ArrayList<>();
+        List<SubmissionStore.Finished> moved = new ArrayList<>();
         if (firstLive != null) {
             moved.addAll(store.notEndorseUnfinished(year, firstLive,
                     register.everyActive().stream().map(RegisterSystems.ActiveSystem::id).toList(), today));
@@ -167,7 +167,7 @@ public class CycleLifecycle {
         }
         records.close(year, closesOn, now, by);
         List<CycleClosed.NotEndorsed> notEndorsed = new ArrayList<>();
-        for (SubmissionStore.NotEndorsed item : moved) {
+        for (SubmissionStore.Finished item : moved) {
             String from = item.from() == null ? SubmissionStore.NOT_STARTED : item.from();
             audit.record(attributed(AuditEvent.of(AuditAction.SUBMISSION_NOT_ENDORSED, AuditOutcome.SUCCESS), by)
                     .onSystem(item.systemId()).onSubmission(item.id())

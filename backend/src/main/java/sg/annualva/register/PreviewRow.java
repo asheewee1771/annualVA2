@@ -14,10 +14,13 @@ import org.jspecify.annotations.Nullable;
  * @param existingSystemId the Register's id of the System this row matches, or null when there is none (an ADD, or a
  *     row whose System ID cannot be used)
  * @param outcome the one thing this row does
- * @param reasons why the row is BLOCKED, as fixed codes; empty for every other outcome
+ * @param reasons why the row cannot be applied, as fixed codes: for a BLOCKED row what is wrong in the file; for a RETIRE
+ *     or an UPDATE what its in-flight work holds it back by (ADR 0049); empty otherwise
  * @param unlinkedSmo the SMO/Tech Lead's email matches no sign-in yet (Unlinked SMO, story 12)
  * @param before the System as the Register has it now; null when there is none
  * @param after the System as the file would make it, or as typed (sanitised) for a BLOCKED row; null for a RETIRE
+ * @param effects what the row does to the System's in-flight work (story 5, ADR 0049); empty when it touches none
+ * @param inFlight the in-flight VA Submissions those effects are on; empty when there are no effects
  */
 public record PreviewRow(
         @Nullable Integer sheetRow,
@@ -27,4 +30,29 @@ public record PreviewRow(
         List<BlockReason> reasons,
         boolean unlinkedSmo,
         @Nullable SystemSnapshot before,
-        @Nullable SystemSnapshot after) {}
+        @Nullable SystemSnapshot after,
+        List<Effect> effects,
+        List<InFlight> inFlight) {
+
+    /** A preview stored before ticket 43 has no effects (null when read): it is read as touching no in-flight work. */
+    public PreviewRow {
+        reasons = List.copyOf(reasons);
+        effects = effects == null ? List.of() : List.copyOf(effects);
+        inFlight = inFlight == null ? List.of() : List.copyOf(inFlight);
+    }
+
+    /** A row as the file and the Register alone make it, before its effects on in-flight work are known. */
+    PreviewRow(@Nullable Integer sheetRow, @Nullable String systemId, @Nullable UUID existingSystemId, Outcome outcome,
+            List<BlockReason> reasons, boolean unlinkedSmo, @Nullable SystemSnapshot before,
+            @Nullable SystemSnapshot after) {
+        this(sheetRow, systemId, existingSystemId, outcome, reasons, unlinkedSmo, before, after, List.of(), List.of());
+    }
+
+    /**
+     * An in-flight VA Submission a row's effects are on, as the preview shows it.
+     *
+     * @param cycle its VA Cycle's year
+     * @param state its state when the preview was made
+     */
+    public record InFlight(UUID submissionId, int cycle, String state) {}
+}

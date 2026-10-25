@@ -90,12 +90,31 @@ public abstract class RegisterSeam1 extends Seam1Test {
         return poc.post(PREVIEWS + preview.get("id").asString() + "/apply");
     }
 
+    /** Applies a preview confirming these withdrawals one by one, as the Register screen sends it (story 6). */
+    protected static ApiClient.Response applyConfirming(ApiClient poc, JsonNode preview, List<String> withdraw) {
+        String id = preview.get("id").asString();
+        String ids = withdraw.stream().map(item -> "\"" + item + "\"").collect(java.util.stream.Collectors.joining(","));
+        return poc.postJson(PREVIEWS + id + "/apply", "{\"previewId\":\"" + id + "\",\"withdraw\":[" + ids + "]}");
+    }
+
     /**
      * Puts exactly these Systems in the Register, the way a VA POC does: upload the file and apply the preview. The
      * Register is one standing list, so whatever it held before is retired (and its grants revoked).
      */
     protected void registered(Listed... systems) {
         registered(List.of(systems), List.of());
+    }
+
+    /**
+     * Puts exactly these Systems in the Register although the change moves, transfers or retires Systems whose VA
+     * Submissions are in flight, which Release 1 blocks or withdraws (ADR 0049): every in-flight VA Submission is stood
+     * aside in a final state while the apply runs, as Release 2's mid-cycle changes will allow, and is then put back in
+     * the state it was in. For a test of what follows such a change: segregation of duties, the access guard, the sweep.
+     */
+    protected void registeredMidCycle(Listed... systems) {
+        java.util.Map<String, String> inFlight = arrange.standAsideInFlight();
+        registered(systems);
+        inFlight.forEach(arrange::submissionState);
     }
 
     /**

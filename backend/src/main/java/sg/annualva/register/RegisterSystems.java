@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -141,13 +142,22 @@ public class RegisterSystems {
     @Transactional(propagation = Propagation.MANDATORY)
     public void keepOlderCycles(Instant now) {
         store.lockApply();
-        LocalDate today = calendar.dateOf(now);
+        olderCycles(calendar.dateOf(now)).forEach(year -> store.freeze(year, now));
+    }
+
+    /**
+     * The VA Cycles the app runs on this business date that are no longer the newest to have started: each keeps its
+     * Systems and Quarters as they were when the newer one opened, so an apply changes nothing in them (ADR 0044).
+     */
+    Set<Integer> olderCycles(LocalDate today) {
         List<VaCycle> older = new ArrayList<>(calendar.cyclesOn(today).stream()
                 .filter(cycle -> cycle.phaseOn(today) != CyclePhase.UPCOMING).toList());
         if (!older.isEmpty()) {
             older.removeLast();
         }
-        older.forEach(cycle -> store.freeze(cycle.year(), now));
+        Set<Integer> years = new LinkedHashSet<>();
+        older.forEach(cycle -> years.add(cycle.year()));
+        return years;
     }
 
     /** The Systems of the Cycle whose id passes the test, with their Quarters in it, in System ID order. */
