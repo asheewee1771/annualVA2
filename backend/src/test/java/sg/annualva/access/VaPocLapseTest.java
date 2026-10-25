@@ -16,7 +16,7 @@ import tools.jackson.databind.JsonNode;
 
 /**
  * Story 80a and IM8 ac-3 (ticket 46): a VA POC's role lapses after 90 days unused like any other, and comes back only
- * through configuration: a deployment whose {@code annualva.va-poc-returns} names them. A Register apply, which returns
+ * through configuration: a deployment whose {@code annualva.va-poc-role-returns} names them. A Register apply, which returns
  * the SMO/Tech Leads and Cyber Managers it names, does not return a VA POC, and neither does a restart that names nobody.
  */
 class VaPocLapseTest extends RegisterSeam1 {

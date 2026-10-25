@@ -9,7 +9,7 @@
  * VA POCs come from configuration ({@link sg.annualva.access.VaPocProperties}); SMO/Tech Lead and
  * Cyber Manager grants come from the System Register apply ({@link sg.annualva.access.RegisterRoles}, ADR 0018). A grant
  * unused for 90 days lapses and comes back by itself when the Register, a Quarter's start or work handed over names the
- * person, a VA POC's only through configuration ({@link sg.annualva.access.RoleLapse}, ADR 0053). {@link sg.annualva.access.AccessGuard}
+ * person, a VA POC's only through configuration ({@link sg.annualva.access.RoleLapse}, ADR 0054). {@link sg.annualva.access.AccessGuard}
  * is the per-System ownership check every service path that addresses a System must call (ADR 0013).
  * Step-up ({@link sg.annualva.access.StepUp}) makes a sensitive command require a sign-in within the last
  * five minutes and runs the fresh sign-in round trip (ADR 0004). Everything it does that must be accountable (sign-in,

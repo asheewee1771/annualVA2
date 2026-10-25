@@ -3,7 +3,7 @@ package sg.annualva.access;
 import java.util.Locale;
 
 /**
- * Why a lapsed grant came back by itself (story 80a, IM8 ac-3, ADR 0053). Stored on the grant as the name and audited as
+ * Why a lapsed grant came back by itself (story 80a, IM8 ac-3, ADR 0054). Stored on the grant as the name and audited as
  * the lower-case code ({@code quarter-start}, say).
  */
 public enum ReturnTrigger {

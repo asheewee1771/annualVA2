@@ -31,9 +31,9 @@ class VaPocConfigurationTest {
     @Test
     void aReturnOfAConfiguredVaPocStartsWhateverItsSpelling() {
         startup.withPropertyValues("annualva.va-pocs=one@ci.annualva.test,two@ci.annualva.test",
-                "annualva.va-poc-returns=Two@CI.annualva.test").run(context -> {
+                "annualva.va-poc-role-returns=Two@CI.annualva.test").run(context -> {
                     assertThat(context).hasNotFailed();
-                    assertThat(context.getBean(VaPocProperties.class).vaPocReturns())
+                    assertThat(context.getBean(VaPocProperties.class).vaPocRoleReturns())
                             .containsExactly("Two@CI.annualva.test");
                 });
     }
@@ -41,10 +41,10 @@ class VaPocConfigurationTest {
     @Test
     void aReturnOfSomeoneNotConfiguredIsRefused() {
         startup.withPropertyValues("annualva.va-pocs=one@ci.annualva.test,two@ci.annualva.test",
-                "annualva.va-poc-returns=three@ci.annualva.test").run(context -> {
+                "annualva.va-poc-role-returns=three@ci.annualva.test").run(context -> {
                     assertThat(context).hasFailed();
                     assertThat(context.getStartupFailure()).rootCause()
-                            .hasMessage("annualva.va-poc-returns may name only the configured VA POCs");
+                            .hasMessage("annualva.va-poc-role-returns may name only the configured VA POCs");
                 });
     }
 
