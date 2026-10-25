@@ -3,13 +3,12 @@ package sg.annualva.register;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import sg.annualva.harness.ApiClient;
+import sg.annualva.harness.AuditEntries;
 import sg.annualva.harness.RegisterXlsx;
 import sg.annualva.harness.Seam1Test;
 import sg.annualva.harness.SignIn;
@@ -42,12 +41,9 @@ public abstract class RegisterSeam1 extends Seam1Test {
         arrange.clearRegister();
     }
 
-    /**
-     * A filter that reads the audit log up to today's business date (Asia/Singapore): the log is the whole suite's, and an
-     * entry another test wrote on a later date must never be read as this test's newest.
-     */
+    /** A filter that reads the audit log up to today's business date ({@link AuditEntries#untilToday}). */
     protected String untilToday() {
-        return "&to=" + LocalDate.ofInstant(clock.instant(), ZoneId.of("Asia/Singapore"));
+        return AuditEntries.untilToday(clock);
     }
 
     /** A sign-in whose auth_time is the application clock's now, so the person is within the step-up window. */
