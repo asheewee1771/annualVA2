@@ -1,6 +1,6 @@
 # A batch review is one step and an ordinary review of each member still awaiting it
 
-Status: accepted (items 3 and 4 provisional, see the end)
+Status: accepted (items 3 and 4 decided 2026-10-25, see the end)
 
 Ticket 29 (story 51, story 52 in part) lets the Cyber Manager confirm or Dispute a Bulk-set batch (ADR 0028) as a whole, and groups a batch's members under it on the review screen. It adds one migration (V129), two endpoints, two filters on the Findings list and no module: the batch review is in `finding` beside the single review (ADR 0035), and reuses its lock, its write and its segregation-of-duties check.
 
@@ -20,7 +20,7 @@ Ticket 29 (story 51, story 52 in part) lets the Cyber Manager confirm or Dispute
 
 Not done here, on purpose: re-review of only what changed after a return (ticket 32), return for rework and pass to endorsement (ticket 30), and any Playwright scenario (ticket 53).
 
-Provisional, for a human to confirm:
+Decided 2026-10-25 by the user, as built (docs/agents/reviewer-decisions.md):
 - **Item 3:** members already reviewed one by one are left out of a later batch review, so a batch confirmed by mistake is corrected Finding by Finding. The ticket's "is PENDING" says so; the alternative is to let a batch review re-decide every member whose current proposal is still the batch's.
 - **Item 4:** the ticket says "audited as one batch review"; the per-Finding entries are added by analogy with the 2026-10-17 decision for Bulk-set. The alternative is the `BATCH_REVIEWED` entry alone.
 

@@ -323,3 +323,219 @@ Human decisions on reviewer findings. Check here before asking again. Each entry
 - **Finding:** the justification is overwritten in place, so after a Dispute and a rewrite the disputed wording would be lost.
 - **Chosen action:** each `report_review` row copies the justification as it was reviewed, in the statement that writes the review; after a rewrite, the latest review still shows the wording it reviewed and why. The justification itself stays overwritten in place (no append-only history). A review names the version of the justification its screen showed and is refused if it has changed since. Decided 2026-10-24.
 - **When to reuse:** any review of free text that can be rewritten after it is reviewed: copy the reviewed text into the review, and refuse a review of a version the reviewer did not see.
+
+## Ticket 29: a batch review leaves out members already reviewed and is audited per Finding
+
+- **Area:** batch review (ticket 29, ADR 0036 items 3 and 4)
+- **Finding:** whether a batch review re-decides members already reviewed one by one, and whether it is audited once or per Finding.
+- **Chosen action:** keep as built. Members reviewed one by one, or proposed again, are left out and reported (`REVIEWED`, `PROPOSAL_CHANGED`); a batch review writes one `BATCH_REVIEWED` entry and a `FINDING_REVIEWED` entry per Finding it decides. Decided 2026-10-25 by the user (all recommendations accepted).
+- **When to reuse:** any group action whose members can also be acted on singly: never overwrite a single decision, and audit each member as well as the group.
+
+## Ticket 30: the return comment is optional, and a VA POC counts at the endorsing step only by acting
+
+- **Area:** return for rework and pass to endorsement (ticket 30, ADR 0039 items 3 and 5), segregation of duties
+- **Finding:** whether the Cyber Manager's return comment is required, and how a VA POC is placed at the endorsing step.
+- **Chosen action:** keep as built. Decided 2026-10-25 by the user (all recommendations accepted).
+  - The Cyber Manager's return comment is optional, since each Dispute carries its own required comment; a VA POC's return requires one (ticket 35).
+  - Holding the VA POC role assigns nobody to the endorsing step: a VA POC counts there once they act (endorse, return, decide an Exemption), and the Register naming them the System's SMO/Tech Lead or Cyber Manager refuses them the endorsing step of that System.
+- **When to reuse:** any segregation-of-duties question about a VA POC; any summary text beside required per-item comments.
+
+## Ticket 31: the rework queue's "new" means no proposal yet, and only the SMO/Tech Lead reads it
+
+- **Area:** guided rework queue (ticket 31, ADR 0041 items 2, 3 and 6)
+- **Finding:** three readings left open by the ticket.
+- **Chosen action:** keep as built. Decided 2026-10-25 by the user (all recommendations accepted).
+  - "New Critical/High pending" is a Finding with no proposal yet, the same as "needs attention".
+  - Only the System's SMO/Tech Lead reads the rework queue; others read the Findings list.
+  - Disputed not-applicable justifications are shown on the rework screen with a link to the prepare screen to rewrite them, not as queue items.
+- **When to reuse:** any work list for the SMO/Tech Lead after a return.
+
+## Ticket 32: a Finding never reviewed is not "changed since last review"
+
+- **Area:** re-review after a return (ticket 32, ADR 0040 item 2)
+- **Finding:** whether Findings never reviewed (new by hand or by a rescan, or left PENDING at the return) count as changed.
+- **Chosen action:** keep as built: changed means the latest review is not of the current proposal; never-reviewed Findings show as awaiting review and still block the pass. Decided 2026-10-25 by the user (all recommendations accepted).
+- **When to reuse:** any filter of what a Cyber Manager must look at again.
+
+## Ticket 33: the Cycle matrix and the VA POC board
+
+- **Area:** VA POC board and Cycle matrix (ticket 33, ADR 0037 items 3 to 6)
+- **Finding:** five readings left open by the ticket.
+- **Chosen action:** keep as built. Decided 2026-10-25 by the user (all recommendations accepted).
+  - "Reviewed" on the matrix is the Cyber Manager's pass to endorsement.
+  - A VA POC return keeps the last reviewed date (built by ticket 35, ADR 0047 item 4).
+  - A Withdrawn VA Submission keeps its row, read-only and out of the counts.
+  - A person who is both VA POC and Cyber Manager gets the VA POC board, their own Systems included.
+  - The VA POC board's segregation-of-duties marker stayed false until ticket 34 added the endorsing step (since built, ADR 0042 item 5).
+- **When to reuse:** any VA POC dashboard or milestone question.
+
+## Ticket 34: deciding an Exemption is the endorsing step, and the step-up comes before the lookup
+
+- **Area:** endorse (ticket 34, ADR 0042 items 1 and 2), Exemptions (ticket 40)
+- **Finding:** whether deciding an Exemption is a step of its own for segregation of duties (the glossary lists one), and whether the step-up or the lookup comes first.
+- **Chosen action:** keep as built. Decided 2026-10-25 by the user (all recommendations accepted).
+  - A VA POC counts at the endorsing step only by acting there, or when the Register names them the System's SMO/Tech Lead or Cyber Manager (as ticket 30).
+  - Deciding an Exemption is the VA POC's endorsing step (`ENDORSE`), so a VA POC who rejected an Exemption may still endorse; `DECIDE` stays allowed and unused.
+  - The step-up is checked before the lookup, so a stale session learns nothing.
+- **When to reuse:** any VA POC action and its segregation-of-duties step; the order of step-up and lookup on any step-up command.
+
+## Ticket 35: one return endpoint, a comment-only VA POC return, and one clean migration sequence before release
+
+- **Area:** VA POC return (ticket 35, ADR 0047 items 1, 2, 4 and 6), Flyway versions on the integration branch
+- **Finding:** four readings left open by the ticket, and tickets merging out of version order (V135 and V141_35 land after V144), so a database migrated past them needs `outOfOrder` or a reset.
+- **Chosen action:** keep as built, and renumber the migrations. Decided 2026-10-25 by the user (all recommendations accepted, Flyway as below).
+  - One `/return` endpoint; the caller's role and the state pick the step (the Cyber Manager's return unless Awaiting Endorsement or the caller is not this System's Cyber Manager).
+  - A VA POC return carries a required comment only, no challenged Findings.
+  - The Cycle matrix keeps the last reviewed date after a VA POC return.
+  - A VA POC return mails both the SMO/Tech Lead (`VA_POC_REWORK`) and the Cyber Manager (`VA_POC_RETURNED`) with the `RETURNED_FOR_REWORK` template.
+  - Flyway: once every ticket is merged and before release, every migration on the integration branch is renumbered into one clean sequence, so no environment runs with `outOfOrder`. The orchestrator does the renumbering.
+- **When to reuse:** a command shared by two roles; any migration-ordering finding during the run (do not renumber per ticket; the release renumbering covers it).
+
+## Ticket 36: Disputed travels with the return, and the in-app list is open to the four roles
+
+- **Area:** in-app notifications (ticket 36, ADR 0043 items 6 and 7)
+- **Finding:** how Disputed reaches the SMO/Tech Lead, and whether a former SMO/Tech Lead with no role can read the list.
+- **Chosen action:** keep as built. Decided 2026-10-25 by the user (all recommendations accepted).
+  - Disputed reaches the SMO/Tech Lead through the return's `REWORK` notice; nothing is sent per Dispute.
+  - The in-app list is open to the four roles only (deny by default); a former SMO/Tech Lead with no role gets the transfer by mail (ticket 37).
+- **When to reuse:** any new notice that a later move already announces; any endpoint someone without a role might want.
+
+## Ticket 37: only the spec's required messages are mailed
+
+- **Area:** mail outbox (ticket 37, ADR 0046 item 2 and consequences)
+- **Finding:** which notices are mailed, whether Disputed has its own mail, and what SIT starts with before ticket 57.
+- **Chosen action:** keep as built. Decided 2026-10-25 by the user (all recommendations accepted).
+  - Mailed: Return for Rework (with Disputed), Overdue, Register changes. Submit, pass to endorsement and the Cycle close's Not Endorsed stay in-app.
+  - No separate Disputed mail; it travels with the Return for Rework mail.
+  - SIT starts with placeholder template ids and `https://localhost:8443` until ticket 57 records the real ones.
+- **When to reuse:** any new `NoticeAction`: mail it only if the spec lists it as required.
+
+## Ticket 38: reminder copies go on the weekly Overdue reminder, with four shared templates
+
+- **Area:** deadline reminders (ticket 38, ADR 0052 items 3, 4 and 5)
+- **Finding:** three readings left open by stories 88 and 89 and ticket 57's template list.
+- **Chosen action:** keep as built. Decided 2026-10-25 by the user (all recommendations accepted).
+  - The copy (Cyber Manager on the SMO/Tech Lead's, VA POCs on the Cyber Manager's) goes on the weekly Overdue reminders only.
+  - A VA POC's copy is one item each that nothing clears, not a pair.
+  - Four shared reminder templates: due soon, due today, overdue weekly, copy.
+- **When to reuse:** any reminder or copy question; ticket 57 onboards four reminder templates, not separate copy variants.
+
+## Ticket 39: SMO Unreachable is a flag for VA POCs, with no notification
+
+- **Area:** bounce handling (ticket 39, ADR 0053 items 3, 5, 6 and 7)
+- **Finding:** whether anyone is notified, who sees the flag, which date it keeps, and the PO's acknowledgement that MCNS reports no later bounce.
+- **Chosen action:** keep as built. Decided 2026-10-25 by the user (all recommendations accepted).
+  - No notification; the flag shows on the Register table and the VA POC's Quarter board.
+  - Only VA POCs see it, and not on the Cycle matrix.
+  - It keeps the date of the first refusal until it clears.
+  - Acknowledged: a mail MCNS accepts that bounces later is never flagged; the weekly digest is Release 2.
+- **When to reuse:** any flag about a System that clears without a person acting.
+
+## Ticket 40: Exemptions
+
+- **Area:** Exemption request and decision (ticket 40, ADR 0048 items 2 to 6)
+- **Finding:** six readings left open by the ticket.
+- **Chosen action:** keep as built. Decided 2026-10-25 by the user (all recommendations accepted).
+  - A rejected request that created the VA Submission leaves the row in `NOT_STARTED`, which a later start takes over.
+  - The request names a supporting evidence file already uploaded and fully checked; a Not Started System gives text evidence unless the SMO/Tech Lead starts first.
+  - Deciding an Exemption is the endorsing step for segregation of duties (as ticket 34).
+  - A request made while Awaiting Endorsement leaves the endorsement notice open; the three Exemption notices are in-app only.
+  - A prior VA falls from 3 months before the Quarter's first day to the day before (not after today); a scheduled VA from the day after the Quarter's last day to 3 months after. A VA during the Quarter does not count.
+- **When to reuse:** any Exemption or conditional Exemption change (ticket 42 builds on these).
+
+## Ticket 41: a VA POC closes a Cycle early only after Q4, and Not Endorsed sits under Done
+
+- **Area:** VA Cycle lifecycle (ticket 41, ADR 0044 items 3, 4 and 7); settles "The SMO inbox puts the later states under Waiting on others or Done until ticket 41" (2026-10-24)
+- **Finding:** when an early close is allowed, how the SMO inbox shows Not Endorsed, and what the older Cycle keeps during the overlap.
+- **Chosen action:** keep as built. Decided 2026-10-25 by the user (all recommendations accepted).
+  - A VA POC may close a Cycle early only after Q4 ends, during the 4-week grace.
+  - The SMO inbox lists Not Endorsed under Done with no next action, a danger flag and "Not endorsed: the VA Cycle closed before it was endorsed".
+  - During the overlap the older Cycle keeps only which Systems belong to it and their Quarters; who may see or act follows the current Register.
+- **When to reuse:** any Cycle close or overlap question; any failed final state in an inbox.
+
+## Ticket 42: conditional Exemption lapse
+
+- **Area:** conditional Exemption (ticket 42, ADR 0051 items 2 to 7)
+- **Finding:** six readings left open by the ticket.
+- **Chosen action:** keep as built. Decided 2026-10-25 by the user (all recommendations accepted).
+  - Windows after a lapse that would run past the Cycle's close are cut to end the day before the next one.
+  - Record VA and confirm VA skip the closed-Cycle check for every Quarter, not only Q4.
+  - The lapse notices (`EXEMPTION_LAPSED`, `EXEMPTION_LAPSED_NOT_ENDORSED`, `CONFIRM_VA`, `VA_CONFIRMED`) are in-app only.
+  - Confirm VA reuses the step-up intent `exemption-decide`.
+  - The "Exemption lapsed" flag never clears, like Endorsed Late.
+  - The VA happened form requires evidence text as well as the date.
+- **When to reuse:** any change to Exemption lapse, its windows or its notices.
+
+## Ticket 43: Register change effects
+
+- **Area:** Register change effects on in-flight work (ticket 43, ADR 0049)
+- **Finding:** three readings left open by the ticket.
+- **Chosen action:** keep as built. Decided 2026-10-25 by the user (all recommendations accepted).
+  - The Quarter board's Withdrawn column stays empty (a Withdrawn VA Submission belongs to a retired System, which no dashboard lists).
+  - A Not Started row left by a rejected Exemption counts as no work: retiring leaves it Not Started on a retired System; moving leaves its Quarter, windows and Overdue as they were.
+  - Segregation of duties on a Register change counts both who acted and who was assigned before the change (matters only in Release 2, since Release 1 holds every transfer back).
+- **When to reuse:** any Register change that touches in-flight work.
+
+## Ticket 44: the export download needs no second step-up, and open Deviations count every such proposal
+
+- **Area:** management summary export (ticket 44, ADR 0045 items 4 and 6)
+- **Finding:** whether downloading needs its own step-up (IM8 ac-2), and what "open Deviation" counts.
+- **Chosen action:** keep as built. Decided 2026-10-25 by the user (all recommendations accepted).
+  - The step-up guards the request; the file is the requester's alone and lasts 24 hours, so the download needs no second step-up.
+  - "Open Deviation" is every Finding whose current proposal is Risk Accepted or Remediation Planned, whatever its review state.
+- **When to reuse:** any export file or management count of Deviations (ticket 45's PDF follows it).
+
+## Ticket 45: the PDF uses PDFBox and prints `?` outside Windows-1252
+
+- **Area:** management summary PDF (ticket 45, ADR 0054 items 2 and 5)
+- **Finding:** the plan named OpenPDF (LGPL/MPL); Helvetica cannot draw characters outside Windows-1252.
+- **Chosen action:** keep as built. Decided 2026-10-25 by the user (all recommendations accepted).
+  - Apache PDFBox 3.0.8 (Apache 2.0), pinned; the tests read the PDF back.
+  - Characters outside Windows-1252 print as `?` in the PDF for Release 1; the Excel keeps them. Embedding Noto Sans is the change if the Register holds such names.
+- **When to reuse:** any PDF output or third-party library licence question.
+
+## Ticket 46: role lapse returns
+
+- **Area:** role lapse and automatic return (ticket 46, ADR 0055 items 3 to 6)
+- **Finding:** four readings left open by the ticket.
+- **Chosen action:** keep as built. Decided 2026-10-25 by the user (all recommendations accepted).
+  - A Quarter's start counts as a return moment: a grant whose System's Quarter began within 90 days does not lapse, and one lapsed before its Quarter began comes back (ticket 47's review covers a never-used role).
+  - Every Register apply returns everyone it names.
+  - A submit also returns the System's Cyber Manager.
+  - A VA POC returns only through `annualva.va-poc-role-returns`, emptied at the next change request.
+- **When to reuse:** any role lapse or return trigger.
+
+## Ticket 47: role-holder review and suspension
+
+- **Area:** role-holder review, suspension and identity-provider disablement (ticket 47, ADR 0056 items 3 and 5 to 8)
+- **Finding:** five readings left open by the ticket and IM8 ac-4.
+- **Chosen action:** keep as built. Decided 2026-10-25 by the user (all recommendations accepted).
+  - A Register upload naming the same person again does not lift a suspension; a VA POC restore, or an upload naming someone else, does.
+  - The disabled signal is the claim `afcas.status` (absent means enabled; any value but `active` means disabled) until H4 onboarding confirms what MCC SSO sends.
+  - The session check fails open, with a warning, when the identity provider cannot answer; until ticket 51 wires the adapter only the sign-in and step-up callback detect disablement.
+  - A review is due after any Register apply as well as after 3 months; nothing is mailed when it falls due.
+  - Only SMO/Tech Lead and Cyber Manager grants are suspendable; a VA POC may suspend the other VA POC's per-System grants; re-enabling at the provider restores no grant.
+- **When to reuse:** any role suspension, review or identity-provider status question.
+
+## Ticket 48: the Cyber Manager's audit history, and reading the log is audited
+
+- **Area:** Cyber Manager audit history (ticket 48, ADR 0038 items 2, 3 and 5), reads of the audit log (IM8 lm-4)
+- **Finding:** three readings of the ticket, and whether reading the audit log is itself audited (no earlier decision covered it).
+- **Chosen action:** keep items 2, 3 and 5 as built, and audit reads of the log. Decided 2026-10-25 by the user (all recommendations accepted; the audit of reads as below).
+  - "Acted at the reviewing step" is a committed review recorded at `REVIEW` (Finding, justification or batch).
+  - Without `submission=`, a Cyber Manager gets the history of every VA Submission they reviewed.
+  - The history holds every entry about the VA Submission, whoever wrote it, others' reads and refusals included.
+  - Reading the audit log is audited, for a VA POC and a Cyber Manager alike: an `AUDIT_LOG_VIEWED` entry carrying the filter ids only. Ticket 50 builds it.
+- **When to reuse:** any read of the audit log or of another person's audit entries.
+
+## Ticket 49: retention dates, and per-row disposal checks as a follow-up
+
+- **Area:** retention and disposal (ticket 49, ADR 0050 items 2, 3, 4 and 8, and the accepted delete window)
+- **Finding:** four readings of "Cycle plus 3 years" and what goes with it, and a security finding: while a list is `APPROVED`, a transaction naming it can delete any row of the append-only tables, and only the audit log is checked row by row.
+- **Chosen action:** keep items 2, 3, 4 and 8 as built, and check every history table row by row in ticket 62. Decided 2026-10-25 by the user (all recommendations accepted; the delete window as below).
+  - "Cycle plus 3 years" is kept through the third anniversary of the Cycle's close date and due the next day; a Cycle never closed is never due.
+  - Records belonging to no single VA Submission (audit log, Register previews, notifications) are disposed of up to the next Cycle's first day.
+  - Retired Systems with nothing left outside the due Cycles are disposed of with their grants.
+  - Only Endorsed VA Submissions dispose of superseded file content early; `FAILED` exports are not listed (a follow-up if they should go).
+  - The delete window is accepted as provisional until ticket 62 makes every append-only history table's delete trigger check, row by row, that the row is on the `APPROVED` list.
+- **When to reuse:** any retention date or disposal question; any new append-only table (its delete trigger needs ticket 62's per-row check).

@@ -1,6 +1,6 @@
 # A Register change names its effects on in-flight work, and withdraws only what a VA POC confirms
 
-Status: accepted (item 6 provisional, awaiting a human decision)
+Status: accepted (item 6 decided 2026-10-25, docs/agents/reviewer-decisions.md)
 
 Ticket 43 (stories 5, 6 and 7) makes the Register preview say what each row would do to in-flight work, a VA Submission of the System that is started and not in a final state (Endorsed, Exempted, Withdrawn and Not Endorsed are final; a Not Started row a rejected Exemption request left, ADR 0048, holds no work: `SubmissionState.inFlight`), and makes the apply withdraw a retired System's in-flight VA Submission once the VA POC has confirmed it. It adds one migration (V144_43), no endpoint, no module and no screen; the preview, the apply's body and the Register screen gain what follows.
 
@@ -20,7 +20,7 @@ Ticket 43 (stories 5, 6 and 7) makes the Register preview say what each row woul
 
 5. **A Not Started System's flag follows its new Quarter.** A System with no VA Submission moved to another Quarter is an ordinary UPDATE (its SMO/Tech Lead is told, ADR 0043). The Overdue sweep hears the apply's `SystemChangeEvent` `MOVED` inside the apply's transaction (an `@EventListener`, so the change commits or rolls back with the move), and the System's Not Started Overdue flag in each Cycle that is not closed, by its Quarter in that Cycle, is cleared when the new Quarter's Submission Window has not passed (V20's `window_passed`), and set again by the sweep when it does: the flag follows the current window, not a permanent "was late" mark (reviewer decisions, 2026-10-23, "Overdue clears when a submit moves into a window that has not passed"). The `SUBMISSION_OVERDUE` entry stays as the record. This closes ADR 0033's note that a moved System keeps its flag.
 
-6. **The Withdrawn column stays empty** (provisional). ADR 0034 left the Quarter board's Withdrawn column to this ticket. A Withdrawn VA Submission belongs to a retired System, and every dashboard reads Systems through `RegisterSystems.active`, which leaves retired Systems out, so the column stays empty and story 7's "excluded from counts" holds without a special case. The alternative is to list the Withdrawn VA Submissions of the Cycle and Quarter in that column for a VA POC, uncounted, through a new reader of retired Systems.
+6. **The Withdrawn column stays empty** (decided 2026-10-25). ADR 0034 left the Quarter board's Withdrawn column to this ticket. A Withdrawn VA Submission belongs to a retired System, and every dashboard reads Systems through `RegisterSystems.active`, which leaves retired Systems out, so the column stays empty and story 7's "excluded from counts" holds without a special case. The alternative is to list the Withdrawn VA Submissions of the Cycle and Quarter in that column for a VA POC, uncounted, through a new reader of retired Systems.
 
 Consequences:
 - Ticket 12's note: in Release 1 a Draft never sees a move (it is blocked), so its stored Quarter and dates stand and the SMO inbox cannot show another Quarter beside them; re-dating a moved Draft is Release 2's.

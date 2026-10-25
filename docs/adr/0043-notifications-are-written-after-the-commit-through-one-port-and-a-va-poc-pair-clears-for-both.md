@@ -1,6 +1,6 @@
 # Notifications are written after the commit through one port, and a VA POC pair clears for both
 
-Status: accepted (items 6 and 7 provisional, awaiting a human decision)
+Status: accepted (items 6 and 7 decided 2026-10-25, docs/agents/reviewer-decisions.md)
 
 Ticket 36 (stories 92 and 69) gives every person an in-app list of their notifications and makes items for the VA POCs go to both and clear for both. It adds one module (`notification`), one migration (V136), two endpoints and one screen. Tickets 37 (mail), 38 (reminders), 39 (bounces), 40 (Exemptions) and 43 (withdrawals) send through what it builds.
 
@@ -17,9 +17,9 @@ Ticket 36 (stories 92 and 69) gives every person an in-app list of their notific
 
 5. **Reading.** `GET /api/notifications` (any role) lists the caller's own rows, newest first, in pages of up to 200, joined to `va_system` for the System ID and name and to `app_user` for the handler's name; the message is the app's fixed sentence for the action. `POST /api/notifications/{id}/read` keeps the first read time; another person's row is `404`, the same as a missing one (ADR 0013). Neither is audited: they read and mark the caller's own messages, which carry no report content, as the inboxes are unaudited (ADR 0019). Writing a notification is not audited either; the move it reports is.
 
-6. **Disputed is announced by the return** (provisional). The spec lists Disputed among the required messages. A Dispute is a review decision the SMO/Tech Lead cannot act on until the VA Submission is returned, and a return always attaches what is Disputed (ADR 0039), so the return's `REWORK` message ("Rework what is Disputed and submit the VA Submission again.") carries it and no notification is sent per Dispute. A separate `DISPUTED` notice at the return is a one-constant change.
+6. **Disputed is announced by the return** (decided 2026-10-25). The spec lists Disputed among the required messages. A Dispute is a review decision the SMO/Tech Lead cannot act on until the VA Submission is returned, and a return always attaches what is Disputed (ADR 0039), so the return's `REWORK` message ("Rework what is Disputed and submit the VA Submission again.") carries it and no notification is sent per Dispute. A separate `DISPUTED` notice at the return is a one-constant change.
 
-7. **Only people who hold a role read the list** (provisional). The endpoints are open to the four roles, as the permission matrix opens every endpoint (ac-1). A former SMO/Tech Lead whom a transfer left with no System has no role, so they see `SYSTEM_TRANSFERRED_FROM_YOU` only once they hold a role again; the mail of ticket 37 reaches them meanwhile. Opening the list to any signed-in person is a one-line change to the guard.
+7. **Only people who hold a role read the list** (decided 2026-10-25). The endpoints are open to the four roles, as the permission matrix opens every endpoint (ac-1). A former SMO/Tech Lead whom a transfer left with no System has no role, so they see `SYSTEM_TRANSFERRED_FROM_YOU` only once they hold a role again; the mail of ticket 37 reaches them meanwhile. Opening the list to any signed-in person is a one-line change to the guard.
 
 Not done here, on purpose:
 - Mail, the outbox and its retries (ticket 37); reminders before a window ends (ticket 38); bounces (ticket 39).
