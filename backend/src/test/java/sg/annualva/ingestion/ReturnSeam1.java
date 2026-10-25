@@ -15,6 +15,19 @@ abstract class ReturnSeam1 extends ReviewSeam1 {
     static final String RETURNED_FOR_REWORK = "RETURNED_FOR_REWORK";
     static final String AWAITING_ENDORSEMENT = "AWAITING_ENDORSEMENT";
 
+    /**
+     * SYS-F1's VA Submission Returned for Rework by its Cyber Manager with one Finding Disputed: one mail is queued, to
+     * {@link #SMO_A}, and nothing else is due.
+     */
+    protected Draft returnedForRework() {
+        Draft draft = inReview();
+        String sub = draft.submissionId();
+        ApiClient cm = signedInAs(CM);
+        reviewed(cm, sub, findingIds(cm, sub).get(0), DISPUTED, "Show the upgrade.");
+        returned(cm, sub, "Two items need another look.");
+        return draft;
+    }
+
     protected static String returnOf(String submissionId) {
         return SUBMISSIONS + "/" + submissionId + "/return";
     }
