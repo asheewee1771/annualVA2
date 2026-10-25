@@ -3,31 +3,43 @@ package sg.annualva.export;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 import sg.annualva.dashboard.SystemState;
+import sg.annualva.export.ExportTable.Cell;
+import sg.annualva.export.ExportTable.Column;
 
 /**
- * The words and the order of the management summary (story 81), whatever file it is made as: the title, the two parts
- * and their columns, and how a state and a flag are written. The Excel workbook and the PDF both write these, so the two
- * formats cannot disagree about what a column is called or where Endorsed Late goes.
+ * What the management summary says (story 81), whatever file it is made as: its title, the date it was read on, and its
+ * two tables, Summary (counts by Quarter and state with Endorsed Late) and Systems (one row per System), with their
+ * columns in order and how a state and a flag are written. The Excel workbook and the PDF both write these tables, so
+ * the two formats cannot disagree about a column, its place or its value.
  */
 final class SummaryText {
-
-    /** The part with the counts by Quarter and state. */
-    static final String SUMMARY = "Summary";
-
-    /** The part with one line per System. */
-    static final String SYSTEMS = "Systems";
 
     /** The states counted, in the order of the spec's state table: every one but Withdrawn, which is never counted. */
     private static final List<SystemState> COUNTED =
             Arrays.stream(SystemState.values()).filter(state -> state != SystemState.WITHDRAWN).toList();
 
-    /** The columns of the Systems part; the last, open Deviations, is a number. */
-    static final List<String> SYSTEM_HEADERS = List.of("System ID", "System Name", "Quarter", "SMO/Tech Lead",
-            "State", "Overdue", "Endorsed Late", "Open Deviations");
+    private static final double COUNT_WIDTH = 14;
 
-    /** How many columns of the Summary part come before the counts: the Quarter and its dates. */
-    static final int QUARTER_TEXTS = 3;
+    /** One column of the Summary table and how a Quarter's line fills it. */
+    private record QuarterColumn(Column column, Function<ManagementSummary.QuarterLine, Cell> cell) {}
+
+    /** One column of the Systems table and how a System's line fills it. */
+    private record SystemColumn(Column column, Function<ManagementSummary.SystemLine, Cell> cell) {}
+
+    /** The Quarter, its dates, each counted state with Endorsed Late after Endorsed, and the total. */
+    private static final List<QuarterColumn> QUARTER_COLUMNS = quarterColumns();
+
+    private static final List<SystemColumn> SYSTEM_COLUMNS = List.of(
+            new SystemColumn(new Column("System ID", 16), line -> text(line.systemId())),
+            new SystemColumn(new Column("System Name", 36), line -> text(line.name())),
+            new SystemColumn(new Column("Quarter", 9), line -> text("Q" + line.quarter())),
+            new SystemColumn(new Column("SMO/Tech Lead", 32), line -> text(line.smoEmail())),
+            new SystemColumn(new Column("State", 22), line -> text(label(line.state()))),
+            new SystemColumn(new Column("Overdue", 10), line -> yesNo(line.overdue())),
+            new SystemColumn(new Column("Endorsed Late", 14), line -> yesNo(line.endorsedLate())),
+            new SystemColumn(new Column("Open Deviations", 16), line -> new Cell.Count(line.openDeviations())));
 
     private SummaryText() {}
 
@@ -42,45 +54,45 @@ final class SummaryText {
         return "As at " + summary.asAt();
     }
 
-    /** The columns of the Summary part: the Quarter, its dates, each counted state with Endorsed Late after Endorsed, and the total. */
-    static List<String> quarterHeaders() {
-        List<String> headers = new ArrayList<>(List.of("Quarter", "Starts", "Ends"));
+    /** The Summary table: one row per Quarter it counts. */
+    static ExportTable quarters(ManagementSummary summary) {
+        return new ExportTable("Summary", QUARTER_COLUMNS.stream().map(QuarterColumn::column).toList(),
+                summary.quarters().stream()
+                        .map(line -> QUARTER_COLUMNS.stream().map(column -> column.cell().apply(line)).toList())
+                        .toList());
+    }
+
+    /** The Systems table: one row per System. */
+    static ExportTable systems(ManagementSummary summary) {
+        return new ExportTable("Systems", SYSTEM_COLUMNS.stream().map(SystemColumn::column).toList(),
+                summary.systems().stream()
+                        .map(line -> SYSTEM_COLUMNS.stream().map(column -> column.cell().apply(line)).toList())
+                        .toList());
+    }
+
+    private static List<QuarterColumn> quarterColumns() {
+        List<QuarterColumn> columns = new ArrayList<>(List.of(
+                new QuarterColumn(new Column("Quarter", 9), line -> text("Q" + line.quarter())),
+                new QuarterColumn(new Column("Starts", 11.5), line -> text(line.startsOn().toString())),
+                new QuarterColumn(new Column("Ends", 11.5), line -> text(line.endsOn().toString()))));
         for (SystemState state : COUNTED) {
-            headers.add(label(state));
+            columns.add(new QuarterColumn(new Column(label(state), COUNT_WIDTH),
+                    line -> new Cell.Count(line.counts().getOrDefault(state, 0L))));
             if (state == SystemState.ENDORSED) {
-                headers.add("Endorsed Late");
+                columns.add(new QuarterColumn(new Column("Endorsed Late", COUNT_WIDTH),
+                        line -> new Cell.Count(line.endorsedLate())));
             }
         }
-        headers.add("Total");
-        return headers;
+        columns.add(new QuarterColumn(new Column("Total", COUNT_WIDTH), line -> new Cell.Count(line.total())));
+        return List.copyOf(columns);
     }
 
-    /** The Quarter and its dates, the first {@link #QUARTER_TEXTS} columns of its line. */
-    static List<String> quarterTexts(ManagementSummary.QuarterLine strip) {
-        return List.of("Q" + strip.quarter(), strip.startsOn().toString(), strip.endsOn().toString());
+    private static Cell text(String value) {
+        return new Cell.Text(value);
     }
 
-    /** The counts of its line, in the order of {@link #quarterHeaders()} after the dates. */
-    static List<Long> quarterCounts(ManagementSummary.QuarterLine strip) {
-        List<Long> counts = new ArrayList<>();
-        for (SystemState state : COUNTED) {
-            counts.add(strip.counts().getOrDefault(state, 0L));
-            if (state == SystemState.ENDORSED) {
-                counts.add(strip.endorsedLate());
-            }
-        }
-        counts.add(strip.total());
-        return counts;
-    }
-
-    /** Every column of a System's line but the last, open Deviations, which is {@link ManagementSummary.SystemLine#openDeviations()}. */
-    static List<String> systemTexts(ManagementSummary.SystemLine line) {
-        return List.of(line.systemId(), line.name(), "Q" + line.quarter(), line.smoEmail(), label(line.state()),
-                yesNo(line.overdue()), yesNo(line.endorsedLate()));
-    }
-
-    private static String yesNo(boolean flag) {
-        return flag ? "Yes" : "No";
+    private static Cell yesNo(boolean flag) {
+        return text(flag ? "Yes" : "No");
     }
 
     /** A state as the glossary names it. */
