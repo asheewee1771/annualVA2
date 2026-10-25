@@ -3,6 +3,10 @@ package sg.annualva.ingestion;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import sg.annualva.harness.ApiClient;
 import sg.annualva.harness.Samples;
@@ -24,6 +28,10 @@ class ExemptionQueueTest extends ExemptionSeam1 {
         ApiClient smoB = signedInAs(SMO_B);
         JsonNode second = requested(smoB, idOf("SYS-F2"), scheduledVa());
         ApiClient poc = vaPoc();
+        // The audit log is shared by the suite and lists the newest first by when it happened, so another test's read at
+        // a later business date comes first: this read's entry is the one written since.
+        Set<String> before = new HashSet<>();
+        viewed().forEach(item -> before.add(item.get("id").asString()));
 
         var response = poc.get(QUEUE);
 
@@ -53,11 +61,28 @@ class ExemptionQueueTest extends ExemptionSeam1 {
 
         JsonNode audited = entries("EXEMPTIONS_VIEWED", draft.systemId());
         assertThat(audited).as("a list over many Systems names none").isEmpty();
-        var viewed = otherVaPoc().get("/api/audit-entries?size=10&action=EXEMPTIONS_VIEWED");
-        JsonNode entry = ApiClient.json(viewed).get("items").get(0);
+        List<JsonNode> written = viewedSince(before);
+        assertThat(written).as("one entry for the read").hasSize(1);
+        JsonNode entry = written.get(0);
         assertThat(entry.get("actorId").asString()).isEqualTo(userId(poc));
         assertThat(entry.get("detail").get("count").asInt()).isEqualTo(2);
         assertThat(entry.toString()).doesNotContain("Acme");
+    }
+
+    private JsonNode viewed() {
+        var response = otherVaPoc().get("/api/audit-entries?size=200&action=EXEMPTIONS_VIEWED");
+        assertThat(response.status()).as(response.body()).isEqualTo(200);
+        return ApiClient.json(response).get("items");
+    }
+
+    private List<JsonNode> viewedSince(Set<String> before) {
+        List<JsonNode> since = new ArrayList<>();
+        viewed().forEach(item -> {
+            if (!before.contains(item.get("id").asString())) {
+                since.add(item);
+            }
+        });
+        return since;
     }
 
     @Test

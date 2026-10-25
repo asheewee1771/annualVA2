@@ -66,6 +66,24 @@ export interface Submission {
   /** The Declaration accepted at its latest submit; null until it is submitted. */
   declaration: AcceptedDeclaration | null;
   acted: Acted[];
+  /** Its latest Exemption approved on a scheduled VA: still conditional, confirmed or lapsed; null when it has none. */
+  conditionalExemption: ConditionalExemption | null;
+}
+
+/** Where an Exemption approved on a scheduled VA stands. Dates are business dates; times are instants (UTC). */
+export interface ConditionalExemption {
+  id: string;
+  /** The day the VA was scheduled for. */
+  vaDate: string;
+  /** The last day the VA may be recorded by; the next day it lapses. */
+  lapsesOn: string;
+  /** The day the SMO/Tech Lead recorded it happened; null until then. */
+  vaHappenedOn: string | null;
+  vaRecordedAt: string | null;
+  confirmedAt: string | null;
+  lapsedAt: string | null;
+  /** Neither confirmed nor lapsed yet. */
+  conditional: boolean;
 }
 
 /** The fixed Declaration wording the SMO/Tech Lead accepts when submitting. */

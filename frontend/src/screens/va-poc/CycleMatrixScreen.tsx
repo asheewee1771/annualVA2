@@ -12,6 +12,7 @@ import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { useResource } from "../../hooks/useResource.ts";
 import { useSelectedCycle } from "../../app/CycleChoice.tsx";
 import { HandledOutsideSection } from "../shared/HandledOutsideSection.tsx";
+import { LapsedFlag } from "../shared/LapsedFlag.tsx";
 import { STATE_LABELS } from "../shared/systemStates.ts";
 import { CloseCycleSection } from "./CloseCyclePanel.tsx";
 
@@ -82,6 +83,7 @@ function MatrixRow({ system }: { system: MatrixSystem }) {
     <tr>
       <td>
         <span className="mono">{system.systemId}</span> {system.name}
+        <LapsedFlag lapsed={system.exemptionLapsed} />
       </td>
       <td>Q{system.quarter}</td>
       <MilestoneCell milestone={system.submitted} overdue={system.overdue} />

@@ -92,11 +92,12 @@ public class CycleMatrix {
      * @param submissionId its VA Submission in the Cycle, or null while it is Not Started
      * @param overdue the Overdue flag the sweep set (ADR 0033); nothing locks
      * @param endorsedLate whether its VA Submission was endorsed after the Quarter's last day
+     * @param exemptionLapsed whether a conditional Exemption of it lapsed (ticket 42)
      */
     public record SystemRow(
             UUID id, String systemId, String name, int quarter, String smoEmail, SystemState state,
             @Nullable UUID submissionId, boolean overdue, boolean endorsedLate, Milestone submitted, Milestone reviewed,
-            Milestone endorsed) {}
+            Milestone endorsed, boolean exemptionLapsed) {}
 
     /**
      * @param cycle the VA Cycle's year
@@ -151,7 +152,7 @@ public class CycleMatrix {
                 row.system().smoEmail(), row.state(), row.submissionId(), row.overdue(), row.endorsedLate(),
                 milestone(row, row.submitDue(), reached.submitted()),
                 milestone(row, row.reviewDue(), reached.passedToEndorsement()),
-                milestone(row, row.endorseDue(), reached.endorsed()));
+                milestone(row, row.endorseDue(), reached.endorsed()), row.exemptionLapsed());
     }
 
     /** A milestone is current when its window is the one the state waits on: the row's {@code dueOn} is its due day. */
