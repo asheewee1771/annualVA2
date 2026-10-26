@@ -43,6 +43,11 @@ class NotificationStore {
             "UPDATE notification SET handled_at = :at, handled_by = :handler WHERE submission_id = :submission "
             + "AND awaits = :awaits AND group_key IS NOT NULL AND handled_at IS NULL";
 
+    /** Every open pair about a System and a step nobody could act at, once a VA POC gave it someone again. */
+    private static final String HANDLE_ON_SYSTEM =
+            "UPDATE notification SET handled_at = :at, handled_by = :handler WHERE system_id = :system "
+            + "AND action = :action AND awaits = :awaits AND group_key IS NOT NULL AND handled_at IS NULL";
+
     /** A notification as its reader lists it, with the name of the VA POC who handled a pair. */
     private static final String COLUMNS =
             "SELECT n.id, n.system_id, n.submission_id, n.state, n.action, n.due_on, n.link, n.created_at, n.read_at, "
@@ -92,6 +97,11 @@ class NotificationStore {
     void handle(UUID submissionId, Awaits awaits, UUID handler, Instant at) {
         jdbc.sql(HANDLE).param("submission", submissionId).param("awaits", awaits.name()).param("handler", handler)
                 .param("at", utc(at)).update();
+    }
+
+    void handleOnSystem(UUID systemId, NoticeAction action, UUID handler, Instant at) {
+        jdbc.sql(HANDLE_ON_SYSTEM).param("system", systemId).param("action", action.name())
+                .param("awaits", Awaits.ROLE_HOLDER.name()).param("handler", handler).param("at", utc(at)).update();
     }
 
     List<Row> page(UUID recipient, int page, int size) {

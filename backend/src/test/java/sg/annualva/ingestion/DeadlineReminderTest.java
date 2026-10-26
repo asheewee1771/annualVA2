@@ -2,6 +2,7 @@ package sg.annualva.ingestion;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -310,5 +311,99 @@ class DeadlineReminderTest extends MailSeam1 {
         assertThat(actions(signedInAs(SMO_B))).containsExactly("SUBMIT_DUE_SOON");
         assertThat(outboxOf(SMO_A)).hasSize(1);
         assertThat(onlyMailOf(SMO_B).get("template").asString()).isEqualTo("REMINDER_DUE_SOON");
+    }
+
+    @Test
+    void whenTheSmosRoleIsSuspendedTheOverdueMessageAndTheWeeklyReminderGoToBothVaPocsInstead() {
+        Draft draft = draft();
+        ApiClient poc = vaPoc();
+        String grant = grantOf(poc, "SMO", SMO_A, "SYS-F1");
+        assertThat(poc.post("/api/role-holders/" + grant + "/suspend").status()).isEqualTo(200);
+        today("2027-08-16");
+        arrange.overdueSweep();
+        plannedOn("2027-08-23");
+
+        assertThat(outboxOf(SMO_A)).as("nothing is addressed to a person who cannot act").isEmpty();
+        List<JsonNode> told = nobodyToAct(poc, "NOBODY_TO_SUBMIT");
+        assertThat(told).as("the Overdue message, then the weekly reminder").hasSize(2);
+        JsonNode weekly = told.getFirst();
+        assertThat(weekly.get("systemCode").asString()).isEqualTo("SYS-F1");
+        assertThat(weekly.get("state").asString()).isEqualTo("DRAFT");
+        assertThat(weekly.get("submissionId").asString()).isEqualTo(draft.submissionId());
+        assertThat(weekly.get("dueOn").asString()).isEqualTo("2027-08-15");
+        assertThat(weekly.get("link").asString()).isEqualTo("/va-poc/role-holders");
+        assertThat(weekly.get("message").asString()).isEqualTo("Nobody can act: this System's SMO/Tech Lead role is "
+                + "suspended or lapsed. Restore it, or name someone else in the System Register.");
+        assertThat(weekly.get("handledBy").isNull()).isTrue();
+        assertThat(nobodyToAct(otherVaPoc(), "NOBODY_TO_SUBMIT")).as("both VA POCs, as a pair").hasSize(2);
+        assertThat(actions(signedInAs(CM))).as("the Cyber Manager's copy is unchanged")
+                .containsExactly("SUBMIT_OVERDUE_COPY");
+        assertThat(actions(signedInAs(SMO_B))).as("another System's SMO/Tech Lead is addressed as before")
+                .containsExactly("SUBMIT_STILL_OVERDUE", "SUBMIT_OVERDUE");
+
+        dispatched();
+
+        assertThat(templatesTo(POC_ONE)).as("mailed as the notices they stand in for")
+                .containsExactly(OVERDUE_TEMPLATE, WEEKLY_TEMPLATE);
+        assertThat(mailTo(POC_ONE).getLast().values()).containsEntry("system_id", "SYS-F1")
+                .containsEntry("action", weekly.get("message").asString())
+                .containsEntry("link", APP_URL + "/va-poc/role-holders");
+        assertThat(mailRelay.sent()).noneMatch(sent -> sent.recipient().equalsIgnoreCase(SMO_A));
+
+        assertThat(poc.post("/api/role-holders/" + grant + "/restore").status()).isEqualTo(200);
+
+        assertThat(nobodyToAct(otherVaPoc(), "NOBODY_TO_SUBMIT")).as("the restore clears the pair for both")
+                .allSatisfy(item -> assertThat(item.get("handledBy").asString()).isEqualTo("POC One"));
+    }
+
+    @Test
+    void whenTheCyberManagersRoleHasLapsedTheReviewReminderGoesToBothVaPocsInstead() {
+        Draft draft = inReview();
+        arrange.lapse(arrange.grantOf(CM, "CYBER_MANAGER"));
+
+        plannedOn("2027-08-24");
+
+        assertThat(outboxOf(CM)).isEmpty();
+        ApiClient poc = vaPoc();
+        List<JsonNode> told = nobodyToAct(poc, "NOBODY_TO_REVIEW");
+        assertThat(told).hasSize(1);
+        assertThat(told.getFirst().get("state").asString()).isEqualTo("IN_REVIEW");
+        assertThat(told.getFirst().get("submissionId").asString()).isEqualTo(draft.submissionId());
+        assertThat(told.getFirst().get("dueOn").asString()).isEqualTo("2027-08-29");
+        assertThat(told.getFirst().get("link").asString()).isEqualTo("/va-poc/role-holders");
+        assertThat(nobodyToAct(otherVaPoc(), "NOBODY_TO_REVIEW")).hasSize(1);
+
+        dispatched();
+
+        assertThat(templatesTo(POC_TWO)).containsExactly(DUE_SOON_TEMPLATE);
+        assertThat(mailTo(POC_TWO).getFirst().values()).containsEntry("action", "Nobody can act: this System's Cyber "
+                + "Manager role is suspended or lapsed. Restore it, or name someone else in the System Register.");
+
+        registered(listed("SYS-F1", "File one", SMO_A, CM, "Q3"), listed("SYS-F2", "File two", SMO_B, CM_OTHER, "Q3"));
+
+        assertThat(nobodyToAct(poc, "NOBODY_TO_REVIEW")).as("a Register apply that brings the role back clears the pair")
+                .allSatisfy(item -> assertThat(item.get("handledBy").asString()).isEqualTo("POC One"));
+    }
+
+    /** This VA POC's notices that nobody can act, newest first. */
+    private static List<JsonNode> nobodyToAct(ApiClient poc, String action) {
+        List<JsonNode> found = new ArrayList<>();
+        notifications(poc).forEach(item -> {
+            if (item.get("action").asString().equals(action)) {
+                found.add(item);
+            }
+        });
+        return found;
+    }
+
+    /** The grant this person holds for this role on this System, as the role-holder review lists it. */
+    private static String grantOf(ApiClient poc, String role, String email, String systemCode) {
+        for (JsonNode holder : ApiClient.json(poc.get("/api/role-holders")).get("holders")) {
+            if (holder.get("role").asString().equals(role) && holder.get("email").asString().equalsIgnoreCase(email)
+                    && systemCode.equals(holder.get("systemCode").asString(""))) {
+                return holder.get("id").asString();
+            }
+        }
+        throw new AssertionError("no " + role + " grant for " + systemCode);
     }
 }

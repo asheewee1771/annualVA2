@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,9 +40,11 @@ public class RoleHolders {
     private final AuditLog audit;
     private final AuditActor actor;
     private final Clock clock;
+    private final ApplicationEventPublisher events;
 
     RoleHolders(RoleGrantStore grants, RoleLapse lapse, StepUp stepUp, CurrentUser user, AuditLog audit, AuditActor actor,
-            Clock clock) {
+            Clock clock, ApplicationEventPublisher events) {
+        this.events = events;
         this.grants = grants;
         this.lapse = lapse;
         this.stepUp = stepUp;
@@ -64,6 +67,18 @@ public class RoleHolders {
     @Transactional(readOnly = true)
     public List<RoleGrant> suspendedOn(Collection<UUID> systemIds) {
         return grants.suspendedOn(systemIds);
+    }
+
+    /**
+     * Whether the person the Register names for this role on this System cannot act at its step, because their grant for
+     * it is suspended or lapsed (decided 2026-10-26): the notifications then tell the VA POCs instead of them. A person
+     * with no grant yet (named by an apply whose grants are still being written) can.
+     */
+    @Transactional(readOnly = true)
+    public boolean cannotAct(Role role, String email, UUID systemId) {
+        return grants.liveByKey(role, email, systemId)
+                .map(grant -> grant.suspendedAt() != null || grant.lapsedAt() != null)
+                .orElse(false);
     }
 
     /**
@@ -112,6 +127,10 @@ public class RoleHolders {
                                             + "sign in again."));
         }
         lapse.restore(holder.grant());
+        RoleGrant restored = holder.grant();
+        if (restored.systemId() != null) {
+            events.publishEvent(new RoleHolderChanged(restored.systemId(), restored.role(), caller, clock.instant()));
+        }
         return grants.holder(grantId).orElseThrow(ResourceNotFoundException::new);
     }
 

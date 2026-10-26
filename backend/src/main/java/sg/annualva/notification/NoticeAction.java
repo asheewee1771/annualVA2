@@ -89,7 +89,17 @@ public enum NoticeAction {
      */
     ENDORSE_DUE_IN_TWO_WEEKS("Endorsement is due in 2 weeks: endorse the VA Submission, or return it for rework."),
     /** A reminder to both VA POCs, 1 week before the endorsement is due. */
-    ENDORSE_DUE_IN_ONE_WEEK("Endorsement is due in 1 week: endorse the VA Submission, or return it for rework.");
+    ENDORSE_DUE_IN_ONE_WEEK("Endorsement is due in 1 week: endorse the VA Submission, or return it for rework."),
+    /**
+     * To both VA POCs, in place of a notice to a System's SMO/Tech Lead whose role for it is suspended or lapsed
+     * (decided 2026-10-26): nobody can act at the submitting step until a VA POC restores the role or a Register
+     * upload names someone else.
+     */
+    NOBODY_TO_SUBMIT("Nobody can act: this System's SMO/Tech Lead role is suspended or lapsed. Restore it, or name "
+            + "someone else in the System Register."),
+    /** The same, in place of a notice to a System's Cyber Manager whose role for it is suspended or lapsed. */
+    NOBODY_TO_REVIEW("Nobody can act: this System's Cyber Manager role is suspended or lapsed. Restore it, or name "
+            + "someone else in the System Register.");
 
     private final String message;
 

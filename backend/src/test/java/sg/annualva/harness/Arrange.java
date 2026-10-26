@@ -262,6 +262,16 @@ public final class Arrange {
         return ApiClient.json(response);
     }
 
+    /** The one grant, not revoked, this person holds for this role. */
+    public String grantOf(String email, String role) {
+        for (JsonNode grant : grantsOf(email)) {
+            if (grant.get("role").asString().equals(role) && !grant.get("revoked").asBoolean()) {
+                return grant.get("id").asString();
+            }
+        }
+        throw new AssertionError("no " + role + " grant for " + email);
+    }
+
     private void change(String grantId, String change) {
         assertThat(client.post("/api/test/grants/" + grantId + "/" + change).status()).isEqualTo(200);
     }

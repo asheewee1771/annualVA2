@@ -81,7 +81,7 @@ class RoleLapseTest extends ExemptionSeam1 {
         assertThat(smoEntry.get("outcome").asString()).isEqualTo("SUCCESS");
         assertThat(smoEntry.get("actorId").isNull()).as("the job acts for nobody").isTrue();
         assertThat(smoEntry.get("detail").get("source").asString()).isEqualTo("REGISTER");
-        assertThat(smoEntry.get("detail").get("grant_id").asString()).isEqualTo(grantOf(SMO_A, "SMO"));
+        assertThat(smoEntry.get("detail").get("grant_id").asString()).isEqualTo(arrange.grantOf(SMO_A, "SMO"));
         onlyEntry(audited, "CYBER_MANAGER");
         assertThat(entries(LAPSED, idOf("SYS-F2"))).as("SMO_B's stands; CM_OTHER's lapsed").hasSize(1);
     }
@@ -106,7 +106,7 @@ class RoleLapseTest extends ExemptionSeam1 {
         assertThat(roles(signedInAs(CM))).containsExactly("CYBER_MANAGER");
         JsonNode returned = onlyEntry(entries(RETURNED, draft.systemId()), "SMO");
         assertThat(returned.get("detail").get("reason").asString()).isEqualTo("register");
-        assertThat(returned.get("detail").get("grant_id").asString()).isEqualTo(grantOf(SMO_A, "SMO"));
+        assertThat(returned.get("detail").get("grant_id").asString()).isEqualTo(arrange.grantOf(SMO_A, "SMO"));
         assertThat(returned.get("actorId").asString()).as("the VA POC who applied it").isEqualTo(pocId);
         assertThat(arrange.grantsOf(SMO_A)).as("the same grant, back").hasSize(1);
     }
@@ -169,7 +169,7 @@ class RoleLapseTest extends ExemptionSeam1 {
     @Test
     void aSubmitReturnsTheRoleOfTheCyberManagerItIsHandedTo() {
         Draft draft = readyDraft();
-        arrange.lapse(grantOf(CM, "CYBER_MANAGER"));
+        arrange.lapse(arrange.grantOf(CM, "CYBER_MANAGER"));
         assertThat(roles(signedInAs(CM))).isEmpty();
 
         submitted(draft.smo(), draft.submissionId());
@@ -226,7 +226,7 @@ class RoleLapseTest extends ExemptionSeam1 {
     void aRejectedExemptionThatPutsItBackInReviewReturnsNobody() {
         Draft draft = inReview();
         String id = requested(draft.smo(), draft.systemId(), priorVa()).get("id").asString();
-        arrange.lapse(grantOf(CM, "CYBER_MANAGER"));
+        arrange.lapse(arrange.grantOf(CM, "CYBER_MANAGER"));
 
         rejected(vaPoc(), id);
 
@@ -255,14 +255,5 @@ class RoleLapseTest extends ExemptionSeam1 {
                 .isEqualTo("NOT_ENDORSED");
         assertThat(roles(signedInAs(SMO_A))).isEmpty();
         assertThat(entries(RETURNED, system)).isEmpty();
-    }
-
-    private String grantOf(String email, String role) {
-        for (JsonNode grant : arrange.grantsOf(email)) {
-            if (grant.get("role").asString().equals(role) && !grant.get("revoked").asBoolean()) {
-                return grant.get("id").asString();
-            }
-        }
-        throw new AssertionError("no " + role + " grant");
     }
 }

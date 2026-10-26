@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sg.annualva.access.AppUserStore;
 import sg.annualva.access.CurrentUser;
+import sg.annualva.access.Role;
+import sg.annualva.access.RoleHolders;
 import sg.annualva.access.VaPocProperties;
 import sg.annualva.register.RegisterSystems;
 import sg.annualva.submission.SubmissionStep;
@@ -40,9 +42,11 @@ public class Notifications {
     private final CurrentUser user;
     private final Clock clock;
     private final MailOutbox mail;
+    private final RoleHolders roleHolders;
 
     Notifications(NotificationStore store, RegisterSystems register, AppUserStore users, VaPocProperties vaPocs,
-            CurrentUser user, Clock clock, MailOutbox mail) {
+            CurrentUser user, Clock clock, MailOutbox mail, RoleHolders roleHolders) {
+        this.roleHolders = roleHolders;
         this.mail = mail;
         this.store = store;
         this.register = register;
@@ -52,16 +56,49 @@ public class Notifications {
         this.clock = clock;
     }
 
-    /** To the System's SMO/Tech Lead, as the Register names them now. */
+    /** To the System's SMO/Tech Lead, as the Register names them now ({@link #toHolder}). */
     @Transactional
     public void toSmo(Notice notice) {
-        register.named(notice.systemId()).ifPresent(system -> to(system.smoEmail(), notice));
+        register.named(notice.systemId()).ifPresent(system -> toHolder(Role.SMO, system.smoEmail(), notice));
     }
 
-    /** To the System's Cyber Manager, as the Register names them now. */
+    /** To the System's Cyber Manager, as the Register names them now ({@link #toHolder}). */
     @Transactional
     public void toCyberManager(Notice notice) {
-        register.named(notice.systemId()).ifPresent(system -> to(system.cyberManagerEmail(), notice));
+        register.named(notice.systemId()).ifPresent(system -> toHolder(Role.CYBER_MANAGER, system.cyberManagerEmail(),
+                notice));
+    }
+
+    /**
+     * To the person the Register names for a role on the notice's System, unless their grant for it is suspended or
+     * lapsed (decided 2026-10-26): then nobody can act at that step, so both VA POCs are told instead, as a pair that
+     * clears once a VA POC restores the role or applies a Register naming someone else ({@link #roleHolderChanged}). The
+     * pair's notice names the System and the step, links the role-holder review, and carries no address and no free
+     * text; it is mailed when, and as, the notice it stands in for would have been.
+     */
+    private void toHolder(Role role, String email, Notice notice) {
+        if (!roleHolders.cannotAct(role, email, notice.systemId())) {
+            to(email, notice);
+            return;
+        }
+        Notice nobody = new Notice(notice.systemId(), notice.submissionId(), notice.state(), nobodyToAct(role),
+                notice.dueOn(), Links.ROLE_HOLDERS, notice.at(), notice.reminderOn());
+        UUID groupKey = UUID.randomUUID();
+        vaPocEmails().forEach(vaPoc -> write(vaPoc, nobody, groupKey, Awaits.ROLE_HOLDER, notice.action()));
+    }
+
+    /** What the VA POCs are told when nobody holds this role for a System: the step nobody can act at. */
+    private static NoticeAction nobodyToAct(Role role) {
+        return role == Role.SMO ? NoticeAction.NOBODY_TO_SUBMIT : NoticeAction.NOBODY_TO_REVIEW;
+    }
+
+    /**
+     * A VA POC gave the System someone who can act at the role's step again (restored the role, or applied a Register
+     * naming someone else): every open pair that told both VA POCs nobody could act there is cleared for both.
+     */
+    @Transactional
+    public void roleHolderChanged(UUID systemId, Role role, UUID handler, Instant at) {
+        store.handleOnSystem(systemId, nobodyToAct(role), handler, at);
     }
 
     /**
@@ -130,13 +167,19 @@ public class Notifications {
         return people;
     }
 
-    /**
-     * One person's notification, and its mail when the notice is a required message, in the caller's transaction; a
-     * reminder they already have for the same day is neither written nor mailed again.
-     */
     private void write(String email, Notice notice, @Nullable UUID groupKey, @Nullable Awaits awaits) {
+        write(email, notice, groupKey, awaits, notice.action());
+    }
+
+    /**
+     * One person's notification, and its mail when {@code mailedAs} is a required message (the notice's own action, or
+     * the action a notice to the VA POCs stands in for), in the caller's transaction; a reminder they already have for
+     * the same day is neither written nor mailed again.
+     */
+    private void write(String email, Notice notice, @Nullable UUID groupKey, @Nullable Awaits awaits,
+            NoticeAction mailedAs) {
         store.insert(users.known(email, notice.at()), notice, groupKey, awaits)
-                .ifPresent(id -> mail.queue(id, notice.action(), notice.at()));
+                .ifPresent(id -> mail.queue(id, mailedAs, notice.at()));
     }
 
     /**

@@ -133,6 +133,12 @@ public class RoleGrantStore {
                 .single();
     }
 
+    /** The grant, not revoked, this email holds for this role and System, if any. */
+    Optional<RoleGrant> liveByKey(Role role, String email, @Nullable UUID systemId) {
+        return jdbc.sql(LIVE_BY_KEY).param("role", role.name()).param("email", email).param("systemId", systemId)
+                .query(RoleGrantStore::map).optional();
+    }
+
     /** The grants that count for this person at {@code now}: not lapsed, suspended, revoked or expired. */
     List<RoleGrant> activeFor(UUID userId, Instant now) {
         return jdbc.sql(ACTIVE_FOR_USER).param("userId", userId).param("now", utc(now)).query(RoleGrantStore::map).list();
