@@ -24,7 +24,8 @@ class DisposalCycleTest extends DisposalSeam1 {
 
     private static final List<String> HISTORY = List.of("finding_status_proposal", "bulk_batch", "finding_review",
             "batch_review", "report_review", "submission_return", "submission_return_item", "declaration",
-            "notification", "mail_outbox", "not_started_overdue", "cycle_register_system", "register_upload");
+            "notification", "mail_outbox", "not_started_overdue", "cycle_register_system", "register_upload",
+            "role_holder_review");
 
     /**
      * The tables a Cycle's disposal keeps: the people, the Systems still in the Register and their grants, the Cycles'
@@ -88,6 +89,7 @@ class DisposalCycleTest extends DisposalSeam1 {
         arrange.overdueSweep();
         ApiClient poc = vaPoc();
         apply(poc, preview(poc, file(List.of(listed("SYS-F1", "File one", SMO_A, CM, "Q3")))));
+        assertThat(poc.post("/api/role-holders/reviews").status()).as("a role-holder review of the Cycle").isEqualTo(201);
         today("2028-02-14");
         lifecycle();
         closed(vaPoc(), 2027);

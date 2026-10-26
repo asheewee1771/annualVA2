@@ -50,6 +50,36 @@ public final class ReportText {
         return cleaned(raw, codePoint -> ' ');
     }
 
+    /** How a field a person typed is refused: the caller's 400 naming the field, with a fixed sentence. */
+    @FunctionalInterface
+    public interface FieldRefusal {
+        RuntimeException refuse(String field, String sentence);
+    }
+
+    /**
+     * A field a person typed over several lines (a comment, a justification, evidence), by the one rule for every such
+     * field (ADR 0027 item 5, IM8 as-1): cleaned as {@link #cleanLongText} and at most {@code max} code points, refused
+     * through {@code refusal} otherwise with a fixed sentence that never echoes what was sent. Empty when none was given
+     * or nothing is left once cleaned; whether that is allowed is the caller's to say.
+     *
+     * @param field the field's name, a constant of the caller, never taken from the request
+     */
+    public static Optional<String> longText(String field, @Nullable String raw, int max, FieldRefusal refusal) {
+        return typed(field, raw == null ? "" : cleanLongText(raw), max, refusal);
+    }
+
+    /** As {@link #longText}, for a field that is one line (a name, a role), cleaned as {@link #cleanOneLine}. */
+    public static Optional<String> oneLine(String field, @Nullable String raw, int max, FieldRefusal refusal) {
+        return typed(field, raw == null ? "" : cleanOneLine(raw), max, refusal);
+    }
+
+    private static Optional<String> typed(String field, String cleaned, int max, FieldRefusal refusal) {
+        if (!fits(cleaned, max)) {
+            throw refusal.refuse(field, "The field '" + field + "' must be at most " + max + " characters.");
+        }
+        return cleaned.isEmpty() ? Optional.empty() : Optional.of(cleaned);
+    }
+
     /** What becomes of a new line or a tab is the argument's answer: a code point, or a negative number for nothing. */
     private static String cleaned(String raw, IntUnaryOperator lineBreak) {
         StringBuilder kept = new StringBuilder(raw.length());

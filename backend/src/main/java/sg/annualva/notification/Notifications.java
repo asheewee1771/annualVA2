@@ -3,16 +3,23 @@ package sg.annualva.notification;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sg.annualva.access.AppUserStore;
 import sg.annualva.access.CurrentUser;
+import sg.annualva.access.Role;
+import sg.annualva.access.RoleHolders;
 import sg.annualva.access.VaPocProperties;
 import sg.annualva.register.RegisterSystems;
+import sg.annualva.submission.SubmissionStep;
 import sg.annualva.web.Page;
 import sg.annualva.web.ResourceNotFoundException;
 
@@ -36,9 +43,11 @@ public class Notifications {
     private final CurrentUser user;
     private final Clock clock;
     private final MailOutbox mail;
+    private final RoleHolders roleHolders;
 
     Notifications(NotificationStore store, RegisterSystems register, AppUserStore users, VaPocProperties vaPocs,
-            CurrentUser user, Clock clock, MailOutbox mail) {
+            CurrentUser user, Clock clock, MailOutbox mail, RoleHolders roleHolders) {
+        this.roleHolders = roleHolders;
         this.mail = mail;
         this.store = store;
         this.register = register;
@@ -58,6 +67,91 @@ public class Notifications {
     @Transactional
     public void toCyberManager(Notice notice) {
         register.named(notice.systemId()).ifPresent(system -> to(system.cyberManagerEmail(), notice));
+    }
+
+    /**
+     * Tells whoever acts at this step of the System's VA Submission (ADR 0043 item 3, ADR 0052), linked where they take
+     * it up: the one rule of who is told at a step and where their link points. The SMO/Tech Lead at the submitting step,
+     * at their place for it in its state ({@link Links#forSmo}: the inbox while it is Not Started, the rework queue once
+     * it is Returned for Rework, otherwise the VA Submission); the Cyber Manager at the reviewing step, at the review;
+     * both VA POCs, as an endorsement pair, at the endorsing step, at the endorsement.
+     *
+     * <p>When the notice's state waits on the step and the person the Register names for it cannot act, because their
+     * grant for the System is suspended or lapsed (decided 2026-10-26), nobody can: both VA POCs are told instead
+     * ({@link #nobodyAt}). A notice about a state that waits on no step (an approval, a close, a confirmation) is theirs
+     * to read whatever their grant says, as a copy ({@link #copyUp}) is.
+     */
+    @Transactional
+    public void toStep(SubmissionStep step, Notice.About about, NoticeAction action) {
+        switch (step) {
+            case SUBMIT -> toHolder(step, Role.SMO, RegisterSystems.Named::smoEmail, about,
+                    about.tell(action, Links.forSmo(about.state(), about.submissionId())));
+            case REVIEW -> toHolder(step, Role.CYBER_MANAGER, RegisterSystems.Named::cyberManagerEmail, about,
+                    about.tell(action, Links.review(started(about))));
+            case ENDORSE -> toVaPocs(about.tell(action, Links.endorse(started(about))), Awaits.ENDORSEMENT);
+        }
+    }
+
+    /** To the person the Register names for the step's role, or, when nobody can act at the step, the VA POCs. */
+    private void toHolder(SubmissionStep step, Role role, Function<RegisterSystems.Named, String> named,
+            Notice.About about, Notice notice) {
+        register.named(about.systemId()).ifPresent(system -> {
+            String email = named.apply(system);
+            boolean waitsOnStep = about.state().nextStep().filter(step::equals).isPresent();
+            if (waitsOnStep && roleHolders.cannotAct(role, email, about.systemId())) {
+                nobodyAt(step, about);
+            } else {
+                to(email, notice);
+            }
+        });
+    }
+
+    /**
+     * Nobody can act at the step: both VA POCs are told, as a pair awaiting a role holder ({@link Awaits#ROLE_HOLDER});
+     * it names the System, the state and the step, links the role-holder review, and carries no address and no free
+     * text. The notice it replaces keeps its own rhythm: a reminder is written once per day (ADR 0052 item 7), the
+     * Overdue message once. Every open pair clears once a VA POC restores the role or applies a Register naming someone
+     * else ({@link #roleHolderChanged}).
+     */
+    private void nobodyAt(SubmissionStep step, Notice.About about) {
+        toVaPocs(about.tell(nobodyAt(step), Links.ROLE_HOLDERS), Awaits.ROLE_HOLDER);
+    }
+
+    /** What the VA POCs are told when nobody can act at a step; the endorsing step is theirs, so never. */
+    private static NoticeAction nobodyAt(SubmissionStep step) {
+        return switch (step) {
+            case SUBMIT -> NoticeAction.NOBODY_TO_SUBMIT;
+            case REVIEW -> NoticeAction.NOBODY_TO_REVIEW;
+            case ENDORSE -> throw new IllegalArgumentException("the VA POCs act at the endorsing step themselves");
+        };
+    }
+
+    /**
+     * A VA POC gave the System someone who can act at the role's step again (restored the role, or applied a Register
+     * naming someone else): every open pair that told both VA POCs nobody could act there is cleared for both.
+     */
+    @Transactional
+    public void roleHolderChanged(UUID systemId, Role role, UUID handler, Instant at) {
+        store.handleOnSystem(systemId, nobodyAt(role == Role.SMO ? SubmissionStep.SUBMIT : SubmissionStep.REVIEW),
+                handler, at);
+    }
+
+    /**
+     * A weekly Overdue reminder's copy for the next person up from this step (ADR 0052 item 3), a message of its own since
+     * the relay has no cc: the Cyber Manager for the submitting step, linked to their inbox (a Draft is not theirs to
+     * open); each VA POC for the reviewing step, linked to the VA Submission. The endorsing step has no one above it.
+     */
+    @Transactional
+    public void copyUp(SubmissionStep step, Notice.About about, NoticeAction action) {
+        switch (step) {
+            case SUBMIT -> toCyberManager(about.tell(action, Links.CYBER_MANAGER_INBOX));
+            case REVIEW -> toEachVaPoc(about.tell(action, Links.endorse(started(about))));
+            case ENDORSE -> throw new IllegalArgumentException("the endorsing step has no one above it to copy");
+        }
+    }
+
+    private static UUID started(Notice.About about) {
+        return Objects.requireNonNull(about.submissionId(), "a step after submitting has a VA Submission");
     }
 
     /** To one person, known by email (a transfer's former SMO/Tech Lead, whom the Register no longer names). */
@@ -114,7 +208,7 @@ public class Notifications {
     @Transactional(readOnly = true)
     public Page<NotificationView> mine(int page, int size) {
         UUID caller = user.id();
-        return new Page<>(store.page(caller, page, size), page, size, store.count(caller));
+        return new Page<>(views(store.page(caller, page, size)), page, size, store.count(caller));
     }
 
     /**
@@ -127,6 +221,22 @@ public class Notifications {
         if (!store.markRead(id, caller, clock.instant())) {
             throw new ResourceNotFoundException();
         }
-        return store.find(id, caller).orElseThrow(ResourceNotFoundException::new);
+        return views(List.of(store.find(id, caller).orElseThrow(ResourceNotFoundException::new))).getFirst();
+    }
+
+    /**
+     * The notifications as their reader lists them: each with its System's ID and name as the Register holds them now,
+     * read through the Register's module, retired Systems included.
+     */
+    private List<NotificationView> views(List<NotificationStore.Row> rows) {
+        Map<UUID, RegisterSystems.Named> systems = register.named(rows.stream().map(NotificationStore.Row::systemId)
+                .toList());
+        return rows.stream().map(row -> {
+            RegisterSystems.Named system = Objects.requireNonNull(systems.get(row.systemId()),
+                    "a notification's System is in the Register (V27's foreign key)");
+            return new NotificationView(row.id(), row.systemId(), system.systemId(), system.name(),
+                    row.submissionId(), row.state(), row.action().name(), row.action().message(), row.dueOn(),
+                    row.link(), row.createdAt(), row.readAt(), row.handledBy(), row.handledAt());
+        }).toList();
     }
 }

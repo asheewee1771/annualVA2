@@ -1,4 +1,5 @@
 import { request } from "./client.ts";
+import type { Page } from "./page.ts";
 
 /**
  * The audit log as the server returns it (GET /api/audit-entries). An entry holds ids and fixed codes only: a Finding is
@@ -17,13 +18,6 @@ export interface AuditEntry {
   findingId: string | null;
   correlationId: string;
   detail: Record<string, string | number | boolean>;
-}
-
-export interface AuditPage {
-  items: AuditEntry[];
-  page: number;
-  size: number;
-  total: number;
 }
 
 /** What the log is narrowed by; an empty string does not narrow. Dates are business dates (Asia/Singapore). */
@@ -119,10 +113,10 @@ export function actionLabel(action: string): string {
   return Object.hasOwn(ACTION_LABELS, action) ? (ACTION_LABELS[action] ?? action) : action;
 }
 
-export function fetchAuditEntries(filters: AuditFilters, page: number): Promise<AuditPage> {
+export function fetchAuditEntries(filters: AuditFilters, page: number): Promise<Page<AuditEntry>> {
   const query = new URLSearchParams({ page: String(page), size: String(PAGE_SIZE) });
   for (const [name, value] of Object.entries(filters)) {
     if (value !== "") query.set(name, value);
   }
-  return request<AuditPage>("GET", `/api/audit-entries?${query.toString()}`);
+  return request<Page<AuditEntry>>("GET", `/api/audit-entries?${query.toString()}`);
 }

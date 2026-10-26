@@ -69,13 +69,20 @@ class ManagementSummaries {
         return new ManagementSummary(covered.cycle(), quarter,
                 whole ? Classification.CONFIDENTIAL : Classification.RESTRICTED, calendar.today(),
                 covered.quarters().stream().filter(strip -> quarters.contains(strip.quarter()))
-                        .map(ManagementSummary.QuarterLine::of).toList(),
+                        .map(strip -> ManagementSummary.QuarterLine.of(strip, lapsedIn(strip, covered.systems())))
+                        .toList(),
                 covered.systems().stream().map(row -> line(row, deviations)).toList());
+    }
+
+    /** How many Systems of the Quarter had a conditional Exemption lapse, over the rows the summary covers. */
+    private static long lapsedIn(CycleMatrix.QuarterStrip strip, List<CycleMatrix.SystemRow> rows) {
+        return rows.stream().filter(row -> row.quarter() == strip.quarter() && row.exemptionLapsed()).count();
     }
 
     private static ManagementSummary.SystemLine line(CycleMatrix.SystemRow row, Map<UUID, Long> deviations) {
         UUID submission = row.submissionId();
         return new ManagementSummary.SystemLine(row.systemId(), row.name(), row.quarter(), row.smoEmail(), row.state(),
-                row.overdue(), row.endorsedLate(), submission == null ? 0 : deviations.getOrDefault(submission, 0L));
+                row.overdue(), row.endorsedLate(), row.exemptionLapsed(),
+                submission == null ? 0 : deviations.getOrDefault(submission, 0L));
     }
 }

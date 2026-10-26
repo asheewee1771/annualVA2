@@ -11,6 +11,8 @@ import java.util.UUID;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import sg.annualva.access.Role;
+import sg.annualva.access.RoleHolders;
 import sg.annualva.cycle.CycleCalendar;
 
 /**
@@ -24,9 +26,12 @@ import sg.annualva.cycle.CycleCalendar;
  *   <li>An UPDATE that moves the System to another Quarter is Will move when it has in-flight work in a VA Cycle that
  *       follows the Register (an older Cycle keeps its Quarters, ADR 0044); one that changes its SMO/Tech Lead or Cyber
  *       Manager is Will transfer when it has in-flight work in any Cycle. Both are held back in Release 1, until the
- *       mid-cycle tickets of Release 2.
+ *       mid-cycle tickets of Release 2, with one exception (decided 2026-10-26): a transfer that only replaces people
+ *       whose role for the System is suspended (ADR 0056) is applied, because the hold-back would otherwise leave the
+ *       System with nobody to act, and a VA POC's restore the only exit.
  *   <li>A transfer is also held back when the new SMO/Tech Lead or Cyber Manager acted at, or was assigned to, another
- *       step of an in-flight VA Submission (story 58): Release 2 lifts the transfer block, not this one.
+ *       step of an in-flight VA Submission (story 58): Release 2 lifts the transfer block, not this one, and neither
+ *       does the suspension exception.
  * </ul>
  *
  * A row keeps its outcome; what holds it back is its reasons, and a preview with any reason cannot be applied. A row
@@ -38,17 +43,21 @@ class WorkEffects {
     private final InFlightWork work;
     private final RegisterSystems systems;
     private final CycleCalendar calendar;
+    private final RoleHolders roleHolders;
 
-    WorkEffects(InFlightWork work, RegisterSystems systems, CycleCalendar calendar) {
+    WorkEffects(InFlightWork work, RegisterSystems systems, CycleCalendar calendar, RoleHolders roleHolders) {
         this.work = work;
         this.systems = systems;
         this.calendar = calendar;
+        this.roleHolders = roleHolders;
     }
 
     /** The rows with their effects on the in-flight work as it is now, holding nothing: for an upload. */
     @Transactional(propagation = Propagation.MANDATORY)
     List<PreviewRow> preview(List<PreviewRow> rows, Instant now) {
-        return classify(rows, work.of(systemsOf(rows)), systems.olderCycles(calendar.dateOf(now)));
+        Set<UUID> touched = systemsOf(rows);
+        return classify(rows, work.of(touched), systems.olderCycles(calendar.dateOf(now)),
+                roleHolders.suspendedRolesOn(touched));
     }
 
     /**
@@ -57,7 +66,9 @@ class WorkEffects {
      */
     @Transactional(propagation = Propagation.MANDATORY)
     List<PreviewRow> held(List<PreviewRow> rows, Instant now) {
-        return classify(rows, work.hold(systemsOf(rows), now), systems.olderCycles(calendar.dateOf(now)));
+        Set<UUID> touched = systemsOf(rows);
+        return classify(rows, work.hold(touched, now), systems.olderCycles(calendar.dateOf(now)),
+                roleHolders.suspendedRolesOn(touched));
     }
 
     /** Withdraws the VA Submissions a retired row names; how many it withdrew. */
@@ -84,14 +95,15 @@ class WorkEffects {
      * @param work the in-flight VA Submissions of the rows' Systems, by System
      * @param olderCycles the VA Cycles that keep their Systems as they were when a newer one opened, so a move changes
      *     nothing in them
+     * @param suspended by System, the Register roles whose holder is suspended, which a transfer may replace mid-flight
      */
-    static List<PreviewRow> classify(List<PreviewRow> rows, Map<UUID, List<InFlightWork.Work>> work,
-            Set<Integer> olderCycles) {
-        return rows.stream().map(row -> classify(row, work, olderCycles)).toList();
+    private static List<PreviewRow> classify(List<PreviewRow> rows, Map<UUID, List<InFlightWork.Work>> work,
+            Set<Integer> olderCycles, Map<UUID, Set<Role>> suspended) {
+        return rows.stream().map(row -> classify(row, work, olderCycles, suspended)).toList();
     }
 
     private static PreviewRow classify(PreviewRow row, Map<UUID, List<InFlightWork.Work>> work,
-            Set<Integer> olderCycles) {
+            Set<Integer> olderCycles, Map<UUID, Set<Role>> suspended) {
         if (row.outcome() != Outcome.RETIRE && row.outcome() != Outcome.UPDATE) {
             return row;
         }
@@ -112,7 +124,9 @@ class WorkEffects {
             }
             if (before.transfersIn(after)) {
                 effects.add(Effect.WILL_TRANSFER);
-                reasons.add(BlockReason.TRANSFER_IN_FLIGHT);
+                if (!replacesOnlySuspended(before, after, suspended.getOrDefault(row.existingSystemId(), Set.of()))) {
+                    reasons.add(BlockReason.TRANSFER_IN_FLIGHT);
+                }
                 if (inFlight.stream().anyMatch(item -> twoSteps(before, after, item))) {
                     reasons.add(BlockReason.SEGREGATION_OF_DUTIES);
                 }
@@ -122,6 +136,18 @@ class WorkEffects {
                 .map(item -> new PreviewRow.InFlight(item.submissionId(), item.cycle(), item.state())).toList();
         return new PreviewRow(row.sheetRow(), row.systemId(), row.existingSystemId(), row.outcome(), reasons,
                 row.unlinkedSmo(), row.before(), row.after(), effects, touched);
+    }
+
+    /**
+     * Whether every person the transfer replaces holds a suspended role for the System (the one exception to the
+     * hold-back, ADR 0049 item 2): the SMO/Tech Lead it changes is suspended as SMO/Tech Lead, and the Cyber Manager it
+     * changes is suspended as Cyber Manager.
+     *
+     * @param suspended the System's Register roles whose holder is suspended
+     */
+    private static boolean replacesOnlySuspended(SystemSnapshot before, SystemSnapshot after, Set<Role> suspended) {
+        return (!before.changesSmoIn(after) || suspended.contains(Role.SMO))
+                && (!before.changesCyberManagerIn(after) || suspended.contains(Role.CYBER_MANAGER));
     }
 
     /**

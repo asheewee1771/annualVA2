@@ -9,6 +9,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -27,6 +28,7 @@ import sg.annualva.audit.AuditLog;
 import sg.annualva.audit.AuditOutcome;
 import sg.annualva.audit.DetailKey;
 import sg.annualva.cycle.CycleCalendar;
+import sg.annualva.web.RejectedRequestException;
 
 /**
  * The VA POCs' role-holder review (IM8 ac-4, story 80a, ticket 47, ADR 0056): every role holder listed against the System
@@ -126,13 +128,25 @@ public class RoleHolderReviews {
         return new View(holders, last.orElse(null), !due.isEmpty(), due, returns);
     }
 
-    /** Records that the caller has completed a review of every role holder listed now. */
+    /**
+     * Records that the caller has completed a review of these role holders (ADR 0056 item 4, decided 2026-10-26): the
+     * grants the screen listed, each once; or, when the caller names none, every grant listed now.
+     *
+     * @param grantIds the grants the caller checked; null to record every grant listed now
+     * @throws RejectedRequestException 400 {@code invalid-field} naming {@code grantIds} when it names no grant, more
+     *     than the review lists, or one the review does not list (unknown, or revoked)
+     */
     @Transactional
-    public CompletedReview complete() {
-        int count = roleHolders.list().size();
-        CompletedReview review = reviews.insert(clock.instant(), user.id(), count);
+    public CompletedReview complete(@Nullable List<UUID> grantIds) {
+        List<UUID> listed = roleHolders.list().stream().map(holder -> holder.grant().id()).toList();
+        List<UUID> checked = grantIds == null ? listed : grantIds.stream().distinct().toList();
+        if (checked.isEmpty() || checked.size() > listed.size() || !Set.copyOf(listed).containsAll(checked)) {
+            throw RejectedRequestException.invalidField("grantIds",
+                    "The field 'grantIds' must name the role holders the review lists, each once.");
+        }
+        CompletedReview review = reviews.insert(clock.instant(), user.id(), checked);
         audit.record(actor.attribute(AuditEvent.of(AuditAction.ROLE_HOLDERS_REVIEWED, AuditOutcome.SUCCESS))
-                .with(DetailKey.COUNT, count));
+                .with(DetailKey.COUNT, checked.size()));
         return review;
     }
 

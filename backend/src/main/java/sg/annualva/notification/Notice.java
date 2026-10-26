@@ -4,14 +4,16 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
+import sg.annualva.submission.SubmissionState;
 
 /**
  * What a notification says, before it is addressed: the System, the state, the action, the due date and a link, and
  * nothing else (story 91). There is no field for free text, so no Finding, vulnerability or comment can reach a
- * notification.
+ * notification. A sender describes what happened ({@link About}) and says what it tells and where it links with
+ * {@link About#tell}; a notice to whoever acts at a step gets both from the port ({@link Notifications#toStep}).
  *
  * @param submissionId the VA Submission it is about; null for a Not Started System
- * @param state the fixed state code: {@code NOT_STARTED} or a VA Submission state
+ * @param state {@code NOT_STARTED} for a System with no VA Submission, or the VA Submission's state
  * @param dueOn the last day of the window the state waits on; null when none applies
  * @param link the app path that opens the item ({@link Links})
  * @param at when it happened (the clock bean's instant of the move it reports)
@@ -19,29 +21,32 @@ import org.jspecify.annotations.Nullable;
  *     notification with the same action, System, due date and day, however often the planner runs; null for a notice of
  *     a move, which is told once because the move happens once
  */
-public record Notice(UUID systemId, @Nullable UUID submissionId, String state, NoticeAction action,
+public record Notice(UUID systemId, @Nullable UUID submissionId, SubmissionState state, NoticeAction action,
         @Nullable LocalDate dueOn, String link, Instant at, @Nullable LocalDate reminderOn) {
 
-    /** A notice of a move. */
-    public Notice(UUID systemId, @Nullable UUID submissionId, String state, NoticeAction action,
-            @Nullable LocalDate dueOn, String link, Instant at) {
-        this(systemId, submissionId, state, action, dueOn, link, at, null);
-    }
+    /**
+     * What a notice is about, before anyone is told anything: the System, its VA Submission and state, the due date, when
+     * it happened and, for a reminder, its business day.
+     */
+    public record About(UUID systemId, @Nullable UUID submissionId, SubmissionState state, @Nullable LocalDate dueOn,
+            Instant at, @Nullable LocalDate reminderOn) {
 
-    /** A deadline reminder for a business day: it always has the due date it reminds of. */
-    static Notice reminder(UUID systemId, @Nullable UUID submissionId, String state, NoticeAction action,
-            LocalDate dueOn, String link, Instant at, LocalDate day) {
-        return new Notice(systemId, submissionId, state, action, dueOn, link, at, day);
-    }
+        /** A move, an Overdue flag or a Register change: told once. */
+        public About(UUID systemId, @Nullable UUID submissionId, SubmissionState state, @Nullable LocalDate dueOn,
+                Instant at) {
+            this(systemId, submissionId, state, dueOn, at, null);
+        }
 
-    /** The same notice with another action. */
-    public Notice as(NoticeAction other) {
-        return new Notice(systemId, submissionId, state, other, dueOn, link, at, reminderOn);
-    }
+        /** A deadline reminder for a business day (ADR 0052): it always names the due date it reminds of. */
+        static About reminder(UUID systemId, @Nullable UUID submissionId, SubmissionState state, LocalDate dueOn,
+                Instant at, LocalDate day) {
+            return new About(systemId, submissionId, state, dueOn, at, day);
+        }
 
-    /** The same notice with another action and link. */
-    public Notice linked(NoticeAction other, String otherLink) {
-        return new Notice(systemId, submissionId, state, other, dueOn, otherLink, at, reminderOn);
+        /** The notice that tells this action, linked here. */
+        public Notice tell(NoticeAction action, String link) {
+            return new Notice(systemId, submissionId, state, action, dueOn, link, at, reminderOn);
+        }
     }
 
     /**

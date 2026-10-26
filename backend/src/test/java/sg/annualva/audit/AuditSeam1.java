@@ -51,11 +51,6 @@ abstract class AuditSeam1 extends Seam1Test {
         return reader;
     }
 
-    /** The user id of whoever is signed in in this browser. */
-    protected static String userId(ApiClient browser) {
-        return ApiClient.json(browser.get("/api/session")).get("uuid").asString();
-    }
-
     /** Today's entries, newest first, matching the extra query (for example {@code action=SIGN_IN}). */
     protected List<JsonNode> entries(ApiClient reader, String query) {
         return allPages(reader, "from=" + today() + "&to=" + today() + (query.isEmpty() ? "" : "&" + query));

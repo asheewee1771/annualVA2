@@ -1,11 +1,13 @@
 package sg.annualva.submission;
 
+import static sg.annualva.jdbc.Timestamps.instant;
+import static sg.annualva.jdbc.Timestamps.requiredInstant;
+import static sg.annualva.jdbc.Timestamps.utc;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -24,11 +26,8 @@ import sg.annualva.cycle.Quarter;
 @Repository
 class SubmissionStore {
 
-    /**
-     * Where a VA Submission is: its System, its state as text, so a state no constant names yet can still be read, and its
-     * VA Cycle's year.
-     */
-    record Located(UUID systemId, String state, int cycleYear) {}
+    /** Where a VA Submission is: its System, its state and its VA Cycle's year. */
+    record Located(UUID systemId, SubmissionState state, int cycleYear) {}
 
     /**
      * What a VA Submission is as the table holds it.
@@ -44,16 +43,17 @@ class SubmissionStore {
 
     /**
      * What the Overdue sweep has just flagged: a VA Submission, or a System with none (Not Started, no {@code id}), with
-     * the state it was in as the table holds it and the last day of the window that passed (the one rule, V20).
+     * the state it was in ({@code NOT_STARTED} for a System with none) and the last day of the window that passed (the one
+     * rule, V20).
      */
-    record Flagged(@Nullable UUID id, UUID systemId, String state, @Nullable LocalDate dueOn) {}
+    record Flagged(@Nullable UUID id, UUID systemId, SubmissionState state, @Nullable LocalDate dueOn) {}
 
     /**
      * What a statement has just moved to a final state (a Cycle's close to Not Endorsed, a Register apply to Withdrawn): a
-     * VA Submission, with the state it was in as the table held it, or, for a close, a System that had none ({@code from}
-     * null), now with a Not Endorsed row of its own ({@code id}).
+     * VA Submission, with the state it was in, or, for a close, a System that had none ({@code from} null), now with a Not
+     * Endorsed row of its own ({@code id}).
      */
-    record Finished(UUID id, UUID systemId, @Nullable String from) {}
+    record Finished(UUID id, UUID systemId, @Nullable SubmissionState from) {}
 
     /**
      * An in-flight VA Submission (started and not in a final state, {@link SubmissionState#inFlight}) of a System a
@@ -528,7 +528,7 @@ class SubmissionStore {
         return jdbc.sql(RETURNS).param("submission", submissionId).query((rs, row) -> {
             UUID id = rs.getObject("id", UUID.class);
             return new Submissions.Return(id, SubmissionStep.valueOf(rs.getString("step")), rs.getString("comment"),
-                    rs.getObject("returned_by", UUID.class), instant(rs, "returned_at"),
+                    rs.getObject("returned_by", UUID.class), requiredInstant(rs, "returned_at"),
                     findings.getOrDefault(id, List.of()), reports.getOrDefault(id, List.of()));
         }).list();
     }
@@ -540,7 +540,7 @@ class SubmissionStore {
         }
         return jdbc.sql(FLAG_OVERDUE).param("systems", ids(activeSystems)).param("today", today).param("now", utc(now))
                 .query((rs, row) -> new Flagged(rs.getObject("id", UUID.class), rs.getObject("system_id", UUID.class),
-                        rs.getString("state"), rs.getObject("due_on", LocalDate.class)))
+                        SubmissionState.valueOf(rs.getString("state")), rs.getObject("due_on", LocalDate.class)))
                 .list();
     }
 
@@ -560,7 +560,7 @@ class SubmissionStore {
                 .param("endorseDue", quarter.endorseDue())
                 .param("today", today)
                 .param("now", utc(now))
-                .query((rs, row) -> new Flagged(null, rs.getObject("system_id", UUID.class), NOT_STARTED,
+                .query((rs, row) -> new Flagged(null, rs.getObject("system_id", UUID.class), SubmissionState.NOT_STARTED,
                         rs.getObject("due_on", LocalDate.class)))
                 .list();
     }
@@ -586,7 +586,7 @@ class SubmissionStore {
         if (!systemIds.isEmpty()) {
             jdbc.sql(NOT_STARTED_OVERDUE).param("cycle", cycleYear).param("systems", ids(systemIds))
                     .query(rs -> {
-                        flagged.put(rs.getObject("system_id", UUID.class), instant(rs, "overdue_since"));
+                        flagged.put(rs.getObject("system_id", UUID.class), requiredInstant(rs, "overdue_since"));
                     });
         }
         return flagged;
@@ -640,7 +640,7 @@ class SubmissionStore {
     List<Submissions.Acted> participation(UUID submissionId) {
         return jdbc.sql(PARTICIPATION).param("id", submissionId).query((rs, row) -> new Submissions.Acted(
                 SubmissionStep.valueOf(rs.getString("step")), rs.getObject("user_id", UUID.class),
-                instant(rs, "first_at"))).list();
+                requiredInstant(rs, "first_at"))).list();
     }
 
     /** The current Declaration wording; V19 seeds a version, so there always is one. */
@@ -665,7 +665,7 @@ class SubmissionStore {
     Optional<Submissions.AcceptedDeclaration> latestDeclaration(UUID submissionId) {
         return jdbc.sql(LATEST_DECLARATION).param("submission", submissionId)
                 .query((rs, row) -> new Submissions.AcceptedDeclaration(rs.getInt("version"), rs.getString("text"),
-                        rs.getObject("accepted_by", UUID.class), instant(rs, "accepted_at")))
+                        rs.getObject("accepted_by", UUID.class), requiredInstant(rs, "accepted_at")))
                 .optional();
     }
 
@@ -725,7 +725,7 @@ class SubmissionStore {
                 .param("inFlight", inFlightStates())
                 .param("today", today)
                 .query((rs, row) -> new Finished(rs.getObject("id", UUID.class), rs.getObject("system_id", UUID.class),
-                        rs.getString("state_from")))
+                        SubmissionState.valueOf(rs.getString("state_from"))))
                 .list();
     }
 
@@ -770,7 +770,7 @@ class SubmissionStore {
                 .param("systems", ids(activeSystems))
                 .param("today", today)
                 .query((rs, row) -> new Finished(rs.getObject("id", UUID.class), rs.getObject("system_id", UUID.class),
-                        rs.getString("state_from")))
+                        SubmissionState.valueOf(rs.getString("state_from"))))
                 .list();
     }
 
@@ -794,7 +794,8 @@ class SubmissionStore {
 
     private Optional<Located> located(String sql, UUID id) {
         return jdbc.sql(sql).param("id", id)
-                .query((rs, row) -> new Located(rs.getObject("system_id", UUID.class), rs.getString("state"),
+                .query((rs, row) -> new Located(rs.getObject("system_id", UUID.class),
+                        SubmissionState.valueOf(rs.getString("state")),
                         rs.getInt("cycle_year")))
                 .optional();
     }
@@ -804,25 +805,15 @@ class SubmissionStore {
                 rs.getInt("quarter"), SubmissionState.valueOf(rs.getString("state")), rs.getBoolean("overdue"),
                 rs.getBoolean("endorsed_late"), rs.getObject("submit_due", LocalDate.class),
                 rs.getObject("review_due", LocalDate.class), rs.getObject("endorse_due", LocalDate.class),
-                nullableInstant(rs, "started_at"), nullableInstant(rs, "submitted_at"), nullableInstant(rs, "overdue_since"),
-                rs.getObject("due_on", LocalDate.class), nullableInstant(rs, "passed_to_endorsement_at"),
-                nullableInstant(rs, "endorsed_at"), rs.getBoolean("exemption_lapsed"));
+                instant(rs, "started_at"), instant(rs, "submitted_at"), instant(rs, "overdue_since"),
+                rs.getObject("due_on", LocalDate.class), instant(rs, "passed_to_endorsement_at"),
+                instant(rs, "endorsed_at"), rs.getBoolean("exemption_lapsed"));
     }
 
-    private static @Nullable Instant nullableInstant(ResultSet rs, String column) throws SQLException {
-        OffsetDateTime value = rs.getObject(column, OffsetDateTime.class);
-        return value == null ? null : value.toInstant();
-    }
 
-    private static Instant instant(ResultSet rs, String column) throws SQLException {
-        return rs.getObject(column, OffsetDateTime.class).toInstant();
-    }
 
     private static String[] ids(Collection<UUID> ids) {
         return ids.stream().map(UUID::toString).toArray(String[]::new);
     }
 
-    private static OffsetDateTime utc(Instant instant) {
-        return instant.atOffset(ZoneOffset.UTC);
-    }
 }

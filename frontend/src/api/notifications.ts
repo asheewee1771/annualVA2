@@ -1,4 +1,5 @@
 import { request } from "./client.ts";
+import type { Page } from "./page.ts";
 import type { SystemState } from "./dashboards.ts";
 
 /**
@@ -26,18 +27,11 @@ export interface AppNotification {
   handledAt: string | null;
 }
 
-export interface NotificationPage {
-  items: AppNotification[];
-  page: number;
-  size: number;
-  total: number;
-}
-
 export const NOTIFICATIONS_PAGE_SIZE = 50;
 
-export function fetchNotifications(page: number): Promise<NotificationPage> {
+export function fetchNotifications(page: number): Promise<Page<AppNotification>> {
   const query = new URLSearchParams({ page: String(page), size: String(NOTIFICATIONS_PAGE_SIZE) });
-  return request<NotificationPage>("GET", `/api/notifications?${query.toString()}`);
+  return request<Page<AppNotification>>("GET", `/api/notifications?${query.toString()}`);
 }
 
 export function markNotificationRead(id: string): Promise<AppNotification> {

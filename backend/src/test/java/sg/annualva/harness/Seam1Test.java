@@ -60,12 +60,28 @@ public abstract class Seam1Test {
         mailRelay.reset();
         identityStatus.reset();
         api = new ApiClient(port);
-        arrange = new Arrange(new ApiClient(port).withCsrf());
+        arrange = new Arrange(new ApiClient(port).withCsrf(), this::freshVaPoc);
         issuer.clientJwksUrl("http://localhost:" + port + "/.well-known/jwks.json");
     }
 
     /** A second browser, for tests about concurrent sessions. */
     protected ApiClient anotherBrowser() {
         return new ApiClient(port);
+    }
+
+    /**
+     * The first VA POC of the CI configuration, signed in now in a browser of their own, so a step-up command (a role
+     * suspension, a Register apply) passes, with a CSRF token.
+     */
+    protected ApiClient freshVaPoc() {
+        ApiClient browser = anotherBrowser();
+        SignIn.signedIn(browser, issuer,
+                TestIdentity.of("af-5001", "poc.one@ci.annualva.test", "POC One").withAuthTime(clock.instant()));
+        return browser.withCsrf();
+    }
+
+    /** The id the app gave whoever is signed in in this browser (their session's {@code uuid}). */
+    protected static String userId(ApiClient browser) {
+        return ApiClient.json(browser.get("/api/session")).get("uuid").asString();
     }
 }

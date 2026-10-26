@@ -1,11 +1,13 @@
 package sg.annualva.submission;
 
+import static sg.annualva.jdbc.Timestamps.instant;
+import static sg.annualva.jdbc.Timestamps.requiredInstant;
+import static sg.annualva.jdbc.Timestamps.utc;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -212,7 +214,7 @@ class ExemptionStore {
                 rs.getObject("va_date", LocalDate.class), rs.getString("evidence"),
                 rs.getObject("evidence_file_id", UUID.class), SubmissionState.valueOf(rs.getString("previous_state")),
                 instant(rs, "previous_overdue_since"), rs.getObject("requested_by", UUID.class),
-                rs.getObject("requested_at", OffsetDateTime.class).toInstant(),
+                requiredInstant(rs, "requested_at"),
                 decision == null ? null : Exemptions.Decision.valueOf(decision), rs.getObject("decided_by", UUID.class),
                 instant(rs, "decided_at"), rs.getObject("lapses_on", LocalDate.class),
                 rs.getObject("va_happened_on", LocalDate.class), rs.getString("va_evidence"),
@@ -220,12 +222,4 @@ class ExemptionStore {
                 rs.getObject("confirmed_by", UUID.class), instant(rs, "confirmed_at"), instant(rs, "lapsed_at"));
     }
 
-    private static @Nullable Instant instant(ResultSet rs, String column) throws SQLException {
-        OffsetDateTime value = rs.getObject(column, OffsetDateTime.class);
-        return value == null ? null : value.toInstant();
-    }
-
-    private static OffsetDateTime utc(Instant instant) {
-        return instant.atOffset(ZoneOffset.UTC);
-    }
 }

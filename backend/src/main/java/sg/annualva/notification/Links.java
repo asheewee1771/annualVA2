@@ -20,6 +20,9 @@ public final class Links {
     /** The VA POCs' queue of pending Exemption requests. */
     public static final String EXEMPTION_QUEUE = "/va-poc/exemptions";
 
+    /** The VA POCs' role-holder review: where a suspended role is restored. */
+    public static final String ROLE_HOLDERS = "/va-poc/role-holders";
+
     private Links() {}
 
     /**

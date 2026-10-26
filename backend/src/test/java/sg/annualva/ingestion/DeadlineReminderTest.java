@@ -2,6 +2,7 @@ package sg.annualva.ingestion;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -12,7 +13,7 @@ import tools.jackson.databind.JsonNode;
 /**
  * Stories 88, 89 and 90 (ticket 38): the daily planner reminds whoever's step it is before and on the last day of the
  * window their VA Submission (or Not Started System) waits on, then weekly while it is Overdue with a copy to the next
- * person up, and reminds both VA POCs 2 weeks and 1 week before the Quarter's last day. Q3 of VA Cycle 2027: the
+ * person up, and reminds both VA POCs 2 weeks and 1 week before endorsement is due (the Quarter's last day). Q3 of VA Cycle 2027: the
  * Submission Window ends on Sunday 15 August, the Review Window on Sunday 29 August and the Quarter on Sunday 31 October.
  * SYS-F1 (SMO_A, CM) has a VA Submission; SYS-F2 (SMO_B, CM_OTHER) is Not Started.
  */
@@ -157,7 +158,7 @@ class DeadlineReminderTest extends MailSeam1 {
     }
 
     @Test
-    void bothVaPocsAreRemindedTwoWeeksAndOneWeekBeforeTheQuarterEndsAndEitherEndorsingClearsItForBoth() {
+    void bothVaPocsAreRemindedTwoWeeksAndOneWeekBeforeEndorsementIsDueAndEitherEndorsingClearsItForBoth() {
         Draft draft = awaitingEndorsement();
         String sub = draft.submissionId();
 
@@ -172,7 +173,9 @@ class DeadlineReminderTest extends MailSeam1 {
         assertThat(twoWeeks.get("dueOn").asString()).isEqualTo("2027-10-31");
         assertThat(twoWeeks.get("link").asString()).isEqualTo("/va-poc/submissions/" + sub);
         assertThat(twoWeeks.get("message").asString())
-                .isEqualTo("The Quarter ends in 2 weeks: endorse the VA Submission, or return it for rework.");
+                .isEqualTo("Endorsement is due in 2 weeks: endorse the VA Submission, or return it for rework.");
+        assertThat(only(poc, "ENDORSE_DUE_IN_ONE_WEEK").get("message").asString()).as("counted from endorse_due")
+                .isEqualTo("Endorsement is due in 1 week: endorse the VA Submission, or return it for rework.");
         assertThat(actions(signedInAs(CM))).as("the Cyber Manager's step is done").containsExactly("REVIEW");
         assertThat(actions(signedInAs(SMO_A))).as("nor is it the SMO/Tech Lead's").isEmpty();
 
@@ -308,5 +311,105 @@ class DeadlineReminderTest extends MailSeam1 {
         assertThat(actions(signedInAs(SMO_B))).containsExactly("SUBMIT_DUE_SOON");
         assertThat(outboxOf(SMO_A)).hasSize(1);
         assertThat(onlyMailOf(SMO_B).get("template").asString()).isEqualTo("REMINDER_DUE_SOON");
+    }
+
+    @Test
+    void whenTheSmosRoleIsSuspendedTheOverdueMessageAndTheWeeklyReminderGoToBothVaPocsInstead() {
+        Draft draft = draft();
+        ApiClient poc = vaPoc();
+        String grant = grantOf(poc, "SMO", SMO_A, "SYS-F1");
+        assertThat(poc.post("/api/role-holders/" + grant + "/suspend").status()).isEqualTo(200);
+        today("2027-08-16");
+        arrange.overdueSweep();
+        plannedOn("2027-08-23");
+
+        assertThat(outboxOf(SMO_A)).as("nothing is addressed to a person who cannot act").isEmpty();
+        List<JsonNode> told = nobodyToAct(vaPoc(), "NOBODY_TO_SUBMIT");
+        assertThat(told).as("the Overdue message, then the weekly reminder").hasSize(2);
+        JsonNode weekly = told.getFirst();
+        assertThat(weekly.get("systemCode").asString()).isEqualTo("SYS-F1");
+        assertThat(weekly.get("state").asString()).isEqualTo("DRAFT");
+        assertThat(weekly.get("submissionId").asString()).isEqualTo(draft.submissionId());
+        assertThat(weekly.get("dueOn").asString()).isEqualTo("2027-08-15");
+        assertThat(weekly.get("link").asString()).isEqualTo("/va-poc/role-holders");
+        assertThat(weekly.get("message").asString()).isEqualTo("Nobody can act: this System's SMO/Tech Lead role is "
+                + "suspended or lapsed. Restore it, or name someone else in the System Register.");
+        assertThat(weekly.get("handledBy").isNull()).isTrue();
+        assertThat(nobodyToAct(otherVaPoc(), "NOBODY_TO_SUBMIT")).as("both VA POCs, as a pair").hasSize(2);
+        assertThat(actions(signedInAs(CM))).as("the Cyber Manager's copy is unchanged")
+                .containsExactly("SUBMIT_OVERDUE_COPY");
+        assertThat(actions(signedInAs(SMO_B))).as("another System's SMO/Tech Lead is addressed as before")
+                .containsExactly("SUBMIT_STILL_OVERDUE", "SUBMIT_OVERDUE");
+
+        dispatched();
+
+        assertThat(templatesTo(POC_ONE)).as("each is mailed with the Overdue template, once")
+                .containsExactly(OVERDUE_TEMPLATE, OVERDUE_TEMPLATE);
+        assertThat(mailTo(POC_ONE).getLast().values()).containsEntry("system_id", "SYS-F1")
+                .containsEntry("action", weekly.get("message").asString())
+                .containsEntry("link", APP_URL + "/va-poc/role-holders");
+        assertThat(mailRelay.sent()).noneMatch(sent -> sent.recipient().equalsIgnoreCase(SMO_A));
+
+        assertThat(vaPoc().post("/api/role-holders/" + grant + "/restore").status()).as("a fresh sign-in, weeks later")
+                .isEqualTo(200);
+
+        assertThat(nobodyToAct(otherVaPoc(), "NOBODY_TO_SUBMIT")).as("the restore clears the pair for both")
+                .allSatisfy(item -> assertThat(item.get("handledBy").asString()).isEqualTo("POC One"));
+    }
+
+    @Test
+    void whenTheCyberManagersRoleHasLapsedTheReviewReminderGoesToBothVaPocsInstead() {
+        Draft draft = inReview();
+        arrange.lapse(arrange.grantOf(CM, "CYBER_MANAGER"));
+
+        plannedOn("2027-08-24");
+
+        assertThat(outboxOf(CM)).isEmpty();
+        List<JsonNode> told = nobodyToAct(vaPoc(), "NOBODY_TO_REVIEW");
+        assertThat(told).hasSize(1);
+        assertThat(told.getFirst().get("state").asString()).isEqualTo("IN_REVIEW");
+        assertThat(told.getFirst().get("submissionId").asString()).isEqualTo(draft.submissionId());
+        assertThat(told.getFirst().get("dueOn").asString()).isEqualTo("2027-08-29");
+        assertThat(told.getFirst().get("link").asString()).isEqualTo("/va-poc/role-holders");
+        assertThat(nobodyToAct(otherVaPoc(), "NOBODY_TO_REVIEW")).hasSize(1);
+
+        dispatched();
+
+        assertThat(templatesTo(POC_TWO)).containsExactly(OVERDUE_TEMPLATE);
+        assertThat(mailTo(POC_TWO).getFirst().values()).containsEntry("action", "Nobody can act: this System's Cyber "
+                + "Manager role is suspended or lapsed. Restore it, or name someone else in the System Register.");
+
+        registered(listed("SYS-F1", "File one", SMO_A, CM, "Q3"), listed("SYS-F2", "File two", SMO_B, CM_OTHER, "Q3"));
+
+        assertThat(nobodyToAct(vaPoc(), "NOBODY_TO_REVIEW")).as("a Register apply that brings the role back clears the pair")
+                .allSatisfy(item -> assertThat(item.get("handledBy").asString()).isEqualTo("POC One"));
+    }
+
+    @Test
+    void aCopyToASuspendedCyberManagerIsStillDeliveredToThem() {
+        draft();
+        ApiClient poc = vaPoc();
+        assertThat(poc.post("/api/role-holders/" + grantOf(poc, "CYBER_MANAGER", CM, "SYS-F1") + "/suspend").status())
+                .isEqualTo(200);
+        today("2027-08-16");
+        arrange.overdueSweep();
+        plannedOn("2027-08-23");
+
+        assertThat(outboxOf(CM)).as("nobody waits on the Cyber Manager's step: the copy is theirs, mailed").hasSize(1);
+        assertThat(onlyMailOf(CM).get("template").asString()).isEqualTo("REMINDER_COPY");
+        assertThat(nobodyToAct(vaPoc(), "NOBODY_TO_REVIEW")).isEmpty();
+        assertThat(actions(signedInAs(SMO_A))).as("the SMO/Tech Lead is addressed as before")
+                .containsExactly("SUBMIT_STILL_OVERDUE", "SUBMIT_OVERDUE");
+    }
+
+    /** This VA POC's notices that nobody can act, newest first. */
+    private static List<JsonNode> nobodyToAct(ApiClient poc, String action) {
+        List<JsonNode> found = new ArrayList<>();
+        notifications(poc).forEach(item -> {
+            if (item.get("action").asString().equals(action)) {
+                found.add(item);
+            }
+        });
+        return found;
     }
 }

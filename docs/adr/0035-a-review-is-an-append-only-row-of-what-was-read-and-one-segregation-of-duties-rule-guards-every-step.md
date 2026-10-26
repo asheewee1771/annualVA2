@@ -9,11 +9,11 @@ Ticket 28 (stories 50 and 58, story 52 in part) lets the Cyber Manager assigned 
    - the Register assigns them to another step of its System, even before they act. The System's SMO/Tech Lead counts as its submitter and its Cyber Manager as its reviewer. Each `SubmissionStep` names the `Need` that assigns it (`SUBMIT` to `Need.SUBMIT`, `REVIEW` to `Need.REVIEW`), and the component reads the caller's scope for every other step. A scope over every System (a VA POC's) has no place in the rule yet: meeting one is an `IllegalStateException`, not a silent "assigned to nothing", until the ticket that adds the endorsing step decides how a VA POC counts.
 
    It runs on:
-   - **start**, assignment only: there is no participation yet, so an SMO/Tech Lead who is also the System's Cyber Manager is refused;
+   - **start**, on the VA Submission the start has just created or taken (a Not Started one a rejected Exemption request left), in the one place every step command records its step (`Submissions.stepped`, review fixes 2026-10-25): an SMO/Tech Lead who is also the System's Cyber Manager is refused. It runs after the Cycle and Quarter checks, so a start into a closed Cycle, a Quarter handled outside the app or a System already started is refused for that first; a refusal rolls the start back, and its entry names the System, and the VA Submission only when one was taken;
    - **submit**;
    - **both review commands**.
 
-   Each of these commands calls `require` once, before it records the step, and `require` builds the one refusal. `ArchitectureTest.everyCommandThatRecordsAStepAsksSegregationOfDuties` keeps it so for later step commands (tickets 29, 30 and 34): only `Submissions` records a step, and any method of it that does must call `require`.
+   Each of these commands records its step in one place, `Submissions.stepped`, which calls `require` first, and `require` builds the one refusal. `ArchitectureTest.everyCommandThatRecordsAStepAsksSegregationOfDuties` keeps it so for later step commands (tickets 29, 30 and 34): only `Submissions` records a step, any method of it that does must call `require`, and only `stepped` records it.
 
    A refusal is `403 sod-conflict` with a fixed sentence that names no person and no step. It is audited as the command's own action (`SUBMISSION_STARTED`, `SUBMISSION_SUBMITTED`, `FINDING_REVIEWED`, `REPORT_REVIEWED`) with outcome REFUSED and `reason` `sod-conflict`, in a transaction of its own (ADR 0014).
 

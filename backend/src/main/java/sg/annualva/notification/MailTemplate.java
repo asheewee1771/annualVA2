@@ -41,12 +41,15 @@ enum MailTemplate {
      * An Exemption's request and decision (ticket 40) are in-app only (provisional, ADR 0048): the spec names neither a
      * required message. So are a conditional Exemption's recorded VA, its confirmation and its lapse (ticket 42,
      * provisional, ADR 0051): the lapse's new Submission Window is mailed by the deadline reminders (ticket 38) and, once
-     * it passes, as Overdue.
+     * it passes, as Overdue. The notice both VA POCs get when nobody can act at a step (decided 2026-10-26) is mailed
+     * once, when its pair is opened, with the Overdue template: work nobody can act on is overdue work, and the
+     * {@code action} value carries its own sentence.
      */
     static Optional<Mailing> of(NoticeAction action) {
         return switch (action) {
             case REWORK, VA_POC_REWORK, VA_POC_RETURNED -> mailed(RETURNED_FOR_REWORK, null);
-            case SUBMIT_OVERDUE, REVIEW_OVERDUE, ENDORSE_OVERDUE -> mailed(OVERDUE, null);
+            case SUBMIT_OVERDUE, REVIEW_OVERDUE, ENDORSE_OVERDUE, NOBODY_TO_SUBMIT, NOBODY_TO_REVIEW ->
+                    mailed(OVERDUE, null);
             case SYSTEM_MOVED -> mailed(REGISTER_CHANGE, "Moved to another Quarter");
             case SYSTEM_TRANSFERRED_TO_YOU -> mailed(REGISTER_CHANGE, "Transferred to you");
             case SYSTEM_TRANSFERRED_FROM_YOU -> mailed(REGISTER_CHANGE, "Transferred from you");

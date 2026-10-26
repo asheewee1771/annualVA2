@@ -117,15 +117,8 @@ public class ManualFindings {
     }
 
     private static String line(String field, @Nullable String raw, int max) {
-        String cleaned = raw == null ? "" : ReportText.cleanOneLine(raw);
-        if (cleaned.isEmpty()) {
-            throw RejectedRequestException.invalidField(field, "The field '" + field + "' is required.");
-        }
-        if (!ReportText.fits(cleaned, max)) {
-            throw RejectedRequestException.invalidField(field,
-                    "The field '" + field + "' must be at most " + max + " characters.");
-        }
-        return cleaned;
+        return ReportText.oneLine(field, raw, max, RejectedRequestException::invalidField)
+                .orElseThrow(() -> RejectedRequestException.invalidField(field, "The field '" + field + "' is required."));
     }
 
     /** A value of the identity key with its separator escaped, so two different Findings never share a key. */

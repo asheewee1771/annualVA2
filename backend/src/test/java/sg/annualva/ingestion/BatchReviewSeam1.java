@@ -93,11 +93,4 @@ abstract class BatchReviewSeam1 extends ReviewSeam1 {
         assertThat(response.header("cache-control")).contains("no-store");
         return ApiClient.json(response);
     }
-
-    /** The texts of a JSON array, in order. */
-    protected static List<String> texts(JsonNode array) {
-        List<String> texts = new ArrayList<>();
-        array.forEach(item -> texts.add(item.asString()));
-        return texts;
-    }
 }

@@ -1,8 +1,8 @@
 package sg.annualva.access;
 
+import static sg.annualva.jdbc.Timestamps.utc;
+
 import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
@@ -130,7 +130,4 @@ public class AppUserStore {
         return jdbc.sql(FIND_BY_ID).param("id", id).query(AppUser.class).single();
     }
 
-    private static OffsetDateTime utc(Instant instant) {
-        return instant.atOffset(ZoneOffset.UTC);
-    }
 }

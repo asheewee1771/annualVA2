@@ -1,7 +1,8 @@
 package sg.annualva.finding;
 
+import static sg.annualva.jdbc.Timestamps.utc;
+
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Optional;
@@ -141,7 +142,7 @@ class ScanReportStore {
                 .param("subject", finding.packageOrRule())
                 .param("severity", finding.severity().name())
                 .param("title", finding.title())
-                .param("now", now.atOffset(ZoneOffset.UTC))
+                .param("now", utc(now))
                 .query(UUID.class)
                 .optional();
     }

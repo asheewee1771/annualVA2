@@ -43,7 +43,8 @@ class ModuleConventionsArchTest {
 
     @Test
     void platformModulesDoNotDependOnBusinessModules() {
-        noClasses().that().resideInAnyPackage("sg.annualva.web..", "sg.annualva.config..", "sg.annualva.boundary..",
+        noClasses().that().resideInAnyPackage("sg.annualva.web..", "sg.annualva.config..", "sg.annualva.jdbc..",
+                        "sg.annualva.boundary..",
                         "sg.annualva.audit..", "sg.annualva.access..", "sg.annualva.cycle..", "sg.annualva.scan..",
                         "sg.annualva.parser..")
                 .should().dependOnClassesThat().resideInAnyPackage("sg.annualva.register..", "sg.annualva.submission..",
@@ -89,6 +90,34 @@ class ModuleConventionsArchTest {
         classes().that().areAnnotatedWith(RestController.class).and().areTopLevelClasses()
                 .should().haveSimpleNameEndingWith("Controller")
                 .check(main);
+    }
+
+    /**
+     * The System Register's table is read in SQL only by the Register's own store: every other module reads Systems
+     * through {@code RegisterSystems} (ADR 0043, 0044). The one exception is the disposal executor, which deletes
+     * records in foreign-key order through its own store (ADR 0050). Reads every static SQL text of every store.
+     */
+    @Test
+    void onlyTheRegisterStoreNamesTheSystemTableInSql() throws IllegalAccessException {
+        java.util.regex.Pattern table = java.util.regex.Pattern.compile("\\bva_system\\b");
+        java.util.List<String> offenders = new java.util.ArrayList<>();
+        for (var store : main) {
+            if (!store.isAnnotatedWith(Repository.class) || store.getPackageName().equals("sg.annualva.register")
+                    || store.getName().equals("sg.annualva.retention.DisposalStore")) {
+                continue;
+            }
+            for (java.lang.reflect.Field field : store.reflect().getDeclaredFields()) {
+                if (java.lang.reflect.Modifier.isStatic(field.getModifiers()) && field.getType() == String.class) {
+                    field.setAccessible(true);
+                    if (field.get(null) instanceof String sql && table.matcher(sql).find()) {
+                        offenders.add(store.getSimpleName() + "." + field.getName());
+                    }
+                }
+            }
+        }
+        org.assertj.core.api.Assertions.assertThat(offenders)
+                .as("SQL outside the Register's store that reads va_system; read Systems through RegisterSystems")
+                .isEmpty();
     }
 
     @Test

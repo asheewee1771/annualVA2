@@ -1,10 +1,12 @@
 package sg.annualva.audit;
 
+import static sg.annualva.jdbc.Timestamps.requiredInstant;
+import static sg.annualva.jdbc.Timestamps.utc;
+import static sg.annualva.jdbc.Timestamps.utcOrNull;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -85,15 +87,15 @@ class AuditStore {
                 .param("action", filter.action() == null ? null : filter.action().name())
                 .param("systemId", filter.systemId())
                 .param("submissionId", filter.submissionId())
-                .param("from", utc(filter.from()))
-                .param("to", utc(filter.to()))
+                .param("from", utcOrNull(filter.from()))
+                .param("to", utcOrNull(filter.to()))
                 .param("within", ids(filter.within()));
     }
 
     private AuditEntry map(ResultSet rs, int row) throws SQLException {
         return new AuditEntry(
                 rs.getObject("id", UUID.class),
-                rs.getObject("occurred_at", OffsetDateTime.class).toInstant(),
+                requiredInstant(rs, "occurred_at"),
                 rs.getObject("actor_id", UUID.class),
                 rs.getString("actor_role"),
                 AuditAction.valueOf(rs.getString("action")),
@@ -109,7 +111,4 @@ class AuditStore {
         return ids == null ? null : ids.stream().map(UUID::toString).toArray(String[]::new);
     }
 
-    private static @Nullable OffsetDateTime utc(@Nullable Instant instant) {
-        return instant == null ? null : instant.atOffset(ZoneOffset.UTC);
-    }
 }

@@ -196,10 +196,6 @@ class RegisterTemplateTest extends Seam1Test {
         return SignIn.signedIn(browser, issuer, TestIdentity.of("af-5001", "poc.one@ci.annualva.test", "POC One"));
     }
 
-    private static String userId(ApiClient browser) {
-        return ApiClient.json(browser.get("/api/session")).get("uuid").asString();
-    }
-
     /** The newest download entries, optionally of one person. */
     private static JsonNode downloads(ApiClient reader, String actor) {
         var response = reader.get("/api/audit-entries?size=200&action=" + DOWNLOADED

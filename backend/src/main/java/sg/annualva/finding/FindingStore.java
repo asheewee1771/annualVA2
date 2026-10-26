@@ -1,11 +1,12 @@
 package sg.annualva.finding;
 
+import static sg.annualva.jdbc.Timestamps.requiredInstant;
+import static sg.annualva.jdbc.Timestamps.utc;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -316,7 +317,7 @@ class FindingStore {
                     .param("submission", submissionId)
                     .param("system", systemId)
                     .param("type", type.name())
-                    .param("now", now.atOffset(ZoneOffset.UTC))
+                    .param("now", utc(now))
                     .param("keys", chunk.stream().map(Keyed::key).toArray(String[]::new))
                     .param("hashes", chunk.stream().map(Keyed::hash).toArray(String[]::new))
                     .param("identifiers", chunk.stream().map(Keyed::identifier).toArray(String[]::new))
@@ -429,7 +430,7 @@ class FindingStore {
                 rs.getString("approver_name"), rs.getString("approver_role"),
                 rs.getObject("approval_memo_file_id", UUID.class), rs.getString("plan"),
                 rs.getObject("target_date", LocalDate.class),
-                rs.getObject("proposed_at", OffsetDateTime.class).toInstant(), rs.getObject("batch_id", UUID.class),
+                requiredInstant(rs, "proposed_at"), rs.getObject("batch_id", UUID.class),
                 ProposedAs.valueOf(rs.getString("proposed_as")), replacedFile(rs));
     }
 
@@ -475,7 +476,7 @@ class FindingStore {
         return jdbc.sql(INSERT_BATCH)
                 .param("submission", submissionId)
                 .param("by", by)
-                .param("now", now.atOffset(ZoneOffset.UTC))
+                .param("now", utc(now))
                 .query(UUID.class)
                 .single();
     }
@@ -507,7 +508,7 @@ class FindingStore {
                 .param("proposedAs", proposedAs.name())
                 .param("replaced", replacedFileId)
                 .param("by", by)
-                .param("now", now.atOffset(ZoneOffset.UTC))
+                .param("now", utc(now))
                 .query((rs, row) -> Map.entry(rs.getObject("finding_id", UUID.class), rs.getObject("id", UUID.class)))
                 .list()
                 .forEach(kept -> byFinding.put(kept.getKey(), kept.getValue()));
@@ -579,7 +580,7 @@ class FindingStore {
         return jdbc.sql(BATCHES).param("submission", submissionId)
                 .query((rs, row) -> new BatchSummary(rs.getObject("batch_id_of", UUID.class),
                         rs.getObject("batch_by", UUID.class),
-                        rs.getObject("batch_at", OffsetDateTime.class).toInstant(), proposal(rs), rs.getInt("members"),
+                        requiredInstant(rs, "batch_at"), proposal(rs), rs.getInt("members"),
                         rs.getInt("awaiting_review"), rs.getInt("confirmed"), rs.getInt("disputed"),
                         rs.getInt("changed_since"), rs.getInt("manually_entered")))
                 .list();

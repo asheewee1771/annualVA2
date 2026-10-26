@@ -96,8 +96,6 @@ public class TestEndpoints {
                 @Nullable String expiresAt) {}
 
         private static final String REVOKE = "UPDATE role_grant SET revoked_at = :now WHERE id = :id";
-        private static final String SUSPEND =
-                "UPDATE role_grant SET suspended_at = :now, suspension_cause = 'REVIEW' WHERE id = :id";
         private static final String LAPSE = "UPDATE role_grant SET lapsed_at = :now WHERE id = :id";
         private static final String LIST_GRANTS =
                 "SELECT id, role, source, system_id, user_id IS NOT NULL AS attached, last_used_at, revoked_at IS NOT NULL AS revoked "
@@ -592,8 +590,9 @@ public class TestEndpoints {
         }
 
         /**
-         * When a VA Submission reached its milestones, and whether it was endorsed late, as the commands that write them
-         * will (submit, pass to endorsement in ticket 30, endorse in ticket 34); a null field is left as it is.
+         * When a VA Submission reached its milestones, and whether it was endorsed late, set directly, for a read-model
+         * test that needs dates the commands (submit, pass to endorsement, endorse) would only write on the clock's day;
+         * a null field is left as it is.
          */
         @PostMapping("/api/test/submissions/{id}/milestones")
         public Map<String, String> milestones(@PathVariable UUID id, @RequestBody MilestonesRequest body) {
@@ -627,12 +626,14 @@ public class TestEndpoints {
             return Map.of("id", grant.id().toString());
         }
 
-        /** The states that later slices own (revoke by Register change, lapse job, role-holder review). */
+        /**
+         * A revoked or lapsed grant in one step, for a test about what such a grant gives (a suspension goes through the
+         * real {@code POST /api/role-holders/{id}/suspend}).
+         */
         @PostMapping("/api/test/grants/{id}/{change}")
         public Map<String, String> change(@PathVariable UUID id, @PathVariable String change) {
             String sql = switch (change) {
                 case "revoke" -> REVOKE;
-                case "suspend" -> SUSPEND;
                 case "lapse" -> LAPSE;
                 default -> throw new IllegalArgumentException("unknown change");
             };

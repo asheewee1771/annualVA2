@@ -7,8 +7,10 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,9 +48,11 @@ public class RegisterRoles {
     private final CurrentUser user;
     private final Clock clock;
     private final RoleLapse lapse;
+    private final ApplicationEventPublisher events;
 
     RegisterRoles(RoleGrantStore grants, AuditLog audit, AuditActor actor, CurrentUser user, Clock clock,
-            RoleLapse lapse) {
+            RoleLapse lapse, ApplicationEventPublisher events) {
+        this.events = events;
         this.lapse = lapse;
         this.grants = grants;
         this.audit = audit;
@@ -77,10 +81,12 @@ public class RegisterRoles {
                     standing.add(held);
                     if (grant.lapsedAt() != null) {
                         lapse.returned(grant, ReturnTrigger.REGISTER, now);
+                        changed(grant, now);
                     }
                 } else {
                     grants.revoke(grant.id(), now);
                     record(AuditAction.ROLE_REVOKED, grant);
+                    changed(grant, now);
                     revoked++;
                 }
             }
@@ -100,6 +106,15 @@ public class RegisterRoles {
 
     private void record(AuditAction action, RoleGrant grant) {
         audit.record(actor.attribute(grant.describe(AuditEvent.of(action, AuditOutcome.SUCCESS))));
+    }
+
+    /**
+     * The System has someone who can act at the grant's step again, or the person it named is gone: the notifications
+     * clear what told the VA POCs nobody could act (decided 2026-10-26).
+     */
+    private void changed(RoleGrant grant, Instant now) {
+        events.publishEvent(new RoleHolderChanged(Objects.requireNonNull(grant.systemId(),
+                "a Register grant names its System"), grant.role(), user.id(), now));
     }
 
     /** A fixed order, so two applies of the same Register write their entries in the same order. */

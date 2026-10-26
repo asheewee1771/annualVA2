@@ -1,10 +1,11 @@
 package sg.annualva.finding;
 
+import static sg.annualva.jdbc.Timestamps.requiredInstant;
+import static sg.annualva.jdbc.Timestamps.utc;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
@@ -144,7 +145,7 @@ class ReviewStore {
     /** A new review of the batch: who and when; what it decided is on the reviews of its Findings. */
     UUID newBatchReview(Submissions.ReviewTarget target, UUID batchId, UUID by, Instant now) {
         return jdbc.sql(INSERT_BATCH_REVIEW).param("batch", batchId).param("by", by)
-                .param("now", now.atOffset(ZoneOffset.UTC)).query(UUID.class).single();
+                .param("now", utc(now)).query(UUID.class).single();
     }
 
     /**
@@ -164,7 +165,7 @@ class ReviewStore {
                 .param("comment", fields.comment())
                 .param("batchReview", batchReview)
                 .param("by", by)
-                .param("now", now.atOffset(ZoneOffset.UTC))
+                .param("now", utc(now))
                 .query((rs, row) -> Map.entry(rs.getObject("finding_id", UUID.class), rs.getObject("id", UUID.class)))
                 .list()
                 .forEach(kept -> byFinding.put(kept.getKey(), kept.getValue()));
@@ -193,7 +194,7 @@ class ReviewStore {
                 .param("decision", fields.decision().name())
                 .param("comment", fields.comment())
                 .param("by", by)
-                .param("now", now.atOffset(ZoneOffset.UTC))
+                .param("now", utc(now))
                 .query((rs, row) -> new ReviewView(rs.getObject("id", UUID.class), fields.decision(), fields.comment(),
                         null, rs.getString("justification"), rs.getInt("justification_version"), by, now))
                 .single();
@@ -242,6 +243,6 @@ class ReviewStore {
         return new ReviewView(id, ReviewDecision.valueOf(rs.getString("review_decision")),
                 rs.getString("review_comment"), proposalId, justification, justificationVersion,
                 rs.getObject("review_by", UUID.class),
-                rs.getObject("review_at", OffsetDateTime.class).toInstant());
+                requiredInstant(rs, "review_at"));
     }
 }

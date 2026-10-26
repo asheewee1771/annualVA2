@@ -11,9 +11,9 @@ import org.jspecify.annotations.Nullable;
  * date only.
  *
  * @param submissionId the VA Submission flagged; null for a Not Started System
- * @param state the state it was flagged in, as the table holds it ({@code NOT_STARTED} for a Not Started System)
+ * @param state the state it was flagged in ({@code NOT_STARTED} for a Not Started System)
  * @param dueOn the last day of the window that passed (the one rule, V20)
  * @param at when the sweep flagged it (the clock bean's instant)
  */
-public record OverdueEvent(@Nullable UUID submissionId, UUID systemId, String state, @Nullable LocalDate dueOn,
+public record OverdueEvent(@Nullable UUID submissionId, UUID systemId, SubmissionState state, @Nullable LocalDate dueOn,
         Instant at) {}

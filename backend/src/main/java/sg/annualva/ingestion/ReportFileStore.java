@@ -1,9 +1,15 @@
 package sg.annualva.ingestion;
 
+import static sg.annualva.jdbc.Timestamps.instant;
+import static sg.annualva.jdbc.Timestamps.requiredInstant;
+import static sg.annualva.jdbc.Timestamps.utc;
+import static sg.annualva.jdbc.Timestamps.utcOrNull;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -229,7 +235,7 @@ class ReportFileStore {
                 .param("files", fileIds.stream().map(UUID::toString).toArray(String[]::new))
                 .query((rs, row) -> new Stage(rs.getObject("file_id", UUID.class),
                         PipelineStatus.valueOf(rs.getString("status")),
-                        rs.getObject("entered_at", OffsetDateTime.class).toInstant()))
+                        requiredInstant(rs, "entered_at")))
                 .list()
                 .forEach(stage -> byFile.computeIfAbsent(stage.fileId(), id -> new ArrayList<>()).add(stage));
         return byFile;
@@ -305,29 +311,23 @@ class ReportFileStore {
 
     private static @Nullable OffsetDateTime scanDate(@Nullable ParsedReport parsed) {
         Instant scanned = parsed == null ? null : parsed.metadata().scanDate();
-        return scanned == null ? null : utc(scanned);
+        return utcOrNull(scanned);
     }
 
-    private static Row row(java.sql.ResultSet rs) throws java.sql.SQLException {
+    private static Row row(ResultSet rs) throws SQLException {
         String code = rs.getString("reject_code");
-        OffsetDateTime submitted = rs.getObject("scan_submitted_at", OffsetDateTime.class);
-        OffsetDateTime scanned = rs.getObject("scan_date_from_file", OffsetDateTime.class);
-        OffsetDateTime disposed = rs.getObject("content_disposed_at", OffsetDateTime.class);
         return new Row(rs.getObject("id", UUID.class), rs.getObject("submission_id", UUID.class),
                 rs.getObject("system_id", UUID.class), ReportType.valueOf(rs.getString("report_type")),
                 FileKind.valueOf(rs.getString("kind")), rs.getString("display_name"), rs.getLong("size_bytes"),
                 rs.getString("upload_sha256"), rs.getString("detected_format"), rs.getString("quarantine_key"),
                 rs.getString("clean_key"), PipelineStatus.valueOf(rs.getString("pipeline_status")),
                 code == null ? null : RejectCode.valueOf(code), rs.getString("scan_ticket"),
-                rs.getInt("scan_attempts"), submitted == null ? null : submitted.toInstant(),
-                rs.getObject("uploaded_by", UUID.class), rs.getObject("uploaded_at", OffsetDateTime.class).toInstant(),
-                scanned == null ? null : scanned.toInstant(), rs.getString("target_from_file"),
+                rs.getInt("scan_attempts"), instant(rs, "scan_submitted_at"),
+                rs.getObject("uploaded_by", UUID.class), requiredInstant(rs, "uploaded_at"),
+                instant(rs, "scan_date_from_file"), rs.getString("target_from_file"),
                 rs.getObject("replaces_id", UUID.class), rs.getObject("superseded_by", UUID.class),
                 rs.getObject("scan_date_confirmed", LocalDate.class), rs.getString("target_confirmed"),
-                disposed == null ? null : disposed.toInstant());
+                instant(rs, "content_disposed_at"));
     }
 
-    private static OffsetDateTime utc(Instant instant) {
-        return instant.atOffset(ZoneOffset.UTC);
-    }
 }

@@ -1,10 +1,11 @@
 package sg.annualva.access;
 
+import static sg.annualva.jdbc.Timestamps.instant;
+import static sg.annualva.jdbc.Timestamps.utc;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -70,6 +71,11 @@ public class RoleGrantStore {
             + "AND source = 'REGISTER' AND system_id = :systemId AND lapsed_at IS NOT NULL AND revoked_at IS NULL "
             + "ORDER BY granted_at, id";
 
+    /** The suspended Register grants, not revoked, of these Systems: the people a Register change may replace mid-flight. */
+    private static final String SUSPENDED_ON = "SELECT " + COLUMNS + " FROM role_grant WHERE source = 'REGISTER' "
+            + "AND system_id = ANY(CAST(:systems AS uuid[])) AND suspended_at IS NOT NULL AND revoked_at IS NULL "
+            + "ORDER BY granted_at, id";
+
     /** A suspended grant does not come back by itself (ADR 0056): a VA POC restores it first. */
     private static final String RETURN = "UPDATE role_grant SET lapsed_at = NULL, returned_at = :now, "
             + "return_trigger = :trigger WHERE id = :id AND lapsed_at IS NOT NULL AND revoked_at IS NULL "
@@ -127,6 +133,12 @@ public class RoleGrantStore {
                 .single();
     }
 
+    /** The grant, not revoked, this email holds for this role and System, if any. */
+    Optional<RoleGrant> liveByKey(Role role, String email, @Nullable UUID systemId) {
+        return jdbc.sql(LIVE_BY_KEY).param("role", role.name()).param("email", email).param("systemId", systemId)
+                .query(RoleGrantStore::map).optional();
+    }
+
     /** The grants that count for this person at {@code now}: not lapsed, suspended, revoked or expired. */
     List<RoleGrant> activeFor(UUID userId, Instant now) {
         return jdbc.sql(ACTIVE_FOR_USER).param("userId", userId).param("now", utc(now)).query(RoleGrantStore::map).list();
@@ -177,6 +189,15 @@ public class RoleGrantStore {
     /** Brings a lapsed grant back; whether it was lapsed. */
     boolean returned(UUID id, ReturnTrigger trigger, Instant now) {
         return jdbc.sql(RETURN).param("id", id).param("trigger", trigger.name()).param("now", utc(now)).update() == 1;
+    }
+
+    /** The suspended Register grants, not revoked, of these Systems. */
+    List<RoleGrant> suspendedOn(Collection<UUID> systemIds) {
+        if (systemIds.isEmpty()) {
+            return List.of();
+        }
+        return jdbc.sql(SUSPENDED_ON).param("systems", systemIds.stream().map(UUID::toString).toArray(String[]::new))
+                .query(RoleGrantStore::map).list();
     }
 
     /** Every grant not revoked, oldest first. */
@@ -235,12 +256,4 @@ public class RoleGrantStore {
         return name == null ? null : Enum.valueOf(type, name);
     }
 
-    private static @Nullable Instant instant(ResultSet rs, String column) throws SQLException {
-        OffsetDateTime value = rs.getObject(column, OffsetDateTime.class);
-        return value == null ? null : value.toInstant();
-    }
-
-    private static OffsetDateTime utc(Instant instant) {
-        return instant.atOffset(ZoneOffset.UTC);
-    }
 }

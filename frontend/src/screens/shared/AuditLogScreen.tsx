@@ -7,8 +7,8 @@ import {
   fetchAuditEntries,
   type AuditEntry,
   type AuditFilters,
-  type AuditPage,
 } from "../../api/audit.ts";
+import type { Page } from "../../api/page.ts";
 import { ClassifiedField } from "../../components/ClassifiedField.tsx";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { useResource } from "../../hooks/useResource.ts";
@@ -160,7 +160,7 @@ function AuditResults({
   loading,
   onPage,
 }: {
-  result: AuditPage;
+  result: Page<AuditEntry>;
   loading: boolean;
   onPage: (page: number) => void;
 }) {

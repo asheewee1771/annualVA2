@@ -1,19 +1,24 @@
 package sg.annualva.retention;
 
+import static sg.annualva.jdbc.Timestamps.instant;
+import static sg.annualva.jdbc.Timestamps.requiredInstant;
+import static sg.annualva.jdbc.Timestamps.utc;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
+import sg.annualva.audit.AuditAction;
 import sg.annualva.boundary.FileStore;
 
 /**
@@ -82,7 +87,9 @@ class DisposalStore {
             + "UNION SELECT cycle_year FROM cycle_register_system WHERE system_id = :system";
 
     /** The disposals' own entries are kept whatever the cutoff: they are the record that records were disposed of. */
-    private static final String KEPT_ACTIONS = "('DISPOSAL_LISTED', 'DISPOSAL_APPROVED', 'DISPOSAL_EXECUTED')";
+    private static final String KEPT_ACTIONS = Stream.of(AuditAction.DISPOSAL_LISTED,
+            AuditAction.DISPOSAL_APPROVED, AuditAction.DISPOSAL_EXECUTED).map(action -> "'" + action.name() + "'")
+            .collect(Collectors.joining(", ", "(", ")"));
 
     private static final String AUDIT_BEFORE = "SELECT count(*) FROM audit_entry WHERE occurred_at < :before "
             + "AND action NOT IN " + KEPT_ACTIONS;
@@ -183,6 +190,8 @@ class DisposalStore {
             new Step("DELETE FROM role_grant WHERE system_id IN " + LISTED_RETIRED_SYSTEMS, null),
             new Step("DELETE FROM va_system WHERE id IN " + LISTED_RETIRED_SYSTEMS, Counted.SYSTEMS),
             new Step("DELETE FROM export_request WHERE id IN " + LISTED_EXPORTS, Counted.EXPORTS),
+            // Role-holder reviews belong to no VA Submission: those before the cutoff go with the Cycle (decided 2026-10-26).
+            new Step("DELETE FROM role_holder_review WHERE reviewed_at < " + CUTOFF, null),
             new Step("DELETE FROM audit_entry WHERE occurred_at < " + CUTOFF + " AND action NOT IN " + KEPT_ACTIONS,
                     Counted.AUDIT_ENTRIES));
 
@@ -314,7 +323,7 @@ class DisposalStore {
 
     private static ListRow list(ResultSet rs, int row) throws SQLException {
         return new ListRow(rs.getObject("id", UUID.class), ListStatus.valueOf(rs.getString("status")),
-                rs.getObject("computed_on", LocalDate.class), rs.getObject("created_at", OffsetDateTime.class).toInstant(),
+                rs.getObject("computed_on", LocalDate.class), requiredInstant(rs, "created_at"),
                 instant(rs, "cutoff"), rs.getObject("approved_by", UUID.class), instant(rs, "approved_at"),
                 instant(rs, "executed_at"));
     }
@@ -325,12 +334,4 @@ class DisposalStore {
                 DisposalReason.valueOf(rs.getString("reason")), rs.getObject("entries", Long.class));
     }
 
-    private static @Nullable Instant instant(ResultSet rs, String column) throws SQLException {
-        OffsetDateTime at = rs.getObject(column, OffsetDateTime.class);
-        return at == null ? null : at.toInstant();
-    }
-
-    private static OffsetDateTime utc(Instant instant) {
-        return instant.atOffset(ZoneOffset.UTC);
-    }
 }

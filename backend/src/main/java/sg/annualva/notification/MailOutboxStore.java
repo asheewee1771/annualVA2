@@ -1,9 +1,9 @@
 package sg.annualva.notification;
 
+import static sg.annualva.jdbc.Timestamps.utc;
+
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -11,6 +11,7 @@ import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
+import sg.annualva.submission.SubmissionState;
 
 /**
  * The mail outbox (V28). Constant SQL, named parameters (as-2). Each statement stands alone, so the dispatcher holds no
@@ -35,10 +36,9 @@ class MailOutboxStore {
             + "claimed AS (UPDATE mail_outbox o SET attempts = o.attempts + 1, next_attempt_at = :leaseUntil, "
             + "last_attempt_at = :now FROM due WHERE o.id = due.id "
             + "RETURNING o.id, o.notification_id, o.template, o.attempts) "
-            + "SELECT c.id, c.template, c.attempts, u.email::text AS recipient, s.code::text AS system_code, "
-            + "s.name AS system_name, n.state, n.action, n.due_on, n.link FROM claimed c "
-            + "JOIN notification n ON n.id = c.notification_id JOIN app_user u ON u.id = n.recipient_id "
-            + "JOIN va_system s ON s.id = n.system_id";
+            + "SELECT c.id, c.template, c.attempts, u.email::text AS recipient, n.system_id, n.state, n.action, "
+            + "n.due_on, n.link FROM claimed c "
+            + "JOIN notification n ON n.id = c.notification_id JOIN app_user u ON u.id = n.recipient_id";
 
     /** The claims whose dispatcher stopped after their last attempt: nothing will try them again. */
     private static final String ABANDON =
@@ -58,13 +58,14 @@ class MailOutboxStore {
     private static final List<String> ACTIONS = Arrays.stream(NoticeAction.values()).map(Enum::name).toList();
 
     /**
-     * A claimed mail and what it says: the notification's recipient, System, state, action, due date and link.
+     * A claimed mail and what it says: the notification's recipient, System, state, action, due date and link. The
+     * System is an id: its System ID and name are read through the Register's module when the mail is sent.
      *
      * @param attempts the attempt this claim is, counting it
      * @param recipient the address; never logged
      */
-    record Claimed(UUID id, MailTemplate template, int attempts, String recipient, String systemCode, String systemName,
-            String state, NoticeAction action, @Nullable LocalDate dueOn, String link) {
+    record Claimed(UUID id, MailTemplate template, int attempts, String recipient, UUID systemId,
+            SubmissionState state, NoticeAction action, @Nullable LocalDate dueOn, String link) {
 
         /** Ids and counts only: the address stays out of any log line a framework writes about it (lm-19). */
         @Override
@@ -105,8 +106,8 @@ class MailOutboxStore {
                 .param("templates", TEMPLATES).param("actions", ACTIONS)
                 .query((rs, row) -> new Claimed(rs.getObject("id", UUID.class),
                         MailTemplate.valueOf(rs.getString("template")), rs.getInt("attempts"),
-                        rs.getString("recipient"), rs.getString("system_code"), rs.getString("system_name"),
-                        rs.getString("state"), NoticeAction.valueOf(rs.getString("action")),
+                        rs.getString("recipient"), rs.getObject("system_id", UUID.class),
+                        SubmissionState.valueOf(rs.getString("state")), NoticeAction.valueOf(rs.getString("action")),
                         rs.getObject("due_on", LocalDate.class), rs.getString("link")))
                 .optional();
     }
@@ -130,7 +131,4 @@ class MailOutboxStore {
         return statement.param("id", mail.id()).param("attempts", mail.attempts());
     }
 
-    private static OffsetDateTime utc(Instant instant) {
-        return instant.atOffset(ZoneOffset.UTC);
-    }
 }

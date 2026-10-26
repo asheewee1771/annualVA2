@@ -83,10 +83,23 @@ public enum NoticeAction {
     REVIEW_STILL_OVERDUE("Still Overdue: review the VA Submission."),
     /** Each VA POC's copy of the Cyber Manager's weekly Overdue reminder (story 89). */
     REVIEW_OVERDUE_COPY("Copy for you: the Cyber Manager's review of this VA Submission is still Overdue."),
-    /** A reminder (story 90) to both VA POCs, 2 weeks before the Quarter's last day. */
-    ENDORSE_DUE_IN_TWO_WEEKS("The Quarter ends in 2 weeks: endorse the VA Submission, or return it for rework."),
-    /** A reminder to both VA POCs, 1 week before the Quarter's last day. */
-    ENDORSE_DUE_IN_ONE_WEEK("The Quarter ends in 1 week: endorse the VA Submission, or return it for rework.");
+    /**
+     * A reminder (story 90) to both VA POCs, 2 weeks before the endorsement is due: the stored {@code endorse_due}, the
+     * Quarter's last day, or the VA Cycle's close once a conditional Exemption lapsed (ADR 0051, 0052).
+     */
+    ENDORSE_DUE_IN_TWO_WEEKS("Endorsement is due in 2 weeks: endorse the VA Submission, or return it for rework."),
+    /** A reminder to both VA POCs, 1 week before the endorsement is due. */
+    ENDORSE_DUE_IN_ONE_WEEK("Endorsement is due in 1 week: endorse the VA Submission, or return it for rework."),
+    /**
+     * To both VA POCs, in place of a notice to a System's SMO/Tech Lead whose role for it is suspended or lapsed
+     * (decided 2026-10-26): nobody can act at the submitting step until a VA POC restores the role or a Register
+     * upload names someone else.
+     */
+    NOBODY_TO_SUBMIT("Nobody can act: this System's SMO/Tech Lead role is suspended or lapsed. Restore it, or name "
+            + "someone else in the System Register."),
+    /** The same, in place of a notice to a System's Cyber Manager whose role for it is suspended or lapsed. */
+    NOBODY_TO_REVIEW("Nobody can act: this System's Cyber Manager role is suspended or lapsed. Restore it, or name "
+            + "someone else in the System Register.");
 
     private final String message;
 

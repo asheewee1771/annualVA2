@@ -40,7 +40,10 @@ export interface RoleHolder {
 interface CompletedReview {
   reviewedAt: string;
   reviewedBy: string;
+  /** How many role holders the review checked: the length of grantIds. */
   holders: number;
+  /** The grants the VA POC checked, as the screen listed them (ADR 0056 item 4). */
+  grantIds: string[];
 }
 
 export type DueReason = "never-reviewed" | "three-months" | "register-applied";
@@ -61,9 +64,9 @@ export function fetchRoleHolderReview(): Promise<ReviewView> {
   return request<ReviewView>("GET", HOLDERS);
 }
 
-/** POST /api/role-holders/reviews: records that the caller has completed a review. */
-export function completeRoleHolderReview(): Promise<CompletedReview> {
-  return request<CompletedReview>("POST", `${HOLDERS}/reviews`, {});
+/** POST /api/role-holders/reviews: records that the caller has completed a review of the holders the screen listed. */
+export function completeRoleHolderReview(grantIds: string[]): Promise<CompletedReview> {
+  return request<CompletedReview>("POST", `${HOLDERS}/reviews`, { grantIds });
 }
 
 /** POST /api/role-holders/{grantId}/suspend, a step-up action. */

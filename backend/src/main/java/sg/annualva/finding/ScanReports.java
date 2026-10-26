@@ -165,16 +165,9 @@ public class ScanReports {
             }
             return null;
         }
-        String cleaned = raw == null ? "" : ReportText.cleanLongText(raw);
-        if (cleaned.isEmpty()) {
-            throw RejectedRequestException.invalidField(JUSTIFICATION,
-                    "The field 'justification' is required for NOT_APPLICABLE and MANUAL.");
-        }
-        if (!ReportText.fits(cleaned, MAX_JUSTIFICATION)) {
-            throw RejectedRequestException.invalidField(JUSTIFICATION,
-                    "The field 'justification' must be at most " + MAX_JUSTIFICATION + " characters.");
-        }
-        return cleaned;
+        return ReportText.longText(JUSTIFICATION, raw, MAX_JUSTIFICATION, RejectedRequestException::invalidField)
+                .orElseThrow(() -> RejectedRequestException.invalidField(JUSTIFICATION,
+                        "The field 'justification' is required for NOT_APPLICABLE and MANUAL."));
     }
 
     /** A review is shown only beside a not-applicable justification: after a change of mode it is about nothing there. */

@@ -1,5 +1,6 @@
 import { useCallback, useState, type ReactNode } from "react";
-import type { Finding, FindingPage } from "../../api/findings.ts";
+import type { Page } from "../../api/page.ts";
+import type { Finding } from "../../api/findings.ts";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { useResource } from "../../hooks/useResource.ts";
 import { FindingCells } from "./FindingCells.tsx";
@@ -56,7 +57,7 @@ function FindingsPageView({
   reviewCell,
   onPage,
 }: {
-  result: FindingPage;
+  result: Page<Finding>;
   caption: string;
   reviewCell: ReviewCell;
   onPage: (page: number) => void;
@@ -94,7 +95,7 @@ export function FindingsList({
   caption,
   reviewCell,
 }: {
-  load: (page: number) => Promise<FindingPage>;
+  load: (page: number) => Promise<Page<Finding>>;
   refreshKey: number;
   /** The heading, followed by how many Findings there are. */
   heading: string;

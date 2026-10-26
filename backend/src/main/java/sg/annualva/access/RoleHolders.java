@@ -1,8 +1,15 @@
 package sg.annualva.access;
 
 import java.time.Clock;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,9 +45,11 @@ public class RoleHolders {
     private final AuditLog audit;
     private final AuditActor actor;
     private final Clock clock;
+    private final ApplicationEventPublisher events;
 
     RoleHolders(RoleGrantStore grants, RoleLapse lapse, StepUp stepUp, CurrentUser user, AuditLog audit, AuditActor actor,
-            Clock clock) {
+            Clock clock, ApplicationEventPublisher events) {
+        this.events = events;
         this.grants = grants;
         this.lapse = lapse;
         this.stepUp = stepUp;
@@ -53,6 +62,34 @@ public class RoleHolders {
     /** Every grant that has not been revoked, oldest first. */
     public List<RoleHolder> list() {
         return grants.holders();
+    }
+
+    /**
+     * The Register roles of these Systems whose holder is suspended, by System, for the Register preview (ADR 0049 item
+     * 2): a change that only replaces a suspended SMO/Tech Lead or Cyber Manager is applied even on a System with
+     * in-flight work, as the one exception to the hold-back, because a suspension otherwise leaves the System with nobody
+     * to act. A live Register grant is the named person's (the apply revokes any other), so the role says who.
+     */
+    @Transactional(readOnly = true)
+    public Map<UUID, Set<Role>> suspendedRolesOn(Collection<UUID> systemIds) {
+        Map<UUID, Set<Role>> suspended = new HashMap<>();
+        for (RoleGrant grant : grants.suspendedOn(systemIds)) {
+            suspended.computeIfAbsent(Objects.requireNonNull(grant.systemId(), "a Register grant names its System"),
+                    system -> EnumSet.noneOf(Role.class)).add(grant.role());
+        }
+        return suspended;
+    }
+
+    /**
+     * Whether the person the Register names for this role on this System cannot act at its step, because their grant for
+     * it is suspended or lapsed (decided 2026-10-26): the notifications then tell the VA POCs instead of them. A person
+     * with no grant yet (named by an apply whose grants are still being written) can.
+     */
+    @Transactional(readOnly = true)
+    public boolean cannotAct(Role role, String email, UUID systemId) {
+        return grants.liveByKey(role, email, systemId)
+                .map(grant -> grant.suspendedAt() != null || grant.lapsedAt() != null)
+                .orElse(false);
     }
 
     /**
@@ -101,6 +138,10 @@ public class RoleHolders {
                                             + "sign in again."));
         }
         lapse.restore(holder.grant());
+        RoleGrant restored = holder.grant();
+        if (restored.systemId() != null) {
+            events.publishEvent(new RoleHolderChanged(restored.systemId(), restored.role(), caller, clock.instant()));
+        }
         return grants.holder(grantId).orElseThrow(ResourceNotFoundException::new);
     }
 

@@ -2,6 +2,7 @@ package sg.annualva.harness;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.JsonNode;
 
@@ -14,9 +15,12 @@ import tools.jackson.databind.JsonNode;
 public final class Arrange {
 
     private final ApiClient client;
+    private final Supplier<ApiClient> vaPoc;
 
-    Arrange(ApiClient client) {
+    /** @param vaPoc a VA POC freshly signed in, for the commands a test arranges through the real API */
+    Arrange(ApiClient client, Supplier<ApiClient> vaPoc) {
         this.client = client;
+        this.vaPoc = vaPoc;
     }
 
     /** A System that exists; returns its id. */
@@ -241,8 +245,10 @@ public final class Arrange {
         change(grantId, "revoke");
     }
 
+    /** Suspends a grant as the role-holder review does (ADR 0056): a VA POC, freshly signed in, through the real API. */
     public void suspend(String grantId) {
-        change(grantId, "suspend");
+        var response = vaPoc.get().post("/api/role-holders/" + grantId + "/suspend");
+        assertThat(response.status()).as(response.body()).isEqualTo(200);
     }
 
     public void lapse(String grantId) {
@@ -254,6 +260,16 @@ public final class Arrange {
         var response = client.get("/api/test/grants?email=" + email);
         assertThat(response.status()).isEqualTo(200);
         return ApiClient.json(response);
+    }
+
+    /** The one grant, not revoked, this person holds for this role. */
+    public String grantOf(String email, String role) {
+        for (JsonNode grant : grantsOf(email)) {
+            if (grant.get("role").asString().equals(role) && !grant.get("revoked").asBoolean()) {
+                return grant.get("id").asString();
+            }
+        }
+        throw new AssertionError("no " + role + " grant for " + email);
     }
 
     private void change(String grantId, String change) {

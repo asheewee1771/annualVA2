@@ -61,14 +61,8 @@ final class ExemptionFields {
     }
 
     private static String evidence(@Nullable String raw) {
-        String evidence = raw == null ? "" : ReportText.cleanLongText(raw);
-        if (evidence.isEmpty()) {
-            throw refused(EVIDENCE, "is required.");
-        }
-        if (!ReportText.fits(evidence, ReportText.MAX_LONG_TEXT)) {
-            throw refused(EVIDENCE, "must be at most " + ReportText.MAX_LONG_TEXT + " characters.");
-        }
-        return evidence;
+        return ReportText.longText(EVIDENCE, raw, ReportText.MAX_LONG_TEXT, RejectedRequestException::invalidField)
+                .orElseThrow(() -> refused(EVIDENCE, "is required."));
     }
 
     /** The last day a conditional Exemption's VA may be recorded by: the Quarter's last day plus 3 months (story 47). */

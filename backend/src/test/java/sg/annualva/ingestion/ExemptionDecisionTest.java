@@ -203,6 +203,59 @@ class ExemptionDecisionTest extends ExemptionSeam1 {
     }
 
     @Test
+    void anApprovalIsStillDeliveredToASuspendedSmoBecauseNothingWaitsOnTheirStep() {
+        Draft draft = draft();
+        String id = requested(draft.smo(), draft.systemId(), priorVa()).get("id").asString();
+        ApiClient poc = vaPoc();
+        String grant = grantOf(poc, "SMO", SMO_A, "SYS-F1");
+        assertThat(poc.post("/api/role-holders/" + grant + "/suspend").status()).isEqualTo(200);
+
+        approved(vaPoc(), id);
+
+        ApiClient reader = vaPoc();
+        assertThat(actions(reader)).as("no pair about a step nobody waits at").doesNotContain("NOBODY_TO_SUBMIT");
+        assertThat(reader.post("/api/role-holders/" + grant + "/restore").status()).isEqualTo(200);
+        assertThat(actions(signedInAs(SMO_A))).as("the approval was written for them all along")
+                .contains("EXEMPTION_APPROVED");
+    }
+
+    @Test
+    void aRefusedStartThatWouldTakeTheNotStartedVaSubmissionNamesItAndLeavesItNotStarted() {
+        draft();
+        ApiClient smoB = signedInAs(SMO_B);
+        String system = idOf("SYS-F2");
+        JsonNode requested = requested(smoB, system, priorVa());
+        String sub = requested.get("submissionId").asString();
+        rejected(vaPoc(), requested.get("id").asString());
+        arrange.grant("CYBER_MANAGER", SMO_B, system);
+
+        assertSodConflict(start(signedInAs(SMO_B), system));
+
+        JsonNode refused = entries("SUBMISSION_STARTED", system).get(0);
+        assertThat(refused.get("outcome").asString()).isEqualTo("REFUSED");
+        assertThat(refused.get("submissionId").asString()).as("an existing row the start would have taken")
+                .isEqualTo(sub);
+        assertThat(inboxRow(signedInAs(SMO_B), "SYS-F2").get("state").asString()).as("the take was rolled back")
+                .isEqualTo("NOT_STARTED");
+    }
+
+    @Test
+    void aMoveOfASystemWhoseVaSubmissionARejectionLeftNotStartedLinksTheSmoToTheirInbox() {
+        draft();
+        ApiClient smoB = signedInAs(SMO_B);
+        String system = idOf("SYS-F2");
+        JsonNode requested = requested(smoB, system, priorVa());
+        rejected(vaPoc(), requested.get("id").asString());
+
+        registered(listed("SYS-F1", "File one", SMO_A, CM, "Q3"), listed("SYS-F2", "File two", SMO_B, CM_OTHER, "Q4"));
+
+        JsonNode moved = only(smoB, "SYSTEM_MOVED");
+        assertThat(moved.get("state").asString()).isEqualTo("NOT_STARTED");
+        assertThat(moved.get("link").asString()).as("a Not Started VA Submission is started from the inbox")
+                .isEqualTo("/smo");
+    }
+
+    @Test
     void decidingNeedsAFreshSignInAndChangesNothingWithoutOne() {
         Draft draft = draft();
         String id = requested(draft.smo(), draft.systemId(), priorVa()).get("id").asString();

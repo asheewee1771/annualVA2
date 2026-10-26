@@ -153,6 +153,22 @@ class ExemptionLapseTest extends ExemptionSeam1 {
     }
 
     @Test
+    void afterALapseBothVaPocsAreRemindedTwoWeeksBeforeTheCyclesCloseTheEndorsementIsNowDueBy() {
+        Draft draft = awaitingEndorsement();
+        conditionallyExempted(draft.smo(), draft.systemId(), scheduledVa());
+        today("2028-02-01");
+        lapse();
+
+        today("2028-02-20");
+        arrange.reminders();
+
+        JsonNode reminder = only(otherVaPoc(), "ENDORSE_DUE_IN_TWO_WEEKS");
+        assertThat(reminder.get("dueOn").asString()).as("the stored endorse_due: the Cycle's close").isEqualTo("2028-03-05");
+        assertThat(reminder.get("message").asString())
+                .isEqualTo("Endorsement is due in 2 weeks: endorse the VA Submission, or return it for rework.");
+    }
+
+    @Test
     void newWindowsThatWouldRunPastTheCyclesCloseEndTheDayBeforeIt() {
         // VA Cycle 2028: Q3 ends on 5 November 2028 and Q4, 13 weeks long, on 4 February 2029, so the Cycle closes at
         // the end of 4 March 2029; a Q3 conditional Exemption lapses by 5 February 2029 and is flagged on the 6th.
