@@ -539,3 +539,25 @@ Human decisions on reviewer findings. Check here before asking again. Each entry
   - Only Endorsed VA Submissions dispose of superseded file content early; `FAILED` exports are not listed (a follow-up if they should go).
   - The delete window is accepted as provisional until ticket 62 makes every append-only history table's delete trigger check, row by row, that the row is on the `APPROVED` list.
 - **When to reuse:** any retention date or disposal question; any new append-only table (its delete trigger needs ticket 62's per-row check).
+
+## Whole-branch review of the integration branch: six decisions
+
+Decided by the user on 2026-10-26 (all recommendations accepted) after the two-axis review of `integration/annual-va-r1` against `main`.
+
+- **A suspended role on a System with in-flight work is replaced through the Register.**
+  - **Area:** Register change effects (ticket 43, ADR 0049), suspension (ticket 47, ADR 0056), story 79, spec ac-4.
+  - **Finding:** Release 1 holds back every SMO/Tech Lead or Cyber Manager change on a System with a non-final VA Submission, so a Register upload naming someone new was never applied where a suspension mattered; a VA POC restore was the only exit.
+  - **Chosen action:** a Register change that only replaces a *suspended* person is applied even mid-flight, as the one exception to the hold-back; the new person still passes the segregation-of-duties check.
+  - **When to reuse:** any hold-back that would leave a System with nobody able to act.
+- **Reminders and Overdue mail skip a suspended or lapsed person and tell the VA POCs instead.**
+  - **Area:** notifications and mail (tickets 36–38, ADRs 0043, 0046, 0052), role lapse and suspension (tickets 46–47).
+  - **Finding:** `Notifications.toSmo` and `toCyberManager` addressed whoever the Register names, whatever the state of their grant, so a suspended SMO kept getting "prepare and submit" mail for a System they could not open.
+  - **Chosen action:** when the addressee's grant for that System is suspended or lapsed, the notice goes to both VA POCs instead and names the System and the step nobody can act at; no address or free text in the notice.
+  - **When to reuse:** any message addressed by Register role: check the grant first.
+- **After a conditional Exemption lapse, Endorsed Late is judged against the lapse's own deadline, and the management summary shows lapses.**
+  - **Area:** Exemption lapse (ticket 42, ADR 0051), endorse (ticket 34, ADR 0042), management summary (tickets 44–45, ADRs 0045, 0054), story 47 versus the state table's "after week 13".
+  - **Chosen action:** keep judging Endorsed Late against the stored `endorse_due` (the Cycle's close after a lapse), and add an "Exemption lapsed" count and column to the management summary so a late-but-not-flagged endorsement is visible.
+  - **When to reuse:** any flag judged against a window that a later rule may move: judge against the stored window, and show why it moved.
+- **The VA POCs' end-of-Quarter reminders cover only Systems that can be endorsed.** (ticket 38, ADR 0052, story 90.) Kept as built: Systems still Draft or In Review in weeks 11–12 trigger no VA POC reminder; earlier steps have their own reminders and copies.
+- **Role-holder review records are kept for the VA Cycle plus 3 years.** (ticket 47, ADR 0056; ticket 49, ADR 0050.) `role_holder_review` rows join the disposal order under the rule for records that belong to no single VA Submission (everything before the next Cycle's first day).
+- **Three loose ends closed:** the VA POC's confirmation queue reads every Cycle the app runs (ADR 0051 item 8, kept); a role-holder review records the list of holders it checked (ADR 0056 item 4, to build); audit-log reads stay out of the histories being read, recorded as detail only (ADR 0057, kept).
