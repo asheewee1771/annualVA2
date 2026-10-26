@@ -350,7 +350,8 @@ class DeadlineReminderTest extends MailSeam1 {
                 .containsEntry("link", APP_URL + "/va-poc/role-holders");
         assertThat(mailRelay.sent()).noneMatch(sent -> sent.recipient().equalsIgnoreCase(SMO_A));
 
-        assertThat(poc.post("/api/role-holders/" + grant + "/restore").status()).isEqualTo(200);
+        assertThat(vaPoc().post("/api/role-holders/" + grant + "/restore").status()).as("a fresh sign-in, weeks later")
+                .isEqualTo(200);
 
         assertThat(nobodyToAct(otherVaPoc(), "NOBODY_TO_SUBMIT")).as("the restore clears the pair for both")
                 .allSatisfy(item -> assertThat(item.get("handledBy").asString()).isEqualTo("POC One"));
