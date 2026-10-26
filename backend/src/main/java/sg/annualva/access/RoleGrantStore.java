@@ -71,6 +71,11 @@ public class RoleGrantStore {
             + "AND source = 'REGISTER' AND system_id = :systemId AND lapsed_at IS NOT NULL AND revoked_at IS NULL "
             + "ORDER BY granted_at, id";
 
+    /** The suspended Register grants, not revoked, of these Systems: the people a Register change may replace mid-flight. */
+    private static final String SUSPENDED_ON = "SELECT " + COLUMNS + " FROM role_grant WHERE source = 'REGISTER' "
+            + "AND system_id = ANY(CAST(:systems AS uuid[])) AND suspended_at IS NOT NULL AND revoked_at IS NULL "
+            + "ORDER BY granted_at, id";
+
     /** A suspended grant does not come back by itself (ADR 0056): a VA POC restores it first. */
     private static final String RETURN = "UPDATE role_grant SET lapsed_at = NULL, returned_at = :now, "
             + "return_trigger = :trigger WHERE id = :id AND lapsed_at IS NOT NULL AND revoked_at IS NULL "
@@ -178,6 +183,15 @@ public class RoleGrantStore {
     /** Brings a lapsed grant back; whether it was lapsed. */
     boolean returned(UUID id, ReturnTrigger trigger, Instant now) {
         return jdbc.sql(RETURN).param("id", id).param("trigger", trigger.name()).param("now", utc(now)).update() == 1;
+    }
+
+    /** The suspended Register grants, not revoked, of these Systems. */
+    List<RoleGrant> suspendedOn(Collection<UUID> systemIds) {
+        if (systemIds.isEmpty()) {
+            return List.of();
+        }
+        return jdbc.sql(SUSPENDED_ON).param("systems", systemIds.stream().map(UUID::toString).toArray(String[]::new))
+                .query(RoleGrantStore::map).list();
     }
 
     /** Every grant not revoked, oldest first. */

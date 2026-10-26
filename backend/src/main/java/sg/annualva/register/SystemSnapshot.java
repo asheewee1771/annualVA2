@@ -17,8 +17,13 @@ public record SystemSnapshot(String name, String smoEmail, String cyberManagerEm
         return !smoEmail.equals(after.smoEmail());
     }
 
+    /** Whether {@code after} gives the System another Cyber Manager. */
+    boolean changesCyberManagerIn(SystemSnapshot after) {
+        return !cyberManagerEmail.equals(after.cyberManagerEmail());
+    }
+
     /** Whether {@code after} gives the System another SMO/Tech Lead or Cyber Manager: a transfer (spec, Modules). */
     boolean transfersIn(SystemSnapshot after) {
-        return changesSmoIn(after) || !cyberManagerEmail.equals(after.cyberManagerEmail());
+        return changesSmoIn(after) || changesCyberManagerIn(after);
     }
 }

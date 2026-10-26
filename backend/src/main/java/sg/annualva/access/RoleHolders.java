@@ -1,6 +1,7 @@
 package sg.annualva.access;
 
 import java.time.Clock;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -53,6 +54,16 @@ public class RoleHolders {
     /** Every grant that has not been revoked, oldest first. */
     public List<RoleHolder> list() {
         return grants.holders();
+    }
+
+    /**
+     * The suspended Register grants of these Systems, for the Register preview (ADR 0049 item 2): a change that only
+     * replaces a suspended SMO/Tech Lead or Cyber Manager is applied even on a System with in-flight work, as the one
+     * exception to the hold-back, because a suspension otherwise leaves the System with nobody to act.
+     */
+    @Transactional(readOnly = true)
+    public List<RoleGrant> suspendedOn(Collection<UUID> systemIds) {
+        return grants.suspendedOn(systemIds);
     }
 
     /**

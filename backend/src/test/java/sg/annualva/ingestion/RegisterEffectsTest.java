@@ -269,6 +269,46 @@ class RegisterEffectsTest extends MailSeam1 {
     }
 
     @Test
+    void aChangeThatOnlyReplacesASuspendedPersonIsAppliedDespiteInFlightWork() {
+        Draft draft = inReview();
+        String sub = draft.submissionId();
+        ApiClient poc = vaPoc();
+        assertThat(poc.post("/api/role-holders/" + grantOf(poc, "SMO", SMO_A, "SYS-F1") + "/suspend").status())
+                .isEqualTo(200);
+
+        JsonNode preview = preview(poc, file(List.of(listed("SYS-F1", "File one", SMO_B, CM, "Q3"), F2)));
+        JsonNode replaced = rowOf(preview, "SYS-F1");
+        assertThat(texts(replaced.get("effects"))).containsExactly("WILL_TRANSFER");
+        assertThat(texts(replaced.get("reasons"))).as("the one exception to the hold-back (ADR 0049)").isEmpty();
+        assertThat(preview.get("counts").get("heldBack").asInt()).isZero();
+        assertThat(preview.get("canApply").asBoolean()).isTrue();
+        JsonNode both = rowOf(preview(poc, file(List.of(listed("SYS-F1", "File one", SMO_B, CM_OTHER, "Q3"), F2))),
+                "SYS-F1");
+        assertThat(texts(both.get("reasons"))).as("the Cyber Manager replaced is not suspended")
+                .containsExactly("TRANSFER_IN_FLIGHT");
+
+        apply(poc, preview);
+
+        assertThat(submission(signedInAs(SMO_B), sub).get("state").asString()).as("the new SMO/Tech Lead has it")
+                .isEqualTo("IN_REVIEW");
+        assertThat(read(signedInAs(SMO_A), sub).status()).as("the suspended grant ended, and it was their only role")
+                .isEqualTo(403);
+        assertThat(only(signedInAs(SMO_B), "SYSTEM_TRANSFERRED_TO_YOU").get("systemCode").asString())
+                .isEqualTo("SYS-F1");
+    }
+
+    /** The grant this person holds for this role on this System, as the role-holder review lists it. */
+    private static String grantOf(ApiClient poc, String role, String email, String systemCode) {
+        for (JsonNode holder : ApiClient.json(poc.get("/api/role-holders")).get("holders")) {
+            if (holder.get("role").asString().equals(role) && holder.get("email").asString().equalsIgnoreCase(email)
+                    && systemCode.equals(holder.get("systemCode").asString(""))) {
+                return holder.get("id").asString();
+            }
+        }
+        throw new AssertionError("no " + role + " grant for " + systemCode);
+    }
+
+    @Test
     void aChangeThatGivesOnePersonTwoStepsOfAnInFlightVaSubmissionIsBlockedForSegregationOfDuties() {
         inReview();
         ApiClient poc = vaPoc();
