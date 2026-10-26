@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import sg.annualva.harness.ApiClient;
 import tools.jackson.databind.JsonNode;
@@ -111,6 +112,37 @@ class RoleHolderReviewTest extends RoleHolderSeam1 {
         List<String> emails = new ArrayList<>();
         review.get("holders").forEach(holder -> emails.add(holder.get("email").asString()));
         assertThat(emails).as("SMO_A is no longer named").doesNotContain(SMO_A);
+    }
+
+    @Test
+    void aReviewRecordsTheHoldersItCheckedAndRefusesOneItDoesNotList() {
+        twoSystems();
+        ApiClient poc = vaPoc();
+        JsonNode review = review(poc);
+        String smoA = grantOf(review, "SMO", SMO_A, "SYS-HA");
+        String cm = grantOf(review, "CYBER_MANAGER", CM, "SYS-HA");
+
+        var refused = poc.postJson(HOLDERS + "/reviews", "{\"grantIds\":[\"" + smoA + "\",\"" + UUID.randomUUID() + "\"]}");
+        var recorded = poc.postJson(HOLDERS + "/reviews", "{\"grantIds\":[\"" + smoA + "\",\"" + cm + "\",\"" + smoA + "\"]}");
+
+        assertThat(refused.status()).isEqualTo(400);
+        assertThat(ApiClient.json(refused).get("field").asString()).isEqualTo("grantIds");
+        assertThat(recorded.status()).as(recorded.body()).isEqualTo(201);
+        JsonNode completed = ApiClient.json(recorded);
+        assertThat(completed.get("holders").asInt()).as("each grant once").isEqualTo(2);
+        assertThat(texts(completed.get("grantIds"))).containsExactly(smoA, cm);
+        JsonNode last = review(poc).get("lastReview");
+        assertThat(texts(last.get("grantIds"))).isEqualTo(List.of(smoA, cm));
+        assertThat(review(poc).get("holders").size()).as("the list itself is longer").isGreaterThan(2);
+        JsonNode everyone = completed(poc);
+        assertThat(everyone.get("grantIds").size()).as("no body: every holder listed now")
+                .isEqualTo(everyone.get("holders").asInt()).isEqualTo(review(poc).get("holders").size());
+    }
+
+    private static List<String> texts(JsonNode array) {
+        List<String> texts = new ArrayList<>();
+        array.forEach(item -> texts.add(item.asString()));
+        return texts;
     }
 
     @Test

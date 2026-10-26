@@ -192,8 +192,8 @@ function ReturnsTable({ returns }: { returns: RoleHolder[] }) {
   );
 }
 
-/** Review completed: records that the caller has checked every holder listed now. */
-function CompleteReview({ onCompleted }: { onCompleted: () => void }) {
+/** Review completed: records that the caller has checked every holder listed, by the grants shown. */
+function CompleteReview({ holders, onCompleted }: { holders: RoleHolder[]; onCompleted: () => void }) {
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<Problem | undefined>(undefined);
 
@@ -201,7 +201,7 @@ function CompleteReview({ onCompleted }: { onCompleted: () => void }) {
     setBusy(true);
     setProblem(undefined);
     try {
-      await completeRoleHolderReview();
+      await completeRoleHolderReview(holders.map((holder) => holder.id));
       onCompleted();
     } catch (failure) {
       setProblem(problemOf(failure));
@@ -266,7 +266,7 @@ export function RoleHolderReviewScreen() {
             <h3 id="holders-title">Role holders ({data.holders.length})</h3>
             <HoldersTable holders={data.holders} onChanged={review.reload} />
           </section>
-          <CompleteReview onCompleted={review.reload} />
+          <CompleteReview holders={data.holders} onCompleted={review.reload} />
         </>
       ) : null}
     </div>
