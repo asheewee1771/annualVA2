@@ -29,7 +29,7 @@ Migration numbering: V40 sorts after V39, the latest merged, which also changed 
 Not done here, on purpose:
 - Telling the suspended person, or mailing the VA POCs when a review falls due: the spec names no such message.
 - Auditor grants (Release 2): the review lists them, but only per-System roles are suspendable.
-- Disposal of `role_holder_review` rows: they name no System or VA Submission, so no retention rule covers them yet.
+- ~~Disposal of `role_holder_review` rows~~: decided 2026-10-26 (docs/agents/reviewer-decisions.md), they are kept for the VA Cycle plus 3 years under ADR 0050's rule for records that belong to no single VA Submission (everything before the next Cycle's first day), and `DisposalStore` deletes them with the Cycle.
 
 Consequences:
 - `RoleHolders` joins the classes `ArchitectureTest.onlyNamedClassesWriteRoleGrants` allows; `IdentityStatus` joins the boundary ports only adapters implement.

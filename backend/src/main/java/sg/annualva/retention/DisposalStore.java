@@ -190,6 +190,8 @@ class DisposalStore {
             new Step("DELETE FROM role_grant WHERE system_id IN " + LISTED_RETIRED_SYSTEMS, null),
             new Step("DELETE FROM va_system WHERE id IN " + LISTED_RETIRED_SYSTEMS, Counted.SYSTEMS),
             new Step("DELETE FROM export_request WHERE id IN " + LISTED_EXPORTS, Counted.EXPORTS),
+            // Role-holder reviews belong to no VA Submission: those before the cutoff go with the Cycle (decided 2026-10-26).
+            new Step("DELETE FROM role_holder_review WHERE reviewed_at < " + CUTOFF, null),
             new Step("DELETE FROM audit_entry WHERE occurred_at < " + CUTOFF + " AND action NOT IN " + KEPT_ACTIONS,
                     Counted.AUDIT_ENTRIES));
 
