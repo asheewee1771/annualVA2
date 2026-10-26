@@ -10,8 +10,8 @@ import sg.annualva.export.ExportTable.Column;
 
 /**
  * What the management summary says (story 81), whatever file it is made as: its title, the date it was read on, and its
- * two tables, Summary (counts by Quarter and state with Endorsed Late) and Systems (one row per System), with their
- * columns in order and how a state and a flag are written. The Excel workbook and the PDF both write these tables, so
+ * two tables, Summary (counts by Quarter and state with Endorsed Late and Exemption Lapsed) and Systems (one row per
+ * System), with their columns in order and how a state and a flag are written. The Excel workbook and the PDF both write these tables, so
  * the two formats cannot disagree about a column, its place or its value.
  */
 final class SummaryText {
@@ -39,6 +39,7 @@ final class SummaryText {
             new SystemColumn(new Column("State", 22), line -> text(label(line.state()))),
             new SystemColumn(new Column("Overdue", 10), line -> yesNo(line.overdue())),
             new SystemColumn(new Column("Endorsed Late", 14), line -> yesNo(line.endorsedLate())),
+            new SystemColumn(new Column("Exemption Lapsed", 17), line -> yesNo(line.exemptionLapsed())),
             new SystemColumn(new Column("Open Deviations", 16), line -> new Cell.Count(line.openDeviations())));
 
     private SummaryText() {}
@@ -83,6 +84,8 @@ final class SummaryText {
                         line -> new Cell.Count(line.endorsedLate())));
             }
         }
+        columns.add(new QuarterColumn(new Column("Exemption Lapsed", 17),
+                line -> new Cell.Count(line.exemptionLapsed())));
         columns.add(new QuarterColumn(new Column("Total", COUNT_WIDTH), line -> new Cell.Count(line.total())));
         return List.copyOf(columns);
     }

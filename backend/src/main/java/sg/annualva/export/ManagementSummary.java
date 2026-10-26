@@ -29,14 +29,17 @@ record ManagementSummary(
      *
      * @param counts the number of Systems in each state but Withdrawn
      * @param endorsedLate how many of the Endorsed were endorsed after the Quarter's last day
+     * @param exemptionLapsed how many Systems had a conditional Exemption lapse (ADR 0051), whatever their state now:
+     *     an endorsement after a lapse is judged late against the Cycle's close, so this is what shows it came late
+     *     (decided 2026-10-26)
      */
     record QuarterLine(
             int quarter, LocalDate startsOn, LocalDate endsOn, Map<SystemState, Long> counts, long total,
-            long endorsedLate) {
+            long endorsedLate, long exemptionLapsed) {
 
-        static QuarterLine of(CycleMatrix.QuarterStrip strip) {
+        static QuarterLine of(CycleMatrix.QuarterStrip strip, long exemptionLapsed) {
             return new QuarterLine(strip.quarter(), strip.startsOn(), strip.endsOn(), strip.counts(), strip.total(),
-                    strip.endorsedLate());
+                    strip.endorsedLate(), exemptionLapsed);
         }
     }
 
@@ -44,9 +47,10 @@ record ManagementSummary(
      * One System of the summary.
      *
      * @param quarter 1 to 4
+     * @param exemptionLapsed whether a conditional Exemption of its VA Submission lapsed (ADR 0051)
      * @param openDeviations how many of its Findings are Risk Accepted or Remediation Planned
      */
     record SystemLine(
             String systemId, String name, int quarter, String smoEmail, SystemState state, boolean overdue,
-            boolean endorsedLate, long openDeviations) {}
+            boolean endorsedLate, boolean exemptionLapsed, long openDeviations) {}
 }

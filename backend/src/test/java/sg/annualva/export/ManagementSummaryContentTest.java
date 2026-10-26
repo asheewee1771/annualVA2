@@ -47,30 +47,62 @@ class ManagementSummaryContentTest extends ExportSeam1 {
         assertThat(summary.get(2)).containsExactly("As at 2027-08-16");
         assertThat(rowStarting(summary, "Quarter")).containsExactly("Quarter", "Starts", "Ends", "Not Started", "Draft",
                 "In Review", "Returned for Rework", "Awaiting Endorsement", "Endorsed", "Endorsed Late",
-                "Exemption Requested", "Exempted", "Not Endorsed", "Total");
+                "Exemption Requested", "Exempted", "Not Endorsed", "Exemption Lapsed", "Total");
         assertThat(rowStarting(summary, "Q3")).containsExactly("Q3", "2027-08-02", "2027-10-31", "1", "1", "1", "0", "0",
-                "2", "1", "0", "0", "0", "5");
+                "2", "1", "0", "0", "0", "0", "5");
         assertThat(rowStarting(summary, "Q4")).containsExactly("Q4", "2027-11-01", "2028-02-06", "1", "0", "0", "0", "0",
-                "0", "0", "0", "0", "0", "1");
+                "0", "0", "0", "0", "0", "0", "1");
         assertThat(summary).as("Quarters Handled outside the app are left out")
                 .noneMatch(row -> !row.isEmpty() && (row.getFirst().equals("Q1") || row.getFirst().equals("Q2")));
 
         List<List<String>> systems = rows(workbook, "Systems");
         assertThat(systems.get(0)).containsExactly("Confidential");
         assertThat(systems.get(1)).containsExactly("System ID", "System Name", "Quarter", "SMO/Tech Lead", "State",
-                "Overdue", "Endorsed Late", "Open Deviations");
+                "Overdue", "Endorsed Late", "Exemption Lapsed", "Open Deviations");
         assertThat(systems.subList(2, systems.size())).containsExactly(
-                List.of("SYS-C1", "Not started", "Q3", SMO_A, "Not Started", "Yes", "No", "0"),
-                List.of("SYS-C2", "Draft", "Q3", SMO_A, "Draft", "Yes", "No", "2"),
-                List.of("SYS-C3", "In Review", "Q3", SMO_A, "In Review", "No", "No", "0"),
-                List.of("SYS-C4", "Endorsed late", "Q3", SMO_B, "Endorsed", "No", "Yes", "0"),
-                List.of("SYS-C5", "Endorsed", "Q3", SMO_B, "Endorsed", "No", "No", "0"),
-                List.of("SYS-C7", "Next Quarter", "Q4", SMO_A, "Not Started", "No", "No", "0"));
+                List.of("SYS-C1", "Not started", "Q3", SMO_A, "Not Started", "Yes", "No", "No", "0"),
+                List.of("SYS-C2", "Draft", "Q3", SMO_A, "Draft", "Yes", "No", "No", "2"),
+                List.of("SYS-C3", "In Review", "Q3", SMO_A, "In Review", "No", "No", "No", "0"),
+                List.of("SYS-C4", "Endorsed late", "Q3", SMO_B, "Endorsed", "No", "Yes", "No", "0"),
+                List.of("SYS-C5", "Endorsed", "Q3", SMO_B, "Endorsed", "No", "No", "No", "0"),
+                List.of("SYS-C7", "Next Quarter", "Q4", SMO_A, "Not Started", "No", "No", "No", "0"));
 
         String all = everything(workbook);
         assertThat(all).as("no vulnerability detail").doesNotContain(SENTINEL).doesNotContain("Entered 1")
                 .doesNotContain("CVE-2027").doesNotContain("Next release").doesNotContain("Low exposure");
         assertThat(all).as("Withdrawn and Handled outside the app are left out").doesNotContain("SYS-C6")
                 .doesNotContain("SYS-C8");
+    }
+
+    /**
+     * Decided 2026-10-26: an endorsement after a conditional Exemption lapsed is judged late against the stored
+     * {@code endorse_due}, the Cycle's close, so the summary counts and marks the lapses instead, in both tables.
+     */
+    @Test
+    void theSummaryCountsAndMarksTheSystemsWhoseConditionalExemptionLapsed() {
+        registered(listed("SYS-L1", "Lapsed", SMO_A, CM, "Q3"), listed("SYS-L2", "Kept", SMO_A, CM, "Q3"));
+        ApiClient smo = signedInAs(SMO_A);
+        String system = item(inbox(smo), "systems", "SYS-L1").get("id").asString();
+        started(smo, "SYS-L1");
+        var requested = smo.postJson("/api/systems/" + system + "/exemptions", "{\"basis\":\"SCHEDULED_VA\","
+                + "\"vaDate\":\"2027-11-15\",\"evidence\":\"Third-party VA booked with Acme, PO 4471.\","
+                + "\"evidenceFileId\":null}");
+        assertThat(requested.status()).as(requested.body()).isEqualTo(201);
+        String exemption = ApiClient.json(requested).get("id").asString();
+        assertThat(vaPoc().postJson("/api/exemptions/" + exemption + "/approve", "{}").status()).isEqualTo(200);
+        today("2028-02-01");
+        arrange.exemptionLapse();
+
+        XSSFWorkbook workbook = summaryOfTheCycle(vaPoc());
+
+        List<String> q3 = rowStarting(rows(workbook, "Summary"), "Q3");
+        List<String> headers = rowStarting(rows(workbook, "Summary"), "Quarter");
+        assertThat(q3.get(headers.indexOf("Draft"))).as("back in Draft with new windows").isEqualTo("1");
+        assertThat(q3.get(headers.indexOf("Exemption Lapsed"))).isEqualTo("1");
+        List<List<String>> systems = rows(workbook, "Systems");
+        int lapsed = systems.get(1).indexOf("Exemption Lapsed");
+        assertThat(rowStarting(systems, "SYS-L1").get(lapsed)).isEqualTo("Yes");
+        assertThat(rowStarting(systems, "SYS-L2").get(lapsed)).isEqualTo("No");
+        assertThat(everything(workbook)).as("nothing a person wrote").doesNotContain("Acme").doesNotContain("4471");
     }
 }
