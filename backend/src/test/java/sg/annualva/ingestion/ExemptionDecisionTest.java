@@ -218,7 +218,7 @@ class ExemptionDecisionTest extends ExemptionSeam1 {
         assertThat(refused.get("outcome").asString()).isEqualTo("REFUSED");
         assertThat(refused.get("submissionId").asString()).as("an existing row the start would have taken")
                 .isEqualTo(sub);
-        assertThat(inboxRow(smoB, "SYS-F2").get("state").asString()).as("the take was rolled back")
+        assertThat(inboxRow(signedInAs(SMO_B), "SYS-F2").get("state").asString()).as("the take was rolled back")
                 .isEqualTo("NOT_STARTED");
     }
 

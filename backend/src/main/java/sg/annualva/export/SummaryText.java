@@ -74,8 +74,8 @@ final class SummaryText {
     private static List<QuarterColumn> quarterColumns() {
         List<QuarterColumn> columns = new ArrayList<>(List.of(
                 new QuarterColumn(new Column("Quarter", 9), line -> text("Q" + line.quarter())),
-                new QuarterColumn(new Column("Starts", 11.5), line -> text(line.startsOn().toString())),
-                new QuarterColumn(new Column("Ends", 11.5), line -> text(line.endsOn().toString()))));
+                new QuarterColumn(new Column("Starts", 13), line -> text(line.startsOn().toString())),
+                new QuarterColumn(new Column("Ends", 13), line -> text(line.endsOn().toString()))));
         for (SystemState state : COUNTED) {
             columns.add(new QuarterColumn(new Column(label(state), COUNT_WIDTH),
                     line -> new Cell.Count(line.counts().getOrDefault(state, 0L))));
@@ -84,7 +84,7 @@ final class SummaryText {
                         line -> new Cell.Count(line.endorsedLate())));
             }
         }
-        columns.add(new QuarterColumn(new Column("Exemption Lapsed", 17),
+        columns.add(new QuarterColumn(new Column("Exemption Lapsed", COUNT_WIDTH),
                 line -> new Cell.Count(line.exemptionLapsed())));
         columns.add(new QuarterColumn(new Column("Total", COUNT_WIDTH), line -> new Cell.Count(line.total())));
         return List.copyOf(columns);

@@ -66,12 +66,12 @@ class ManagementSummaryPdfTest extends ExportSeam1 {
         assertClassifiedOnEveryPage(pdf, "Confidential");
         String text = pdf.text();
         assertThat(text).contains("Management summary, VA Cycle 2027").contains("As at 2027-08-16")
-                .contains("Q3 2027-08-02 2027-10-31 1 1 0 0 0 1 1 0 0 0 3")
-                .contains("Q4 2027-11-01 2028-02-06 1 0 0 0 0 0 0 0 0 0 1")
-                .contains("SYS-P1 Payroll Q3 " + SMO_A + " Draft Yes No 1")
-                .contains("SYS-P2 Portal Q3 " + SMO_B + " Not Started Yes No 0")
-                .contains("SYS-P4 Grants Q3 " + SMO_B + " Endorsed No Yes 0")
-                .contains("SYS-P3 Next Quarter Q4 " + SMO_A + " Not Started No No 0");
+                .contains("Q3 2027-08-02 2027-10-31 1 1 0 0 0 1 1 0 0 0 0 3")
+                .contains("Q4 2027-11-01 2028-02-06 1 0 0 0 0 0 0 0 0 0 0 1")
+                .contains("SYS-P1 Payroll Q3 " + SMO_A + " Draft Yes No No 1")
+                .contains("SYS-P2 Portal Q3 " + SMO_B + " Not Started Yes No No 0")
+                .contains("SYS-P4 Grants Q3 " + SMO_B + " Endorsed No Yes No 0")
+                .contains("SYS-P3 Next Quarter Q4 " + SMO_A + " Not Started No No No 0");
         assertThat(text).as("no vulnerability detail").doesNotContain(SENTINEL).doesNotContain("Entered 1")
                 .doesNotContain("CVE-").doesNotContain("Next release");
     }

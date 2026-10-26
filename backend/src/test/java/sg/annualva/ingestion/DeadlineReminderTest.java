@@ -324,7 +324,7 @@ class DeadlineReminderTest extends MailSeam1 {
         plannedOn("2027-08-23");
 
         assertThat(outboxOf(SMO_A)).as("nothing is addressed to a person who cannot act").isEmpty();
-        List<JsonNode> told = nobodyToAct(poc, "NOBODY_TO_SUBMIT");
+        List<JsonNode> told = nobodyToAct(vaPoc(), "NOBODY_TO_SUBMIT");
         assertThat(told).as("the Overdue message, then the weekly reminder").hasSize(2);
         JsonNode weekly = told.getFirst();
         assertThat(weekly.get("systemCode").asString()).isEqualTo("SYS-F1");
@@ -366,7 +366,7 @@ class DeadlineReminderTest extends MailSeam1 {
 
         assertThat(outboxOf(CM)).isEmpty();
         ApiClient poc = vaPoc();
-        List<JsonNode> told = nobodyToAct(poc, "NOBODY_TO_REVIEW");
+        List<JsonNode> told = nobodyToAct(vaPoc(), "NOBODY_TO_REVIEW");
         assertThat(told).hasSize(1);
         assertThat(told.getFirst().get("state").asString()).isEqualTo("IN_REVIEW");
         assertThat(told.getFirst().get("submissionId").asString()).isEqualTo(draft.submissionId());
@@ -382,7 +382,7 @@ class DeadlineReminderTest extends MailSeam1 {
 
         registered(listed("SYS-F1", "File one", SMO_A, CM, "Q3"), listed("SYS-F2", "File two", SMO_B, CM_OTHER, "Q3"));
 
-        assertThat(nobodyToAct(poc, "NOBODY_TO_REVIEW")).as("a Register apply that brings the role back clears the pair")
+        assertThat(nobodyToAct(vaPoc(), "NOBODY_TO_REVIEW")).as("a Register apply that brings the role back clears the pair")
                 .allSatisfy(item -> assertThat(item.get("handledBy").asString()).isEqualTo("POC One"));
     }
 
@@ -396,9 +396,9 @@ class DeadlineReminderTest extends MailSeam1 {
         arrange.overdueSweep();
         plannedOn("2027-08-23");
 
-        assertThat(actions(signedInAs(CM))).as("nobody waits on the Cyber Manager's step: the copy is theirs to read")
-                .containsExactly("SUBMIT_OVERDUE_COPY");
-        assertThat(nobodyToAct(poc, "NOBODY_TO_REVIEW")).isEmpty();
+        assertThat(outboxOf(CM)).as("nobody waits on the Cyber Manager's step: the copy is theirs, mailed").hasSize(1);
+        assertThat(onlyMailOf(CM).get("template").asString()).isEqualTo("REMINDER_COPY");
+        assertThat(nobodyToAct(vaPoc(), "NOBODY_TO_REVIEW")).isEmpty();
         assertThat(actions(signedInAs(SMO_A))).as("the SMO/Tech Lead is addressed as before")
                 .containsExactly("SUBMIT_STILL_OVERDUE", "SUBMIT_OVERDUE");
     }
