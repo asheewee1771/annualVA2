@@ -48,9 +48,10 @@ import sg.annualva.submission.Submissions;
  *       Lead is told (ticket 40, ADR 0048);
  *   <li>a conditional Exemption's VA recorded: both VA POCs, as a pair; confirmed: the pair clears and the SMO/Tech Lead
  *       is told; lapsed: the SMO/Tech Lead, and whoever's step the restored state waits on (ticket 42, ADR 0051);
- *   <li>any of these to an SMO/Tech Lead or Cyber Manager whose role for the System is suspended or lapsed: both VA POCs
- *       instead, as a pair that clears once a VA POC restores the role or a Register names someone else (decided
- *       2026-10-26; {@link Notifications#toSmo}).
+ *   <li>any step notice (a move into a state, an Overdue flag, a reminder) to an SMO/Tech Lead or Cyber Manager whose
+ *       role for the System is suspended or lapsed, while that step is what the state waits on: both VA POCs instead,
+ *       as a pair that clears once a VA POC restores the role or a Register names someone else (decided 2026-10-26;
+ *       {@link Notifications#toStep}).
  * </ul>
  */
 @Component

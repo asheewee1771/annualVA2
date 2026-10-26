@@ -152,7 +152,6 @@ public abstract class RegisterSeam1 extends Seam1Test {
         return ApiClient.json(response);
     }
 
-    /** The row for one System ID, as typed. */
     /** The one holder of this role, for this email, on the System with this System ID (null for an organisation-wide role). */
     protected static JsonNode holder(JsonNode review, String role, String email, String systemCode) {
         List<JsonNode> matching = new ArrayList<>();
@@ -187,6 +186,7 @@ public abstract class RegisterSeam1 extends Seam1Test {
         return texts;
     }
 
+    /** The row for one System ID, as typed. */
     protected static JsonNode rowOf(JsonNode preview, String systemId) {
         for (JsonNode row : preview.get("rows")) {
             if (row.hasNonNull("systemId") && row.get("systemId").asString().equals(systemId)) {

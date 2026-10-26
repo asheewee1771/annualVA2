@@ -365,7 +365,6 @@ class DeadlineReminderTest extends MailSeam1 {
         plannedOn("2027-08-24");
 
         assertThat(outboxOf(CM)).isEmpty();
-        ApiClient poc = vaPoc();
         List<JsonNode> told = nobodyToAct(vaPoc(), "NOBODY_TO_REVIEW");
         assertThat(told).hasSize(1);
         assertThat(told.getFirst().get("state").asString()).isEqualTo("IN_REVIEW");
@@ -387,7 +386,7 @@ class DeadlineReminderTest extends MailSeam1 {
     }
 
     @Test
-    void aCopyToASuspendedCyberManagerAndANoticeAboutNoStepAreStillDeliveredToThem() {
+    void aCopyToASuspendedCyberManagerIsStillDeliveredToThem() {
         draft();
         ApiClient poc = vaPoc();
         assertThat(poc.post("/api/role-holders/" + grantOf(poc, "CYBER_MANAGER", CM, "SYS-F1") + "/suspend").status())

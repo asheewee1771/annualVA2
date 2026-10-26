@@ -203,6 +203,23 @@ class ExemptionDecisionTest extends ExemptionSeam1 {
     }
 
     @Test
+    void anApprovalIsStillDeliveredToASuspendedSmoBecauseNothingWaitsOnTheirStep() {
+        Draft draft = draft();
+        String id = requested(draft.smo(), draft.systemId(), priorVa()).get("id").asString();
+        ApiClient poc = vaPoc();
+        String grant = grantOf(poc, "SMO", SMO_A, "SYS-F1");
+        assertThat(poc.post("/api/role-holders/" + grant + "/suspend").status()).isEqualTo(200);
+
+        approved(vaPoc(), id);
+
+        ApiClient reader = vaPoc();
+        assertThat(actions(reader)).as("no pair about a step nobody waits at").doesNotContain("NOBODY_TO_SUBMIT");
+        assertThat(reader.post("/api/role-holders/" + grant + "/restore").status()).isEqualTo(200);
+        assertThat(actions(signedInAs(SMO_A))).as("the approval was written for them all along")
+                .contains("EXEMPTION_APPROVED");
+    }
+
+    @Test
     void aRefusedStartThatWouldTakeTheNotStartedVaSubmissionNamesItAndLeavesItNotStarted() {
         draft();
         ApiClient smoB = signedInAs(SMO_B);
