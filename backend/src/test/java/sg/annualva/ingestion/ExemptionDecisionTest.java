@@ -203,6 +203,26 @@ class ExemptionDecisionTest extends ExemptionSeam1 {
     }
 
     @Test
+    void aRefusedStartThatWouldTakeTheNotStartedVaSubmissionNamesItAndLeavesItNotStarted() {
+        draft();
+        ApiClient smoB = signedInAs(SMO_B);
+        String system = idOf("SYS-F2");
+        JsonNode requested = requested(smoB, system, priorVa());
+        String sub = requested.get("submissionId").asString();
+        rejected(vaPoc(), requested.get("id").asString());
+        arrange.grant("CYBER_MANAGER", SMO_B, system);
+
+        assertSodConflict(start(signedInAs(SMO_B), system));
+
+        JsonNode refused = entries("SUBMISSION_STARTED", system).get(0);
+        assertThat(refused.get("outcome").asString()).isEqualTo("REFUSED");
+        assertThat(refused.get("submissionId").asString()).as("an existing row the start would have taken")
+                .isEqualTo(sub);
+        assertThat(inboxRow(smoB, "SYS-F2").get("state").asString()).as("the take was rolled back")
+                .isEqualTo("NOT_STARTED");
+    }
+
+    @Test
     void aMoveOfASystemWhoseVaSubmissionARejectionLeftNotStartedLinksTheSmoToTheirInbox() {
         draft();
         ApiClient smoB = signedInAs(SMO_B);
