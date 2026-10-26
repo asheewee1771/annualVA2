@@ -123,10 +123,13 @@ class RoleHolderReviewTest extends RoleHolderSeam1 {
         String cm = grantOf(review, "CYBER_MANAGER", CM, "SYS-HA");
 
         var refused = poc.postJson(HOLDERS + "/reviews", "{\"grantIds\":[\"" + smoA + "\",\"" + UUID.randomUUID() + "\"]}");
+        var nobody = poc.postJson(HOLDERS + "/reviews", "{\"grantIds\":[]}");
         var recorded = poc.postJson(HOLDERS + "/reviews", "{\"grantIds\":[\"" + smoA + "\",\"" + cm + "\",\"" + smoA + "\"]}");
 
         assertThat(refused.status()).isEqualTo(400);
         assertThat(ApiClient.json(refused).get("field").asString()).isEqualTo("grantIds");
+        assertThat(nobody.status()).as("a review of nobody is no review").isEqualTo(400);
+        assertThat(review(poc).get("lastReview").get("grantIds").size()).as("neither was recorded").isEqualTo(2);
         assertThat(recorded.status()).as(recorded.body()).isEqualTo(201);
         JsonNode completed = ApiClient.json(recorded);
         assertThat(completed.get("holders").asInt()).as("each grant once").isEqualTo(2);
@@ -137,12 +140,6 @@ class RoleHolderReviewTest extends RoleHolderSeam1 {
         JsonNode everyone = completed(poc);
         assertThat(everyone.get("grantIds").size()).as("no body: every holder listed now")
                 .isEqualTo(everyone.get("holders").asInt()).isEqualTo(review(poc).get("holders").size());
-    }
-
-    private static List<String> texts(JsonNode array) {
-        List<String> texts = new ArrayList<>();
-        array.forEach(item -> texts.add(item.asString()));
-        return texts;
     }
 
     @Test

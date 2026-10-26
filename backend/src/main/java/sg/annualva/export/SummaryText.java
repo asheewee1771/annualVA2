@@ -9,10 +9,10 @@ import sg.annualva.export.ExportTable.Cell;
 import sg.annualva.export.ExportTable.Column;
 
 /**
- * What the management summary says (story 81), whatever file it is made as: its title, the date it was read on, and its
- * two tables, Summary (counts by Quarter and state with Endorsed Late and Exemption Lapsed) and Systems (one row per
- * System), with their columns in order and how a state and a flag are written. The Excel workbook and the PDF both write these tables, so
- * the two formats cannot disagree about a column, its place or its value.
+ * What the management summary says (story 81), whatever file it is made as: its title, the date it was read on, and
+ * its two tables, Summary (counts by Quarter and state with Endorsed Late and Exemption Lapsed) and Systems (one row
+ * per System), with their columns in order and how a state and a flag are written. The Excel workbook and the PDF both
+ * write these tables, so the two formats cannot disagree about a column, its place or its value.
  */
 final class SummaryText {
 

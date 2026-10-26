@@ -95,9 +95,4 @@ abstract class BatchReviewSeam1 extends ReviewSeam1 {
     }
 
     /** The texts of a JSON array, in order. */
-    protected static List<String> texts(JsonNode array) {
-        List<String> texts = new ArrayList<>();
-        array.forEach(item -> texts.add(item.asString()));
-        return texts;
-    }
 }

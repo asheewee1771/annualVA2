@@ -153,6 +153,40 @@ public abstract class RegisterSeam1 extends Seam1Test {
     }
 
     /** The row for one System ID, as typed. */
+    /** The one holder of this role, for this email, on the System with this System ID (null for an organisation-wide role). */
+    protected static JsonNode holder(JsonNode review, String role, String email, String systemCode) {
+        List<JsonNode> matching = new ArrayList<>();
+        review.get("holders").forEach(holder -> {
+            boolean onSystem = systemCode == null ? holder.get("systemCode").isNull()
+                    : systemCode.equals(holder.get("systemCode").asString(""));
+            if (holder.get("role").asString().equals(role) && holder.get("email").asString().equalsIgnoreCase(email)
+                    && onSystem) {
+                matching.add(holder);
+            }
+        });
+        assertThat(matching).as(role + " " + email + " on " + systemCode).hasSize(1);
+        return matching.getFirst();
+    }
+
+    /** The grant of that holder, as the role-holder review lists it. */
+    protected static String grantOf(JsonNode review, String role, String email, String systemCode) {
+        return holder(review, role, email, systemCode).get("id").asString();
+    }
+
+    /** The grant this person holds for this role on this System, read from the role-holder review as this VA POC. */
+    protected static String grantOf(ApiClient poc, String role, String email, String systemCode) {
+        var response = poc.get("/api/role-holders");
+        assertThat(response.status()).as(response.body()).isEqualTo(200);
+        return grantOf(ApiClient.json(response), role, email, systemCode);
+    }
+
+    /** The texts of a JSON array of strings, in order. */
+    protected static List<String> texts(JsonNode array) {
+        List<String> texts = new ArrayList<>();
+        array.forEach(item -> texts.add(item.asString()));
+        return texts;
+    }
+
     protected static JsonNode rowOf(JsonNode preview, String systemId) {
         for (JsonNode row : preview.get("rows")) {
             if (row.hasNonNull("systemId") && row.get("systemId").asString().equals(systemId)) {

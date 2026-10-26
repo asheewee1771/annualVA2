@@ -2,7 +2,12 @@ package sg.annualva.access;
 
 import java.time.Clock;
 import java.util.Collection;
+import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
@@ -60,13 +65,19 @@ public class RoleHolders {
     }
 
     /**
-     * The suspended Register grants of these Systems, for the Register preview (ADR 0049 item 2): a change that only
-     * replaces a suspended SMO/Tech Lead or Cyber Manager is applied even on a System with in-flight work, as the one
-     * exception to the hold-back, because a suspension otherwise leaves the System with nobody to act.
+     * The Register roles of these Systems whose holder is suspended, by System, for the Register preview (ADR 0049 item
+     * 2): a change that only replaces a suspended SMO/Tech Lead or Cyber Manager is applied even on a System with
+     * in-flight work, as the one exception to the hold-back, because a suspension otherwise leaves the System with nobody
+     * to act. A live Register grant is the named person's (the apply revokes any other), so the role says who.
      */
     @Transactional(readOnly = true)
-    public List<RoleGrant> suspendedOn(Collection<UUID> systemIds) {
-        return grants.suspendedOn(systemIds);
+    public Map<UUID, Set<Role>> suspendedRolesOn(Collection<UUID> systemIds) {
+        Map<UUID, Set<Role>> suspended = new HashMap<>();
+        for (RoleGrant grant : grants.suspendedOn(systemIds)) {
+            suspended.computeIfAbsent(Objects.requireNonNull(grant.systemId(), "a Register grant names its System"),
+                    system -> EnumSet.noneOf(Role.class)).add(grant.role());
+        }
+        return suspended;
     }
 
     /**

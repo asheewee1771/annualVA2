@@ -343,8 +343,8 @@ class DeadlineReminderTest extends MailSeam1 {
 
         dispatched();
 
-        assertThat(templatesTo(POC_ONE)).as("mailed as the notices they stand in for")
-                .containsExactly(OVERDUE_TEMPLATE, WEEKLY_TEMPLATE);
+        assertThat(templatesTo(POC_ONE)).as("each is mailed with the Overdue template, once")
+                .containsExactly(OVERDUE_TEMPLATE, OVERDUE_TEMPLATE);
         assertThat(mailTo(POC_ONE).getLast().values()).containsEntry("system_id", "SYS-F1")
                 .containsEntry("action", weekly.get("message").asString())
                 .containsEntry("link", APP_URL + "/va-poc/role-holders");
@@ -376,7 +376,7 @@ class DeadlineReminderTest extends MailSeam1 {
 
         dispatched();
 
-        assertThat(templatesTo(POC_TWO)).containsExactly(DUE_SOON_TEMPLATE);
+        assertThat(templatesTo(POC_TWO)).containsExactly(OVERDUE_TEMPLATE);
         assertThat(mailTo(POC_TWO).getFirst().values()).containsEntry("action", "Nobody can act: this System's Cyber "
                 + "Manager role is suspended or lapsed. Restore it, or name someone else in the System Register.");
 
@@ -384,6 +384,23 @@ class DeadlineReminderTest extends MailSeam1 {
 
         assertThat(nobodyToAct(poc, "NOBODY_TO_REVIEW")).as("a Register apply that brings the role back clears the pair")
                 .allSatisfy(item -> assertThat(item.get("handledBy").asString()).isEqualTo("POC One"));
+    }
+
+    @Test
+    void aCopyToASuspendedCyberManagerAndANoticeAboutNoStepAreStillDeliveredToThem() {
+        draft();
+        ApiClient poc = vaPoc();
+        assertThat(poc.post("/api/role-holders/" + grantOf(poc, "CYBER_MANAGER", CM, "SYS-F1") + "/suspend").status())
+                .isEqualTo(200);
+        today("2027-08-16");
+        arrange.overdueSweep();
+        plannedOn("2027-08-23");
+
+        assertThat(actions(signedInAs(CM))).as("nobody waits on the Cyber Manager's step: the copy is theirs to read")
+                .containsExactly("SUBMIT_OVERDUE_COPY");
+        assertThat(nobodyToAct(poc, "NOBODY_TO_REVIEW")).isEmpty();
+        assertThat(actions(signedInAs(SMO_A))).as("the SMO/Tech Lead is addressed as before")
+                .containsExactly("SUBMIT_STILL_OVERDUE", "SUBMIT_OVERDUE");
     }
 
     /** This VA POC's notices that nobody can act, newest first. */
@@ -395,16 +412,5 @@ class DeadlineReminderTest extends MailSeam1 {
             }
         });
         return found;
-    }
-
-    /** The grant this person holds for this role on this System, as the role-holder review lists it. */
-    private static String grantOf(ApiClient poc, String role, String email, String systemCode) {
-        for (JsonNode holder : ApiClient.json(poc.get("/api/role-holders")).get("holders")) {
-            if (holder.get("role").asString().equals(role) && holder.get("email").asString().equalsIgnoreCase(email)
-                    && systemCode.equals(holder.get("systemCode").asString(""))) {
-                return holder.get("id").asString();
-            }
-        }
-        throw new AssertionError("no " + role + " grant for " + systemCode);
     }
 }

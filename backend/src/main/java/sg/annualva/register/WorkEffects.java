@@ -4,7 +4,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -13,7 +12,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import sg.annualva.access.Role;
-import sg.annualva.access.RoleGrant;
 import sg.annualva.access.RoleHolders;
 import sg.annualva.cycle.CycleCalendar;
 
@@ -42,9 +40,6 @@ import sg.annualva.cycle.CycleCalendar;
 @Component
 class WorkEffects {
 
-    /** A Register role for a System whose holder is suspended, by the lower-case email the Register names. */
-    private record Suspended(UUID systemId, Role role, String email) {}
-
     private final InFlightWork work;
     private final RegisterSystems systems;
     private final CycleCalendar calendar;
@@ -61,7 +56,8 @@ class WorkEffects {
     @Transactional(propagation = Propagation.MANDATORY)
     List<PreviewRow> preview(List<PreviewRow> rows, Instant now) {
         Set<UUID> touched = systemsOf(rows);
-        return classify(rows, work.of(touched), systems.olderCycles(calendar.dateOf(now)), suspendedOn(touched));
+        return classify(rows, work.of(touched), systems.olderCycles(calendar.dateOf(now)),
+                roleHolders.suspendedRolesOn(touched));
     }
 
     /**
@@ -71,16 +67,8 @@ class WorkEffects {
     @Transactional(propagation = Propagation.MANDATORY)
     List<PreviewRow> held(List<PreviewRow> rows, Instant now) {
         Set<UUID> touched = systemsOf(rows);
-        return classify(rows, work.hold(touched, now), systems.olderCycles(calendar.dateOf(now)), suspendedOn(touched));
-    }
-
-    private Set<Suspended> suspendedOn(Set<UUID> systemIds) {
-        Set<Suspended> suspended = new LinkedHashSet<>();
-        for (RoleGrant grant : roleHolders.suspendedOn(systemIds)) {
-            suspended.add(new Suspended(Objects.requireNonNull(grant.systemId(), "a Register grant names its System"),
-                    grant.role(), grant.email().toLowerCase(Locale.ROOT)));
-        }
-        return suspended;
+        return classify(rows, work.hold(touched, now), systems.olderCycles(calendar.dateOf(now)),
+                roleHolders.suspendedRolesOn(touched));
     }
 
     /** Withdraws the VA Submissions a retired row names; how many it withdrew. */
@@ -107,15 +95,15 @@ class WorkEffects {
      * @param work the in-flight VA Submissions of the rows' Systems, by System
      * @param olderCycles the VA Cycles that keep their Systems as they were when a newer one opened, so a move changes
      *     nothing in them
-     * @param suspended the Register roles whose holder is suspended, which a transfer may replace mid-flight
+     * @param suspended by System, the Register roles whose holder is suspended, which a transfer may replace mid-flight
      */
     private static List<PreviewRow> classify(List<PreviewRow> rows, Map<UUID, List<InFlightWork.Work>> work,
-            Set<Integer> olderCycles, Set<Suspended> suspended) {
+            Set<Integer> olderCycles, Map<UUID, Set<Role>> suspended) {
         return rows.stream().map(row -> classify(row, work, olderCycles, suspended)).toList();
     }
 
     private static PreviewRow classify(PreviewRow row, Map<UUID, List<InFlightWork.Work>> work,
-            Set<Integer> olderCycles, Set<Suspended> suspended) {
+            Set<Integer> olderCycles, Map<UUID, Set<Role>> suspended) {
         if (row.outcome() != Outcome.RETIRE && row.outcome() != Outcome.UPDATE) {
             return row;
         }
@@ -136,7 +124,7 @@ class WorkEffects {
             }
             if (before.transfersIn(after)) {
                 effects.add(Effect.WILL_TRANSFER);
-                if (!replacesOnlySuspended(row.existingSystemId(), before, after, suspended)) {
+                if (!replacesOnlySuspended(before, after, suspended.getOrDefault(row.existingSystemId(), Set.of()))) {
                     reasons.add(BlockReason.TRANSFER_IN_FLIGHT);
                 }
                 if (inFlight.stream().anyMatch(item -> twoSteps(before, after, item))) {
@@ -154,12 +142,12 @@ class WorkEffects {
      * Whether every person the transfer replaces holds a suspended role for the System (the one exception to the
      * hold-back, ADR 0049 item 2): the SMO/Tech Lead it changes is suspended as SMO/Tech Lead, and the Cyber Manager it
      * changes is suspended as Cyber Manager.
+     *
+     * @param suspended the System's Register roles whose holder is suspended
      */
-    private static boolean replacesOnlySuspended(UUID systemId, SystemSnapshot before, SystemSnapshot after,
-            Set<Suspended> suspended) {
-        return (!before.changesSmoIn(after) || suspended.contains(new Suspended(systemId, Role.SMO, before.smoEmail())))
-                && (!before.changesCyberManagerIn(after)
-                        || suspended.contains(new Suspended(systemId, Role.CYBER_MANAGER, before.cyberManagerEmail())));
+    private static boolean replacesOnlySuspended(SystemSnapshot before, SystemSnapshot after, Set<Role> suspended) {
+        return (!before.changesSmoIn(after) || suspended.contains(Role.SMO))
+                && (!before.changesCyberManagerIn(after) || suspended.contains(Role.CYBER_MANAGER));
     }
 
     /**

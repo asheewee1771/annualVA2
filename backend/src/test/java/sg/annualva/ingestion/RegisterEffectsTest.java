@@ -297,17 +297,6 @@ class RegisterEffectsTest extends MailSeam1 {
                 .isEqualTo("SYS-F1");
     }
 
-    /** The grant this person holds for this role on this System, as the role-holder review lists it. */
-    private static String grantOf(ApiClient poc, String role, String email, String systemCode) {
-        for (JsonNode holder : ApiClient.json(poc.get("/api/role-holders")).get("holders")) {
-            if (holder.get("role").asString().equals(role) && holder.get("email").asString().equalsIgnoreCase(email)
-                    && systemCode.equals(holder.get("systemCode").asString(""))) {
-                return holder.get("id").asString();
-            }
-        }
-        throw new AssertionError("no " + role + " grant for " + systemCode);
-    }
-
     @Test
     void aChangeThatGivesOnePersonTwoStepsOfAnInFlightVaSubmissionIsBlockedForSegregationOfDuties() {
         inReview();
@@ -391,9 +380,4 @@ class RegisterEffectsTest extends MailSeam1 {
         throw new AssertionError("no System " + systemId + " in " + response.body());
     }
 
-    static List<String> texts(JsonNode array) {
-        List<String> texts = new ArrayList<>();
-        array.forEach(item -> texts.add(item.asString()));
-        return texts;
-    }
 }

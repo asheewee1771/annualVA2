@@ -13,7 +13,7 @@ Ticket 28 (stories 50 and 58, story 52 in part) lets the Cyber Manager assigned 
    - **submit**;
    - **both review commands**.
 
-   Each of these commands calls `require` once, before it records the step, and `require` builds the one refusal. `ArchitectureTest.everyCommandThatRecordsAStepAsksSegregationOfDuties` keeps it so for later step commands (tickets 29, 30 and 34): only `Submissions` records a step, and any method of it that does must call `require`.
+   Each of these commands records its step in one place, `Submissions.stepped`, which calls `require` first, and `require` builds the one refusal. `ArchitectureTest.everyCommandThatRecordsAStepAsksSegregationOfDuties` keeps it so for later step commands (tickets 29, 30 and 34): only `Submissions` records a step, any method of it that does must call `require`, and only `stepped` records it.
 
    A refusal is `403 sod-conflict` with a fixed sentence that names no person and no step. It is audited as the command's own action (`SUBMISSION_STARTED`, `SUBMISSION_SUBMITTED`, `FINDING_REVIEWED`, `REPORT_REVIEWED`) with outcome REFUSED and `reason` `sod-conflict`, in a transaction of its own (ADR 0014).
 

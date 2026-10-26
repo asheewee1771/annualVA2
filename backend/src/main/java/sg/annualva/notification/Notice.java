@@ -37,6 +37,12 @@ public record Notice(UUID systemId, @Nullable UUID submissionId, SubmissionState
             this(systemId, submissionId, state, dueOn, at, null);
         }
 
+        /** A deadline reminder for a business day (ADR 0052): it always names the due date it reminds of. */
+        static About reminder(UUID systemId, @Nullable UUID submissionId, SubmissionState state, LocalDate dueOn,
+                Instant at, LocalDate day) {
+            return new About(systemId, submissionId, state, dueOn, at, day);
+        }
+
         /** The notice that tells this action, linked here. */
         public Notice tell(NoticeAction action, String link) {
             return new Notice(systemId, submissionId, state, action, dueOn, link, at, reminderOn);

@@ -90,7 +90,7 @@ public class DeadlineReminders {
     /** Reminds the person whose step the work waits on, by the step's row of the one table ({@link StepNotices}). */
     private void remind(Waiting waiting, LocalDate today, Instant now) {
         StepNotices step = StepNotices.of(waiting.step());
-        Notice.About about = new Notice.About(waiting.systemId(), waiting.submissionId(), waiting.state(),
+        Notice.About about = Notice.About.reminder(waiting.systemId(), waiting.submissionId(), waiting.state(),
                 waiting.dueOn(), now, today);
         NoticeAction before = step.daysBefore().get(ChronoUnit.DAYS.between(today, waiting.dueOn()));
         if (before != null) {

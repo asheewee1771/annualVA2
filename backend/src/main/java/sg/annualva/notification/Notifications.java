@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,49 +57,16 @@ public class Notifications {
         this.clock = clock;
     }
 
-    /** To the System's SMO/Tech Lead, as the Register names them now ({@link #toHolder}). */
+    /** To the System's SMO/Tech Lead, as the Register names them now. */
     @Transactional
     public void toSmo(Notice notice) {
-        register.named(notice.systemId()).ifPresent(system -> toHolder(Role.SMO, system.smoEmail(), notice));
+        register.named(notice.systemId()).ifPresent(system -> to(system.smoEmail(), notice));
     }
 
-    /** To the System's Cyber Manager, as the Register names them now ({@link #toHolder}). */
+    /** To the System's Cyber Manager, as the Register names them now. */
     @Transactional
     public void toCyberManager(Notice notice) {
-        register.named(notice.systemId()).ifPresent(system -> toHolder(Role.CYBER_MANAGER, system.cyberManagerEmail(),
-                notice));
-    }
-
-    /**
-     * To the person the Register names for a role on the notice's System, unless their grant for it is suspended or
-     * lapsed (decided 2026-10-26): then nobody can act at that step, so both VA POCs are told instead, as a pair that
-     * clears once a VA POC restores the role or applies a Register naming someone else ({@link #roleHolderChanged}). The
-     * pair's notice names the System and the step, links the role-holder review, and carries no address and no free
-     * text; it is mailed when, and as, the notice it stands in for would have been.
-     */
-    private void toHolder(Role role, String email, Notice notice) {
-        if (!roleHolders.cannotAct(role, email, notice.systemId())) {
-            to(email, notice);
-            return;
-        }
-        Notice nobody = new Notice(notice.systemId(), notice.submissionId(), notice.state(), nobodyToAct(role),
-                notice.dueOn(), Links.ROLE_HOLDERS, notice.at(), notice.reminderOn());
-        UUID groupKey = UUID.randomUUID();
-        vaPocEmails().forEach(vaPoc -> write(vaPoc, nobody, groupKey, Awaits.ROLE_HOLDER, notice.action()));
-    }
-
-    /** What the VA POCs are told when nobody holds this role for a System: the step nobody can act at. */
-    private static NoticeAction nobodyToAct(Role role) {
-        return role == Role.SMO ? NoticeAction.NOBODY_TO_SUBMIT : NoticeAction.NOBODY_TO_REVIEW;
-    }
-
-    /**
-     * A VA POC gave the System someone who can act at the role's step again (restored the role, or applied a Register
-     * naming someone else): every open pair that told both VA POCs nobody could act there is cleared for both.
-     */
-    @Transactional
-    public void roleHolderChanged(UUID systemId, Role role, UUID handler, Instant at) {
-        store.handleOnSystem(systemId, nobodyToAct(role), handler, at);
+        register.named(notice.systemId()).ifPresent(system -> to(system.cyberManagerEmail(), notice));
     }
 
     /**
@@ -107,14 +75,65 @@ public class Notifications {
      * at their place for it in its state ({@link Links#forSmo}: the inbox while it is Not Started, the rework queue once
      * it is Returned for Rework, otherwise the VA Submission); the Cyber Manager at the reviewing step, at the review;
      * both VA POCs, as an endorsement pair, at the endorsing step, at the endorsement.
+     *
+     * <p>When the notice's state waits on the step and the person the Register names for it cannot act, because their
+     * grant for the System is suspended or lapsed (decided 2026-10-26), nobody can: both VA POCs are told instead
+     * ({@link #nobodyAt}). A notice about a state that waits on no step (an approval, a close, a confirmation) is theirs
+     * to read whatever their grant says, as a copy ({@link #copyUp}) is.
      */
     @Transactional
     public void toStep(SubmissionStep step, Notice.About about, NoticeAction action) {
         switch (step) {
-            case SUBMIT -> toSmo(about.tell(action, Links.forSmo(about.state(), about.submissionId())));
-            case REVIEW -> toCyberManager(about.tell(action, Links.review(started(about))));
+            case SUBMIT -> toHolder(step, Role.SMO, RegisterSystems.Named::smoEmail, about,
+                    about.tell(action, Links.forSmo(about.state(), about.submissionId())));
+            case REVIEW -> toHolder(step, Role.CYBER_MANAGER, RegisterSystems.Named::cyberManagerEmail, about,
+                    about.tell(action, Links.review(started(about))));
             case ENDORSE -> toVaPocs(about.tell(action, Links.endorse(started(about))), Awaits.ENDORSEMENT);
         }
+    }
+
+    /** To the person the Register names for the step's role, or, when nobody can act at the step, the VA POCs. */
+    private void toHolder(SubmissionStep step, Role role, Function<RegisterSystems.Named, String> named,
+            Notice.About about, Notice notice) {
+        register.named(about.systemId()).ifPresent(system -> {
+            String email = named.apply(system);
+            boolean waitsOnStep = about.state().nextStep().filter(step::equals).isPresent();
+            if (waitsOnStep && roleHolders.cannotAct(role, email, about.systemId())) {
+                nobodyAt(step, about);
+            } else {
+                to(email, notice);
+            }
+        });
+    }
+
+    /**
+     * Nobody can act at the step: both VA POCs are told, as a pair awaiting a role holder ({@link Awaits#ROLE_HOLDER});
+     * it names the System, the state and the step, links the role-holder review, and carries no address and no free
+     * text. The notice it replaces keeps its own rhythm: a reminder is written once per day (ADR 0052 item 7), the
+     * Overdue message once. Every open pair clears once a VA POC restores the role or applies a Register naming someone
+     * else ({@link #roleHolderChanged}).
+     */
+    private void nobodyAt(SubmissionStep step, Notice.About about) {
+        toVaPocs(about.tell(nobodyAt(step), Links.ROLE_HOLDERS), Awaits.ROLE_HOLDER);
+    }
+
+    /** What the VA POCs are told when nobody can act at a step; the endorsing step is theirs, so never. */
+    private static NoticeAction nobodyAt(SubmissionStep step) {
+        return switch (step) {
+            case SUBMIT -> NoticeAction.NOBODY_TO_SUBMIT;
+            case REVIEW -> NoticeAction.NOBODY_TO_REVIEW;
+            case ENDORSE -> throw new IllegalArgumentException("the VA POCs act at the endorsing step themselves");
+        };
+    }
+
+    /**
+     * A VA POC gave the System someone who can act at the role's step again (restored the role, or applied a Register
+     * naming someone else): every open pair that told both VA POCs nobody could act there is cleared for both.
+     */
+    @Transactional
+    public void roleHolderChanged(UUID systemId, Role role, UUID handler, Instant at) {
+        store.handleOnSystem(systemId, nobodyAt(role == Role.SMO ? SubmissionStep.SUBMIT : SubmissionStep.REVIEW),
+                handler, at);
     }
 
     /**
@@ -167,19 +186,13 @@ public class Notifications {
         return people;
     }
 
-    private void write(String email, Notice notice, @Nullable UUID groupKey, @Nullable Awaits awaits) {
-        write(email, notice, groupKey, awaits, notice.action());
-    }
-
     /**
-     * One person's notification, and its mail when {@code mailedAs} is a required message (the notice's own action, or
-     * the action a notice to the VA POCs stands in for), in the caller's transaction; a reminder they already have for
-     * the same day is neither written nor mailed again.
+     * One person's notification, and its mail when the notice is a required message, in the caller's transaction; a
+     * reminder they already have for the same day is neither written nor mailed again.
      */
-    private void write(String email, Notice notice, @Nullable UUID groupKey, @Nullable Awaits awaits,
-            NoticeAction mailedAs) {
+    private void write(String email, Notice notice, @Nullable UUID groupKey, @Nullable Awaits awaits) {
         store.insert(users.known(email, notice.at()), notice, groupKey, awaits)
-                .ifPresent(id -> mail.queue(id, mailedAs, notice.at()));
+                .ifPresent(id -> mail.queue(id, notice.action(), notice.at()));
     }
 
     /**
