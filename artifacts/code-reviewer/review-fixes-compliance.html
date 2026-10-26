@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review — review-fixes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">Overall WARN</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">build PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN 0C 0H 3M 6L</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN 0C 0H 1M 4L</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">semgrep PASS 0C 0H 0M 2L</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN 0C 0H 1M 3L</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN 0C 0H 0M 14L</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">react PASS 0C 0H 1M 3L</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">impl/review-fixes</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Executive Summary</h2>
+          <p class="text-xs text-slate-500 mt-1">
+            Diff of impl/review-fixes against integration/annual-va-r1 (about 100 files): the whole-branch review fixes S1 to S9 and P3, and the six
+            decisions Q72 to Q77 (migrations V42 and V43). No Critical and no High finding is left. Counts are after the fixes made in response to the reviews.
+          </p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead class="bg-slate-50 text-xs uppercase text-slate-500">
+            <tr><th class="px-3 py-2">Check</th><th class="px-3 py-2">Status</th><th class="px-3 py-2">C / H / M / L</th><th class="px-3 py-2">Gaps</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-3 py-2">build</td><td class="px-3 py-2">PASS</td><td class="px-3 py-2">0 / 0 / 0 / 0</td><td class="px-3 py-2">Back end <code>./mvnw -B -ntp clean verify</code>: 1244 tests, 0 failures, coverage checks met. Front end <code>npm run check</code> green.</td></tr>
+            <tr><td class="px-3 py-2">thermo-nuclear</td><td class="px-3 py-2">WARN</td><td class="px-3 py-2">0 / 0 / 3 / 6</td><td class="px-3 py-2">Round 5, after the round-4 High (redirect in the wrong layer) was fixed. Open Mediums: one step-to-role mapping written in several places in Notifications; a lapsed role that comes back by itself leaves its pair open (recorded in ADR 0043); the pair is mailed with the Overdue template whatever notice it replaces (ADR 0046).</td></tr>
+            <tr><td class="px-3 py-2">code-review</td><td class="px-3 py-2">WARN</td><td class="px-3 py-2">0 / 0 / 1 / 4</td><td class="px-3 py-2">Open Medium: start records its step through <code>Submissions.stepped</code> rather than the state gate of <code>atStep</code> (documented in ADR 0035 item 1; the spec's rolled-back id choice was reversed on purpose). The stale ADR 0052 item 7, the duplicated <code>grantOf</code> helper and the redirected Register-change mail are fixed.</td></tr>
+            <tr><td class="px-3 py-2">semgrep</td><td class="px-3 py-2">PASS</td><td class="px-3 py-2">0 / 0 / 0 / 2</td><td class="px-3 py-2">Two test-harness lines that pre-date the branch.</td></tr>
+            <tr><td class="px-3 py-2">im8</td><td class="px-3 py-2">WARN</td><td class="px-3 py-2">0 / 0 / 1 / 3</td><td class="px-3 py-2">ac-4: a review may name a strict subset of the listed holders and still resets the due flag (by design: the VA POC says who was checked); an empty or oversize list is now refused.</td></tr>
+            <tr><td class="px-3 py-2">springboot (7 skills)</td><td class="px-3 py-2">WARN</td><td class="px-3 py-2">0 / 0 / 0 / 14</td><td class="px-3 py-2">Round-4 Mediums fixed: an empty review list and an unbounded one are refused, and the redirect no longer fires for notices about no step. Lows are style and test-harness notes.</td></tr>
+            <tr><td class="px-3 py-2">react</td><td class="px-3 py-2">PASS</td><td class="px-3 py-2">0 / 0 / 1 / 3</td><td class="px-3 py-2">Type-only <code>Page&lt;T&gt;</code> refactor and the review screen sending the listed grant ids.</td></tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm">None open. The one High raised in round 4 (thermo-nuclear 1: the nobody-can-act redirect sat in <code>toSmo</code> and <code>toCyberManager</code>, which do not know the step, so notices about no step became false pairs) was fixed in commit 7908022 by moving the redirect into <code>Notifications.toStep</code>, guarded by the state's next step, and was re-checked in round 5.</p>
+        </div>
+      </div>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <p class="px-5 py-4 text-sm border-t border-slate-100">
+          Back end at da32653 (the later commits change a test, comments and documents only): <code>clean verify</code>, 1244 tests, 0 failures, "All coverage checks have been met", BUILD SUCCESS.
+          Tests changed after it (ExemptionDecisionTest, DeadlineReminderTest, BatchReviewTest, RegisterEffectsTest, RoleHolderReviewTest, ArchitectureTest) were rerun: 82 tests, 0 failures.
+          Front end: Prettier, <code>tsc -b</code>, <code>vite build</code>, no raw HTML, dependency-cruiser and fallow all pass.
+        </p>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="bg-slate-50 text-xs uppercase text-slate-500"><tr><th class="px-3 py-2 text-left">Severity</th><th class="px-3 py-2 text-left">File</th><th class="px-3 py-2 text-left">Line</th><th class="px-3 py-2 text-left">Description</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-3 py-2">Medium</td><td class="px-3 py-2 font-mono">notification/Notifications.java</td><td class="px-3 py-2">87-135</td><td class="px-3 py-2">The step to role to address mapping is written in <code>toStep</code>, <code>nobodyAt</code> and <code>roleHolderChanged</code>; <code>SubmissionStep.assignedRole()</code> already says it for the submitting and reviewing steps.</td></tr>
+            <tr><td class="px-3 py-2">Medium</td><td class="px-3 py-2 font-mono">access/RoleLapse.java, notification/Notifications.java</td><td class="px-3 py-2">69, 88-90 / 133-137</td><td class="px-3 py-2">A lapsed grant that comes back at a Quarter's start or by a hand-back leaves its pair open for both VA POCs; recorded as a known limit in ADR 0043 item 2 (a pair records who handled it, and nobody did).</td></tr>
+            <tr><td class="px-3 py-2">Medium</td><td class="px-3 py-2 font-mono">notification/MailTemplate.java</td><td class="px-3 py-2">49-52</td><td class="px-3 py-2">Every pair is mailed with the Overdue template, also one that replaces a due-soon reminder or an arrival; recorded in ADR 0046 item 2 and ADR 0052 item 8.</td></tr>
+            <tr><td class="px-3 py-2">Low</td><td class="px-3 py-2 font-mono">register/RoleHolderReviews.java</td><td class="px-3 py-2">142-147</td><td class="px-3 py-2">An unreachable size check; null meaning every holder is a small convenience on three layers.</td></tr>
+            <tr><td class="px-3 py-2">Low</td><td class="px-3 py-2 font-mono">notification/Notifications.java</td><td class="px-3 py-2">60-127</td><td class="px-3 py-2"><code>toHolder</code> has five parameters; <code>nobodyAt</code> is overloaded.</td></tr>
+            <tr><td class="px-3 py-2">Low</td><td class="px-3 py-2 font-mono">harness/Arrange.java, register/RegisterSeam1.java</td><td class="px-3 py-2">266 / 173</td><td class="px-3 py-2">The grant lookup is written twice in the test harness.</td></tr>
+            <tr><td class="px-3 py-2">Low</td><td class="px-3 py-2 font-mono">submission/Submissions.java, arch/ArchitectureTest.java</td><td class="px-3 py-2">373, 748 / 205-238</td><td class="px-3 py-2"><code>stepped</code> takes the command's checks as a Runnable and start passes an empty one; one ArchUnit rule uses a large anonymous condition.</td></tr>
+            <tr><td class="px-3 py-2">Low</td><td class="px-3 py-2 font-mono">notification/StepNotices.java</td><td class="px-3 py-2">20-43</td><td class="px-3 py-2">"Endorsing has no weekly copy" is written as a null in the table and a throw in <code>copyUp</code>.</td></tr>
+            <tr><td class="px-3 py-2">Low</td><td class="px-3 py-2 font-mono">several *Store classes</td><td class="px-3 py-2">various</td><td class="px-3 py-2">Carried over: <code>RegisterSystems.named</code> has two overloads with different result shapes; <code>Finished.from</code> is nullable for one producer.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review (Standards and Spec)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="bg-slate-50 text-xs uppercase text-slate-500"><tr><th class="px-3 py-2 text-left">Severity</th><th class="px-3 py-2 text-left">File</th><th class="px-3 py-2 text-left">Line</th><th class="px-3 py-2 text-left">Description</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-3 py-2">Medium</td><td class="px-3 py-2 font-mono">submission/Submissions.java</td><td class="px-3 py-2">373, 748</td><td class="px-3 py-2">S1: start does not pass the state gate of <code>atStep</code>; it records its step through <code>stepped</code> on the row it has just created or taken, where that gate can never refuse. Documented in ADR 0035 item 1 and guarded by ArchUnit; an accepted design choice rather than an omission.</td></tr>
+            <tr><td class="px-3 py-2">Low</td><td class="px-3 py-2 font-mono">retention/DisposalStore.java</td><td class="px-3 py-2">90-92</td><td class="px-3 py-2"><code>KEPT_ACTIONS</code> is built at class initialisation from <code>AuditAction</code> names (what S9 asked for); the first store SQL that is not a literal.</td></tr>
+            <tr><td class="px-3 py-2">Low</td><td class="px-3 py-2 font-mono">jdbc/Timestamps.java</td><td class="px-3 py-2">19-34</td><td class="px-3 py-2">The read side names the nullable reader <code>instant</code> and the write side names the non-null writer <code>utc</code>: opposite conventions.</td></tr>
+            <tr><td class="px-3 py-2">Low</td><td class="px-3 py-2 font-mono">export/ManagementSummaryPdfTest.java</td><td class="px-3 py-2">69-75</td><td class="px-3 py-2">The PDF test proves the new column with "No" cells; the "Yes" case is proved in the workbook test, the two sharing <code>ExportTable</code>.</td></tr>
+            <tr><td class="px-3 py-2">Low</td><td class="px-3 py-2 font-mono">notification/Notice.java</td><td class="px-3 py-2">23-52</td><td class="px-3 py-2"><code>Notice</code> repeats the fields of <code>Notice.About</code>.</td></tr>
+          </tbody>
+        </table>
+        <p class="px-5 py-4 text-sm border-t border-slate-100">All ten amended ADRs (0035, 0043, 0045, 0046, 0049, 0050, 0051, 0052, 0054, 0056, 0057) match the code. S1 to S9, P3 and Q72 to Q77 were each traced to a commit.</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <p class="px-5 py-4 text-sm border-t border-slate-100">
+          Semgrep 1.182.1 with p/security-audit, p/default, p/java, p/typescript, p/react, p/secrets and p/sql-injection. Production source: 0 findings.
+          Test sources: two Low hits on lines that pre-date the branch (a fixed-prefix DDL in the test harness, a hard-coded class name in an ArchUnit test), both false positives.
+        </p>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="bg-slate-50 text-xs uppercase text-slate-500"><tr><th class="px-3 py-2 text-left">Severity</th><th class="px-3 py-2 text-left">File</th><th class="px-3 py-2 text-left">Line</th><th class="px-3 py-2 text-left">Description</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-3 py-2">Medium</td><td class="px-3 py-2 font-mono">register/RoleHolderReviews.java</td><td class="px-3 py-2">139-147</td><td class="px-3 py-2">ac-4: a review records the grants the VA POC names, which may be fewer than those listed, and resets the due flag for all; the record of which grants were checked is the point of ADR 0056 item 4. An empty list is now refused.</td></tr>
+            <tr><td class="px-3 py-2">Low</td><td class="px-3 py-2 font-mono">access/RoleHolders.java</td><td class="px-3 py-2">69-90</td><td class="px-3 py-2">New public reads of grants, guarded by the package and an ArchUnit rule.</td></tr>
+            <tr><td class="px-3 py-2">Low</td><td class="px-3 py-2 font-mono">notification/MailOutboxStore.java</td><td class="px-3 py-2">claimNext</td><td class="px-3 py-2">Carried over: a stored state that no longer parses would stop a dispatch pass.</td></tr>
+            <tr><td class="px-3 py-2">Low</td><td class="px-3 py-2 font-mono">docs</td><td class="px-3 py-2">lm-4</td><td class="px-3 py-2">Manual item: role-holder review rows and their audit entries are now disposed of together with the Cycle.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot (core, web, data, batch, security, logging, test)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <p class="px-5 py-4 text-sm border-t border-slate-100">
+          Round 4 found three Mediums: an empty <code>grantIds</code> recorded a review of nobody, <code>grantIds</code> was unbounded and checked with an O(n x m) scan, and the redirect fired for notices about no step.
+          All three are fixed (empty and oversize lists are refused and the check uses a set; the redirect is guarded by the state's next step; one Seam 1 test pins it). The Lows left are style and harness notes: a store binding <code>UUID[]</code> (now bound as text like every store),
+          a misleading assertion description (fixed), eager state parsing in the mail claim, a three-overload <code>named</code>, the SQL-text guard reading static fields only, and the test-only grant change endpoint's verb in its path.
+        </p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <p class="px-5 py-4 text-sm border-t border-slate-100">
+          Nine front-end files. <code>Page&lt;T&gt;</code> replaces three identical page types (a pure type change, no render or effect change). The role-holder review screen sends the ids it listed. One Medium and three Low notes on the screen's Complete handler (button disabled state and error handling follow the screen's existing pattern).
+        </p>
+      </details>
+    </main>
+  </body>
+</html>
