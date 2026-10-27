@@ -561,3 +561,10 @@ Decided by the user on 2026-10-26 (all recommendations accepted) after the two-a
 - **The VA POCs' end-of-Quarter reminders cover only Systems that can be endorsed.** (ticket 38, ADR 0052, story 90.) Kept as built: Systems still Draft or In Review in weeks 11–12 trigger no VA POC reminder; earlier steps have their own reminders and copies.
 - **Role-holder review records are kept for the VA Cycle plus 3 years.** (ticket 47, ADR 0056; ticket 49, ADR 0050.) `role_holder_review` rows join the disposal order under the rule for records that belong to no single VA Submission (everything before the next Cycle's first day).
 - **Three loose ends closed:** the VA POC's confirmation queue reads every Cycle the app runs (ADR 0051 item 8, kept); a role-holder review records the list of holders it checked (ADR 0056 item 4, to build); audit-log reads stay out of the histories being read, recorded as detail only (ADR 0057, kept).
+
+## A `dev-local` profile signs in as a persona and fakes the boundary adapters
+
+- **Area:** local development without `mock-m-sso` (ticket 01 is `ready-for-human`; ticket 51 builds the real adapters), ticket 63.
+- **Finding:** the app cannot be signed in to or exercised in a browser without the private `mock-m-sso` stack, and its file store, scanner, mail relay and identity status are fail-closed stubs until ticket 51, so even with that stack an upload is refused.
+- **Chosen action:** build a `dev-local` profile with a persona picker (the six existing dev personas, roles still resolved from the System Register by email, never granted by the page) and local fakes for the file store, scanner, mail relay and identity status, so one machine with PostgreSQL runs a whole submission. It must be impossible outside a developer's machine (refuses to start with `sit`, `ci` or a non-loopback address; every class `@Profile("dev-local")`; absent, with 404, in every other profile). Decided by the user 2026-10-27.
+- **When to reuse:** any local shortcut around sign-in or a boundary adapter: gate it by profile, fail the start when combined with a deployed profile, and keep roles coming from the Register.

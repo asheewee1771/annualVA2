@@ -1,0 +1,19 @@
+# 63: A `dev-local` profile: sign in as a persona and run on local fakes
+
+**Spec:** [Annual VA spec](../spec.md), stories none (developer tooling; follow-up raised by ticket 01 being blocked).
+**Release:** 1
+**What to build:** A developer without the `mock-m-sso` stack can run the whole app on one machine with only PostgreSQL in Docker. A local page lists the six dev personas (SMO A/B, Cyber Manager A/B, VA POC 1/2) with their role and email; picking one signs the person in. The boundary adapters that ticket 51 will build for real are replaced by local fakes, so uploading, scanning and mail work too. None of this can run outside a developer's machine.
+**Blocked by:** None (can start immediately)
+**Status:** ready-for-agent
+**Effort (orchestrator estimate):** not estimated; decided by the user on 2026-10-27 (`docs/agents/reviewer-decisions.md`, "A `dev-local` profile signs in as a persona and fakes the boundary adapters").
+
+- [ ] A new profile `dev-local` starts the back end with only PostgreSQL running: no Keycloak, MockPass, mock-SFS, mock-MCNS or LocalStack, and no identity-provider discovery at startup. `application-dev-local.yml` binds the server to loopback only and turns the scheduled jobs on.
+- [ ] Safety: the application refuses to start when `dev-local` is active with `sit`, `ci` or any production profile, or when the server address is not loopback. Every class of this ticket is annotated `@Profile("dev-local")`, an ArchUnit rule fails the build if one is not, and a Seam 1 test shows that under the normal test profile `GET /api/dev/personas` and `POST /api/dev/sign-in` answer 404 and create no session. A startup warning says anyone can sign in as any persona.
+- [ ] `GET /api/dev/personas` lists the six personas (name, role label, email) from the existing dev identities; `POST /api/dev/sign-in` takes one persona and signs the person in through the same `SignInService` path as a real sign-in (one-session rule, role resolution from the System Register by email, the sign-in audit entry, the anonymous-session cap). Roles still come only from the Register: a persona the Register does not name sees empty screens, as in real life, and nothing creates a role grant outside the Register.
+- [ ] Step-up works locally: every action that asks for a fresh sign-in (ac-2) is satisfied by a local confirmation that refreshes `auth_time` for the same person and intent, and a stale session is still refused.
+- [ ] Local fakes under `dev-local` only, each in the adapters package: a file store on a git-ignored local folder (zones as sub-folders, so restarts keep files); a malware scanner that follows mock-SFS's keyword rule on the display name (`quarantined` blocked, `sanitized` modified, anything else unchanged) with a configurable delay; a mail relay that logs one `Event=email` line per message (System, state, action, due date, link, never an address or free text) and rejects an address whose local part ends in `.bounce`, so SMO Unreachable can be shown; an identity status that reports everyone enabled.
+- [ ] Front end: a `/dev-sign-in` screen shows the personas as buttons, with a banner saying this is local development sign-in; the normal sign-in landing offers it only when `GET /api/dev/personas` answers 200. No raw HTML rendering, classification banner kept.
+- [ ] README: a "Running without mock-m-sso" section (start Postgres, the Register upload from `scripts/dev-data/`, `-Dspring-boot.run.profiles=dev-local`, the frontend, which persona to use for each role) and a row in the Profiles table; the unused folder is in `.gitignore`; ADR 0058 records the design and its guards.
+- [ ] Every behaviour above is proven by Seam 1 tests through the HTTP API where a Spring context can host it (sign-in, role resolution, step-up, the 404 outside the profile) and by plain tests for the deterministic fakes; both gates pass.
+
+## Comments
