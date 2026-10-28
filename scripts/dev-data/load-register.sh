@@ -2,14 +2,16 @@
 # Loads scripts/dev-data/system-register.sample.xlsx into a running dev-local back end (ticket 63) the way a VA POC does:
 # sign in as the VA POC 1 persona, upload the workbook, apply the preview. That is the only thing that gives the SMO and
 # Cyber Manager personas their roles; nothing here grants a role directly. Needs curl; the back end must be running with
-# -Dspring-boot.run.profiles=dev-local. Run it again after a Register change to load the sample over it.
+# -Dspring-boot.run.profiles=dev-local and the front end dev server (npm run dev: some Windows curl builds cannot complete
+# the handshake with the back end's dev certificate, node can, so the default goes through the proxy). Run it again after a Register change to load the sample over it.
 #
-#   bash scripts/dev-data/load-register.sh            # https://localhost:8443
-#   BASE=https://localhost:5173 bash scripts/dev-data/load-register.sh
+#   bash scripts/dev-data/load-register.sh            # through the front end dev server, https://localhost:5173
+#   BASE=https://localhost:8443 bash scripts/dev-data/load-register.sh   # the back end directly
 set -euo pipefail
 
-BASE="${BASE:-https://localhost:8443}"
-SAMPLE="$(cd "$(dirname "$0")" && pwd)/system-register.sample.xlsx"
+BASE="${BASE:-https://localhost:5173}"
+# pwd -W gives a Windows path where there is one (Git Bash), which a native curl can open; elsewhere it is plain pwd.
+SAMPLE="$(cd "$(dirname "$0")" && { pwd -W 2>/dev/null || pwd; })/system-register.sample.xlsx"
 VA_POC_1="11111111-0000-4000-8000-000000000005"
 JAR="$(mktemp)"
 trap 'rm -f "$JAR"' EXIT
