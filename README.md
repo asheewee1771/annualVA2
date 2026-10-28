@@ -47,10 +47,37 @@ The first start of the three `maven:3` mock containers takes several minutes whi
 |---|---|---|
 | (base) `application.yml` | `backend/src/main/resources` | production shape: `${ENV_VAR}` bindings only, invariant literals |
 | `dev-mcc` | `backend/src/main/resources` | local development against the mock stack; mock literals |
+| `dev-local` | `backend/src/main/resources` | one machine, only PostgreSQL: a persona picker signs in and local fakes replace the scanner, file store, mail relay and account status; loopback only, refuses to start with any other profile (see "Running without mock-m-sso"). Never for a deployed environment |
 | `ci` | `backend/src/test/resources` | Seam 1 tests: Testcontainers PostgreSQL, in-process fakes, plain HTTP |
 | `sit` | `backend/src/main/resources` | first deployed target: `${VAR:dev-default}` bindings (mock-stack defaults for non-secrets, none for secrets), optional `backend/.env.sit` copied from `backend/.env.sit.example` |
 
-Select with `SPRING_PROFILES_ACTIVE=dev-mcc` or `-Dspring-boot.run.profiles=dev-mcc`.
+Select with `SPRING_PROFILES_ACTIVE=dev-mcc` or `-Dspring-boot.run.profiles=dev-mcc`. `dev-local` stands alone: the application refuses to start with it together with any other profile.
+
+## Running without mock-m-sso
+
+The `dev-local` profile (ticket 63, ADR 0058) runs the whole app on one machine with only PostgreSQL in Docker: no Keycloak, MockPass, mock-SFS, mock-MCNS or LocalStack, and no identity-provider discovery at startup.
+
+1. **PostgreSQL:** `docker compose up -d postgres` (from the repository root).
+2. **Back end:** `cd backend && ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev-local`, then `curl -k https://localhost:8443/actuator/health`. It listens on `127.0.0.1:8443` only and logs a warning that anyone can sign in as any persona. It refuses to start with another profile active, with a `server.address` that is not loopback, or against a database that is not on this machine.
+3. **Front end:** `cd frontend && npm install && npm run dev`, open `https://localhost:5173` (accept the self-signed certificate) and choose "Sign in as a persona" (`/dev-sign-in`). The persona list is offered only while `GET /api/dev/personas` answers 200, so it never shows against any other back end.
+4. **Register:** a persona holds a role only when the System Register names its email, and nothing on the page grants one. The two VA POC personas are VA POCs from configuration; sign in as one and upload `scripts/dev-data/system-register.sample.xlsx` on the System Register screen (`/va-poc/register`), then apply it. Or run `bash scripts/dev-data/load-register.sh` once the back end is up, which does the same through the API as VA POC 1. The sample has six Systems (`DEV-001` to `DEV-006`) spread over Q1 to Q4; `-Dannualva.regenerate-dev-data=true` on `DevDataSampleTest` rebuilds it.
+5. **Which persona for which role:**
+
+| Persona | Email | Role (once the sample Register is applied) |
+|---|---|---|
+| SMO A, SMO B | `smo.a@`, `smo.b@dev.annualva.test` | SMO/Tech Lead |
+| Cyber Manager A, B | `cm.a@`, `cm.b@dev.annualva.test` | Cyber Manager |
+| VA POC 1, 2 | `poc.1@`, `poc.2@dev.annualva.test` | VA POC |
+
+What stands in for the boundary adapters (`sg.annualva.adapters.local`):
+
+- **Files:** kept under `backend/.dev-local/files/<zone>/` (git-ignored, so a restart keeps them; delete the folder to start empty). `annualva.dev-local.file-store-dir` moves it.
+- **Malware scan:** the verdict follows the file name as mock-SFS's does (`quarantined` blocked, `sanitized` modified and so rejected, anything else unchanged), after `annualva.dev-local.scan-delay` (1 s). The System Register workbook is always scanned under the name `system-register.xlsx`, so it always passes; use a Scan Report file name to see the others.
+- **Email:** nothing is sent. Each message is one log line: `grep Event=email` the back end's output. It names the template, System, state, action, due date and link, never an address. An address whose local part ends in `.bounce` is refused by the relay, so SMO Unreachable can be shown.
+- **Identity status:** everyone is enabled.
+- **Step-up:** a sensitive action sends the browser to `/dev-step-up`, which asks for a confirmation. It makes the sign-in fresh for that action only, within the usual five minutes, and never extends the session.
+- **Calendar:** goes live at Q3 2026 here (`annualva.calendar.first-live-*`), so a VA Cycle is running whatever day it is. The clock is the real one; there is no time travel.
+- **Jobs:** the scheduled jobs run (`annualva.scheduling.enabled: true`).
 
 ## Dev personas and identities
 
@@ -65,7 +92,7 @@ MockPass personas carry an NRIC and a uuid (the `afcas.uuid` claim); the System 
 | S6005044H | poc.1@dev.annualva.test | VA POC |
 | S6005045F | poc.2@dev.annualva.test | VA POC |
 
-Switch persona by signing out, signing in again and picking another NRIC on the MockPass page. A Register upload (`scripts/dev-data/`) assigns Systems to these emails; never name the same person as a System's SMO and Cyber Manager.
+Switch persona by signing out, signing in again and picking another NRIC on the MockPass page. A Register upload (`scripts/dev-data/system-register.sample.xlsx`) assigns Systems to these emails; never name the same person as a System's SMO and Cyber Manager. `dev-personas.yml` holds the uuid to email map and the names shown by the `dev-local` picker; `dev-mcc` and `dev-local` both import it.
 
 ## Simulating the mocks
 
@@ -155,7 +182,7 @@ A VA POC uploads the filled-in template and sees every change before anything ha
 - **Blocked rows:** no Cyber Manager, the System's own SMO as its Cyber Manager, an invalid email or Quarter (only `Q1` to `Q4`), a duplicate System ID, a System ID starting `EXAMPLE-` (the template's sample row), or a missing name or System ID. A preview with any `BLOCKED` row has `canApply: false`. The preview is stored as one JSON list on `register_upload`.
 - **The file is untrusted:** headers must be the template's, as written; macro workbooks, archives that unpack past 20 MB, empty sheets and sheets with more than 1000 rows are refused; formulas are never evaluated; an error never repeats the file. Each refusal is a fixed `problem+json` type (`unsupported-file-type`, `file-too-large`, `file-empty`, `register-header-mismatch`, `register-sheet-missing`, `register-no-rows`, `register-too-many-rows`, `register-file-unreadable`), and, from the malware scan, `file-rejected-malware`, `file-modified-by-scan` (the scanner had to change the file; upload the original again), `scan-timeout` and `scan-mismatch`.
 - **Audit:** `REGISTER_PREVIEWED` (the preview id and the row count), `REGISTER_PREVIEW_VIEWED` and `REGISTER_UPLOAD_REJECTED` (a fixed `reject_code`); never a cell.
-- **Scanning needs the real adapters (ticket 51):** the Register workbook and every Scan Report file are quarantined and malware-scanned before they are read (ADR 0017, ADR 0021), but the object-store and scanner adapters are not built yet. Until then they fail closed (`adapters.pending`), so an upload is refused rather than read unscanned; Seam 1 tests use the fakes. A file the scanner had to modify (Sanitized) is rejected, not accepted: the person uploads the original again. Tune the scan with `annualva.scan.attempt-timeout`, `poll-interval`, `max-in-flight`, `sync-wait` and `sync-poll-interval`.
+- **Scanning needs the real adapters (ticket 51), or the `dev-local` fakes (see "Running without mock-m-sso"):** the Register workbook and every Scan Report file are quarantined and malware-scanned before they are read (ADR 0017, ADR 0021), but the object-store and scanner adapters are not built yet. Until then they fail closed (`adapters.pending`), so an upload is refused rather than read unscanned; Seam 1 tests use the fakes. A file the scanner had to modify (Sanitized) is rejected, not accepted: the person uploads the original again. Tune the scan with `annualva.scan.attempt-timeout`, `poll-interval`, `max-in-flight`, `sync-wait` and `sync-poll-interval`.
 - **Front end:** the Register screen (`/va-poc/register`) has the file chooser, the grouped preview (Blocked, Add, Update, No change, Retire) and the Unlinked SMO flag.
 
 ## System Register apply and the Register table
