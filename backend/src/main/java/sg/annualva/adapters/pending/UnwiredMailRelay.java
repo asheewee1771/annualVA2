@@ -1,6 +1,6 @@
 package sg.annualva.adapters.pending;
 
-import org.springframework.context.annotation.Profile;
+import sg.annualva.config.NotDevLocal;
 import java.util.Map;
 import org.springframework.stereotype.Component;
 import sg.annualva.boundary.BoundaryFailureException;
@@ -12,7 +12,7 @@ import sg.annualva.boundary.MailRelay;
  * the outbox; nothing is sent anywhere else. The Seam 1 harness replaces it with a capturing fake.
  */
 @Component
-@Profile("!dev-local")
+@NotDevLocal
 class UnwiredMailRelay implements MailRelay {
 
     @Override

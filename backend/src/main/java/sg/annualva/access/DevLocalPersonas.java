@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
-import org.springframework.context.annotation.Profile;
+import sg.annualva.config.DevLocal;
 import org.springframework.stereotype.Component;
 
 /**
@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
  * no role: what it can do is whatever the Register says about its email, as for anyone.
  */
 @Component
-@Profile("dev-local")
+@DevLocal
 class DevLocalPersonas {
 
     /**
@@ -29,7 +29,7 @@ class DevLocalPersonas {
 
     /** Names and labels by {@code afcas.uuid} (prefix {@code annualva.dev}, beside the identities). */
     @ConfigurationProperties("annualva.dev")
-    @Profile("dev-local")
+    @DevLocal
     record Labels(@DefaultValue Map<String, Label> personas) {}
 
     record Label(String name, String roleLabel) {}

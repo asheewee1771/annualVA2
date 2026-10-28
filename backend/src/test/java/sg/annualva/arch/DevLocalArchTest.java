@@ -9,13 +9,16 @@ import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
-import com.tngtech.archunit.lang.ArchCondition;
-import com.tngtech.archunit.lang.ConditionEvents;
-import com.tngtech.archunit.lang.SimpleConditionEvent;
 import java.util.Arrays;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.RestController;
+import sg.annualva.config.DevLocal;
+import sg.annualva.config.NotDevLocal;
 
 /**
  * Ticket 63, ADR 0058: nothing of the dev-local profile can exist outside it. Every top-level class of the local adapters
@@ -64,18 +67,35 @@ class DevLocalArchTest {
     void everyTopLevelClassOfTheProfileIsAnnotatedWithIt() {
         classes().that(PART_OF_THE_PROFILE).and().areTopLevelClasses()
                 .and(DescribedPredicate.describe("not package-info", type -> !type.getSimpleName().equals("package-info")))
-                .should(new ArchCondition<JavaClass>("be annotated @Profile(\"dev-local\")") {
-                    @Override
-                    public void check(JavaClass type, ConditionEvents events) {
-                        boolean annotated = type.tryGetAnnotationOfType(Profile.class)
-                                .map(profile -> Arrays.asList(profile.value()).contains(DEV_LOCAL)).orElse(false);
-                        if (!annotated) {
-                            events.add(SimpleConditionEvent.violated(type,
-                                    type.getName() + " is part of the dev-local profile but not annotated @Profile(\"dev-local\")"));
-                        }
-                    }
-                })
+                .should().beAnnotatedWith(DevLocal.class)
                 .because("a class of the dev-local profile that is not gated by it could run in a deployed environment")
+                .check(main);
+    }
+
+    @Test
+    void theTwoAnnotationsAreTheProfileAndItsNegation() {
+        assertThat(Arrays.asList(DevLocal.class.getAnnotation(Profile.class).value())).containsExactly(DEV_LOCAL);
+        assertThat(Arrays.asList(NotDevLocal.class.getAnnotation(Profile.class).value())).containsExactly("!" + DEV_LOCAL);
+    }
+
+    /** The single sign-on client and the stubs that ticket 51 replaces must each step aside for the local adapters. */
+    @Test
+    void everyBeanOfTheSingleSignOnClientAndOfThePendingAdaptersStepsAsideUnderDevLocal() {
+        classes().that().resideInAnyPackage("sg.annualva.adapters.oidc", "sg.annualva.adapters.pending")
+                .and().areTopLevelClasses()
+                .and(DescribedPredicate.describe("a Spring bean or its properties", type ->
+                        type.isAnnotatedWith(Component.class) || type.isAnnotatedWith(Configuration.class)
+                                || type.isAnnotatedWith(RestController.class)
+                                || type.isAnnotatedWith(ConfigurationProperties.class)))
+                .should().beAnnotatedWith(NotDevLocal.class)
+                .because("under dev-local there is no identity provider to register and the local adapters take the stubs' place")
+                .allowEmptyShould(false)
+                .check(main);
+        classes().that().haveFullyQualifiedName("sg.annualva.access.OidcLogin")
+                .or().haveFullyQualifiedName("sg.annualva.access.OidcSignInUserService")
+                .or().haveFullyQualifiedName("sg.annualva.access.StepUpAuthenticationProvider")
+                .or().haveFullyQualifiedName("sg.annualva.access.OidcStepUpStarter")
+                .should().beAnnotatedWith(NotDevLocal.class)
                 .check(main);
     }
 

@@ -5,7 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.Clock;
 import java.util.List;
-import org.springframework.context.annotation.Profile;
+import sg.annualva.config.DevLocal;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -39,7 +39,7 @@ import tools.jackson.databind.ObjectMapper;
  * persona and nothing else, and what the persona can do is what the System Register says about its email.
  */
 @Component
-@Profile("dev-local")
+@DevLocal
 class DevLocalSignIn implements SignInMethod {
 
     static final String PATH = "/api/dev/sign-in";
@@ -133,6 +133,7 @@ class DevLocalSignIn implements SignInMethod {
                 problem = ProblemResponses.problem(HttpStatus.FORBIDDEN, "sign-in-refused", "The sign-in was refused.");
                 problem.setProperty("reason", refused.reason());
             } else if (failure instanceof UnknownPersonaException) {
+                audit.signInFailed("unknown-persona", "other", AuditOutcome.REFUSED);
                 problem = ProblemResponses.problem(HttpStatus.BAD_REQUEST, "unknown-persona",
                         "The request must name one of the personas listed at /api/dev/personas.");
             } else {

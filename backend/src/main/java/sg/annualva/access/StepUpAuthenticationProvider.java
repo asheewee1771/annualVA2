@@ -1,6 +1,6 @@
 package sg.annualva.access;
 
-import org.springframework.context.annotation.Profile;
+import sg.annualva.config.NotDevLocal;
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.core.Authentication;
@@ -22,7 +22,7 @@ import sg.annualva.boundary.IdentityProvider;
  * in the authentication manager; for any other callback it declines.
  */
 @Component
-@Profile("!dev-local")
+@NotDevLocal
 class StepUpAuthenticationProvider implements AuthenticationProvider {
 
     private final OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest> tokenResponseClient;

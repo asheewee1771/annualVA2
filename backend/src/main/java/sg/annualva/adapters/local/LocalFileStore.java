@@ -9,7 +9,7 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
+import sg.annualva.config.DevLocal;
 import org.springframework.stereotype.Component;
 import sg.annualva.boundary.BoundaryFailureException;
 import sg.annualva.boundary.FileStore;
@@ -21,7 +21,7 @@ import sg.annualva.boundary.FileStore;
  * this is for one developer's machine, with mock data.
  */
 @Component
-@Profile("dev-local")
+@DevLocal
 class LocalFileStore implements FileStore {
 
     private static final Pattern KEY = Pattern.compile("[A-Za-z0-9][A-Za-z0-9._-]{0,127}");

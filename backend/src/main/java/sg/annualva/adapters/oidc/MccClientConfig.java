@@ -1,6 +1,6 @@
 package sg.annualva.adapters.oidc;
 
-import org.springframework.context.annotation.Profile;
+import sg.annualva.config.NotDevLocal;
 import com.nimbusds.jose.jwk.ECKey;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,7 +31,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
  * the security filter chain by their Spring types.
  */
 @Configuration(proxyBeanMethods = false)
-@Profile("!dev-local")
+@NotDevLocal
 class MccClientConfig {
 
     static final String REGISTRATION_ID = "mcc-sso-login";

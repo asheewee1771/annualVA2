@@ -1,6 +1,6 @@
 package sg.annualva.adapters.oidc;
 
-import org.springframework.context.annotation.Profile;
+import sg.annualva.config.NotDevLocal;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWKSet;
 import java.util.Map;
@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
  * key material only.
  */
 @RestController
-@Profile("!dev-local")
+@NotDevLocal
 public class JwksController {
 
     private final ECKey signingKey;

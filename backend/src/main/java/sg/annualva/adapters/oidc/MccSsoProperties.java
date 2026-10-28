@@ -1,6 +1,6 @@
 package sg.annualva.adapters.oidc;
 
-import org.springframework.context.annotation.Profile;
+import sg.annualva.config.NotDevLocal;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -25,7 +25,7 @@ import org.springframework.validation.annotation.Validated;
  */
 @ConfigurationProperties("annualva.mcc")
 @Validated
-@Profile("!dev-local")
+@NotDevLocal
 public record MccSsoProperties(
         @NotBlank String issuer,
         @NotBlank String authorizationUri,

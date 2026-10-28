@@ -120,6 +120,34 @@ class DevLocalGuardTest {
     }
 
     @Test
+    void refusesAManagementServerWithAPortOfItsOwnThatIsNotOnLoopback() {
+        local("dev-local").withPropertyValues(LOOPBACK, "management.server.port=9090").run(context -> {
+            assertThat(context).hasFailed();
+            assertThat(context.getStartupFailure()).rootCause().hasMessageContaining("management.server.address");
+        });
+        local("dev-local").withPropertyValues(LOOPBACK, "management.server.port=9090", "management.server.address=0.0.0.0")
+                .run(context -> assertThat(context).hasFailed());
+        local("dev-local").withPropertyValues(LOOPBACK, "management.server.port=9090", "management.server.address=127.0.0.1")
+                .run(context -> assertThat(context).hasNotFailed());
+    }
+
+    @Test
+    void refusesAFlywayUrlThatIsNotOnThisMachine() {
+        local("dev-local").withPropertyValues(LOOPBACK, "spring.flyway.url=jdbc:postgresql://db.internal/annualva")
+                .run(context -> assertThat(context).hasFailed());
+        local("dev-local").withPropertyValues(LOOPBACK, "spring.flyway.url=jdbc:postgresql://localhost/annualva")
+                .run(context -> assertThat(context).hasNotFailed());
+    }
+
+    @Test
+    void isNotSkippedWhenTheApplicationStartsLazily() {
+        local("dev-local", "sit").withPropertyValues(LOOPBACK)
+                .withInitializer(context -> context
+                        .addBeanFactoryPostProcessor(new org.springframework.boot.LazyInitializationBeanFactoryPostProcessor()))
+                .run(context -> assertThat(context).hasFailed());
+    }
+
+    @Test
     void warnsThatAnyoneCanSignInAsAnyPersona(CapturedOutput output) {
         local("dev-local").withPropertyValues(LOOPBACK)
                 .run(context -> assertThat(output.getAll()).contains("anyone who can reach this application"));

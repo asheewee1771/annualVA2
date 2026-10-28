@@ -1,6 +1,6 @@
 package sg.annualva.access;
 
-import org.springframework.context.annotation.Profile;
+import sg.annualva.config.NotDevLocal;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResponseClient;
 import org.springframework.security.oauth2.client.endpoint.OAuth2AuthorizationCodeGrantRequest;
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
  * exist under {@code dev-local}, where there is no identity provider to register or discover.
  */
 @Component
-@Profile("!dev-local")
+@NotDevLocal
 class OidcLogin implements SignInMethod {
 
     private final OAuth2AuthorizationRequestResolver authorizationRequestResolver;

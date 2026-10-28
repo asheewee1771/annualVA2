@@ -6,7 +6,7 @@ import jakarta.servlet.http.HttpSession;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
-import org.springframework.context.annotation.Profile;
+import sg.annualva.config.DevLocal;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import sg.annualva.web.RejectedRequestException;
@@ -21,8 +21,8 @@ import sg.annualva.web.RejectedRequestException;
  * a started step-up changes nothing and is audited as refused.
  */
 @Component
-@Profile("dev-local")
-class DevLocalStepUp {
+@DevLocal
+class DevLocalStepUp implements StepUpStarter {
 
     static final String NOT_STARTED = "not-started";
     static final String INTENT_MISMATCH = "intent-mismatch";
@@ -45,7 +45,9 @@ class DevLocalStepUp {
     }
 
     /** Remembers the step-up and says where the browser goes to confirm it (a page of the front end). */
-    String begin(HttpServletRequest request, SessionUser user, String intent, String returnTo) {
+    @Override
+    public String begin(HttpServletRequest request, HttpServletResponse response, SessionUser user, String intent,
+            String returnTo) {
         request.getSession().setAttribute(STARTED, new StepUpIntent(intent, returnTo, user.id(), clock.instant()));
         audit.stepUpStarted(user, intent);
         return request.getContextPath() + CONFIRMATION_PAGE + "?intent=" + intent + "&returnTo="

@@ -1,6 +1,6 @@
 package sg.annualva.adapters.pending;
 
-import org.springframework.context.annotation.Profile;
+import sg.annualva.config.NotDevLocal;
 import org.springframework.stereotype.Component;
 import sg.annualva.boundary.BoundaryFailureException;
 import sg.annualva.boundary.IdentityStatus;
@@ -12,7 +12,7 @@ import sg.annualva.boundary.IdentityStatus;
  * person disabled is still refused. The Seam 1 harness replaces it with a fake.
  */
 @Component
-@Profile("!dev-local")
+@NotDevLocal
 class UnwiredIdentityStatus implements IdentityStatus {
 
     @Override

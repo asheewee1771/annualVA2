@@ -1,6 +1,6 @@
 package sg.annualva.adapters.oidc;
 
-import org.springframework.context.annotation.Profile;
+import sg.annualva.config.NotDevLocal;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -15,7 +15,7 @@ import sg.annualva.boundary.IdentityProvider;
  * it in the same two shapes.
  */
 @Component
-@Profile("!dev-local")
+@NotDevLocal
 class MccIdentityProvider implements IdentityProvider {
 
     private static final String AFCAS = "afcas";

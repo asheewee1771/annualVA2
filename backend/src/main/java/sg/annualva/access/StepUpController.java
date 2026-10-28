@@ -1,6 +1,5 @@
 package sg.annualva.access;
 
-import org.springframework.context.annotation.Profile;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.Pattern;
@@ -16,17 +15,17 @@ import sg.annualva.web.StepUpRequiredException;
 
 /**
  * Where the browser goes when a sensitive command answered {@code step-up-required}: the person is
- * sent to the identity provider for a fresh sign-in and comes back to {@code returnTo}. Nothing the
- * command asked for is run or remembered here; the person repeats it.
+ * sent to {@link StepUpStarter}'s fresh sign-in (the identity provider's, or the local confirmation under
+ * {@code dev-local}) and comes back to {@code returnTo}. Nothing the command asked for is run or remembered here;
+ * the person repeats it.
  */
 @RestController
-@Profile("!dev-local")
 public class StepUpController {
 
-    private final StepUp stepUp;
+    private final StepUpStarter starter;
 
-    StepUpController(StepUp stepUp) {
-        this.stepUp = stepUp;
+    StepUpController(StepUpStarter starter) {
+        this.starter = starter;
     }
 
     @GetMapping(StepUpRequiredException.START_PATH)
@@ -37,6 +36,6 @@ public class StepUpController {
         if (!(authentication.getPrincipal() instanceof SessionUser user)) {
             throw new AccessDeniedException("Not a signed-in person");
         }
-        response.sendRedirect(stepUp.begin(request, response, user, intent, StepUp.safeReturnPath(returnTo)));
+        response.sendRedirect(starter.begin(request, response, user, intent, StepUp.safeReturnPath(returnTo)));
     }
 }

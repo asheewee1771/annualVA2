@@ -10,7 +10,8 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.jdbc.autoconfigure.JdbcConnectionDetails;
-import org.springframework.context.annotation.Profile;
+import sg.annualva.config.DevLocal;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
@@ -19,13 +20,17 @@ import org.springframework.stereotype.Component;
  * application can sign in as any persona, so it must be impossible to run one anywhere but a developer's machine. The
  * context fails to start unless the profile stands alone (no {@code sit}, {@code ci}, {@code dev-mcc} or any other
  * profile, so a production profile name cannot slip through a deny-list), the server listens on a loopback address
- * only (an unset address listens on every interface, so it is refused too) and the database is on this machine.
+ * only (an unset address listens on every interface, so it is refused too; so is a management server with a port of its
+ * own and no loopback address) and the database, and Flyway's if it has an address of its own, is on this machine. It is
+ * created even when the application starts lazily. It runs while the beans are created, not before the first of them, so
+ * the profile files supply only local database addresses (ADR 0058 item 6).
  */
 @Component
-@Profile("dev-local")
+@Lazy(false)
+@DevLocal
 class DevLocalGuard {
 
-    static final String PROFILE = "dev-local";
+    static final String PROFILE = DevLocal.PROFILE;
 
     private static final Logger log = LoggerFactory.getLogger(DevLocalGuard.class);
     private static final Pattern IPV4 = Pattern.compile("\\d{1,3}(\\.\\d{1,3}){3}");
@@ -43,7 +48,16 @@ class DevLocalGuard {
             throw new IllegalStateException("The profile dev-local needs server.address to be a loopback address "
                     + "(127.0.0.1 or ::1), so that only this machine can reach it");
         }
-        if (!databaseOnThisMachine(database.getJdbcUrl())) {
+        String managementPort = environment.getProperty("management.server.port");
+        String managementAddress = environment.getProperty("management.server.address");
+        if (managementPort != null && !managementPort.isBlank()
+                && (managementAddress == null || !loopback(managementAddress))) {
+            throw new IllegalStateException("The profile dev-local needs management.server.address to be a loopback "
+                    + "address when the management server has a port of its own");
+        }
+        String flywayUrl = environment.getProperty("spring.flyway.url");
+        if (!databaseOnThisMachine(database.getJdbcUrl())
+                || (flywayUrl != null && !flywayUrl.isBlank() && !databaseOnThisMachine(flywayUrl))) {
             throw new IllegalStateException("The profile dev-local needs the database on this machine (localhost, "
                     + "127.0.0.1 or ::1)");
         }

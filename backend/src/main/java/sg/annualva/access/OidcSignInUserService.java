@@ -1,6 +1,6 @@
 package sg.annualva.access;
 
-import org.springframework.context.annotation.Profile;
+import sg.annualva.config.NotDevLocal;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
@@ -13,7 +13,7 @@ import sg.annualva.boundary.IdentityProvider;
  * called; everything the application needs is in the id token.
  */
 @Component
-@Profile("!dev-local")
+@NotDevLocal
 class OidcSignInUserService implements OAuth2UserService<OidcUserRequest, OidcUser> {
 
     private final IdentityProvider identityProvider;

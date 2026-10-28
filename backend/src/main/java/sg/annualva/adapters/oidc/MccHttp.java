@@ -1,6 +1,6 @@
 package sg.annualva.adapters.oidc;
 
-import org.springframework.context.annotation.Profile;
+import sg.annualva.config.NotDevLocal;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -26,7 +26,7 @@ import org.springframework.web.client.RestTemplate;
  * local mock stack's certificate file is absent (dp-3: trust is never turned off, only deferred).
  */
 @Component
-@Profile("!dev-local")
+@NotDevLocal
 class MccHttp {
 
     private final ClientHttpRequestFactory requestFactory;

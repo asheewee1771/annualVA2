@@ -5,7 +5,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
-import org.springframework.context.annotation.Profile;
+import sg.annualva.config.DevLocal;
 import org.springframework.validation.annotation.Validated;
 
 /**
@@ -17,7 +17,7 @@ import org.springframework.validation.annotation.Validated;
  */
 @ConfigurationProperties("annualva.dev-local")
 @Validated
-@Profile("dev-local")
+@DevLocal
 public record LocalAdapterProperties(
         @DefaultValue(".dev-local/files") @NotNull Path fileStoreDir,
         @DefaultValue("1s") @NotNull Duration scanDelay) {}

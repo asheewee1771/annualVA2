@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import sg.annualva.harness.ApiClient;
 import sg.annualva.harness.AuditEntries;
 import tools.jackson.databind.JsonNode;
@@ -14,6 +16,9 @@ import tools.jackson.databind.JsonNode;
  * rules as a real sign-in, and holds a role only when a Register a VA POC applied names their email.
  */
 class DevLocalSignInTest extends DevLocalSeam1 {
+
+    @Autowired
+    private JdbcClient database;
 
     @Test
     void theSixPersonasAreListedWithTheirNameRoleAndEmailToAnyone() {
@@ -90,6 +95,40 @@ class DevLocalSignInTest extends DevLocalSeam1 {
             assertThat(answer.header("content-type")).startsWith("application/problem+json");
             assertThat(answer.body()).as("nothing the caller sent is echoed").doesNotContain("0000000000ff");
             assertThat(session(browser).get("authenticated").asBoolean()).as(body).isFalse();
+        }
+    }
+
+    @Test
+    void aRefusedSignInIsAuditedWithAFixedReasonAndNothingTheCallerSent() {
+        ApiClient reader = signedInAs(POC_1);
+        int before = AuditEntries.all(reader, "action=SIGN_IN_FAILED").size();
+
+        var refused = signIn(browser().withCsrf(), "11111111-0000-4000-8000-0000000000ff");
+
+        assertThat(refused.status()).isEqualTo(400);
+        List<JsonNode> entries = AuditEntries.all(reader, "action=SIGN_IN_FAILED");
+        assertThat(entries).hasSize(before + 1);
+        assertThat(entries.toString()).contains("unknown-persona").doesNotContain("0000000000ff");
+    }
+
+    @Test
+    void aPersonaWhoseEmailAnotherAccountHoldsIsRefusedLikeAnyOtherConflictingSignIn() {
+        signedInAs(CM_B);
+        ApiClient reader = signedInAs(POC_1);
+        int before = AuditEntries.all(reader, "action=SIGN_IN_FAILED").size();
+        database.sql("UPDATE app_user SET sso_id = 'someone-else' WHERE sso_id = :id").param("id", CM_B).update();
+        try {
+            ApiClient browser = browser().withCsrf();
+
+            var refused = signIn(browser, CM_B);
+
+            assertThat(refused.status()).isEqualTo(403);
+            assertThat(ApiClient.json(refused).get("type").asString()).endsWith("/sign-in-refused");
+            assertThat(ApiClient.json(refused).get("reason").asString()).isEqualTo("identity-conflict");
+            assertThat(session(browser).get("authenticated").asBoolean()).isFalse();
+            assertThat(AuditEntries.all(reader, "action=SIGN_IN_FAILED")).hasSize(before + 1);
+        } finally {
+            database.sql("UPDATE app_user SET sso_id = :id WHERE sso_id = 'someone-else'").param("id", CM_B).update();
         }
     }
 

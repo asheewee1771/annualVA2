@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Profile;
+import sg.annualva.config.DevLocal;
 import org.springframework.stereotype.Component;
 import sg.annualva.boundary.MailRelay;
 
@@ -19,7 +19,7 @@ import sg.annualva.boundary.MailRelay;
  * Unreachable can be shown.
  */
 @Component
-@Profile("dev-local")
+@DevLocal
 class LocalMailRelay implements MailRelay {
 
     private static final Logger log = LoggerFactory.getLogger(LocalMailRelay.class);
