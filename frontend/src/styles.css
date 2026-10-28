@@ -158,6 +158,37 @@ body {
   color: var(--muted);
 }
 
+/* The dev-local profile's screens (ticket 63): loud, so nobody mistakes them for the single sign-on. */
+.dev-banner {
+  border: 2px dashed var(--warning);
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin: 16px 0;
+}
+
+.persona-list {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.persona {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+}
+
+.persona__email {
+  font-family: ui-monospace, monospace;
+  font-size: 13px;
+}
+
 .role-nav {
   background: var(--surface);
   border-bottom: 1px solid var(--border);

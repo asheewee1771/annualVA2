@@ -3,12 +3,11 @@ import { setSignedOutHandler } from "../api/client.ts";
 import { fetchSession, type Session } from "../api/session.ts";
 import { ErrorPanel } from "../components/ErrorPanel.tsx";
 import { useResource } from "../hooks/useResource.ts";
+import { SignedInBody, SignedOutBody } from "./Bodies.tsx";
 import { Shell } from "./Shell.tsx";
-import { SignedOutScreen } from "./SignedOutScreen.tsx";
 import { StepUpInterstitial } from "./StepUpInterstitial.tsx";
 import { StepUpNotice } from "./StepUpNotice.tsx";
 import { useStepUp } from "./useStepUp.ts";
-import { Workspace } from "./Workspace.tsx";
 
 /** Undefined while the session is still unknown (loading or failed), then whether the person is signed in. */
 function signedInState(unknown: boolean, signedOut: boolean, session: Session | undefined): boolean | undefined {
@@ -58,7 +57,7 @@ export function App() {
     const classification = session.data?.classification;
     return (
       <Shell session={classification ? { authenticated: false, classification } : undefined}>
-        <SignedOutScreen />
+        <SignedOutBody />
       </Shell>
     );
   }
@@ -66,7 +65,7 @@ export function App() {
   return (
     <Shell session={session.data} onSignedOut={() => setSignedOut(true)}>
       {stepUp.returned ? <StepUpNotice outcome={stepUp.returned} onDismiss={stepUp.dismissReturned} /> : null}
-      <Workspace session={session.data} />
+      <SignedInBody session={session.data} />
       {stepUp.needed ? <StepUpInterstitial needed={stepUp.needed} onCancel={stepUp.dismissNeeded} /> : null}
     </Shell>
   );

@@ -1,3 +1,9 @@
+import { useCallback } from "react";
+import { fetchPersonas } from "../api/dev.ts";
+import { useResource } from "../hooks/useResource.ts";
+import { AppLink } from "./AppLink.tsx";
+import { DEV_SIGN_IN_PATH } from "./devLocal.ts";
+
 /** What the person is told after a refused sign-in; the reason code in the URL selects the text, never shows. */
 const REFUSALS: Record<string, string> = {
   "mfa-not-evidenced":
@@ -22,6 +28,21 @@ function refusal(): string | undefined {
   return Object.hasOwn(REFUSALS, reason) ? REFUSALS[reason] : REFUSED_FALLBACK;
 }
 
+/**
+ * Offered only where the back end answers the persona list (the dev-local profile of a developer's machine, ticket 63):
+ * anywhere else that is a 404 and nothing is shown.
+ */
+function DevSignInOffer() {
+  const personas = useResource(useCallback(fetchPersonas, []));
+  if (!personas.data) return null;
+  return (
+    <p className="dev-banner" role="note">
+      <strong>Local development:</strong> <AppLink path={DEV_SIGN_IN_PATH}>Sign in as a persona</AppLink> instead of the
+      single sign-on.
+    </p>
+  );
+}
+
 /** Shown when there is no session. Sign-in goes through the organisation single sign-on. */
 export function SignedOutScreen() {
   const refused = refusal();
@@ -41,6 +62,7 @@ export function SignedOutScreen() {
         <a className="button" href="/oauth2/authorization/mcc-sso-login">
           Sign in
         </a>
+        <DevSignInOffer />
       </div>
     </main>
   );
