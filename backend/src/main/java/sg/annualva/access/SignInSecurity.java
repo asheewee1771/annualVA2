@@ -6,9 +6,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.session.SessionRegistry;
-import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResponseClient;
-import org.springframework.security.oauth2.client.endpoint.OAuth2AuthorizationCodeGrantRequest;
-import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
@@ -20,8 +17,8 @@ import org.springframework.security.web.session.SessionInformationExpiredStrateg
 import org.springframework.stereotype.Component;
 
 /**
- * The sign-in and session wiring the composition root applies to the one filter chain: OIDC login
- * through the MCC client beans, the lean session principal, sign-out at {@code POST /api/logout},
+ * The sign-in and session wiring the composition root applies to the one filter chain: the way a sign-in starts
+ * ({@link SignInMethod}: OIDC login through the MCC client beans, or the persona picker under {@code dev-local}), the lean session principal, sign-out at {@code POST /api/logout},
  * session id rotation at sign-in, one session per person, and the clock-driven idle and absolute
  * limits, and the per-request resolution of roles from the role store. There is no form login: {@code /login} is not an endpoint.
  */
@@ -32,11 +29,7 @@ public class SignInSecurity {
 
     private static final Logger log = LoggerFactory.getLogger(SignInSecurity.class);
 
-    private final OAuth2AuthorizationRequestResolver authorizationRequestResolver;
-    private final OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest> tokenResponseClient;
-    private final OidcSignInUserService userService;
-    private final SignInCallbackHandler callbackHandler;
-    private final StepUpAuthenticationProvider stepUpProvider;
+    private final SignInMethod signInMethod;
     private final SignOutHandler signOutHandler;
     private final SecurityContextRepository securityContextRepository;
     private final SessionRegistry sessionRegistry;
@@ -45,17 +38,10 @@ public class SignInSecurity {
     private final Clock clock;
     private final SignInProperties properties;
 
-    SignInSecurity(OAuth2AuthorizationRequestResolver authorizationRequestResolver,
-            OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest> tokenResponseClient,
-            OidcSignInUserService userService, SignInCallbackHandler callbackHandler,
-            StepUpAuthenticationProvider stepUpProvider, SignOutHandler signOutHandler,
+    SignInSecurity(SignInMethod signInMethod, SignOutHandler signOutHandler,
             SecurityContextRepository securityContextRepository, SessionRegistry sessionRegistry,
             Clock clock, SignInProperties properties, RoleResolver roleResolver, IdentityCheck identityCheck) {
-        this.authorizationRequestResolver = authorizationRequestResolver;
-        this.tokenResponseClient = tokenResponseClient;
-        this.userService = userService;
-        this.callbackHandler = callbackHandler;
-        this.stepUpProvider = stepUpProvider;
+        this.signInMethod = signInMethod;
         this.signOutHandler = signOutHandler;
         this.securityContextRepository = securityContextRepository;
         this.sessionRegistry = sessionRegistry;
@@ -71,18 +57,10 @@ public class SignInSecurity {
      */
     public void apply(HttpSecurity http, AuthenticationEntryPoint unauthenticated,
             AccessDeniedHandler tooManyRequests) throws Exception {
+        // How a sign-in starts: the single sign-on's OIDC login, or the persona picker of dev-local (ticket 63).
+        signInMethod.apply(http);
         http
-                // A step-up callback is taken by its own provider, ahead of the standard one (ADR 0004).
-                .authenticationProvider(stepUpProvider)
                 .securityContext(context -> context.securityContextRepository(securityContextRepository))
-                .oauth2Login(login -> login
-                        // No generated login page: sign-in starts only at /oauth2/authorization/mcc-sso-login.
-                        .loginPage("/")
-                        .authorizationEndpoint(endpoint -> endpoint.authorizationRequestResolver(authorizationRequestResolver))
-                        .tokenEndpoint(endpoint -> endpoint.accessTokenResponseClient(tokenResponseClient))
-                        .userInfoEndpoint(endpoint -> endpoint.oidcUserService(userService))
-                        .successHandler(callbackHandler)
-                        .failureHandler(callbackHandler))
                 .logout(logout -> logout
                         .logoutUrl(LOGOUT_PATH)
                         .addLogoutHandler(signOutHandler)

@@ -7,6 +7,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizationRequestRepository;
@@ -49,13 +50,13 @@ public class StepUp {
     private final SignInProperties signIn;
     private final AppUserStore users;
     private final AccessAudit audit;
-    private final OAuth2AuthorizationRequestResolver authorizationRequests;
+    private final ObjectProvider<OAuth2AuthorizationRequestResolver> authorizationRequests;
     private final IdentityDisablement disablement;
     private final HttpSessionOAuth2AuthorizationRequestRepository savedRequests =
             new HttpSessionOAuth2AuthorizationRequestRepository();
 
     StepUp(Clock clock, StepUpProperties properties, SignInProperties signIn, AppUserStore users, AccessAudit audit,
-            OAuth2AuthorizationRequestResolver authorizationRequests, IdentityDisablement disablement) {
+            ObjectProvider<OAuth2AuthorizationRequestResolver> authorizationRequests, IdentityDisablement disablement) {
         this.disablement = disablement;
         this.clock = clock;
         this.properties = properties;
@@ -105,7 +106,7 @@ public class StepUp {
             audit.stepUpFullSignIn(user, intent);
             return request.getContextPath() + "/oauth2/authorization/" + LOGIN_REGISTRATION_ID;
         }
-        OAuth2AuthorizationRequest base = authorizationRequests.resolve(request, LOGIN_REGISTRATION_ID);
+        OAuth2AuthorizationRequest base = authorizationRequests.getObject().resolve(request, LOGIN_REGISTRATION_ID);
         if (base == null) {
             throw new IllegalStateException("The sign-in registration is missing");
         }

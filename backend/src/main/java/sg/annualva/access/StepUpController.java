@@ -1,5 +1,6 @@
 package sg.annualva.access;
 
+import org.springframework.context.annotation.Profile;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.Pattern;
@@ -19,6 +20,7 @@ import sg.annualva.web.StepUpRequiredException;
  * command asked for is run or remembered here; the person repeats it.
  */
 @RestController
+@Profile("!dev-local")
 public class StepUpController {
 
     private final StepUp stepUp;

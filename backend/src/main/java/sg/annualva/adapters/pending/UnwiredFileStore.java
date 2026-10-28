@@ -1,5 +1,6 @@
 package sg.annualva.adapters.pending;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import sg.annualva.boundary.BoundaryFailureException;
 import sg.annualva.boundary.FileStore;
@@ -10,6 +11,7 @@ import sg.annualva.boundary.FileStore;
  * still starts under the {@code dev-mcc} profile and in production. The Seam 1 harness replaces it with a fake.
  */
 @Component
+@Profile("!dev-local")
 class UnwiredFileStore implements FileStore {
 
     private static final String NOT_WIRED = "The file store is not wired";

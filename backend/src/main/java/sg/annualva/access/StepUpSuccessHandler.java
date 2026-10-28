@@ -14,7 +14,8 @@ import org.springframework.stereotype.Component;
 /**
  * Finishes a step-up: saves the session user with the fresher {@code auth_time}, records the step-up in the audit log and
  * sends the browser back. It touches nothing else: when the session began and its idle clock stay as
- * they were, so a step-up never extends the session.
+ * they were, so a step-up never extends the session. The local confirmation of {@code dev-local} ends in
+ * {@link #refresh} too.
  */
 @Component
 class StepUpSuccessHandler implements AuthenticationSuccessHandler {
@@ -32,13 +33,17 @@ class StepUpSuccessHandler implements AuthenticationSuccessHandler {
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
             Authentication authentication) throws IOException {
         var principal = (SteppedUpOidcUser) authentication.getPrincipal();
+        refresh(request, response, principal.user(), principal.started().intent());
+        response.sendRedirect(request.getContextPath() + principal.started().returnTo() + "?stepup=done");
+    }
 
+    /** Keeps the person's fresher authentication in the session and records the step-up of this intent. */
+    void refresh(HttpServletRequest request, HttpServletResponse response, SessionUser fresh, String intent) {
         SecurityContext context = contextHolder.createEmptyContext();
-        context.setAuthentication(new SessionAuthentication(principal.user()));
+        context.setAuthentication(new SessionAuthentication(fresh));
         contextHolder.setContext(context);
         securityContextRepository.saveContext(context, request, response);
 
-        audit.stepUpCompleted(principal.user(), principal.started().intent());
-        response.sendRedirect(request.getContextPath() + principal.started().returnTo() + "?stepup=done");
+        audit.stepUpCompleted(fresh, intent);
     }
 }

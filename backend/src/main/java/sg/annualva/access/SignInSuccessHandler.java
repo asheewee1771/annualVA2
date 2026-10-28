@@ -16,7 +16,8 @@ import org.springframework.stereotype.Component;
  * Finishes a sign-in: swaps the OIDC principal (which carries the id token) for the lean
  * {@link SessionAuthentication}, stamps the session for the idle and absolute limits, records the
  * sign-in in the audit log and sends the browser to the front end. The session id was already rotated and the
- * older session of the same person already ended by the session authentication strategies.
+ * older session of the same person already ended by the session authentication strategies. The persona sign-in of
+ * {@code dev-local} ends in {@link #establish} too, so both leave the same session behind.
  */
 @Component
 class SignInSuccessHandler implements AuthenticationSuccessHandler {
@@ -33,8 +34,12 @@ class SignInSuccessHandler implements AuthenticationSuccessHandler {
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
             Authentication authentication) throws IOException {
-        SessionUser user = ((SignedInOidcUser) authentication.getPrincipal()).user();
+        establish(request, response, ((SignedInOidcUser) authentication.getPrincipal()).user());
+        response.sendRedirect(request.getContextPath() + "/");
+    }
 
+    /** Makes the person's session: their lean authentication, the stamps the limits read, and the audit entry. */
+    void establish(HttpServletRequest request, HttpServletResponse response, SessionUser user) {
         SecurityContext context = contextHolder.createEmptyContext();
         context.setAuthentication(new SessionAuthentication(user));
         contextHolder.setContext(context);
@@ -46,6 +51,5 @@ class SignInSuccessHandler implements AuthenticationSuccessHandler {
         session.setAttribute(SessionAttributes.USER_ID, user.getName());
 
         audit.signedIn(user);
-        response.sendRedirect(request.getContextPath() + "/");
     }
 }
