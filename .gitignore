@@ -50,4 +50,4 @@ skills-lock.json
 !.claude/launch.json
 
 # dev-local profile: files, scans and exports kept by the local file store (ticket 63)
-backend/.dev-local/
+.dev-local/
