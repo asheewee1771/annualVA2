@@ -153,10 +153,18 @@ function takeStepUpOutcome(): StepUpOutcome | undefined {
   return { outcome, ...(reason !== undefined ? { reason } : {}) };
 }
 
+/**
+ * Whether a string is a path of this site and nothing else: the same characters the server allows in a return path
+ * (`StepUp.safeReturnPath`), so no backslash, scheme, host or query can pass for one.
+ */
+export function isSafeRoute(candidate: string | null): candidate is string {
+  return candidate !== null && /^\/[A-Za-z0-9._~/-]{0,199}$/.test(candidate) && !candidate.startsWith("//");
+}
+
 /** Where the person was, as a path of this site only. */
 function takeSavedRoute(): string | undefined {
   const route = take(ROUTE_KEY);
-  return typeof route === "string" && route.startsWith("/") && !route.startsWith("//") ? route : undefined;
+  return typeof route === "string" && isSafeRoute(route) ? route : undefined;
 }
 
 /** What the server's redirect brought the person back with. */

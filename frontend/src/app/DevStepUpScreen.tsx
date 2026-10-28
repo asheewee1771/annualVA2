@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { confirmLocalStepUp } from "../api/dev.ts";
 import { ApiError } from "../api/problem.ts";
-import { describeAction } from "../api/stepUp.ts";
+import { describeAction, isSafeRoute } from "../api/stepUp.ts";
 import { DEV_LOCAL_NOTICE } from "./devLocal.ts";
 
 /** A return path is only ever a path of this site; anything else is the root. */
 function safeReturn(candidate: string | null): string {
-  return candidate !== null && candidate.startsWith("/") && !candidate.startsWith("//") ? candidate : "/";
+  return isSafeRoute(candidate) ? candidate : "/";
 }
 
 /**
