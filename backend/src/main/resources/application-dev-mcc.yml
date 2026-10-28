@@ -1,5 +1,7 @@
 # Local development against the mock-m-sso stack (compose.yml). Every value here is a mock.
 spring:
+  config:
+    import: classpath:dev-personas.yml
   datasource:
     url: ${ANNUALVA_DB_URL:jdbc:postgresql://localhost:5432/annualva}
     username: ${ANNUALVA_DB_USERNAME:annualva}
@@ -64,14 +66,7 @@ annualva:
       reminder-due: dev-reminder-due
       overdue-weekly: dev-overdue-weekly
       reminder-copy: dev-reminder-copy
-  dev:
-    # MockPass personas carry a uuid but no email; the System Register works by email.
-    identities:
-      11111111-0000-4000-8000-000000000001: smo.a@dev.annualva.test
-      11111111-0000-4000-8000-000000000002: smo.b@dev.annualva.test
-      11111111-0000-4000-8000-000000000003: cm.a@dev.annualva.test
-      11111111-0000-4000-8000-000000000004: cm.b@dev.annualva.test
-      11111111-0000-4000-8000-000000000005: poc.1@dev.annualva.test
-      11111111-0000-4000-8000-000000000006: poc.2@dev.annualva.test
+  # annualva.dev.identities (MockPass personas carry a uuid but no email; the System Register works by email) come from
+  # dev-personas.yml, imported above, which dev-local shares.
   # Exactly two, the VA POC personas; the role store grants them VA_POC at startup.
   va-pocs: poc.1@dev.annualva.test,poc.2@dev.annualva.test

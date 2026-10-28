@@ -34,6 +34,10 @@ class SecurityConfig {
     static final String[] PUBLIC_PATHS = {
         "/actuator/health", "/actuator/info", "/api/session", "/api/csrf", "/.well-known/jwks.json",
         "/oauth2/**", "/login/**",
+        // The persona picker of the dev-local profile (ticket 63). Listed for every profile so that outside dev-local the
+        // paths have no handler and answer 404 whether or not the caller is signed in, as /login does; the handlers
+        // exist only under dev-local.
+        "/api/dev/personas", "/api/dev/sign-in",
         "/", "/index.html", "/favicon.ico", "/assets/**"
     };
 

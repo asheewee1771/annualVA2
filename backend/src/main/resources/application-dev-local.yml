@@ -1,0 +1,57 @@
+# A developer's machine with only PostgreSQL (ticket 63, ADR 0058). Every value here is a mock. Run with
+#   ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev-local
+# Nothing outside this machine is called: no single sign-on (a persona picker signs people in), no malware scanner, no
+# mail relay, no object store; local fakes in sg.annualva.adapters.local stand in for them. Anyone who can reach the
+# application can sign in as any persona, so it listens on the loopback address only and refuses to start otherwise or
+# together with another profile (DevLocalGuard). Never activate it anywhere but a developer's machine.
+spring:
+  config:
+    import: classpath:dev-personas.yml
+  datasource:
+    url: ${ANNUALVA_DB_URL:jdbc:postgresql://localhost:5432/annualva}
+    username: ${ANNUALVA_DB_USERNAME:annualva}
+    password: ${ANNUALVA_DB_PASSWORD:annualva-local}
+
+server:
+  # Loopback only: the guard refuses any other address, and an unset one (every interface).
+  address: 127.0.0.1
+  ssl:
+    # The session cookie is Secure and the front end runs on https://localhost:5173, so the back end keeps the dev
+    # certificate as under dev-mcc.
+    enabled: true
+    key-store: classpath:dev-keystore.p12
+    key-store-type: PKCS12
+    key-store-password: ${DEV_KEYSTORE_PASSWORD:changeit}
+    key-alias: mcc-dev
+
+annualva:
+  # The jobs that scan files, send mail and sweep Overdue run, so a whole VA Submission can be followed.
+  scheduling:
+    enabled: true
+  # The calendar goes live at the first Quarter below. dev-local starts it at Q3 2026, so a VA Cycle is running on a
+  # developer's machine whatever day it is run (the base value is the real go-live, Q3 2027); Quarters before it are
+  # handled outside the app.
+  calendar:
+    first-live-cycle: 2026
+    first-live-quarter: 3
+  sign-in:
+    # There is no identity provider to assert multi-factor evidence; disabling the check is logged at startup.
+    require-mfa-claim: false
+  # Exactly two, the VA POC personas; the role store grants them VA_POC at startup.
+  va-pocs: poc.1@dev.annualva.test,poc.2@dev.annualva.test
+  # The local mail relay logs one Event=email line per message; the links in it point at the front end.
+  mail:
+    app-url: https://localhost:5173
+    templates:
+      returned-for-rework: dev-returned-for-rework
+      overdue: dev-overdue
+      register-change: dev-register-change
+      reminder-due-soon: dev-reminder-due-soon
+      reminder-due: dev-reminder-due
+      overdue-weekly: dev-overdue-weekly
+      reminder-copy: dev-reminder-copy
+  # The local adapters (annualva.dev-local, see LocalAdapterProperties): where files are kept (git-ignored; zones are
+  # sub-folders, so a restart keeps them) and how long a scan takes.
+  dev-local:
+    file-store-dir: .dev-local/files
+    scan-delay: 1s

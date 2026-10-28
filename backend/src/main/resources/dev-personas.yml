@@ -1,0 +1,20 @@
+# The six dev personas, imported by application-dev-mcc.yml and application-dev-local.yml (never by the base file or a
+# deployed profile). MockPass personas carry an afcas.uuid but no email, and the System Register works by email, so
+# identities maps each uuid to the email the Register upload in scripts/dev-data/ names; personas adds the name and role
+# label the dev-local picker shows. A label is for the developer: a role is given only by the Register apply.
+annualva:
+  dev:
+    identities:
+      11111111-0000-4000-8000-000000000001: smo.a@dev.annualva.test
+      11111111-0000-4000-8000-000000000002: smo.b@dev.annualva.test
+      11111111-0000-4000-8000-000000000003: cm.a@dev.annualva.test
+      11111111-0000-4000-8000-000000000004: cm.b@dev.annualva.test
+      11111111-0000-4000-8000-000000000005: poc.1@dev.annualva.test
+      11111111-0000-4000-8000-000000000006: poc.2@dev.annualva.test
+    personas:
+      11111111-0000-4000-8000-000000000001: {name: SMO A, role-label: SMO/Tech Lead}
+      11111111-0000-4000-8000-000000000002: {name: SMO B, role-label: SMO/Tech Lead}
+      11111111-0000-4000-8000-000000000003: {name: Cyber Manager A, role-label: Cyber Manager}
+      11111111-0000-4000-8000-000000000004: {name: Cyber Manager B, role-label: Cyber Manager}
+      11111111-0000-4000-8000-000000000005: {name: VA POC 1, role-label: VA POC}
+      11111111-0000-4000-8000-000000000006: {name: VA POC 2, role-label: VA POC}
