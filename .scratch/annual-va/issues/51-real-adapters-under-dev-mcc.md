@@ -36,3 +36,7 @@ Ticket 47 (ADR 0056) added the `sg.annualva.boundary.IdentityStatus` port and it
 - throw `BoundaryFailureException` for anything that is not a clear answer, and never log the `afcas.uuid`;
 - remove `UnwiredIdentityStatus` only together with this adapter: deleting the `adapters.pending` package without it leaves no `IdentityStatus` bean and the application does not start;
 - check against H4 that the sign-in token's `afcas.status` claim (provisional in ADR 0056 item 8) is what MCC SSO sends, or change `MccIdentityProvider` to what it does send.
+
+### Scope decision (2026-10-29)
+
+Ticket 01 (`mock-m-sso`) is still open, so the scanner, mail and service-client adapters cannot be checked against the mocks. The user decided to build **only the file store** now: the S3 store with SSE-KMS against LocalStack, replacing `UnwiredFileStore` under `dev-mcc`, with its test against the running LocalStack. It starts after ticket 63 reports, so the two do not share Docker ports. The scanner, mail and MCC service client stay `adapters.pending` stubs, and every box of this ticket except the file store's remains open until ticket 01 is done. Status stays `ready-for-agent`.
