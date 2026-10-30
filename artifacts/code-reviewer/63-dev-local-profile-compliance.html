@@ -1,0 +1,704 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Code Review - 63-dev-local-profile</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS overall</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-slate-100 text-slate-700">build: see card</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">thermo-nuclear PASS C0 H0 M5 L5</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN C0 H0 M0 L6</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">semgrep WARN C0 H0 M0 L3</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN C0 H0 M1 L6</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react WARN C0 H0 M0 L6</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN C0 H0 M1 L19</span>
+      <span class="font-mono text-sm text-slate-500 ml-auto">impl/63-dev-local</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Executive Summary</h2>
+          <p class="text-xs text-slate-500 mt-1">Ticket 63, dev-local profile (impl/63-dev-local). Overall after resolution: PASS (no Critical or High finding remains). Checks ran at commit 174eb06; the Resolution column records what changed afterwards (e14e1ba, b69e3fc, adc3b54). Counts are C Critical, H High, M Medium, L Low; "open" counts every finding not fully fixed.</p>
+        </div>
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <th class="px-4 py-2">Check</th>
+            <th class="px-4 py-2">At 174eb06</th>
+            <th class="px-4 py-2">Findings at 174eb06</th>
+            <th class="px-4 py-2">After resolution</th>
+            <th class="px-4 py-2">Open after resolution</th>
+            <th class="px-4 py-2">Summary</th>
+          </tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 font-medium">Build (run by the implementer)</td>
+              <td class="px-4 py-2 text-slate-500">n/a</td>
+              <td class="px-4 py-2 text-slate-500">n/a</td>
+              <td class="px-4 py-2 text-slate-500">see card</td>
+              <td class="px-4 py-2 text-slate-500">n/a</td>
+              <td class="px-4 py-2 text-xs text-slate-600">Back end: BUILD_RESULT_PLACEHOLDER. Front end: PASS.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 font-medium">Thermo-nuclear review (maintainability)</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-red-100 text-red-800">FAIL</span></td>
+              <td class="px-4 py-2 font-mono text-xs">C0 H1 M6 L5</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+              <td class="px-4 py-2 font-mono text-xs">C0 H0 M5 L5</td>
+              <td class="px-4 py-2 text-xs text-slate-600">One High (H1) fixed; M1 fixed; five Medium and five Low are follow-up. Re-evaluated by the implementer, not re-run.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 font-medium">Code review (Standards and Spec)</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">C0 H0 M2 L8</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">C0 H0 M0 L6</td>
+              <td class="px-4 py-2 text-xs text-slate-600">Both Medium fixed (cap test, refuse-branch test); six Low remain.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 font-medium">Semgrep (p/security-audit, p/default)</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">C0 H0 M0 L3</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">C0 H0 M0 L3</td>
+              <td class="px-4 py-2 text-xs text-slate-600">0 Semgrep findings; 3 Low from manual review, accepted.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 font-medium">IM8 Application Technical Controls</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">C0 H0 M2 L6</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">C0 H0 M1 L6</td>
+              <td class="px-4 py-2 text-xs text-slate-600">F1 open redirect fixed; F2 guard laziness partly fixed; six Low remain.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 font-medium">React review (front end)</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">C0 H0 M1 L6</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">C0 H0 M0 L6</td>
+              <td class="px-4 py-2 text-xs text-slate-600">M1 open redirect fixed; six Low remain.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 font-medium">Spring Boot review (core, web, data, batch, security, logging, test)</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">C0 H0 M3 L20</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">C0 H0 M1 L19</td>
+              <td class="px-4 py-2 text-xs text-slate-600">M2, M3, L20 fixed; M1 and L19 partly fixed; 19 Low remain.</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-xs text-slate-500">No Critical finding was raised. The one High, and the security-relevant Medium findings, with their outcome:</p>
+          <ul class="space-y-2 text-sm list-disc pl-5">
+            <li><span class="text-orange-600 font-semibold">High</span> <span class="font-medium">thermo-nuclear H1</span>, <span class="font-mono text-xs">backend/src/main/java/sg/annualva/access/OidcLogin.java and 13 more classes</span>: &#x27;!dev-local&#x27; scattered as a string literal over production classes. <span class="text-slate-600">FIXED in e14e1ba (@DevLocal / @NotDevLocal, arch rule).</span></li>
+            <li><span class="text-amber-600">Medium</span> <span class="font-medium">im8 F1 / react M1</span>, <span class="font-mono text-xs">frontend/src/app/DevStepUpScreen.tsx</span>: Open redirect through /\host in the return path. <span class="text-slate-600">FIXED in b69e3fc.</span></li>
+            <li><span class="text-amber-600">Medium</span> <span class="font-medium">im8 F2 / springboot M1</span>, <span class="font-mono text-xs">backend/src/main/java/sg/annualva/access/DevLocalGuard.java</span>: Guard can be skipped by lazy initialisation; ordering before the datasource. <span class="text-slate-600">PARTLY FIXED in e14e1ba; ordering is an accepted residual (ADR 0058 item 6).</span></li>
+            <li><span class="text-amber-600">Medium</span> <span class="font-medium">springboot M2</span>, <span class="font-mono text-xs">backend/src/main/java/sg/annualva/access/DevLocalGuard.java</span>: Management server not covered by the guard. <span class="text-slate-600">FIXED in e14e1ba.</span></li>
+            <li><span class="text-amber-600">Medium</span> <span class="font-medium">springboot M3 / im8 F5 / lm-4</span>, <span class="font-mono text-xs">backend/src/main/java/sg/annualva/access/DevLocalSignIn.java</span>: Unknown persona sign-in not audited. <span class="text-slate-600">FIXED in e14e1ba.</span></li>
+            <li><span class="text-amber-600">Medium</span> <span class="font-medium">code-review M1 / M2</span>, <span class="font-mono text-xs">backend/src/test/java/sg/annualva/devlocal/</span>: Anonymous-session cap not proven; refuse branch untested. <span class="text-slate-600">FIXED in e14e1ba.</span></li>
+          </ul>
+        </div>
+      </div>
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">Build (quality gates, run by the implementer directly instead of a subagent)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-slate-100 text-slate-700">Back end: see result</span>
+        </summary>
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm border-t border-slate-100 text-left">
+          <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <th class="px-4 py-2">Gate</th>
+            <th class="px-4 py-2">Command</th>
+            <th class="px-4 py-2">Result</th>
+          </tr></thead><tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 font-medium">Back end</td>
+              <td class="px-4 py-2 font-mono text-xs">cd backend &amp;&amp; ./mvnw -B -ntp clean verify</td>
+              <td class="px-4 py-2">BUILD_RESULT_PLACEHOLDER</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 font-medium">Front end</td>
+              <td class="px-4 py-2 font-mono text-xs">cd frontend &amp;&amp; npm run check</td>
+              <td class="px-4 py-2">PASS (Prettier, tsc -b, vite build, no raw HTML, dependency-cruiser, fallow dead-code and health: 0 above threshold)</td>
+            </tr>
+          </tbody></table>
+        </div>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none gap-3 flex-wrap">
+          <span class="font-medium">Thermo-nuclear review (maintainability)</span>
+          <span class="flex items-center gap-2">
+            <span class="text-xs text-slate-500">at 174eb06</span><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-red-100 text-red-800">FAIL</span>
+            <span class="text-xs text-slate-500">resolved</span><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+          </span>
+        </summary>
+        <p class="px-5 py-3 text-xs text-slate-600 border-t border-slate-100">Original: FAIL on one High (H1). After resolution: PASS, H1 fixed and no Critical or High remains (re-evaluated by the implementer, not re-run as a subagent). Remaining Medium and Low items are follow-up, optional. Strengths noted by the reviewer: SignInMethod abstraction, isolated adapters/local with an ArchUnit rule, no migration or role-grant change, single-use intent-bound step-up. Findings: C0 H1 M6 L5 at 174eb06; C0 H0 M5 L5 open after resolution.</p>
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm border-t border-slate-100 text-left">
+          <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <th class="px-4 py-2">Severity</th>
+            <th class="px-4 py-2">File</th>
+            <th class="px-4 py-2">Line</th>
+            <th class="px-4 py-2">Description</th>
+            <th class="px-4 py-2">Resolution</th>
+          </tr></thead><tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-orange-600 font-semibold">High</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">access/OidcLogin.java, OidcSignInUserService.java, StepUpAuthenticationProvider.java, StepUpController.java; adapters/oidc/{JwksController, MccClientConfig, MccHttp, MccIdentityProvider, MccSsoProperties}.java; adapters/pending/Unwired{FileStore, IdentityStatus, MailRelay, MalwareScanner}.java</td>
+              <td class="px-4 py-2 font-mono text-xs">OidcLogin:16, StepUpController:23</td>
+              <td class="px-4 py-2">H1. &#x27;Not dev-local&#x27; is scattered over 14 production classes by the string literal @Profile(&quot;!dev-local&quot;) (plus 8 positive literals; DevLocalGuard.PROFILE exists but nothing uses it). Every future OIDC or pending bean must remember it; only adapters/local is protected by an arch test, the !dev-local side has no guard. Remedy: one composed annotation owning the literal plus an ArchUnit rule.</td>
+              <td class="px-4 py-2 text-xs text-emerald-700">FIXED in e14e1ba: composed annotations @DevLocal / @NotDevLocal in sg.annualva.config own the profile name once; DevLocalArchTest now fails the build if a bean of adapters.oidc / adapters.pending (or the Oidc* access classes) lacks @NotDevLocal.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/DevLocalController.java; backend/src/main/java/sg/annualva/access/StepUpController.java; DevLocalStepUp vs StepUp.begin</td>
+              <td class="px-4 py-2 font-mono text-xs">DevLocalController 51-57, 67-72; StepUpController 32-41</td>
+              <td class="px-4 py-2">M1. A second, parallel step-up path copies the first: near-verbatim controller code (SessionUser check, AccessDeniedException, @RequestParam/@Pattern, safeReturnPath), two controllers mapped to the same path split only by profile, and two different begin signatures for one concept. Introduce a StepUpMethod / StepUpStarter seam and one StepUpController.</td>
+              <td class="px-4 py-2 text-xs text-emerald-700">FIXED in e14e1ba: new StepUpStarter seam (OidcStepUpStarter / DevLocalStepUp), one StepUpController, the duplicate controller code removed.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/app/SecurityConfig.java</td>
+              <td class="px-4 py-2 font-mono text-xs">37-40</td>
+              <td class="px-4 py-2">M2. Dev paths (/api/dev/personas, /api/dev/sign-in) are baked into the production PUBLIC_PATHS for every profile; an anonymous call to /api/dev/step-up answers 401 while /api/dev/personas answers 404. Suggest SignInMethod expose publicPaths().</td>
+              <td class="px-4 py-2 text-xs text-slate-600">Not changed, deliberate: the ticket requires 404 outside the profile for an anonymous caller, which needs the paths permitted in every profile (ADR 0058 item 6).</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/DevLocalSignIn.java</td>
+              <td class="px-4 py-2 font-mono text-xs">73, 84, 92, 97, 108, 113-126, 128-145</td>
+              <td class="px-4 py-2">M3. DevLocalSignIn is heavy machinery for one endpoint (147 lines): inner AbstractHttpConfigurer and AbstractAuthenticationProcessingFilter, private AuthenticationException subclass, hand-rolled body reading and problem+json writing, wrap-then-downcast of SessionAuthentication, broad catch (IOException | RuntimeException), 8-argument positional Identity constructor. Cheaper: a @RestController with a request record, or at least a named Identity factory.</td>
+              <td class="px-4 py-2 text-xs text-slate-600">Not changed, follow-up optional</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/resources/dev-personas.yml; application-dev-local.yml; scripts/dev-data/system-register.sample.xlsx; backend/src/main/java/sg/annualva/access/DevLocalPersonas.java</td>
+              <td class="px-4 py-2 font-mono text-xs">application-dev-local.yml:41; DevLocalPersonas:32, 40-47</td>
+              <td class="px-4 py-2">M4. Persona configuration is spread over three places that must agree (dev-personas.yml, va-pocs in application-dev-local.yml, the sample xlsx); the picker roleLabel is hand-typed. Two @ConfigurationProperties records bind annualva.dev; redundant nested @Profile on Labels; dev-mcc imports unused personas entries. Single source recommended.</td>
+              <td class="px-4 py-2 text-xs text-slate-600">Not changed, follow-up optional</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/SignedOutScreen.tsx; frontend/src/app/Bodies.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">-</td>
+              <td class="px-4 py-2">M5. The production signed-out screen fires GET /api/dev/personas on every load (a pointless 404 and extra round trip; DevSignInScreen fetches the list again). Bodies.tsx adds SignedOutBody / SignedInBody that each hide a dev-specific path check in a shared flow. Expose a boolean from /api/session or a build-time flag; use a small route table.</td>
+              <td class="px-4 py-2 text-xs text-slate-600">Not changed, follow-up optional</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/local/LocalMalwareScanner.java; backend/src/main/java/sg/annualva/adapters/local/LocalFileStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">LocalFileStore 31-38; LocalMalwareScanner 41-50, 56, 88-98</td>
+              <td class="px-4 py-2">M6. Local adapters depend on each other&#x27;s concretes (scanner takes LocalFileStore and calls static acceptsKey) and keep test-only constructor overloads with @Autowired; the scanner ticket is a hand-encoded key:DECISION:epochMillis string parsed with split and valueOf. Use the FileStore interface, one constructor taking the properties record, and a Ticket encode/decode pair.</td>
+              <td class="px-4 py-2 text-xs text-slate-600">Not changed, follow-up optional</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/DevStepUpScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">8-10, 48</td>
+              <td class="px-4 py-2">L1. safeReturn is the third copy of startsWith(&#x27;/&#x27;) &amp;&amp; !startsWith(&#x27;//&#x27;) (others: api/stepUp.ts:159, NotificationsScreen.tsx:56); the screen sanitises twice. Line 48 hard-codes &#x27;the last five minutes&#x27; while the window is the configurable StepUpProperties.freshnessWindow.</td>
+              <td class="px-4 py-2 text-xs text-slate-600">Not changed, follow-up optional (b69e3fc introduced a shared isSafeRoute for the return path; see im8 F1)</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/DevSignInScreen.tsx; frontend/src/app/DevStepUpScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">DevSignInScreen 72-76; DevStepUpScreen 51-55</td>
+              <td class="px-4 py-2">L2. Duplicated UI scaffolding in the two dev screens: dev-banner block, busy/problem state pair, inline error-panel div (ErrorPanel takes a Problem). A DevScreen wrapper would remove the repeats.</td>
+              <td class="px-4 py-2 text-xs text-slate-600">Not changed, follow-up optional</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/SignInSuccessHandler.java; backend/src/main/java/sg/annualva/access/StepUpSuccessHandler.java</td>
+              <td class="px-4 py-2 font-mono text-xs">-</td>
+              <td class="px-4 py-2">L3. SignInSuccessHandler.establish and StepUpSuccessHandler.refresh are now a public seam used by DevLocalSignIn / DevLocalStepUp while still shaped as AuthenticationSuccessHandlers. Consider SessionEstablisher / SessionRefresher.</td>
+              <td class="px-4 py-2 text-xs text-slate-600">Not changed, follow-up optional</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/DevLocalGuard.java</td>
+              <td class="px-4 py-2 font-mono text-xs">31-32, 60-73</td>
+              <td class="px-4 py-2">L4. Guard does its checks in a @Component constructor (context already partly built; takes JdbcConnectionDetails just for the URL); an EnvironmentPostProcessor or ApplicationListener would fail before any bean exists. Two hand-rolled regexes plus InetAddress.getByName are elaborate. Not a correctness defect.</td>
+              <td class="px-4 py-2 text-xs text-slate-600">Not changed, follow-up optional (the guard was hardened in e14e1ba and kept as a bean; ordering residual accepted, see springboot M1)</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/local/LocalMailRelay.java</td>
+              <td class="px-4 py-2 font-mono text-xs">27-28</td>
+              <td class="px-4 py-2">L5. LOGGED_VALUES re-lists values the application already limits (Javadoc admits it); the .bounce local-part convention is magic behaviour known only from Javadoc and README.</td>
+              <td class="px-4 py-2 text-xs text-slate-600">Not changed, follow-up optional</td>
+            </tr>
+          </tbody></table>
+        </div>
+      </details>
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none gap-3 flex-wrap">
+          <span class="font-medium">Code review (Standards and Spec)</span>
+          <span class="flex items-center gap-2">
+            <span class="text-xs text-slate-500">at 174eb06</span><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+            <span class="text-xs text-slate-500">resolved</span><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+          </span>
+        </summary>
+        <p class="px-5 py-3 text-xs text-slate-600 border-t border-slate-100">Original review: WARN, no Critical or High. Ticket 63 acceptance criteria 1 to 7 MET; criterion 8 PARTIAL (M1, M2), now both fixed. Six Low items remain (accepted or deliberate). The original review did not re-run the gates; the implementer ran them (see the Build check). Findings: C0 H0 M2 L8 at 174eb06; C0 H0 M0 L6 open after resolution.</p>
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm border-t border-slate-100 text-left">
+          <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <th class="px-4 py-2">Severity</th>
+            <th class="px-4 py-2">File</th>
+            <th class="px-4 py-2">Line</th>
+            <th class="px-4 py-2">Description</th>
+            <th class="px-4 py-2">Resolution</th>
+          </tr></thead><tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/devlocal/DevLocalSeam1.java</td>
+              <td class="px-4 py-2 font-mono text-xs">40</td>
+              <td class="px-4 py-2">M1 (Spec). The ticket requires sign-in through the same SignInService path with the anonymous-session cap, proven by Seam 1; the suite raises annualva.sign-in.anonymous-sessions-per-minute to 100000 and no test shows POST /api/dev/sign-in is subject to the cap. Add a Seam 1 test with a low limit that gets 429.</td>
+              <td class="px-4 py-2 text-xs text-emerald-700">FIXED in e14e1ba by DevLocalSignInCapTest.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/DevLocalSignIn.java</td>
+              <td class="px-4 py-2 font-mono text-xs">131</td>
+              <td class="px-4 py-2">M2 (Spec). The SignInRefusedException branch of refuse (403 sign-in-refused, audit signInFailed) is unreachable under dev-local as configured and untested (an uncovered JaCoCo branch). Test it or remove it.</td>
+              <td class="px-4 py-2 text-xs text-emerald-700">FIXED in e14e1ba: test for the identity-conflict refusal (403 sign-in-refused, audited).</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/SignInSecurity.java</td>
+              <td class="px-4 py-2 font-mono text-xs">21</td>
+              <td class="px-4 py-2">S1 (Standards). Class Javadoc line was extended in place and is now about 160 chars, far beyond the file&#x27;s wrap width. Cosmetic; re-wrap.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/local/LocalMailRelay.java</td>
+              <td class="px-4 py-2 font-mono text-xs">27</td>
+              <td class="px-4 py-2">S2 (Standards). LOGGED_VALUES includes system_name, beyond the ticket&#x27;s wording (system_id alone would match). A System name is Register data, not Report content, so AGENTS.md is not breached; judgement call.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/app/SecurityConfig.java</td>
+              <td class="px-4 py-2 font-mono text-xs">40</td>
+              <td class="px-4 py-2">S3 (Standards). /api/dev/personas and /api/dev/sign-in are in PUBLIC_PATHS for every profile (deliberate, ADR item 6); a future handler mapped to those paths in a deployed profile would be anonymous by default. DevLocalAbsentTest covers today&#x27;s behaviour. Awareness only.</td>
+              <td class="px-4 py-2 text-xs text-slate-600">Not changed, deliberate: the ticket requires 404 outside the profile for an anonymous caller, which needs the paths permitted in every profile (ADR 0058 item 6).</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">CONTEXT.md</td>
+              <td class="px-4 py-2 font-mono text-xs">-</td>
+              <td class="px-4 py-2">S4 (Standards). &#x27;Persona&#x27; is used throughout code, README and ADR but is not a glossary term; a one-line entry (or a dev-only note) would avoid drift.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/DevStepUpScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">28</td>
+              <td class="px-4 py-2">S5 (Standards). Appends ?stepup=done to returnTo without checking for an existing query string; consistent with the OIDC StepUpSuccessHandler, so not a regression. Possible duplicated code across the two step-up completions.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">docs/adr/0058-a-dev-local-profile-signs-in-as-a-persona-on-local-fakes-and-cannot-start-anywhere-but-a-developers-machine.md</td>
+              <td class="px-4 py-2 font-mono text-xs">3</td>
+              <td class="px-4 py-2">L1 (Spec). Status line says &#x27;items 6 to 8 are provisional&#x27;, but item 6 (the guards) is what the user decided and the ticket requires; only the extra database-host guard, item 7 (calendar) and item 8 detail go beyond the ticket. Say which parts are provisional.</td>
+              <td class="px-4 py-2 text-xs text-emerald-700">FIXED in adc3b54 (ADR status wording).</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">.scratch/annual-va/issues/63-dev-local-profile-persona-sign-in.md</td>
+              <td class="px-4 py-2 font-mono text-xs">7</td>
+              <td class="px-4 py-2">L2 (Spec). Ticket status is still ready-for-agent with an empty Comments section; finished tickets are closed. Update on acceptance.</td>
+              <td class="px-4 py-2 text-xs text-slate-600">Not changed on purpose, the orchestrator closes tickets.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/resources/application-dev-local.yml; .gitignore</td>
+              <td class="px-4 py-2 font-mono text-xs">56</td>
+              <td class="px-4 py-2">L3 (Spec). file-store-dir .dev-local/files is relative to the working directory; the .gitignore entry covers only backend/.dev-local/, so starting from the repository root creates an untracked, unignored .dev-local/.</td>
+              <td class="px-4 py-2 text-xs text-emerald-700">FIXED in adc3b54 (.gitignore now ignores .dev-local/).</td>
+            </tr>
+          </tbody></table>
+        </div>
+      </details>
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none gap-3 flex-wrap">
+          <span class="font-medium">Semgrep (p/security-audit, p/default)</span>
+          <span class="flex items-center gap-2">
+            <span class="text-xs text-slate-500">at 174eb06</span><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+            <span class="text-xs text-slate-500">resolved</span><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+          </span>
+        </summary>
+        <p class="px-5 py-3 text-xs text-slate-600 border-t border-slate-100">Semgrep 1.182.1, 365 rules over 173 files (a superset of the 42 changed files): 0 Semgrep findings. The three Low items come from the manual review of the sign-in bypass and are informational; no change needed before commit. Findings: C0 H0 M0 L3 at 174eb06; C0 H0 M0 L3 open after resolution.</p>
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm border-t border-slate-100 text-left">
+          <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <th class="px-4 py-2">Severity</th>
+            <th class="px-4 py-2">File</th>
+            <th class="px-4 py-2">Line</th>
+            <th class="px-4 py-2">Description</th>
+            <th class="px-4 py-2">Resolution</th>
+          </tr></thead><tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/resources/application-dev-local.yml</td>
+              <td class="px-4 py-2 font-mono text-xs">datasource.password, ssl.key-store-password</td>
+              <td class="px-4 py-2">#1. Default credentials are committed: DB password annualva-local and keystore password changeit (env-overridable). Mock values for a loopback-only profile; the keystore default is carried over from dev-mcc and DevLocalGuard requires a loopback database. Acceptable.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/local/LocalMailRelay.java</td>
+              <td class="px-4 py-2 font-mono text-xs">~38-44</td>
+              <td class="px-4 py-2">#2. The relay logs System-Register-derived free text (system_name, link) as structured key-values. A newline cannot forge a log line in JSON output but the plain console pattern might; confirm the dev console appender escapes values. Dev only; the recipient address is never logged.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/DevLocalGuard.java</td>
+              <td class="px-4 py-2 font-mono text-xs">40-55</td>
+              <td class="px-4 py-2">#3. The guard checks only the bind address at start-up; a reverse proxy or port-forward on the developer&#x27;s machine could still expose the persona sign-in. Inherent to the design (ADR 0058 accepts it).</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+          </tbody></table>
+        </div>
+      </details>
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none gap-3 flex-wrap">
+          <span class="font-medium">IM8 Application Technical Controls</span>
+          <span class="flex items-center gap-2">
+            <span class="text-xs text-slate-500">at 174eb06</span><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+            <span class="text-xs text-slate-500">resolved</span><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+          </span>
+        </summary>
+        <p class="px-5 py-3 text-xs text-slate-600 border-t border-slate-100">Original: WARN, no Critical or High. Focus question (can anything of dev-local run or be reached in a deployed profile?): no. Evidence: @Profile on every dev-local class enforced by DevLocalArchTest, DevLocalGuard allow-list of one profile plus loopback address and database, DevLocalAbsentTest proving 404 outside the profile. After resolution F1 is fixed, F2 is partly fixed (accepted residual), the rest are Low. Manual checklist for a human: confirm no pipeline starts the jar with dev-local, confirm no environment sets lazy initialisation, confirm /dev-step-up and /dev-sign-in are served only as SPA routes of the one app, decide the system risk class, and keep the Unwired* fail-closed stubs until ticket 51. Findings: C0 H0 M2 L6 at 174eb06; C0 H0 M1 L6 open after resolution.</p>
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm border-t border-slate-100 text-left">
+          <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <th class="px-4 py-2">Severity</th>
+            <th class="px-4 py-2">File</th>
+            <th class="px-4 py-2">Line</th>
+            <th class="px-4 py-2">Description</th>
+            <th class="px-4 py-2">Resolution</th>
+          </tr></thead><tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/DevStepUpScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">7-10, 20, 28, 60</td>
+              <td class="px-4 py-2">F1 (as-3). Open redirect in the dev step-up screen: safeReturn accepts /\host (the browser normalises the backslash), the value comes from window.location.search and becomes the Not now link and a window.location.assign target; the route renders in every profile. Back end is safe (StepUp.safeReturnPath). Pre-existing same gap, outside this diff: frontend/src/api/stepUp.ts:159 and frontend/src/screens/shared/NotificationsScreen.tsx:56. Fix with one shared validator.</td>
+              <td class="px-4 py-2 text-xs text-emerald-700">FIXED in b69e3fc (shared isSafeRoute with the server&#x27;s character class).</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/DevLocalGuard.java</td>
+              <td class="px-4 py-2 font-mono text-xs">24-26</td>
+              <td class="px-4 py-2">F2 (as-7 / ac-1). The start-up guard is a plain bean with no dependants and does its work in the constructor; with spring.main.lazy-initialization=true it is never constructed, so the app starts with no check. Fix with @Lazy(false) or an EnvironmentPostProcessor, and add a test with lazy initialisation on.</td>
+              <td class="px-4 py-2 text-xs text-amber-700">PARTLY FIXED in e14e1ba: @Lazy(false) plus a test with lazy initialisation on, Flyway URL checked; ordering before the datasource is an accepted residual documented in ADR 0058 item 6.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/DevLocalGuard.java</td>
+              <td class="px-4 py-2 font-mono text-xs">34-49</td>
+              <td class="px-4 py-2">F3 (as-7). No positive signal that this is a developer machine: a loopback bind is reachable by a same-host proxy, sidecar or port-forward, and a local PostgreSQL is common. Optional hardening: refuse on deployment markers (KUBERNETES_SERVICE_HOST, AWS_EXECUTION_ENV, ECS_CONTAINER_METADATA_URI*, /.dockerenv) and when management.server.port/address is non-loopback.</td>
+              <td class="px-4 py-2 text-xs text-slate-600">Management-port part FIXED in e14e1ba (see springboot M2); deployment-marker hardening not changed, accepted residual (ADR 0058 item 6).</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/app/SecurityConfig.java</td>
+              <td class="px-4 py-2 font-mono text-xs">37-40</td>
+              <td class="px-4 py-2">F4 (ac-1). Dev paths are anonymous-permitted in every profile; a future controller mapping either path in a deployed profile would be public by default. GET /api/dev/personas returns persona ids and emails to anonymous callers, acceptable only because of the guard.</td>
+              <td class="px-4 py-2 text-xs text-slate-600">Not changed, deliberate: the ticket requires 404 outside the profile for an anonymous caller, which needs the paths permitted in every profile (ADR 0058 item 6).</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/DevLocalSignIn.java</td>
+              <td class="px-4 py-2 font-mono text-xs">128-145</td>
+              <td class="px-4 py-2">F5 (lm-4 / as-4 / as-13). A request naming no or an unknown persona is answered 400 and not audited (the OIDC failure handler audits both); any other failure is rethrown as AuthenticationServiceException from the failure handler and escapes as a container 500; no throttle beyond AnonymousSessionLimiter (dev only).</td>
+              <td class="px-4 py-2 text-xs text-amber-700">PARTLY FIXED in e14e1ba: unknown persona is audited as sign-in-refused with fixed reason unknown-persona (tested). The other-failure 500 path and the missing throttle are not changed (dev only).</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/resources/application-dev-local.yml</td>
+              <td class="px-4 py-2 font-mono text-xs">13, 24</td>
+              <td class="px-4 py-2">F6 (as-8). Default DB password annualva-local and keystore password changeit in a classpath profile file that ships in the production jar (same pattern as dev-mcc). Acceptable if packaging is reviewed, otherwise exclude application-dev-*.yml, dev-personas.yml and dev-keystore.p12 from the deployable artefact. Pre-existing (ck-4): dev-keystore.p12 is tracked and on the classpath.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/DevLocalStepUp.java; backend/src/main/java/sg/annualva/access/DevLocalController.java</td>
+              <td class="px-4 py-2 font-mono text-xs">DevLocalStepUp 61-77; DevLocalController 59-65</td>
+              <td class="px-4 py-2">F7 (ac-2). Local step-up is a confirmation, not re-authentication. By design (ADR 0058 item 4); person, intent, once and freshness window are kept and tested. Recorded so the weaker assurance is not mistaken for ac-2 compliance if the code is reused.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: by design, low, no change</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/Bodies.tsx; DevSignInScreen.tsx; SignedOutScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">-</td>
+              <td class="px-4 py-2">F8. The dev UI ships in every build; DevSignInOffer fires GET /api/dev/personas on every signed-out load in every environment (a 404 in production). Harmless functionally; gate imports on import.meta.env.DEV if the picker is only needed for npm run dev.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+          </tbody></table>
+        </div>
+      </details>
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none gap-3 flex-wrap">
+          <span class="font-medium">React review (front end)</span>
+          <span class="flex items-center gap-2">
+            <span class="text-xs text-slate-500">at 174eb06</span><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+            <span class="text-xs text-slate-500">resolved</span><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+          </span>
+        </summary>
+        <p class="px-5 py-3 text-xs text-slate-600 border-t border-slate-100">Original: WARN, no Critical or High. Render purity, hooks, keys, state, no dangerouslySetInnerHTML, CSS variables and the back end contract were checked and fine; ADR 0002 and ADR 0009 respected (no React unit tests added). After resolution the one Medium is fixed; six Low items remain, accepted. Findings: C0 H0 M1 L6 at 174eb06; C0 H0 M0 L6 open after resolution.</p>
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm border-t border-slate-100 text-left">
+          <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <th class="px-4 py-2">Severity</th>
+            <th class="px-4 py-2">File</th>
+            <th class="px-4 py-2">Line</th>
+            <th class="px-4 py-2">Description</th>
+            <th class="px-4 py-2">Resolution</th>
+          </tr></thead><tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/DevStepUpScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">204-206, 216, 256</td>
+              <td class="px-4 py-2">M1. safeReturn can be bypassed by /\host (and a slash-tab-slash form): the URL parser treats a backslash as a slash and strips tabs, so the value from ?returnTo= becomes a scheme-relative external URL in the Not now link. Dev-local only and needs a click. Validate by resolving, not by prefix.</td>
+              <td class="px-4 py-2 text-xs text-emerald-700">FIXED in b69e3fc (shared isSafeRoute with the server&#x27;s character class).</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/DevStepUpScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">224</td>
+              <td class="px-4 py-2">L1. ?stepup=done is appended without regard to an existing query or fragment, giving /x?a=1?stepup=done; the arrival reader then misses the outcome. Build with URL and searchParams.set.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/SignedOutScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">286-295</td>
+              <td class="px-4 py-2">L2. A 404 persona probe fires on every signed-out load in every environment (console noise, layout shift when the offer pops in). A trade-off chosen by the ADR; could be reported by an existing endpoint instead.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/DevSignInScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">153-155</td>
+              <td class="px-4 py-2">L3. Dev screens and copy ship in the production bundle and are reachable by URL; the banner is shown before the profile is confirmed. Render the banner only once personas.data is present.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/DevSignInScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">176-182</td>
+              <td class="px-4 py-2">L4. An empty persona list renders an empty ul with no message; add a &#x27;No personas are configured&#x27; fallback.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/DevSignInScreen.tsx; frontend/src/app/DevStepUpScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">DevSignInScreen 137-148, 157-161; DevStepUpScreen 220-233</td>
+              <td class="px-4 py-2">L5. Accessibility: aria-live on a paragraph mounted with its text is usually not announced (same pattern as App.tsx); disabling the focused button drops keyboard focus to body; a signed-in person opening /dev-sign-in gets the Workspace with no persona switch.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">frontend/src/app/DevSignInScreen.tsx; frontend/src/app/SignedOutScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">133, 287</td>
+              <td class="px-4 py-2">L6. Redundant useCallback around the module-level fetchPersonas; useResource(fetchPersonas) is enough (consistency nit, same as App.tsx).</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+          </tbody></table>
+        </div>
+      </details>
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none gap-3 flex-wrap">
+          <span class="font-medium">Spring Boot review (core, web, data, batch, security, logging, test)</span>
+          <span class="flex items-center gap-2">
+            <span class="text-xs text-slate-500">at 174eb06</span><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+            <span class="text-xs text-slate-500">resolved</span><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+          </span>
+        </summary>
+        <p class="px-5 py-3 text-xs text-slate-600 border-t border-slate-100">Original: WARN, no Critical or High; spring-data and spring-batch PASS (nothing in scope), spring-core, spring-web and spring-test PASS with Low notes, spring-security and spring-logging WARN. After resolution M2, M3 and L20 are fixed, M1 and L19 are partly fixed (ordering before the datasource is an accepted residual), the rest are Low and accepted. Findings: C0 H0 M3 L20 at 174eb06; C0 H0 M1 L19 open after resolution.</p>
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm border-t border-slate-100 text-left">
+          <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <th class="px-4 py-2">Severity</th>
+            <th class="px-4 py-2">File</th>
+            <th class="px-4 py-2">Line</th>
+            <th class="px-4 py-2">Description</th>
+            <th class="px-4 py-2">Resolution</th>
+          </tr></thead><tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/DevLocalGuard.java</td>
+              <td class="px-4 py-2 font-mono text-xs">24-57 (checks 34-57)</td>
+              <td class="px-4 py-2">M1 (security). DevLocalGuard is an ordinary bean, so nothing guarantees it runs before the DataSource, Flyway or other beans; migrations could run before a refusal. DevLocalGuardTest proves the refusal logic in isolation, not the ordering. A separate spring.flyway.url is not checked. Fix with an EnvironmentPostProcessor / ApplicationListener, or @DependsOn, plus a full-context test.</td>
+              <td class="px-4 py-2 text-xs text-amber-700">PARTLY FIXED in e14e1ba: @Lazy(false) plus a test with lazy initialisation on, Flyway URL checked; ordering before the datasource is an accepted residual documented in ADR 0058 item 6.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/DevLocalGuard.java</td>
+              <td class="px-4 py-2 font-mono text-xs">41-45</td>
+              <td class="px-4 py-2">M2 (security). The guard covers server.address only, not the management server: a separate management.server.port without an address listens on all interfaces. Require a loopback management address or refuse it.</td>
+              <td class="px-4 py-2 text-xs text-emerald-700">FIXED in e14e1ba (guard refuses a management port without a loopback address; tested).</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/DevLocalSignIn.java</td>
+              <td class="px-4 py-2 font-mono text-xs">128-145 (branch 135-137)</td>
+              <td class="px-4 py-2">M3 (logging). A refused persona sign-in (400 unknown-persona) leaves no audit or log trace, while SignInRefusedException is audited; probing leaves no trace. Audit or log at INFO with a fixed reason and nothing of the request body.</td>
+              <td class="px-4 py-2 text-xs text-emerald-700">FIXED in e14e1ba (audited as sign-in-refused with fixed reason unknown-persona; tested).</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/app/SecurityConfig.java</td>
+              <td class="px-4 py-2 font-mono text-xs">34-41</td>
+              <td class="px-4 py-2">L1 (security). The persona paths are permitAll in every profile; a future handler mapped to either path would be anonymous by default. Consider adding the matchers only under dev-local.</td>
+              <td class="px-4 py-2 text-xs text-slate-600">Not changed, deliberate: the ticket requires 404 outside the profile for an anonymous caller, which needs the paths permitted in every profile (ADR 0058 item 6).</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/resources/application-dev-local.yml; backend/src/main/java/sg/annualva/access/DevLocalStepUp.java</td>
+              <td class="px-4 py-2 font-mono text-xs">yml 37-39; DevLocalStepUp 61-77</td>
+              <td class="px-4 py-2">L2 (security). sign-in.require-mfa-claim: false and a step-up needing no re-authentication; profile-scoped, logged at start-up, covered by the guard. Accepted by design; no deployed config should set SPRING_PROFILES_ACTIVE=dev-local.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/DevLocalGuard.java</td>
+              <td class="px-4 py-2 font-mono text-xs">31, 65-72</td>
+              <td class="px-4 py-2">L3 (security). Out-of-range IPv4 literals such as 999.1.1.1 pass the IPV4 regex and fall through to a DNS lookup in InetAddress.getByName; still refused, but contradicts the Javadoc that no other name is looked up. Validate octets first and add a test.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/resources/application-dev-local.yml</td>
+              <td class="px-4 py-2 font-mono text-xs">18-25</td>
+              <td class="px-4 py-2">L4 (security). Committed dev keystore with default password changeit; same as dev-mcc, loopback only. Keep it out of deployed profiles.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/DevIdentityProperties.java</td>
+              <td class="px-4 py-2 font-mono text-xs">8-11</td>
+              <td class="px-4 py-2">L5 (core). Stale Javadoc: says the map is empty outside dev-mcc, but it is also populated under dev-local through dev-personas.yml; two records bind annualva.dev.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/DevLocalSignIn.java</td>
+              <td class="px-4 py-2 font-mono text-xs">108-109</td>
+              <td class="px-4 py-2">L6 (core). Identity built from eight positional literals (four null/false); unreadable and breaks silently if the record changes. Add a named factory on Identity.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/DevLocalSignIn.java</td>
+              <td class="px-4 py-2 font-mono text-xs">92</td>
+              <td class="px-4 py-2">L7 (core). Inner class named Filter shadows jakarta.servlet.Filter and hurts search; rename to PersonaSignInFilter.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/local/LocalMalwareScanner.java</td>
+              <td class="px-4 py-2 font-mono text-xs">223-236</td>
+              <td class="px-4 py-2">L8 (core). Scanner depends on the concrete LocalFileStore (and its static acceptsKey); injecting the FileStore port would let it work with any store. Same-package coupling is acceptable; the @Autowired plus test constructor pair is the right pattern.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUp.java; backend/src/main/java/sg/annualva/adapters/local/LocalAdapterProperties.java</td>
+              <td class="px-4 py-2 font-mono text-xs">StepUp 53-59, 109; LocalAdapterProperties 21-23</td>
+              <td class="px-4 py-2">L9 (core). StepUp uses ObjectProvider.getObject(), which throws an unhelpful NoSuchBeanDefinitionException if ever reached; prefer getIfAvailable() plus an explicit IllegalStateException. scanDelay accepts a negative Duration.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/StepUpController.java; backend/src/main/java/sg/annualva/access/StepUpAuthenticationProvider.java</td>
+              <td class="px-4 py-2 font-mono text-xs">3 (both)</td>
+              <td class="px-4 py-2">L10 (core, style). org.springframework.context.annotation.Profile import placed before jakarta.* / org.jspecify.* imports. Cosmetic.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/DevLocalController.java</td>
+              <td class="px-4 py-2 font-mono text-xs">51-58</td>
+              <td class="px-4 py-2">L11 (web). GET /auth/step-up writes a session attribute and an audit entry (state change on GET); mirrors the existing OIDC StepUpController contract, so kept. Noted only.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/DevLocalController.java</td>
+              <td class="px-4 py-2 font-mono text-xs">45-49, 59-65</td>
+              <td class="px-4 py-2">L12 (web). confirm returns Map of String to String instead of a record DTO; endpoints declare no consumes/produces. Dev only.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/access/DevLocalSignIn.java</td>
+              <td class="px-4 py-2 font-mono text-xs">113-126</td>
+              <td class="px-4 py-2">L13 (web). Hand-rolled body parsing on the sign-in filter: bounded to 1 KiB and every malformed input maps to one 400 (right behaviour), but Content-Type is not checked. Acceptable for a security filter; no change needed.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/local/LocalFileStore.java</td>
+              <td class="px-4 py-2 font-mono text-xs">71-73, 81-85, 92-94</td>
+              <td class="px-4 py-2">L14 (logging). catch (IOException e) throws a BoundaryFailureException without the cause, so a disk-full or permission error loses its stack trace and nothing logs it. Pass e as the cause or log once at WARN with the zone only.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/local/LocalMailRelay.java</td>
+              <td class="px-4 py-2 font-mono text-xs">159-177</td>
+              <td class="px-4 py-2">L15 (logging). Logs system_name and link values from the Register upload (user-entered); the address is never logged. Console output is ECS JSON, which escapes CR/LF. Confirm a System name is not &#x27;free text&#x27; in the CONTEXT.md sense.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/devlocal/DevLocalSeam1.java</td>
+              <td class="px-4 py-2 font-mono text-xs">58, 145-153</td>
+              <td class="px-4 py-2">L16 (test). The shared temp folder is never deleted: deleteOnExit() on a non-empty directory deletes nothing, so each run leaves an annualva-dev-local-* folder.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/devlocal/DevDataSampleTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">390, 403-408</td>
+              <td class="px-4 py-2">L17 (test). A generator inside the suite (regenerate() writes the sample xlsx when a system property is set) with a working-directory-relative path that only works from backend/. Skipped by default; move to a main method or Maven profile.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/access/{DevLocalStepUpTest, DevLocalSignInTest, DevLocalGuardTest}.java</td>
+              <td class="px-4 py-2 font-mono text-xs">DevLocalStepUpTest 343-348; DevLocalSignInTest 82-93; DevLocalGuardTest 350-354, 372-376, 381-386, 399-405, 410-414</td>
+              <td class="px-4 py-2">L18 (test). Logic and loops in tests: several cases folded into one test (index loop with a conditional expected value, loops over inputs), so the first failure hides the rest. Use @ParameterizedTest and split per action.</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Accepted: low, no change</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/access/DevLocalGuardTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">-</td>
+              <td class="px-4 py-2">L19 (test). Guard tests miss the ordering against DB init (M1), the management address (M2) and 999.1.1.1 (L3).</td>
+              <td class="px-4 py-2 text-xs text-amber-700">PARTLY FIXED in e14e1ba: tests added for the management address, lazy initialisation and the Flyway URL; DB-init ordering is an accepted residual and 999.1.1.1 is not changed.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/arch/DevLocalArchTest.java</td>
+              <td class="px-4 py-2 font-mono text-xs">469-473</td>
+              <td class="px-4 py-2">L20 (test). Arch rule scope is name-based (access.DevLocal* and adapters.local.*); nothing asserts the other half, that every adapters.oidc and adapters.pending class carries !dev-local, so a miss would only fail at dev-local start-up. (Positive: one shared Seam 1 context, no MockitoBean, no DirtiesContext, real PostgreSQL via Testcontainers.)</td>
+              <td class="px-4 py-2 text-xs text-emerald-700">FIXED in e14e1ba: DevLocalArchTest now fails the build if a bean of adapters.oidc / adapters.pending (or the Oidc* access classes) lacks @NotDevLocal.</td>
+            </tr>
+          </tbody></table>
+        </div>
+      </details>
+    </main>
+  </body>
+</html>
