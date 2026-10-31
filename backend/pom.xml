@@ -25,9 +25,23 @@
         <poi.version>5.4.1</poi.version>
         <!-- The management summary as a PDF (ticket 45, ADR 0054): Apache PDFBox, Apache License 2.0. -->
         <pdfbox.version>3.0.8</pdfbox.version>
+        <!-- The production file store (ticket 51, ADR 0059): the AWS SDK for Java v2 S3 client, Apache License 2.0. -->
+        <awssdk.version>2.57.7</awssdk.version>
         <!-- Empty so that @{argLine} below resolves even when JaCoCo does not set it; the JaCoCo agent adds itself to it. -->
         <argLine></argLine>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>bom</artifactId>
+                <version>${awssdk.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -77,6 +91,10 @@
             <version>${pdfbox.version}</version>
         </dependency>
         <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
@@ -100,6 +118,11 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers-postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-localstack</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
