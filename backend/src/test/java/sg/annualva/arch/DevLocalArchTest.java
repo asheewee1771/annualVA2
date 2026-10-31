@@ -99,6 +99,19 @@ class DevLocalArchTest {
                 .check(main);
     }
 
+    /** The S3 file store is switched on by property, and the property must never switch it on under dev-local (ADR 0059). */
+    @Test
+    void everyBeanOfTheS3FileStoreStepsAsideUnderDevLocal() {
+        classes().that().resideInAnyPackage("sg.annualva.adapters.s3")
+                .and().areTopLevelClasses()
+                .and(DescribedPredicate.describe("a Spring bean or its properties", type ->
+                        type.isAnnotatedWith(Component.class) || type.isAnnotatedWith(ConfigurationProperties.class)))
+                .should().beAnnotatedWith(NotDevLocal.class)
+                .because("under dev-local the local file store is the only one, whatever annualva.aws.enabled says")
+                .allowEmptyShould(false)
+                .check(main);
+    }
+
     @Test
     void nothingOutsideTheProfileDependsOnIt() {
         noClasses().that(DescribedPredicate.not(PART_OF_THE_PROFILE))

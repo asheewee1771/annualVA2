@@ -45,11 +45,17 @@ annualva:
     # MockPass through Keycloak does not assert amr/acr the way MCC SSO does; the check stays on in ci and in
     # every deployed profile. Disabling it here is logged at startup.
     require-mfa-claim: false
+  # The S3 file store (ticket 51, ADR 0059) against LocalStack; scripts/localstack-init makes the buckets and the key.
+  # The access key pair is LocalStack's mock one. Without enabled=true the fail-closed stand-in is the file store.
   aws:
+    enabled: true
     endpoint: http://localhost:4566
     region: us-east-1
+    access-key-id: test
+    secret-access-key: test
     quarantine-bucket: annualva-quarantine-dev
     clean-bucket: annualva-clean-dev
+    export-bucket: annualva-export-dev
     kms-key-alias: alias/annualva-dev
   sfs:
     base-url: http://localhost:9083

@@ -153,6 +153,14 @@ class ModuleConventionsArchTest {
     }
 
     @Test
+    void onlyTheS3AdapterUsesTheAwsSdk() {
+        noClasses().that().resideOutsideOfPackage("sg.annualva.adapters.s3..")
+                .should().dependOnClassesThat().resideInAnyPackage("software.amazon.awssdk..")
+                .because("the object store is reached through the FileStore port; the SDK is the S3 adapter's detail (ADR 0059)")
+                .check(main);
+    }
+
+    @Test
     void jdbcClientIsUsedOnlyInsideStores() {
         noClasses().that().haveSimpleNameNotEndingWith("Store")
                 .should().dependOnClassesThat().haveFullyQualifiedName(JDBC_CLIENT)
