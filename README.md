@@ -30,7 +30,7 @@ Internal web application that runs the organisation's annual vulnerability asses
 | Service | Port | Purpose | Health |
 |---|---|---|---|
 | postgres | 5432 | application database (`annualva` / `annualva` / `annualva-local`) | `docker compose ps` shows healthy |
-| localstack | 4566 | S3 (quarantine and clean buckets) and KMS (`alias/annualva-dev`) | `curl -sf localhost:4566/_localstack/health` |
+| localstack | 4566 | S3 (buckets `annualva-quarantine-dev`, `annualva-clean-dev`, `annualva-export-dev`) and KMS (`alias/annualva-dev`), made by `scripts/localstack-init` on start; the file store of `dev-mcc` | `curl -sf localhost:4566/_localstack/health` |
 | keycloak | 9080 (HTTPS) | MCC SSO stand-in, realm `SSO`, admin `admin`/`admin` | `curl -sk https://localhost:9080/realms/SSO/.well-known/openid-configuration` |
 | mockpass | 5156 | Singpass persona picker brokered by Keycloak | `curl -s localhost:5156` |
 | mock-sfs | 9083 | Secure File Service (malware scan) | `curl -s localhost:9083/actuator/health` |
@@ -46,12 +46,21 @@ The first start of the three `maven:3` mock containers takes several minutes whi
 | Profile | Where | Use |
 |---|---|---|
 | (base) `application.yml` | `backend/src/main/resources` | production shape: `${ENV_VAR}` bindings only, invariant literals |
-| `dev-mcc` | `backend/src/main/resources` | local development against the mock stack; mock literals |
+| `dev-mcc` | `backend/src/main/resources` | local development against the mock stack; mock literals; the file store is S3 with SSE-KMS on LocalStack (see "The file store"), the scanner, mail relay and account status are still fail-closed stand-ins |
 | `dev-local` | `backend/src/main/resources` | one machine, only PostgreSQL: a persona picker signs in and local fakes replace the scanner, file store, mail relay and account status; loopback only, refuses to start with any other profile (see "Running without mock-m-sso"). Never for a deployed environment |
 | `ci` | `backend/src/test/resources` | Seam 1 tests: Testcontainers PostgreSQL, in-process fakes, plain HTTP |
 | `sit` | `backend/src/main/resources` | first deployed target: `${VAR:dev-default}` bindings (mock-stack defaults for non-secrets, none for secrets), optional `backend/.env.sit` copied from `backend/.env.sit.example` |
 
 Select with `SPRING_PROFILES_ACTIVE=dev-mcc` or `-Dspring-boot.run.profiles=dev-mcc`. `dev-local` stands alone: the application refuses to start with it together with any other profile.
+
+## The file store
+
+Under `dev-mcc` the file store (`boundary.FileStore`) is S3 with SSE-KMS on LocalStack (ticket 51, ADR 0059); the scanner, mail relay and account status are still fail-closed stand-ins (`adapters.pending`) until `mock-m-sso` is in hand (ticket 01), so an upload is still refused at the scan step.
+
+- **Zones and buckets:** one bucket per zone, `annualva.aws.quarantine-bucket` (`annualva-quarantine-dev`), `clean-bucket` (`annualva-clean-dev`) and `export-bucket` (`annualva-export-dev`); the object key is the application's random id. Every write asks for SSE-KMS with `annualva.aws.kms-key-alias` (`alias/annualva-dev`) and is refused, and the object removed, if S3's answer does not say `aws:kms`. A failure is one fixed sentence (`BoundaryFailureException`); no key, bucket or file content is logged.
+- **LocalStack bootstrap:** `docker compose up -d postgres localstack` runs `scripts/localstack-init` (`01-kms-key.sh` makes the key and its alias, `02-buckets.sh` the three buckets with default SSE-KMS encryption, a public-access block, and lifecycle expiry of one day on the quarantine bucket and two on the export bucket, as a second line behind the application's own deletes). Both scripts are idempotent. Check with `docker compose exec localstack awslocal s3 ls`. The buckets must not be versioned.
+- **Switch:** the S3 store exists only where `annualva.aws.enabled` is `true` (set in `application-dev-mcc.yml`, with endpoint `http://localhost:4566`, region `us-east-1`, the mock access key pair `test`/`test` and the bucket names). Where it is off or unset (`ci`, `sit`, the base profile) the fail-closed stand-in is the file store, and under `dev-local` neither exists (the local folder store is). A deployed environment switches it on with `ANNUALVA_AWS_ENABLED=true` and the same settings (`ANNUALVA_AWS_REGION`, `ANNUALVA_AWS_QUARANTINE_BUCKET` and so on; no endpoint or key pair, so the SDK's default credential chain applies); the deployment's own configuration (ADR 0059, item 2).
+- **Test:** `S3FileStoreTest` starts LocalStack in Testcontainers with these same init scripts and checks put, get and delete, the zones, that SSE-KMS is requested even into a bucket with no default encryption, and the lifecycle rules. It needs Docker and is part of `./mvnw verify`.
 
 ## Running without mock-m-sso
 
@@ -182,7 +191,7 @@ A VA POC uploads the filled-in template and sees every change before anything ha
 - **Blocked rows:** no Cyber Manager, the System's own SMO as its Cyber Manager, an invalid email or Quarter (only `Q1` to `Q4`), a duplicate System ID, a System ID starting `EXAMPLE-` (the template's sample row), or a missing name or System ID. A preview with any `BLOCKED` row has `canApply: false`. The preview is stored as one JSON list on `register_upload`.
 - **The file is untrusted:** headers must be the template's, as written; macro workbooks, archives that unpack past 20 MB, empty sheets and sheets with more than 1000 rows are refused; formulas are never evaluated; an error never repeats the file. Each refusal is a fixed `problem+json` type (`unsupported-file-type`, `file-too-large`, `file-empty`, `register-header-mismatch`, `register-sheet-missing`, `register-no-rows`, `register-too-many-rows`, `register-file-unreadable`), and, from the malware scan, `file-rejected-malware`, `file-modified-by-scan` (the scanner had to change the file; upload the original again), `scan-timeout` and `scan-mismatch`.
 - **Audit:** `REGISTER_PREVIEWED` (the preview id and the row count), `REGISTER_PREVIEW_VIEWED` and `REGISTER_UPLOAD_REJECTED` (a fixed `reject_code`); never a cell.
-- **Scanning needs the real adapters (ticket 51), or the `dev-local` fakes (see "Running without mock-m-sso"):** the Register workbook and every Scan Report file are quarantined and malware-scanned before they are read (ADR 0017, ADR 0021), but the object-store and scanner adapters are not built yet. Until then they fail closed (`adapters.pending`), so an upload is refused rather than read unscanned; Seam 1 tests use the fakes. A file the scanner had to modify (Sanitized) is rejected, not accepted: the person uploads the original again. Tune the scan with `annualva.scan.attempt-timeout`, `poll-interval`, `max-in-flight`, `sync-wait` and `sync-poll-interval`.
+- **Scanning needs the real adapters (ticket 51), or the `dev-local` fakes (see "Running without mock-m-sso"):** the Register workbook and every Scan Report file are quarantined and malware-scanned before they are read (ADR 0017, ADR 0021), but the scanner adapter is not built yet (the file store is, under `dev-mcc`: see "The file store"). Until then the scanner fails closed (`adapters.pending`), so an upload is refused rather than read unscanned; Seam 1 tests use the fakes. A file the scanner had to modify (Sanitized) is rejected, not accepted: the person uploads the original again. Tune the scan with `annualva.scan.attempt-timeout`, `poll-interval`, `max-in-flight`, `sync-wait` and `sync-poll-interval`.
 - **Front end:** the Register screen (`/va-poc/register`) has the file chooser, the grouped preview (Blocked, Add, Update, No change, Retire) and the Unlinked SMO flag.
 
 ## System Register apply and the Register table
