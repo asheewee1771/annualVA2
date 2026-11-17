@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.junit.jupiter.api.AfterAll;
@@ -280,11 +281,33 @@ class S3FileStoreTest {
 
     @Test
     void aStoreThatDoesNotSayItEncryptedTheFileIsRefusedAndTheFileRemoved() throws IOException {
+        assertRefusedAndRemoved(Map.of());
+    }
+
+    @Test
+    void aStoreThatSaysItEncryptedWithAnotherAlgorithmIsRefusedAndTheFileRemoved() throws IOException {
+        assertRefusedAndRemoved(Map.of("x-amz-server-side-encryption", "AES256", "x-amz-server-side-encryption-aws-kms-key-id",
+                "arn:aws:kms:us-east-1:000000000000:key/some-key"));
+    }
+
+    @Test
+    void aStoreThatSaysKmsButNamesNoKeyIsRefusedAndTheFileRemoved() throws IOException {
+        assertRefusedAndRemoved(Map.of("x-amz-server-side-encryption", "aws:kms"));
+    }
+
+    @Test
+    void aStoreThatSaysKmsButNamesABlankKeyIsRefusedAndTheFileRemoved() throws IOException {
+        assertRefusedAndRemoved(Map.of("x-amz-server-side-encryption", "aws:kms", "x-amz-server-side-encryption-aws-kms-key-id", " "));
+    }
+
+    /** A store that answers every write with the given headers: the write is refused and the object removed again. */
+    private void assertRefusedAndRemoved(Map<String, String> answerHeaders) throws IOException {
         List<String> calls = new CopyOnWriteArrayList<>();
         HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/", exchange -> {
             exchange.getRequestBody().readAllBytes();
             calls.add(exchange.getRequestMethod() + " " + exchange.getRequestURI().getPath());
+            answerHeaders.forEach((name, value) -> exchange.getResponseHeaders().add(name, value));
             exchange.sendResponseHeaders(exchange.getRequestMethod().equals("DELETE") ? 204 : 200, -1);
             exchange.close();
         });
