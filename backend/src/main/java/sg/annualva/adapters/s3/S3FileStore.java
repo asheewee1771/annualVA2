@@ -2,6 +2,7 @@ package sg.annualva.adapters.s3;
 
 import java.net.URI;
 import java.util.regex.Pattern;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -12,6 +13,7 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.awscore.retry.AwsRetryStrategy;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
@@ -21,6 +23,7 @@ import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import software.amazon.awssdk.services.s3.model.ServerSideEncryption;
 
 /**
@@ -40,10 +43,13 @@ class S3FileStore implements FileStore, DisposableBean {
 
     private final S3Client s3;
     private final AwsProperties properties;
+    /** The credential chain this store made, closed with it (the SDK does not close a provider it was handed); else null. */
+    private final @Nullable DefaultCredentialsProvider ownCredentials;
 
     S3FileStore(AwsProperties properties) {
         this.properties = properties;
-        this.s3 = client(properties);
+        this.ownCredentials = fixedCredentials(properties) ? null : DefaultCredentialsProvider.builder().build();
+        this.s3 = client(properties, ownCredentials);
     }
 
     @Override
@@ -53,13 +59,14 @@ class S3FileStore implements FileStore, DisposableBean {
         PutObjectRequest request = PutObjectRequest.builder().bucket(bucket).key(checked)
                 .serverSideEncryption(ServerSideEncryption.AWS_KMS).ssekmsKeyId(properties.kmsKeyAlias())
                 .bucketKeyEnabled(true).contentLength((long) content.length).build();
-        ServerSideEncryption encryption;
+        PutObjectResponse response;
         try {
-            encryption = s3.putObject(request, RequestBody.fromBytes(content)).serverSideEncryption();
+            response = s3.putObject(request, RequestBody.fromBytes(content));
         } catch (SdkException e) {
             throw new BoundaryFailureException("The file store could not write the file");
         }
-        if (encryption != ServerSideEncryption.AWS_KMS) {
+        String keyUsed = response.ssekmsKeyId();
+        if (response.serverSideEncryption() != ServerSideEncryption.AWS_KMS || keyUsed == null || keyUsed.isBlank()) {
             discard(bucket, checked);
             throw new BoundaryFailureException("The file store did not encrypt the file with the key");
         }
@@ -89,6 +96,9 @@ class S3FileStore implements FileStore, DisposableBean {
     @Override
     public void destroy() {
         s3.close();
+        if (ownCredentials != null) {
+            ownCredentials.close();
+        }
     }
 
     private String bucket(Zone zone) {
@@ -115,11 +125,16 @@ class S3FileStore implements FileStore, DisposableBean {
         }
     }
 
-    private static S3Client client(AwsProperties properties) {
+    private static S3Client client(AwsProperties properties, @Nullable DefaultCredentialsProvider chain) {
         var http = ApacheHttpClient.builder().connectionTimeout(properties.connectTimeout())
                 .socketTimeout(properties.readTimeout());
-        var builder = S3Client.builder().region(Region.of(properties.region())).credentialsProvider(credentials(properties))
-                .httpClientBuilder(http);
+        AwsCredentialsProvider credentials = chain != null ? chain : StaticCredentialsProvider.create(
+                AwsBasicCredentials.create(properties.accessKeyId(), properties.secretAccessKey()));
+        var builder = S3Client.builder().region(Region.of(properties.region())).credentialsProvider(credentials)
+                .httpClientBuilder(http)
+                .overrideConfiguration(config -> config.apiCallTimeout(properties.apiCallTimeout())
+                        .retryStrategy(AwsRetryStrategy.standardRetryStrategy().toBuilder()
+                                .maxAttempts(properties.maxAttempts()).build()));
         String endpoint = properties.endpoint();
         if (endpoint != null && !endpoint.isBlank()) {
             builder.endpointOverride(URI.create(endpoint)).forcePathStyle(true);
@@ -127,12 +142,9 @@ class S3FileStore implements FileStore, DisposableBean {
         return builder.build();
     }
 
-    private static AwsCredentialsProvider credentials(AwsProperties properties) {
+    private static boolean fixedCredentials(AwsProperties properties) {
         String id = properties.accessKeyId();
         String secret = properties.secretAccessKey();
-        if (id != null && !id.isBlank() && secret != null && !secret.isBlank()) {
-            return StaticCredentialsProvider.create(AwsBasicCredentials.create(id, secret));
-        }
-        return DefaultCredentialsProvider.builder().build();
+        return id != null && !id.isBlank() && secret != null && !secret.isBlank();
     }
 }

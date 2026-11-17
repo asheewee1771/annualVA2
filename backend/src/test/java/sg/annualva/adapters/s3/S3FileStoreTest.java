@@ -50,7 +50,8 @@ class S3FileStoreTest {
     private static final String CLEAN = "annualva-clean-dev";
     private static final String EXPORT = "annualva-export-dev";
     private static final String ALIAS = "alias/annualva-dev";
-    private static final String INIT = "../scripts/localstack-init/";
+    /** The init scripts, found from the module folder whatever folder the tests are started in. */
+    private static final Path INIT = Path.of(System.getProperty("basedir", "")).toAbsolutePath().resolve("../scripts/localstack-init").normalize();
 
     private static LocalStackContainer localstack;
     private static S3Client inspector;
@@ -60,9 +61,9 @@ class S3FileStoreTest {
     @BeforeAll
     static void startLocalStack() throws Exception {
         localstack = new LocalStackContainer(DockerImageName.parse("localstack/localstack:3")).withServices("s3", "kms")
-                .withCopyFileToContainer(MountableFile.forHostPath(Path.of(INIT + "01-kms-key.sh"), 0755),
+                .withCopyFileToContainer(MountableFile.forHostPath(INIT.resolve("01-kms-key.sh"), 0755),
                         "/etc/localstack/init/ready.d/01-kms-key.sh")
-                .withCopyFileToContainer(MountableFile.forHostPath(Path.of(INIT + "02-buckets.sh"), 0755),
+                .withCopyFileToContainer(MountableFile.forHostPath(INIT.resolve("02-buckets.sh"), 0755),
                         "/etc/localstack/init/ready.d/02-buckets.sh");
         localstack.start();
         awaitInitScripts();
@@ -92,7 +93,12 @@ class S3FileStoreTest {
         long deadline = System.nanoTime() + Duration.ofSeconds(90).toNanos();
         while (System.nanoTime() < deadline) {
             String body = http.send(request, HttpResponse.BodyHandlers.ofString()).body();
+            if (body.contains("\"state\": \"ERROR\"") || body.contains("\"state\": \"FAILED\"")) {
+                throw new IllegalStateException("A LocalStack init script failed: " + body);
+            }
             if (body.contains("\"completed\": true")) {
+                assertThat(body).as("every init script ran").contains("01-kms-key.sh", "02-buckets.sh")
+                        .doesNotContain("\"state\": \"ERROR\"");
                 return;
             }
             Thread.sleep(500);
@@ -102,7 +108,13 @@ class S3FileStoreTest {
 
     private AwsProperties properties(String quarantine, String clean, String export) {
         return new AwsProperties(localstack.getEndpoint().toString(), localstack.getRegion(), "test", "test", quarantine,
-                clean, export, ALIAS, Duration.ofSeconds(3), Duration.ofSeconds(30));
+                clean, export, ALIAS, Duration.ofSeconds(3), Duration.ofSeconds(30), Duration.ofSeconds(60), 2);
+    }
+
+    /** Settings for a store that is not there, or that does not answer, at the given endpoint. */
+    private static AwsProperties at(String endpoint, Duration timeout, int attempts) {
+        return new AwsProperties(endpoint, "us-east-1", "test", "test", QUARANTINE, CLEAN, EXPORT, ALIAS, timeout, timeout,
+                timeout, attempts);
     }
 
     private S3FileStore store(AwsProperties properties) {
@@ -233,8 +245,7 @@ class S3FileStoreTest {
 
     @Test
     void aKeyThatIsNotTheApplicationsOwnIsRefusedBeforeAnyCall() {
-        var store = store(new AwsProperties("http://localhost:1", "us-east-1", "test", "test", QUARANTINE, CLEAN, EXPORT, ALIAS,
-                Duration.ofMillis(200), Duration.ofMillis(200)));
+        var store = store(at("http://localhost:1", Duration.ofMillis(200), 1));
 
         for (String key : new String[] {"", "../other", "a/b", ".hidden", "name with space", "x".repeat(129)}) {
             assertThatThrownBy(() -> store.put(Zone.CLEAN, key, new byte[] {1})).hasMessage("The file store does not accept this key");
@@ -245,8 +256,7 @@ class S3FileStoreTest {
 
     @Test
     void anUnreachableStoreIsABoundaryFailureWithNoDetail() {
-        var store = store(new AwsProperties("http://localhost:1", "us-east-1", "test", "test", QUARANTINE, CLEAN, EXPORT, ALIAS,
-                Duration.ofMillis(200), Duration.ofMillis(200)));
+        var store = store(at("http://localhost:1", Duration.ofMillis(200), 1));
         String key = newKey();
 
         assertThatThrownBy(() -> store.put(Zone.CLEAN, key, new byte[] {1})).isInstanceOf(BoundaryFailureException.class)
@@ -280,8 +290,7 @@ class S3FileStoreTest {
         });
         server.start();
         try {
-            var store = store(new AwsProperties("http://127.0.0.1:" + server.getAddress().getPort(), "us-east-1", "test", "test",
-                    QUARANTINE, CLEAN, EXPORT, ALIAS, Duration.ofSeconds(3), Duration.ofSeconds(5)));
+            var store = store(at("http://127.0.0.1:" + server.getAddress().getPort(), Duration.ofSeconds(5), 1));
             String key = newKey();
 
             assertThatThrownBy(() -> store.put(Zone.CLEAN, key, new byte[] {1})).isInstanceOf(BoundaryFailureException.class)
@@ -300,6 +309,49 @@ class S3FileStoreTest {
         } catch (S3Exception e) {
             return null;
         }
+    }
+
+    @Test
+    void aStoreThatNeverAnswersHoldsACallNoLongerThanTheApiCallTimeout() throws IOException {
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/", exchange -> {
+            try {
+                Thread.sleep(30_000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            exchange.close();
+        });
+        server.start();
+        try {
+            var properties = new AwsProperties("http://127.0.0.1:" + server.getAddress().getPort(), "us-east-1", "test", "test",
+                    QUARANTINE, CLEAN, EXPORT, ALIAS, Duration.ofSeconds(3), Duration.ofSeconds(20), Duration.ofSeconds(1), 3);
+            var store = store(properties);
+            long started = System.nanoTime();
+
+            assertThatThrownBy(() -> store.get(Zone.CLEAN, newKey())).isInstanceOf(BoundaryFailureException.class);
+
+            assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(Duration.ofSeconds(10));
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
+    void theSettingsPrintNoSecret() {
+        var properties = new AwsProperties("http://localhost:4566", "us-east-1", "AKIA-VISIBLE-ID", "the-secret-value", QUARANTINE,
+                CLEAN, EXPORT, ALIAS, Duration.ofSeconds(3), Duration.ofSeconds(30), Duration.ofSeconds(60), 2);
+
+        assertThat(properties.toString()).doesNotContain("the-secret-value").doesNotContain("AKIA-VISIBLE-ID")
+                .contains(QUARANTINE, ALIAS);
+    }
+
+    @Test
+    void aStoreWithNoFixedKeysUsesAndClosesItsOwnCredentialChain() {
+        var store = store(new AwsProperties(localstack.getEndpoint().toString(), localstack.getRegion(), null, null, QUARANTINE,
+                CLEAN, EXPORT, ALIAS, Duration.ofSeconds(3), Duration.ofSeconds(30), Duration.ofSeconds(60), 2));
+
+        assertThatCode(store::destroy).doesNotThrowAnyException();
     }
 
     private static int expiryDays(String bucket) {

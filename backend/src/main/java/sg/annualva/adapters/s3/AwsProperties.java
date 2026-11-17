@@ -1,5 +1,6 @@
 package sg.annualva.adapters.s3;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
@@ -24,6 +25,9 @@ import sg.annualva.config.NotDevLocal;
  * @param kmsKeyAlias the customer-managed key every write asks for (SSE-KMS), by alias or key id
  * @param connectTimeout how long to wait to reach the store
  * @param readTimeout how long to wait for the store's answer; a file may be up to 50 MB
+ * @param apiCallTimeout the longest one call may take in all, retries included, so a dead store cannot hold a request
+ *     thread for longer
+ * @param maxAttempts how many times a call is tried in all (one is no retry)
  */
 @ConfigurationProperties("annualva.aws")
 @Validated
@@ -39,4 +43,17 @@ public record AwsProperties(
         @NotBlank String exportBucket,
         @NotBlank String kmsKeyAlias,
         @DefaultValue("3s") @NotNull Duration connectTimeout,
-        @DefaultValue("30s") @NotNull Duration readTimeout) {}
+        @DefaultValue("30s") @NotNull Duration readTimeout,
+        @DefaultValue("60s") @NotNull Duration apiCallTimeout,
+        @DefaultValue("2") @Min(1) int maxAttempts) {
+
+    /** Everything but the secret: this record is bound from configuration and may be printed by a log or an error page. */
+    @Override
+    public String toString() {
+        return "AwsProperties[endpoint=" + endpoint + ", region=" + region + ", quarantineBucket=" + quarantineBucket
+                + ", cleanBucket=" + cleanBucket + ", exportBucket=" + exportBucket + ", kmsKeyAlias=" + kmsKeyAlias
+                + ", accessKeyId=" + (accessKeyId == null ? "none" : "set") + ", secretAccessKey=" + (secretAccessKey == null ? "none" : "set")
+                + ", connectTimeout=" + connectTimeout + ", readTimeout=" + readTimeout + ", apiCallTimeout=" + apiCallTimeout
+                + ", maxAttempts=" + maxAttempts + "]";
+    }
+}
