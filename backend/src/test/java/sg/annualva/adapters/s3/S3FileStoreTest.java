@@ -361,6 +361,28 @@ class S3FileStoreTest {
     }
 
     @Test
+    void aCallIsTriedNoMoreOftenThanMaxAttempts() throws IOException {
+        List<String> calls = new CopyOnWriteArrayList<>();
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            calls.add(exchange.getRequestMethod());
+            exchange.sendResponseHeaders(503, -1);
+            exchange.close();
+        });
+        server.start();
+        try {
+            var store = store(at("http://127.0.0.1:" + server.getAddress().getPort(), Duration.ofSeconds(5), 2));
+
+            assertThatThrownBy(() -> store.get(Zone.CLEAN, newKey())).isInstanceOf(BoundaryFailureException.class);
+
+            assertThat(calls).hasSize(2);
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
     void theSettingsPrintNoSecret() {
         var properties = new AwsProperties("http://localhost:4566", "us-east-1", "AKIA-VISIBLE-ID", "the-secret-value", QUARANTINE,
                 CLEAN, EXPORT, ALIAS, Duration.ofSeconds(3), Duration.ofSeconds(30), Duration.ofSeconds(60), 2);
