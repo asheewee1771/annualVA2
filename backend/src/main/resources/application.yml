@@ -53,6 +53,12 @@ management:
         include: health,info
 
 logging:
+  level:
+    # The object store's client and its HTTP client log request lines with bucket and key names at DEBUG and TRACE (ADR
+    # 0059): pinned so that a root-level DEBUG does not reach them. Never lower these.
+    software.amazon.awssdk: WARN
+    org.apache.http: WARN
+    org.apache.hc: WARN
   structured:
     # lm-15: one ECS JSON schema for application and audit logs.
     format:
