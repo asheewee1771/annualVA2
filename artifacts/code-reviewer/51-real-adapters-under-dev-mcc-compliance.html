@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Code Review — 51-real-adapters-under-dev-mcc</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall PASS</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">build PASS (C0 H0 M0 L0)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN (C0 H0 M4 L5)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN (C0 H0 M1 L6)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">semgrep WARN (C0 H0 M0 L4)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN (C0 H0 M2 L6)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">react PASS (C0 H0 M0 L0)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN (C0 H0 M4 L12)</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">impl/51-file-store</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report</h2>
+          <p class="text-xs text-slate-500 mt-1">Ticket 51, file-store half (S3 with SSE-KMS under dev-mcc). Branch impl/51-file-store against main. Overall: PASS. Totals: Critical 0, High 0, Medium 11, Low 33.</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2">Check</th><th class="px-4 py-2">Status</th><th class="px-4 py-2">C / H / M / L</th><th class="px-4 py-2">Summary</th></tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-medium">build</td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 0</td><td class="px-4 py-2 text-slate-600">Clean verify (reused log, HEAD a97bd2e): 1354 tests, 0 failures, 0 errors, 1 pre-existing skip; JaCoCo 80 % line and branch gate met; front end untouched so npm run check skipped.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-medium">thermo-nuclear</td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 4 / 5</td><td class="px-4 py-2 text-slate-600">No giant files, additive change, SDK fenced by arch test. Findings are avoidable moving parts in the new adapter and test organisation.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-medium">code-review</td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 1 / 6</td><td class="px-4 py-2 text-slate-600">Standards PASS (1 Medium, 5 Low) and Spec PASS (0 gaps against the scope decision, ticket 51 file store only).</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-medium">semgrep</td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 4</td><td class="px-4 py-2 text-slate-600">Semgrep v1.182.1 (p/security-audit, p/default) over 16 changed files: 0 findings, 0 P0, 0 P1. Bidi and zero-width scan clean. Four Low manual observations, none blocking.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-medium">im8</td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 2 / 6</td><td class="px-4 py-2 text-slate-600">Back-end only diff. as-13, as-14, lm-19, lm-15, lm-16, pm-6 PASS; ck-1/2/4 delegated to KMS; no secret, key or file content reaches logs, audit or error bodies. Two Medium and Low advisories; as-12 is a tracked deferral.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-medium">react</td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 0 / 0</td><td class="px-4 py-2 text-slate-600">No React or TypeScript files changed (git diff main...HEAD -- frontend is empty).</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-medium">springboot</td><td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td><td class="px-4 py-2 font-mono text-xs">0 / 0 / 4 / 12</td><td class="px-4 py-2 text-slate-600">Applied spring-core, security, logging and test reviews; web, data and batch not applicable. Profile-gated dev safety, secret handling and exactly-one FileStore per profile PASS. Gaps are diagnosability, config validation and test coverage.</td></tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-700">No Critical or High findings in any check. Nothing blocks the commit.</p>
+          <p class="text-sm text-slate-700">Recurring Medium themes worth fixing before merge: (1) a half-set access key pair silently falls back to the default credential chain (thermo-nuclear M2, springboot M3; also noted by semgrep, im8 and code-review); (2) ADR 0059 still says Provisional after the 2026-11-17 decision (code-review M1); (3) failures and the failed discard are invisible to operators (springboot M1, M2); (4) the dev-mcc yml binding is not tested (springboot M4); (5) the endpoint accepts plain http (im8 dp-3).</p>
+          <p class="text-sm text-slate-700">Tracked deferral, not counted: IM8 as-12 malware scanning is still the fail-closed adapters.pending stub, owned by ticket 51's open boxes and non-blocking per docs/agents/reviewer-decisions.md.</p>
+        </div>
+      </div>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">Build check (build)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS (C0 H0 M0 L0)</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">Clean verify (reused log, HEAD a97bd2e): 1354 tests, 0 failures, 0 errors, 1 pre-existing skip; JaCoCo 80 % line and branch gate met; front end untouched so npm run check skipped.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50"><tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody>
+            <tr><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td></tr>
+          </tbody>
+        </table>
+        <ul class="px-5 py-3 text-xs text-slate-500 list-disc list-inside space-y-1 border-t border-slate-100">
+          <li>Compiler warning on MccHttp.java:53 (deprecated messageConverters) is pre-existing and not in this diff.</li>
+          <li>Dependency CVE status of AWS SDK 2.57.7 was not assessed by this check.</li>
+        </ul>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">Thermo-nuclear review (thermo-nuclear)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN (C0 H0 M4 L5)</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">No giant files, additive change, SDK fenced by arch test. Findings are avoidable moving parts in the new adapter and test organisation.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50"><tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/s3/S3FileStore.java</td><td class="px-4 py-2 font-mono text-xs">46-53, 96-102, 131-149</td><td class="px-4 py-2">M1. Credential selection is decided twice (constructor and client()); the own-chain bookkeeping (nullable DefaultCredentialsProvider, fixedCredentials, destroy() branch) can probably be deleted by not calling credentialsProvider(...) when no fixed keys are set. Confirm against SDK 2.57.7.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/s3/S3FileStore.java; backend/src/main/java/sg/annualva/adapters/s3/AwsProperties.java</td><td class="px-4 py-2 font-mono text-xs">145-149; 39-40</td><td class="px-4 py-2">M2. Half-configured credentials (one of key id and secret) silently fall back to the default chain. Make it a start-up error (both or neither); no test covers the half-set case.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/s3/S3FileStore.java; backend/src/main/java/sg/annualva/adapters/s3/AwsProperties.java; UnwiredFileStore.java; DevLocalArchTest.java</td><td class="px-4 py-2 font-mono text-xs">38-39; 34-35; -; ~102</td><td class="px-4 py-2">M3. The &#x27;S3 file store enabled&#x27; switch (@NotDevLocal plus @ConditionalOnProperty with magic strings) is spelled out four times. A composed annotation gives the property one home.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/adapters/s3/S3FileStoreTest.java</td><td class="px-4 py-2 font-mono text-xs">47-368</td><td class="px-4 py-2">M4. S3FileStoreTest mixes Docker-bound and Docker-free concerns; cheap tests (key refusal, unreachable, encryption not confirmed, timeout, toString) pay a LocalStack start. Split into LocalStack, Docker-free and AwsPropertiesTest classes.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/adapters/s3/S3FileStoreTest.java</td><td class="px-4 py-2 font-mono text-xs">349-355</td><td class="px-4 py-2">L1. aStoreWithNoFixedKeysUsesAndClosesItsOwnCredentialChain only asserts destroy() does not throw; it proves neither use nor close.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/s3/AwsProperties.java</td><td class="px-4 py-2 font-mono text-xs">47, 27-29</td><td class="px-4 py-2">L2. apiCallTimeout default 60 s (retries included) sits uncomfortably against a 50 MB body; durations are not validated as positive.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/s3/S3FileStore.java</td><td class="px-4 py-2 font-mono text-xs">61</td><td class="px-4 py-2">L3. contentLength is redundant with RequestBody.fromBytes.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/adapters/s3/S3FileStoreTest.java</td><td class="px-4 py-2 font-mono text-xs">305-312</td><td class="px-4 py-2">L4. defaultAlgorithm helper returns a bare null and sits between tests; return Optional and move with the helpers.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/s3/AwsProperties.java</td><td class="px-4 py-2 font-mono text-xs">36</td><td class="px-4 py-2">L5. AwsProperties is public with no outside user; package-private is the tighter boundary.</td></tr>
+          </tbody>
+        </table>
+        <ul class="px-5 py-3 text-xs text-slate-500 list-disc list-inside space-y-1 border-t border-slate-100">
+          <li>Observation: nothing asserts the SDK logger pins in application.yml.</li>
+        </ul>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">Code review: Standards and Spec (code-review)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN (C0 H0 M1 L6)</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">Standards PASS (1 Medium, 5 Low) and Spec PASS (0 gaps against the scope decision, ticket 51 file store only).</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50"><tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">docs/adr/0059-the-file-store-is-s3-with-sse-kms-switched-on-by-property-and-the-other-real-adapters-wait-for-mock-m-sso.md</td><td class="px-4 py-2 font-mono text-xs">3, 27-30</td><td class="px-4 py-2">Standards M1. Status line still says items 2, 4 and 5 are Provisional with a &#x27;Human Decision Needed&#x27; block, but the user decided them on 2026-11-17 (reviewer-decisions.md). Update to accepted and cite the decision, as ADR 0058 does.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">docs/adr/0059-the-file-store-is-s3-with-sse-kms-switched-on-by-property-and-the-other-real-adapters-wait-for-mock-m-sso.md; .scratch/annual-va/issues/51-real-adapters-under-dev-mcc.md</td><td class="px-4 py-2 font-mono text-xs">15; progress note</td><td class="px-4 py-2">Standards L1 / Spec L. The 2026-11-17 decision to revisit the 1-day quarantine expiry with the scanner half is not recorded in the ADR or the ticket&#x27;s progress note and &#x27;Not done here&#x27;.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/s3/S3FileStore.java; backend/src/main/java/sg/annualva/adapters/local/LocalFileStore.java</td><td class="px-4 py-2 font-mono text-xs">42; 27</td><td class="px-4 py-2">Standards L2. Key pattern duplicated between the two stores; drift possible. Judgement call.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/s3/S3FileStore.java</td><td class="px-4 py-2 font-mono text-xs">145-149</td><td class="px-4 py-2">Standards L3. Half-set credential pair silently falls back to the default chain; validate both-or-neither.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/resources/application.yml</td><td class="px-4 py-2 font-mono text-xs">56-61</td><td class="px-4 py-2">Standards L4. The WARN pins for AWS SDK and Apache HTTP loggers protect the no-leak rule but no test asserts them.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/s3/S3FileStore.java</td><td class="px-4 py-2 font-mono text-xs">119-126</td><td class="px-4 py-2">Standards L5. A failed cleanup delete after an unencrypted put is swallowed; consistent with &#x27;nothing is logged&#x27; and documented (noted only).</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/s3/S3FileStore.java</td><td class="px-4 py-2 font-mono text-xs">68-72</td><td class="px-4 py-2">Spec note. The SSE-KMS check confirms aws:kms and a non-blank key id but cannot compare with the configured alias (S3 answers an ARN); documented in ADR 0059 item 7.</td></tr>
+          </tbody>
+        </table>
+        <ul class="px-5 py-3 text-xs text-slate-500 list-disc list-inside space-y-1 border-t border-slate-100">
+          <li>Build and tests were not run by this check (read-only review).</li>
+        </ul>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">Semgrep static analysis (semgrep)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN (C0 H0 M0 L4)</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">Semgrep v1.182.1 (p/security-audit, p/default) over 16 changed files: 0 findings, 0 P0, 0 P1. Bidi and zero-width scan clean. Four Low manual observations, none blocking.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50"><tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/resources/application-dev-mcc.yml</td><td class="px-4 py-2 font-mono text-xs">54-55</td><td class="px-4 py-2">L1. LocalStack mock key pair test/test in a jar-shipped dev-mcc profile; loopback emulator, commented as mock, not a secret.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/s3/S3FileStore.java</td><td class="px-4 py-2 font-mono text-xs">145-148</td><td class="px-4 py-2">L2. Half-set credential pair silently falls back to the default chain; optionally fail fast.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/s3/S3FileStore.java</td><td class="px-4 py-2 font-mono text-xs">69</td><td class="px-4 py-2">L3. SSE-KMS check does not compare the returned key to the configured one (S3 returns an ARN). Optional hardening.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/s3/S3FileStore.java</td><td class="px-4 py-2 font-mono text-xs">138-140</td><td class="px-4 py-2">L4. URI.create(endpoint) accepts any value including http://; config-controlled only, no SSRF. Optional https-unless-loopback rule.</td></tr>
+          </tbody>
+        </table>
+        <ul class="px-5 py-3 text-xs text-slate-500 list-disc list-inside space-y-1 border-t border-slate-100">
+          <li>Dependency CVE check of awssdk 2.57.7 was not part of this scan (use dependency-vuln-scan).</li>
+        </ul>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">IM8 Application Technical Controls (im8)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN (C0 H0 M2 L6)</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">Back-end only diff. as-13, as-14, lm-19, lm-15, lm-16, pm-6 PASS; ck-1/2/4 delegated to KMS; no secret, key or file content reaches logs, audit or error bodies. Two Medium and Low advisories; as-12 is a tracked deferral.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50"><tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/resources/application-dev-mcc.yml</td><td class="px-4 py-2 font-mono text-xs">54-55</td><td class="px-4 py-2">as-8 (Medium for low-risk, Low for medium-risk class). Mock key pair test/test in a classpath profile file that ships in the jar. Deployed shape has no secret in config (default credential chain). Accept if packaging excludes application-dev-*.yml, otherwise exclude it.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/s3/AwsProperties.java; backend/src/main/java/sg/annualva/adapters/s3/S3FileStore.java</td><td class="px-4 py-2 font-mono text-xs">37; 138-141</td><td class="px-4 py-2">dp-3 (Medium by table default, real exposure low). endpoint is an unconstrained string turned into URI.create(...); a deployed environment could set http:// and send bytes in clear text. Add an https-unless-loopback rule.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/s3/S3FileStore.java</td><td class="px-4 py-2 font-mono text-xs">145-149</td><td class="px-4 py-2">as-8 L2. Key id set with blank secret falls back to the ambient chain; fail at start when exactly one of the two is set.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/s3/S3FileStore.java</td><td class="px-4 py-2 font-mono text-xs">68-72</td><td class="px-4 py-2">A1 (as-14). Post-write check requires a non-blank ssekmsKeyId, not the configured key; compare to the key ARN when the alias is later replaced.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/s3/S3FileStore.java</td><td class="px-4 py-2 font-mono text-xs">60-61</td><td class="px-4 py-2">A2 (cryptography). bucketKeyEnabled(true) with no encryption context is acceptable; the deployed key policy should grant only kms:GenerateDataKey and kms:Decrypt.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/resources/application.yml</td><td class="px-4 py-2 font-mono text-xs">56-61</td><td class="px-4 py-2">A3 (lm-19). Nothing asserts the three logger pins; a later edit would pass the build.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/s3/S3FileStore.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">A4 (lm-16). The store logs and meters nothing, so an S3 outage looks like a generic 5xx. A counter by outcome with no key, bucket or message tag would add the signal.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/s3/S3FileStore.java</td><td class="px-4 py-2 font-mono text-xs">77-79</td><td class="px-4 py-2">A5 (availability). get loads the whole object with getObjectAsBytes with no size cap; the limit is enforced at upload.</td></tr>
+          </tbody>
+        </table>
+        <ul class="px-5 py-3 text-xs text-slate-500 list-disc list-inside space-y-1 border-t border-slate-100">
+          <li>as-12 Malware scanning: tracked deferral. The scanner is still the fail-closed adapters.pending stub (Critical by the IM8 table); per docs/agents/reviewer-decisions.md (&#x27;IM8 controls owned by a later ticket&#x27;) it is non-blocking, owned by ticket 51&#x27;s open boxes, and this diff does not weaken it. Not counted in the severity totals.</li>
+          <li>Manual review checklist M1 to M7 (KMS policy and rotation, bucket policy and TLS deny, production credentials from role, sit and production settings, dependency vulnerability scan, no DEBUG on SDK loggers, system risk class) is carried in the im8 artifact.</li>
+        </ul>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">React 19 and TanStack review (react)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS (C0 H0 M0 L0)</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">No React or TypeScript files changed (git diff main...HEAD -- frontend is empty).</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50"><tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody>
+            <tr><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td></tr>
+          </tbody>
+        </table>
+      </details>
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">Spring Boot review (springboot)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN (C0 H0 M4 L12)</span>
+        </summary>
+        <p class="px-5 pb-3 text-sm text-slate-600">Applied spring-core, security, logging and test reviews; web, data and batch not applicable. Profile-gated dev safety, secret handling and exactly-one FileStore per profile PASS. Gaps are diagnosability, config validation and test coverage.</p>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50"><tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/s3/S3FileStore.java</td><td class="px-4 py-2 font-mono text-xs">57-61, 72-78, 83-88</td><td class="px-4 py-2">M1. Operators cannot tell why the store failed: every SdkException becomes a fixed sentence with no cause and nothing is logged. Log one WARN with only safe bounded fields (exception class, status code, AWS error code, zone), never the throwable, bucket or key; or record that the ADR chose silence.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/s3/S3FileStore.java</td><td class="px-4 py-2 font-mono text-xs">111-117</td><td class="px-4 py-2">M2. A failed discard after an unencrypted write is silent and the clean bucket has no lifecycle expiry. WARN-log with the zone only and consider a counter.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/s3/S3FileStore.java; backend/src/main/java/sg/annualva/adapters/s3/AwsProperties.java</td><td class="px-4 py-2 font-mono text-xs">145-149; 41-42</td><td class="px-4 py-2">M3. Half-configured credentials silently fall back to the default chain; add a both-or-neither check and a wiring test.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-amber-600">Medium</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/adapters/s3/S3FileStoreWiringTest.java</td><td class="px-4 py-2 font-mono text-xs">20-25, 61-73</td><td class="px-4 py-2">M4. The real dev-mcc binding is not exercised: nothing loads application-dev-mcc.yml into AwsProperties, and the test uses its own @ConfigurationPropertiesScan rather than the real application&#x27;s.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/adapters/s3/S3FileStoreTest.java</td><td class="px-4 py-2 font-mono text-xs">61-73, 340-355</td><td class="px-4 py-2">L1. Pure unit tests (toString, key refusal, own credential chain) need Docker through the shared @BeforeAll.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/adapters/s3/S3FileStoreTest.java</td><td class="px-4 py-2 font-mono text-xs">63</td><td class="px-4 py-2">L2. localstack/localstack:3 image tag floats; pin a minor version or digest.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/adapters/s3/S3FileStoreTest.java</td><td class="px-4 py-2 font-mono text-xs">90-107</td><td class="px-4 py-2">L3. Hand-rolled polling loop with Thread.sleep(500); use Awaitility or a WaitStrategy.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/adapters/s3/S3FileStoreTest.java</td><td class="px-4 py-2 font-mono text-xs">305-312, 222-230</td><td class="px-4 py-2">L4. defaultAlgorithm returns null on exception; zone loop should be a parameterized test.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/adapters/s3/S3FileStoreTest.java</td><td class="px-4 py-2 font-mono text-xs">315-338</td><td class="px-4 py-2">L5. Hanging-server handler sleeps 30 s on the dispatcher thread; server.stop(0) may block and add up to 30 s to the suite.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/test/java/sg/annualva/adapters/s3/S3FileStoreWiringTest.java</td><td class="px-4 py-2 font-mono text-xs">77-78</td><td class="px-4 py-2">L6. switchedOnWithoutABucketTheApplicationDoesNotStart asserts only hasFailed(); assert the cause is a binding or validation exception.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/s3/S3FileStore.java</td><td class="px-4 py-2 font-mono text-xs">60-62</td><td class="px-4 py-2">L7. SSE check proves aws:kms and a non-blank key id, not that it is the configured key; document as deliberately weaker or compare the ARN.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/s3/S3FileStore.java</td><td class="px-4 py-2 font-mono text-xs">55-60</td><td class="px-4 py-2">L8. Constructor builds the AWS client and its own credential provider; a @Configuration with a @Bean S3Client is easier to test and close. Not blocking.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/s3/AwsProperties.java</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L9. No check that a non-dev endpoint is https://.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/resources/application-dev-mcc.yml</td><td class="px-4 py-2 font-mono text-xs">-</td><td class="px-4 py-2">L10. Mock access-key-id and secret-access-key test/test may be flagged by secret scanners; keep the mock comment, consider an allowlist.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/pending/UnwiredFileStore.java</td><td class="px-4 py-2 font-mono text-xs">3-5</td><td class="px-4 py-2">L11. Unordered imports; key regex duplicated with LocalFileStore; over-long line in adapters.s3 package-info.</td></tr>
+            <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs break-all">backend/src/main/java/sg/annualva/adapters/s3/S3FileStore.java</td><td class="px-4 py-2 font-mono text-xs">64-67</td><td class="px-4 py-2">L12. contentLength((long) content.length) is redundant with RequestBody.fromBytes; harmless.</td></tr>
+          </tbody>
+        </table>
+      </details>
+    </main>
+  </body>
+</html>
