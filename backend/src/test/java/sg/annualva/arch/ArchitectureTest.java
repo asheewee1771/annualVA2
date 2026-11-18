@@ -51,6 +51,7 @@ class ArchitectureTest {
                 .layer("web").definedBy("sg.annualva.web..")
                 .layer("config").definedBy("sg.annualva.config..")
                 .layer("jdbc").definedBy("sg.annualva.jdbc..")
+                .layer("monitoring").definedBy("sg.annualva.monitoring..")
                 .layer("boundary").definedBy("sg.annualva.boundary..")
                 .layer("audit").definedBy("sg.annualva.audit..")
                 .layer("cycle").definedBy("sg.annualva.cycle..")
@@ -69,6 +70,9 @@ class ArchitectureTest {
                 // app is the composition root: it may import everything and nothing imports it
                 .whereLayer("app").mayNotBeAccessedByAnyLayer()
                 .whereLayer("web").mayOnlyBeAccessedByLayers("app", "adapters", "access", "audit", "cycle", "register", "submission", "finding", "ingestion", "dashboard", "notification", "export", "retention")
+                // the key signals are recorded by the modules that act and read nothing: a leaf (ADR 0060)
+                .whereLayer("monitoring").mayOnlyBeAccessedByLayers("app", "access", "audit", "scan", "ingestion", "notification",
+                        "submission")
                 .whereLayer("config").mayOnlyBeAccessedByLayers("app", "web", "access", "adapters", "audit", "cycle")
                 // every store writes and reads an instant the one way (Timestamps)
                 .whereLayer("jdbc").mayOnlyBeAccessedByLayers("access", "audit", "cycle", "register", "submission", "finding",

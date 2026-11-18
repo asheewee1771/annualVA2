@@ -80,6 +80,15 @@ public class OverdueSweep {
     }
 
     /**
+     * How many of the active Systems are flagged Overdue as Not Started and still have no VA Submission in that Cycle: the
+     * monitoring gauge (ADR 0060). It asks the Register for the active Systems here, beside the sweep that flags them, so
+     * that the one caller that lists every System past the access guard stays this class (ADR 0033).
+     */
+    public int countFlaggedNotStarted() {
+        return store.countOverdueNotStarted(register.everyActive().stream().map(RegisterSystems.ActiveSystem::id).toList());
+    }
+
+    /**
      * One pass: flags and audits whatever became Overdue since the last. Whether a window has passed is the store's one
      * Overdue rule (ADR 0033 item 4); this only says which VA Submissions and which Quarters are looked at. A VA
      * Submission is looked at whatever its Cycle's phase, because its windows all end before its Cycle closes and the

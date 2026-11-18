@@ -44,7 +44,7 @@ class ModuleConventionsArchTest {
     @Test
     void platformModulesDoNotDependOnBusinessModules() {
         noClasses().that().resideInAnyPackage("sg.annualva.web..", "sg.annualva.config..", "sg.annualva.jdbc..",
-                        "sg.annualva.boundary..",
+                        "sg.annualva.boundary..", "sg.annualva.monitoring..",
                         "sg.annualva.audit..", "sg.annualva.access..", "sg.annualva.cycle..", "sg.annualva.scan..",
                         "sg.annualva.parser..")
                 .should().dependOnClassesThat().resideInAnyPackage("sg.annualva.register..", "sg.annualva.submission..",

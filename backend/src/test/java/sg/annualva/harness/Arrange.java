@@ -108,6 +108,11 @@ public final class Arrange {
         assertThat(client.post("/api/test/faults/notification/" + mode).status()).isEqualTo(200);
     }
 
+    /** Makes the write of the probe's audit entry fail in the database ("on"); "off" removes the fault. */
+    public void auditFault(String mode) {
+        assertThat(client.post("/api/test/faults/audit/" + mode).status()).isEqualTo(200);
+    }
+
     /** One pass of the mail dispatcher, which a test runs by hand because scheduling is off in tests. */
     public void mailDispatch() {
         mailDispatchEnding("mail");

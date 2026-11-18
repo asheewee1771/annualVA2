@@ -510,6 +510,23 @@ public class TestEndpoints {
             return Map.of("fault", mode);
         }
 
+        /**
+         * Makes the write of an audit entry of the probe's action ({@code ROLE_GRANTED}) fail inside the database ("on"), so a
+         * test can prove that an audit entry that cannot be written is counted and that the action it described is not done;
+         * "off" removes it. Other actions are untouched, so signing in and the scrape itself still work while it is on.
+         */
+        @PostMapping("/api/test/faults/audit/{mode}")
+        public Map<String, String> auditFault(@PathVariable String mode) {
+            jdbc.sql("DROP TRIGGER IF EXISTS test_audit_fault ON audit_entry").update();
+            if ("on".equals(mode)) {
+                jdbc.sql("CREATE OR REPLACE FUNCTION test_audit_fault() RETURNS trigger LANGUAGE plpgsql AS "
+                        + "$$ BEGIN RAISE EXCEPTION 'injected fault'; END $$").update();
+                jdbc.sql("CREATE TRIGGER test_audit_fault BEFORE INSERT ON audit_entry FOR EACH ROW "
+                        + "WHEN (NEW.action = 'ROLE_GRANTED') EXECUTE FUNCTION test_audit_fault()").update();
+            }
+            return Map.of("fault", mode);
+        }
+
         @PostMapping("/api/test/faults/finding/{mode}")
         public Map<String, String> findingFault(@PathVariable String mode) {
             jdbc.sql("DROP TRIGGER IF EXISTS test_finding_fault ON finding_occurrence").update();

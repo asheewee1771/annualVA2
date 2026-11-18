@@ -20,6 +20,7 @@ import sg.annualva.audit.DetailKey;
 import sg.annualva.boundary.MalwareScanner.Verdict;
 import sg.annualva.cycle.CycleCalendar;
 import sg.annualva.finding.Findings;
+import sg.annualva.monitoring.KeySignals;
 import sg.annualva.finding.ProposalView;
 import sg.annualva.parser.ParsedReport;
 import sg.annualva.scan.CleanFiles;
@@ -68,10 +69,12 @@ public class ScanPoller {
     private final CycleCalendar calendar;
     private final Clock clock;
     private final TransactionTemplate transaction;
+    private final KeySignals signals;
 
     ScanPoller(ReportFileStore store, MalwareScan scan, CleanFiles cleanFiles, ScanProperties properties,
             AuditLog audit, AuditActor actor, Findings findings, CycleCalendar calendar, Clock clock,
-            TransactionTemplate transaction) {
+            TransactionTemplate transaction, KeySignals signals) {
+        this.signals = signals;
         this.store = store;
         this.scan = scan;
         this.cleanFiles = cleanFiles;
@@ -135,7 +138,10 @@ public class ScanPoller {
             case BLOCKED -> reject(file, RejectCode.MALWARE, now);
             case CLEAN_SANITIZED -> reject(file, RejectCode.SANITIZED, now);
             case CLEAN_UNCHANGED -> accept(file, now);
-            case ERROR -> retryOrGiveUp(file, now);
+            case ERROR -> {
+                signals.scanFailed();
+                retryOrGiveUp(file, now);
+            }
             case PROCESSING -> {
                 if (expired(file, now)) {
                     retryOrGiveUp(file, now);
@@ -149,6 +155,7 @@ public class ScanPoller {
         try {
             return scan.check(Objects.requireNonNull(file.scanTicket()));
         } catch (RuntimeException e) {
+            signals.scanFailed();
             return Verdict.PROCESSING;
         }
     }
@@ -174,6 +181,7 @@ public class ScanPoller {
             bytes = unchanged.get();
         } catch (RuntimeException e) {
             // The verdict stands but the copy could not be fetched: try again next pass, until the attempt is due.
+            signals.scanFailed();
             retryWhenDue(file, now);
             return;
         }
@@ -190,6 +198,7 @@ public class ScanPoller {
         try {
             cleanKey = cleanFiles.put(file.id(), bytes);
         } catch (RuntimeException e) {
+            signals.scanFailed();
             retryWhenDue(file, now);
             return;
         }
@@ -248,6 +257,7 @@ public class ScanPoller {
         try {
             ticket = scan.submit(Objects.requireNonNull(file.quarantineKey()), file.displayName(), HINT);
         } catch (RuntimeException e) {
+            signals.scanFailed();
             failAttempt(file, now);
             return;
         }
@@ -298,6 +308,9 @@ public class ScanPoller {
             return true;
         }) == Boolean.TRUE;
         if (written) {
+            if (settlement.rejectCode() == RejectCode.SCAN_TIMEOUT) {
+                signals.scanTimedOut();
+            }
             logged(file.id(), settlement.resting(), file.scanAttempts());
         }
         return written;

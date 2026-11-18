@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import sg.annualva.monitoring.KeySignals;
 import sg.annualva.web.CorrelationIdFilter;
 import sg.annualva.web.Page;
 
@@ -38,8 +39,10 @@ public class AuditLog {
     private final AuditStore store;
     private final Clock clock;
     private final AuditCaller caller;
+    private final KeySignals signals;
 
-    AuditLog(AuditStore store, Clock clock, AuditCaller caller) {
+    AuditLog(AuditStore store, Clock clock, AuditCaller caller, KeySignals signals) {
+        this.signals = signals;
         this.store = store;
         this.clock = clock;
         this.caller = caller;
@@ -75,7 +78,14 @@ public class AuditLog {
     }
 
     private void write(AuditEvent event) {
-        AuditEntry entry = store.insert(event, clock.instant(), CorrelationIdFilter.current());
+        AuditEntry entry;
+        try {
+            entry = store.insert(event, clock.instant(), CorrelationIdFilter.current());
+        } catch (RuntimeException failure) {
+            // Counted, then thrown on as before: the caller's transaction rolls back, so the action is not done unrecorded.
+            signals.auditWriteFailed();
+            throw failure;
+        }
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
