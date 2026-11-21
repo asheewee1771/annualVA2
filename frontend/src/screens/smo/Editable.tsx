@@ -9,13 +9,14 @@ export const EditableContext = createContext(true);
 
 /**
  * Holds controls that change the VA Submission. Once it is submitted they are shown disabled (a disabled fieldset), so
- * read-only is decided in one place and works one way; downloads and the controls that only change what is shown sit
- * outside. The server refuses every change after submit in any case.
+ * read-only is decided in one place and works one way; they then read as unavailable, not busy (`.editable:disabled`,
+ * ticket 65). Downloads and the controls that only change what is shown sit outside. The server refuses every change
+ * after submit in any case.
  */
 export function Editable({ children }: { children: ReactNode }) {
   const editable = useContext(EditableContext);
   return (
-    <fieldset className="plain-fieldset" disabled={!editable}>
+    <fieldset className="plain-fieldset editable" disabled={!editable}>
       {children}
     </fieldset>
   );

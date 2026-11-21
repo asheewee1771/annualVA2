@@ -444,6 +444,26 @@ body {
   min-width: 0;
 }
 
+/*
+ * Once the VA Submission is read-only, every control in an Editable reads as unavailable, not busy (ticket 65): no
+ * "progress" cursor, and muted text on a grey fill inside a dashed border in place of the live colours. The look is
+ * stated once, for whatever the fieldset disabled, so it beats `.field input`, `.field select`, `.field textarea` and
+ * `.button`. A tick box keeps the browser's own disabled look, which author colours do not reach. A control disabled
+ * while its own request runs sits in a live fieldset and keeps the busy look above.
+ */
+.editable:disabled :disabled:not(fieldset),
+.editable:disabled label {
+  cursor: not-allowed;
+}
+
+.editable:disabled :disabled:not(fieldset, [type="checkbox"]) {
+  opacity: 1;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--muted) 10%, var(--surface));
+  border-color: var(--border);
+  border-style: dashed;
+}
+
 .declaration-text {
   margin: 8px 0;
   padding: 8px 12px;
