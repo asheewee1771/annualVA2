@@ -2,12 +2,20 @@
  * Step-up on the browser side (story 77, ADR 0004). A sensitive command the server refuses with
  * `step-up-required` costs the person a fresh sign-in; this module keeps where they were, and any form
  * draft, across that round trip in sessionStorage (this tab only) and reads the
- * outcome the server puts in the URL when it sends them back. Nothing kept outlives its use: it is dropped
- * when the app finds there is no session (sign-out, a 401, expiry), when a page loads without a step-up
- * return, and when it is older than a round trip. The refused command is never replayed.
+ * outcome the server puts in the URL when it sends them back. What is kept stays in sessionStorage
+ * only until a page load takes it out (`readLanding` says which loads do). It is restored only if that load is
+ * a step-up return, and dropped when the app finds there is no session (sign-out, a 401, expiry) or when it is
+ * older than a round trip. The refused command is never replayed.
  */
 
 import type { Problem } from "./problem.ts";
+
+/**
+ * The page of this app the server's local step-up redirects to before the return, where a confirmation stands in for
+ * the single sign-on's fresh sign-in (`DevLocalStepUp.CONFIRMATION_PAGE`, ADR 0058 item 4). The server names it, so it
+ * is kept here with the rest of the step-up round trip, and the app's router takes it from here.
+ */
+export const LOCAL_STEP_UP_PATH = "/dev-step-up";
 
 const ROUTE_KEY = "annualva.stepUp.route";
 const DRAFT_KEY = "annualva.stepUp.draft";
@@ -122,17 +130,31 @@ function clearKey(key: string): void {
 export function clearStepUpState(): void {
   clearKey(ROUTE_KEY);
   clearKey(DRAFT_KEY);
+  delete landing.draft;
+}
+
+/** A form's draft as it was saved, with the action it belongs to. */
+interface SavedDraft {
+  intent: string;
+  draft: unknown;
+}
+
+function takeSavedDraft(): SavedDraft | undefined {
+  const saved = take(DRAFT_KEY);
+  if (typeof saved !== "object" || saved === null || !("intent" in saved)) return undefined;
+  const intent = saved.intent;
+  return typeof intent === "string" ? { intent, draft: "draft" in saved ? saved.draft : undefined } : undefined;
 }
 
 /**
- * The draft saved for this action, read once and forgotten by the form that owns the action. A draft for another action
- * is left where it is, for its own form to take.
+ * The draft this page load's step-up return restored for this action, handed once to the form that owns the action. A
+ * draft for another action is left for its own form. It is held in memory only, so it is gone with the page.
  */
 export function takeRestoredDraft(intent: string): unknown {
-  const saved = read(DRAFT_KEY);
-  if (typeof saved !== "object" || saved === null || !("intent" in saved) || saved.intent !== intent) return undefined;
-  clearKey(DRAFT_KEY);
-  return "draft" in saved ? saved.draft : undefined;
+  const restored = landing.draft;
+  if (restored?.intent !== intent) return undefined;
+  delete landing.draft;
+  return restored.draft;
 }
 
 /** Whether a refusal is the one the app answers with its step-up explanation, so a screen need not show it again. */
@@ -173,20 +195,52 @@ export interface StepUpArrival extends StepUpOutcome {
   route?: string;
 }
 
+/** What a page load found: the step-up return it was, if it was one, and the draft that return restored. */
+interface Landing {
+  arrival?: StepUpArrival;
+  draft?: SavedDraft;
+}
+
 /**
- * Called once as the page loads. Only a return that carries the server's `?stepup=` outcome is a step-up
- * return, and only then is the saved route restored; a saved route with no such return, or an abandoned
- * one, is dropped so it is never restored as if a step-up had just happened. Read before anything can
- * rewrite the address, so a redirect cannot lose the outcome.
+ * Whether this page load is the middle of a round trip: the local step-up page, which the server shows before the
+ * return. The browser cannot tell which sign-in the server uses, so this is decided by the address alone and holds
+ * wherever the app runs. That loosens nothing: this load restores nothing, and what it leaves saved is still restored
+ * only by a load that carries the server's `?stepup=` outcome and still dropped by any other load, by its age and by
+ * the loss of the session.
  */
-export function takeStepUpArrival(): StepUpArrival | undefined {
+function midRoundTrip(): boolean {
+  return window.location.pathname === LOCAL_STEP_UP_PATH;
+}
+
+/**
+ * The one read of a page load. It takes the outcome out of the address and the saved route and draft out of
+ * sessionStorage together, so after it nothing is left saved. Only a load that carries the server's `?stepup=` outcome
+ * is a step-up return, and only then are the route and draft kept (in memory, for this page); with no such return, or
+ * when they were abandoned, they are dropped, so they are never restored as if a step-up had just happened. The middle
+ * of a round trip is the one load that leaves everything where it is, for the return that follows.
+ */
+function readLanding(): Landing {
+  if (midRoundTrip()) return {};
   const outcome = takeStepUpOutcome();
   const route = takeSavedRoute();
-  if (outcome === undefined) {
-    clearStepUpState();
-    return undefined;
-  }
-  return { ...outcome, ...(route !== undefined ? { route } : {}) };
+  const draft = takeSavedDraft();
+  if (outcome === undefined) return {};
+  return {
+    arrival: { ...outcome, ...(route !== undefined ? { route } : {}) },
+    ...(draft !== undefined ? { draft } : {}),
+  };
+}
+
+/**
+ * Read as this module loads. Every module that asks for the arrival or a draft imports this one, so the read is done
+ * before any of them runs and before anything can rewrite the address: a redirect cannot lose the outcome, and the
+ * order in which the askers load does not matter.
+ */
+const landing = readLanding();
+
+/** This page load's step-up return, if it was one. The same answer however often it is asked. */
+export function stepUpArrival(): StepUpArrival | undefined {
+  return landing.arrival;
 }
 
 /** Reads a `step-up-required` problem into what the app needs; anything else is not a step-up. */

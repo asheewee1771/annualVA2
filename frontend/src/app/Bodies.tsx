@@ -1,7 +1,8 @@
 import type { Session } from "../api/session.ts";
+import { LOCAL_STEP_UP_PATH } from "../api/stepUp.ts";
 import { DevSignInScreen } from "./DevSignInScreen.tsx";
 import { DevStepUpScreen } from "./DevStepUpScreen.tsx";
-import { DEV_SIGN_IN_PATH, DEV_STEP_UP_PATH } from "./devLocal.ts";
+import { DEV_SIGN_IN_PATH } from "./devLocal.ts";
 import { usePath } from "./router.ts";
 import { SignedOutScreen } from "./SignedOutScreen.tsx";
 import { Workspace } from "./Workspace.tsx";
@@ -13,5 +14,5 @@ export function SignedOutBody() {
 
 /** What shows for a signed-in person: their workspace, or on `/dev-step-up` the dev-local step-up confirmation. */
 export function SignedInBody({ session }: { session: Session }) {
-  return usePath() === DEV_STEP_UP_PATH ? <DevStepUpScreen /> : <Workspace session={session} />;
+  return usePath() === LOCAL_STEP_UP_PATH ? <DevStepUpScreen /> : <Workspace session={session} />;
 }
