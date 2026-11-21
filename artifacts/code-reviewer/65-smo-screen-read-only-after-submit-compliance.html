@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Code Review - 65-smo-screen-read-only-after-submit</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS overall (final round; 5 checks WARN)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">build WARN C0 H0 M0 L2 (final round; back end reused)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN C0 H0 M1 L4 (round 3)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN C0 H0 M1 L10 (round 3)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react WARN C0 H0 M0 L4 (round 2)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">semgrep PASS C0 H0 M0 L0 (round 1, carried over)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN C0 H0 M0 L2 (round 1, carried over)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">springboot PASS C0 H0 M0 L0 (round 1, carried over)</span>
+      <span class="font-mono text-sm text-slate-500 ml-auto">worktree-agent-a275cfa461b32233f</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report</h1>
+          <p class="text-sm text-slate-600 mt-1">Ticket 65, SMO screen read-only after submit. Final round of the gate. Reviewed change: the uncommitted working-tree diff against HEAD <span class="font-mono text-xs">ba45b05</span>, four front-end files (<span class="font-mono text-xs">frontend/src/api/submissions.ts</span>, <span class="font-mono text-xs">frontend/src/screens/smo/Editable.tsx</span>, <span class="font-mono text-xs">frontend/src/screens/smo/SubmissionPrepareScreen.tsx</span>, <span class="font-mono text-xs">frontend/src/styles.css</span>), 105 insertions and 34 deletions.</p>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Executive Summary</h2>
+          <p class="text-xs text-slate-500 mt-1">Overall: PASS. No check has a Critical or High finding and no check reports FAIL. Seven checks were active and each has exactly one readable artifact at the top level of the run directory. Counts are C Critical, H High, M Medium, L Low. Status rule: FAIL with any Critical or High; WARN with Medium or Low only; PASS with no finding. Severities are recorded as each check rated them; nothing was raised or lowered. Nothing was fixed in this run. A PASS here is not a statement that every check saw the final code: see "What each check saw".</p>
+        </div>
+
+        <div class="rounded border border-amber-200 bg-amber-50 p-4 space-y-2">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">What each check saw</h3>
+          <p class="text-sm">The code changed between rounds. In order: round one of all checks; the first correction pass (all three files then in the diff); react round two; the second correction pass (the <span class="font-mono text-xs">EditableState</span> type predicate on <span class="font-mono text-xs">isEditable</span> in <span class="font-mono text-xs">submissions.ts</span>, reported type-only with byte-identical emitted code); thermo-nuclear and code-review round three; one more edit (the <span class="font-mono text-xs">wasEditable</span> ref in the focus effect of <span class="font-mono text-xs">ReadOnlyNotice</span>); a second browser run; the final build check.</p>
+          <ul class="space-y-1 text-sm list-disc pl-5">
+            <li><span class="font-semibold">Saw the final code:</span> build only (final round, run on the current tree).</li>
+            <li><span class="font-semibold">Saw everything except the last edit:</span> thermo-nuclear and code-review (round three). The last edit applies the remedy thermo-nuclear itself proposed for its Medium finding 1. Neither check reviewed the edit.</li>
+            <li><span class="font-semibold">Saw the first correction only:</span> react (round two, not rerun). It did not see the type predicate in <span class="font-mono text-xs">submissions.ts</span> or the <span class="font-mono text-xs">wasEditable</span> edit.</li>
+            <li><span class="font-semibold">Saw the round-one code only:</span> semgrep, im8 and springboot (carried over, not rerun). Semgrep and im8 covered three files as they stood before both correction passes; <span class="font-mono text-xs">submissions.ts</span> was not in the diff then. Springboot had no back-end file to review, and there is still none.</li>
+            <li>Line numbers in each check's findings are those of the tree that check saw. In <span class="font-mono text-xs">SubmissionPrepareScreen.tsx</span>, round-three line numbers above 108 are two lines lower than in the final file (for example <span class="font-mono text-xs">:172</span> is now <span class="font-mono text-xs">:174</span> and <span class="font-mono text-xs">:180</span> is now <span class="font-mono text-xs">:182</span>).</li>
+            <li>Notes added by the aggregator are marked "Aggregator note". They state facts about what came after a check. They do not change a rating and do not mark a finding fixed.</li>
+          </ul>
+        </div>
+
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <th class="px-4 py-2">Check</th>
+            <th class="px-4 py-2">Round; saw the final code?</th>
+            <th class="px-4 py-2">Status</th>
+            <th class="px-4 py-2">Findings</th>
+            <th class="px-4 py-2">Check's own result</th>
+            <th class="px-4 py-2">Summary</th>
+          </tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 font-medium">Build</td>
+              <td class="px-4 py-2 text-xs">Final round. Yes: run on the current tree.</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">C0 H0 M0 L2</td>
+              <td class="px-4 py-2 text-xs text-slate-600">WARN</td>
+              <td class="px-4 py-2 text-xs text-slate-600">Front end: <span class="font-mono">npm run check</span>, both <span class="font-mono">tsc --noEmit</span> calls and <span class="font-mono">fallow audit</span> run fresh, all exit 0. Back end: <span class="font-semibold text-slate-900">not run; a saved verify log was reused</span>, and its recorded whole-tree fingerprint does not match the current tree (Low-1). Front-end tests: none exist; behaviour is not evidenced by this check.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 font-medium">Thermo-nuclear review (maintainability)</td>
+              <td class="px-4 py-2 text-xs">Round three, after two correction passes. No: one edit came after it.</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">C0 H0 M1 L4</td>
+              <td class="px-4 py-2 text-xs text-slate-600">WARN</td>
+              <td class="px-4 py-2 text-xs text-slate-600">Both round-one Mediums reported fixed. One Medium (the focus move rests on three facts not in the effect) and four Low. The check says no finding needs fixing before commit. Read-only review; nothing built or run.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 font-medium">Code review (Standards and Spec)</td>
+              <td class="px-4 py-2 text-xs">Round three, after two correction passes. No: one edit and a second browser run came after it.</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">C0 H0 M1 L10</td>
+              <td class="px-4 py-2 text-xs text-slate-600">WARN</td>
+              <td class="px-4 py-2 text-xs text-slate-600">Standards: 6 Low. Spec: 1 Medium (P6, the browser check for criterion 7 is partial), 4 Low. The three round-one Mediums reported fixed in code or reduced to Low. The check asks for P6 to be completed or explicitly accepted before closeout.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 font-medium">React review (front end)</td>
+              <td class="px-4 py-2 text-xs">Round two, after the first correction pass; not rerun. No.</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">C0 H0 M0 L4</td>
+              <td class="px-4 py-2 text-xs text-slate-600">PASS</td>
+              <td class="px-4 py-2 text-xs text-slate-600">The round-one High is reported fixed, checked by rendering the real <span class="font-mono">styles.css</span> in headless Edge in light and dark (the stylesheet has not changed since). Both round-one Mediums reported fixed, one by reading the code only. Four Low remain.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 font-medium">Semgrep (p/security-audit, p/default)</td>
+              <td class="px-4 py-2 text-xs">Round one, carried over, not rerun. No.</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+              <td class="px-4 py-2 font-mono text-xs">C0 H0 M0 L0</td>
+              <td class="px-4 py-2 text-xs text-slate-600">PASS</td>
+              <td class="px-4 py-2 text-xs text-slate-600">The round-one scan ran to completion: 211 rules on the 3 files then changed, 0 findings, exit 0. The files as corrected, and <span class="font-mono">submissions.ts</span>, were not scanned.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 font-medium">IM8 Application Technical Controls</td>
+              <td class="px-4 py-2 text-xs">Round one, carried over, not rerun. No.</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+              <td class="px-4 py-2 font-mono text-xs">C0 H0 M0 L2</td>
+              <td class="px-4 py-2 text-xs text-slate-600">PASS</td>
+              <td class="px-4 py-2 text-xs text-slate-600">No control fails or warns. Two Low observations (O-1, O-2). The Bedrock knowledge base was not used; the review read code and tests and ran nothing.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 font-medium">Spring Boot review (seven skills)</td>
+              <td class="px-4 py-2 text-xs">Round one, carried over, not rerun. Nothing in scope then or now (no back-end file in the diff).</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+              <td class="px-4 py-2 font-mono text-xs">C0 H0 M0 L0</td>
+              <td class="px-4 py-2 text-xs text-slate-600">PASS (nothing in scope)</td>
+              <td class="px-4 py-2 text-xs text-slate-600">No back-end file was in the diff, so the seven skills had no changed code to review. This is "nothing to review", not a review that passed. Unchanged back-end code was not reviewed.</td>
+            </tr>
+            <tr class="border-t border-slate-200 align-top bg-slate-50">
+              <td class="px-4 py-2 font-semibold">Total</td>
+              <td class="px-4 py-2 text-xs">1 on the final code, 2 one edit behind, 1 two changes behind, 3 from round one</td>
+              <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+              <td class="px-4 py-2 font-mono text-xs">C0 H0 M2 L22</td>
+              <td class="px-4 py-2 text-xs text-slate-600"></td>
+              <td class="px-4 py-2 text-xs text-slate-600">Counts are per check as reported. Several checks report the same point (see "Same point, several checks"), so 22 is not 22 distinct issues.</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm">No Critical or High finding in any check's artifact for this round. The round-one High (react 1, disabled inputs in a <span class="font-mono text-xs">.field</span> still looked live) is reported fixed by react round two, and the same point is reported fixed by thermo-nuclear round three (round-one finding 2) and code-review round three (P1).</p>
+        </div>
+
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Medium findings still recorded</h3>
+          <ul class="space-y-3 text-sm list-disc pl-5">
+            <li>
+              <span class="font-medium">Thermo-nuclear finding 1 (Medium), <a class="font-mono text-xs text-blue-700 underline" href="../../frontend/src/screens/smo/SubmissionPrepareScreen.tsx">frontend/src/screens/smo/SubmissionPrepareScreen.tsx</a> <span class="font-mono text-xs">:104-111, :172, :180</span> (as the check saw it).</span> The focus move detects "turned read-only while open" through three facts that are not in the effect. The check says: do not fix before commit is required, but do not move the notice under the <span class="font-mono text-xs">data ?</span> gate without the remedy.
+              <div class="mt-1 rounded border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700"><span class="font-semibold">Aggregator note:</span> remedy applied after this check ran; verified present by the aggregator; not re-reviewed by the check. The working tree at <span class="font-mono">:107-111</span> holds <span class="font-mono">const wasEditable = useRef(false)</span> and an effect that focuses the notice only when <span class="font-mono">wasEditable.current &amp;&amp; !editable</span>, then stores <span class="font-mono">editable</span>, with <span class="font-mono">[editable]</span> as its dependencies. That is the code of the check's remedy, statement for statement. The rating stays Medium as the check gave it.</div>
+            </li>
+            <li>
+              <span class="font-medium">Code review P6 (Medium), <a class="font-mono text-xs text-blue-700 underline" href="../browser-test/65-smo-read-only-after-submit-browsertest.md">artifacts/browser-test/65-smo-read-only-after-submit-browsertest.md</a> <span class="font-mono text-xs">:63-65, :83</span> (of the report as it stood then).</span> Criterion 7 is partly evidenced: the endorsement leg was not walked and six read-only notices were never seen in a browser. The check asks for this to be completed or explicitly accepted before closeout.
+              <div class="mt-1 rounded border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700 space-y-1">
+                <p><span class="font-semibold">Aggregator note:</span> a second browser run (run B) was made after this check, and the browser-test report was rewritten to cover both runs. The check has not seen it. What the report now states:</p>
+                <p><span class="font-semibold">Reached:</span> the endorsement leg on DEV-002 (SMO resubmit, Cyber Manager "Pass to endorsement" to Awaiting Endorsement, VA POC "Endorse" to Endorsed). Notices seen in a browser: In Review, Awaiting Endorsement, Endorsed, Exemption Requested, Exempted (conditional, VA not yet recorded) and Withdrawn. The focus on the final effect: moved to the notice after Resubmit; stayed on the page body when a read-only VA Submission was opened.</p>
+                <p><span class="font-semibold">Still not reached:</span> the Not Endorsed notice and the Exempted notice for an Exemption that is not conditional (the report names both). The Not Started notice is not mentioned in the report. Of a conditional Exemption only the "to record" sub-state was seen; to confirm, confirmed and lapsed were not. No file was downloaded and there was no second page of Findings. No real screen reader, Firefox, Safari or forced-colours mode. The computed styles for criterion 2 are from run A only.</p>
+                <p>Whether this completes P6 or needs an explicit acceptance is not decided here. The rating stays Medium as the check gave it.</p>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Build: run, reused and skipped</h3>
+          <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left border border-slate-100">
+            <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2">Step</th>
+              <th class="px-4 py-2">How</th>
+              <th class="px-4 py-2">Result as the build file states it</th>
+            </tr></thead>
+            <tbody>
+              <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-mono text-xs">cd frontend &amp;&amp; npm run check</td><td class="px-4 py-2 text-xs font-semibold">Run fresh</td><td class="px-4 py-2 text-xs text-slate-600">Exit 0. Prettier, <span class="font-mono">tsc -b</span>, <span class="font-mono">vite build</span> (124 modules), no raw HTML, dependency-cruiser (no violations), fallow dead-code (no issues), fallow health (0 above threshold).</td></tr>
+              <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-mono text-xs">npx tsc --noEmit (app and node configs)</td><td class="px-4 py-2 text-xs font-semibold">Run fresh</td><td class="px-4 py-2 text-xs text-slate-600">Exit 0, no output, both.</td></tr>
+              <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-mono text-xs">npx fallow audit</td><td class="px-4 py-2 text-xs font-semibold">Run fresh</td><td class="px-4 py-2 text-xs text-slate-600">Exit 0, "No issues in 4 changed files", 3 advisories at warn level (Low-2).</td></tr>
+              <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-mono text-xs">npx vitest run --coverage</td><td class="px-4 py-2 text-xs font-semibold">Skipped: not applicable</td><td class="px-4 py-2 text-xs text-slate-600">Not evidenced. The front end has no test runner (repo convention: no React unit tests). The front-end gate evidences formatting, types, the build, the raw-HTML rule, architecture rules and dead code, and no behaviour.</td></tr>
+              <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-mono text-xs">cd backend &amp;&amp; ./mvnw -B -ntp clean verify</td><td class="px-4 py-2 text-xs font-semibold">Reused <span class="font-mono">artifacts/do-work/verify/backend-verify.log</span>; no Maven run was started</td><td class="px-4 py-2 text-xs text-slate-600">The log shows one complete run: 1,358 tests, 0 failures, 0 errors, 1 skipped; ArchUnit classes passing; "All coverage checks have been met" (line and branch, minimum 0.80); BUILD SUCCESS; <span class="font-mono">MVN_EXIT=0</span>.</td></tr>
+              <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 font-mono text-xs">mvn compile</td><td class="px-4 py-2 text-xs font-semibold">Not run separately</td><td class="px-4 py-2 text-xs text-slate-600">Covered by the <span class="font-mono">compile</span> and <span class="font-mono">testCompile</span> goals in the reused log.</td></tr>
+            </tbody>
+          </table>
+          </div>
+          <div class="rounded border border-amber-200 bg-amber-50 p-4 space-y-1 text-sm">
+            <p><span class="font-semibold">The build check's judgement on reusing the back-end log.</span> The standing rule allows reuse only when the log's working-tree fingerprint matches. Read literally, the rule is not satisfied: the log records the whole-tree diff hash <span class="font-mono text-xs">e8f6e531...</span> and the current hash is <span class="font-mono text-xs">b01bb771...</span>. The check judged the reuse sound on a back-end-scoped reading: same HEAD, same worktree, no change under <span class="font-mono text-xs">backend/</span>, nothing outside <span class="font-mono text-xs">frontend/</span> differs from HEAD, the two files edited after the Maven run started are front-end files the Maven build does not read, and the three tests that read files outside <span class="font-mono text-xs">backend/</span> read none of the four changed files.</p>
+            <p>The check leaves the reading of the rule to the user: "If the literal whole-tree match is required, the back end is not evidenced" and the verify (about 30 minutes) must be run. It also lists limits: the whole-tree hash cannot be split into a back-end part; one point rests on file modification times; the log's <span class="font-mono text-xs">HEAD</span> and <span class="font-mono text-xs">MVN_EXIT</span> lines are written by the wrapper, not by Maven; the Maven command line is not in the log.</p>
+            <p class="text-xs text-slate-600">This report records the back-end result as reused evidence under that reading. It is not a fresh pass.</p>
+          </div>
+        </div>
+
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">What the verdict does not cover</h3>
+          <ul class="space-y-1 text-sm list-disc pl-5">
+            <li><span class="font-semibold">The last edit was reviewed by no check.</span> The <span class="font-mono text-xs">wasEditable</span> focus effect was compiled and built by the build check, exercised by browser run B (as its report states), and confirmed present by the aggregator. Thermo-nuclear, code review and react did not review it.</li>
+            <li><span class="font-semibold">Security checks are from round one.</span> Semgrep and im8 saw the three files before both correction passes. The later code (<span class="font-mono text-xs">readOnlyReason</span>, the conditional sentence, the focus effect, the <span class="font-mono text-xs">.editable:disabled</span> rules, the <span class="font-mono text-xs">EditableState</span> predicate in <span class="font-mono text-xs">submissions.ts</span>) was not scanned by Semgrep or reviewed against IM8.</li>
+            <li><span class="font-semibold">React round two is two changes behind.</span> It did not see the type predicate or the last edit.</li>
+            <li><span class="font-semibold">Back end not run in this round.</span> Reused log, whole-tree fingerprint mismatch (build Low-1). The reading of the reuse rule is the user's call.</li>
+            <li><span class="font-semibold">No automated behaviour test of the front end.</span> None exists in this repo. Behaviour rests on the browser-test report, which is supporting evidence and not one of the seven checks; in it, most form fields were filled by script through the page's controls.</li>
+            <li><span class="font-semibold">Browser evidence not reached:</span> the Not Endorsed, non-conditional Exempted and Not Started notices; the to-confirm, confirmed and lapsed sub-states of a conditional Exemption; a file download; a second page of Findings; a real screen reader; Firefox; Safari; forced colours.</li>
+            <li><span class="font-semibold">P6 is not decided.</span> Completing or accepting the browser evidence is a human decision; the aggregator did not re-rate it.</li>
+            <li><span class="font-semibold">IM8 limits:</span> the Bedrock knowledge base was not used; the system's risk level is not stated in the spec; the Seam 1 tests it cites were read, not run, by that check.</li>
+            <li><span class="font-semibold">Semgrep limits:</span> changed files only, free registry rules, no CSS parser (47 language-independent rules on <span class="font-mono text-xs">styles.css</span>).</li>
+            <li><span class="font-semibold">Spring Boot:</span> nothing in scope; unchanged back-end code was not reviewed.</li>
+            <li><span class="font-semibold">"Byte-identical emitted code" for the second correction pass</span> is the implementer's claim. Code review round three corroborated matching hashes of two builds but could not confirm the earlier build came from the tree browser run A tested. Run B is reported to have run on the final code.</li>
+            <li><span class="font-semibold">The 22 Low findings stay open.</span> None was fixed or accepted in this run.</li>
+          </ul>
+        </div>
+
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Checked by the aggregator (read-only)</h3>
+          <ul class="space-y-1 text-sm list-disc pl-5">
+            <li>Exactly one top-level artifact per active check: <span class="font-mono text-xs">build.md</span>, <span class="font-mono text-xs">thermo-nuclear.md</span>, <span class="font-mono text-xs">code-review.md</span>, <span class="font-mono text-xs">react.md</span>, <span class="font-mono text-xs">semgrep.md</span>, <span class="font-mono text-xs">im8.md</span>, <span class="font-mono text-xs">springboot.md</span>. All seven read in full. None missing, none duplicated. The <span class="font-mono text-xs">round1</span> and <span class="font-mono text-xs">round2</span> folders were treated as history; the carried-over files are byte-identical to their history copies.</li>
+            <li>The SHA-1 of <span class="font-mono text-xs">git diff</span> in the worktree is <span class="font-mono text-xs">b01bb771e2ea855cb55ead407066f8238bf1d5c3</span>, the value the build check recorded before and after its run. The tree has not changed since the build check.</li>
+            <li><span class="font-mono text-xs">git diff HEAD --stat -- backend</span> and <span class="font-mono text-xs">git status --short -- backend</span> are empty. HEAD is <span class="font-mono text-xs">ba45b05</span>.</li>
+            <li>The <span class="font-mono text-xs">wasEditable</span> edit is present at <span class="font-mono text-xs">SubmissionPrepareScreen.tsx:107-111</span> and matches thermo-nuclear's remedy. The comment code review S7 quotes is no longer in the file.</li>
+            <li>The reused back-end log has the SHA-1 the build check recorded (<span class="font-mono text-xs">6d122c24...</span>); its first line carries the fingerprint <span class="font-mono text-xs">e8f6e531...</span> and it ends with <span class="font-mono text-xs">MVN_EXIT=0</span>. The log's content was not otherwise re-read.</li>
+            <li><span class="font-mono text-xs">styles.css</span> and <span class="font-mono text-xs">Editable.tsx</span> were last written before react round two and browser run A; <span class="font-mono text-xs">SubmissionPrepareScreen.tsx</span> was last written after thermo-nuclear and code-review round three and before the browser report and the build check (file modification times).</li>
+            <li>No source file was modified and nothing was committed. Only this report was written.</li>
+          </ul>
+        </div>
+
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Same point, several checks</h3>
+          <p class="text-xs text-slate-600">Each rating is recorded as the check gave it; ratings were not reconciled.</p>
+          <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left border border-slate-100">
+            <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+              <th class="px-4 py-2">Point</th>
+              <th class="px-4 py-2">Rated by</th>
+            </tr></thead>
+            <tbody>
+              <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-xs">The focus move depends on facts outside the effect</td><td class="px-4 py-2 text-xs text-slate-600">Thermo-nuclear 1 (Medium, round three); react 1 (Low, round two). Code review S7 (Low) is about the comment on the same effect. The remedy was applied after all three.</td></tr>
+              <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-xs">The editable rule is still written twice; the reason table is typed <span class="font-mono">Partial</span> and its lookup can be <span class="font-mono">undefined</span>; a comment overstates what the compiler checks</td><td class="px-4 py-2 text-xs text-slate-600">Thermo-nuclear 2 and 3 (Low); code review S2 (Low); react 2 (Low, on the tree before the type predicate).</td></tr>
+              <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-xs">"Read-only" wording next to the live "Record that the VA happened" form of a conditional Exemption</td><td class="px-4 py-2 text-xs text-slate-600">IM8 O-1 (Low, round one, on the old sentence); code review S5 (Low, round three, on the new conditional sentence).</td></tr>
+              <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-xs"><span class="font-mono">ConditionalExemptionNotice</span>: optional props, alias narrowing, name</td><td class="px-4 py-2 text-xs text-slate-600">Thermo-nuclear 4 (Low); code review S3 (Low).</td></tr>
+              <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-xs">The two new CSS selectors (complexity 6 and 7; tick-box exclusion)</td><td class="px-4 py-2 text-xs text-slate-600">Build Low-2 (fallow advisory); thermo-nuclear 5 (Low).</td></tr>
+              <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-xs">The focus move scrolls the page to the top after Submit</td><td class="px-4 py-2 text-xs text-slate-600">Code review P8 (Low). Thermo-nuclear considered it and did not raise it. The browser-test report lists it as an observation.</td></tr>
+            </tbody>
+          </table>
+          </div>
+        </div>
+      </div>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">Build <span class="text-xs text-slate-500 font-normal">final round; ran on the current tree; back end reused, not run</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN C0 H0 M0 L2</span>
+        </summary>
+        <div class="px-5 pb-3 text-xs text-slate-600 space-y-1">
+          <p>Check's own result: WARN. Failed checks: none. The file states the status is WARN and not PASS for one reason only: the reused back-end log's recorded fingerprint is a whole-tree hash that no longer matches (Low-1). See "Build: run, reused and skipped" above for every step.</p>
+          <p>Node v24.15.0, npm 11.12.1. <span class="font-mono">fallow health</span> lists three standing refactoring targets outside this diff, none above threshold; the check does not count them as findings.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+            <th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th>
+          </tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">artifacts/do-work/verify/backend-verify.log</td>
+              <td class="px-4 py-2 font-mono text-xs">1</td>
+              <td class="px-4 py-2">Low-1. The back-end log's fingerprint is whole-tree, so it does not match after a front-end-only edit. Recorded <span class="font-mono text-xs">e8f6e531c2f9f03248b513badda79a7ef11e6da1</span>, current <span class="font-mono text-xs">b01bb771e2ea855cb55ead407066f8238bf1d5c3</span>. Cause: two front-end files were edited after the Maven run started; no back-end input changed. The check rates the technical risk negligible and suggests recording a second hash scoped to what Maven reads.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs"><a class="text-blue-700 underline" href="../../frontend/src/styles.css">frontend/src/styles.css</a></td>
+              <td class="px-4 py-2 font-mono text-xs">454, 459 (343 inherited)</td>
+              <td class="px-4 py-2">Low-2. <span class="font-mono text-xs">fallow audit</span> prints two new advisory <span class="font-mono text-xs">css-selector-complexity</span> warnings (6 and 7) on the selectors added by this diff, and one inherited <span class="font-mono text-xs">css-duplicate-block</span> warning from main. No effect on the gate: <span class="font-mono text-xs">fallow audit</span> is not part of <span class="font-mono text-xs">npm run check</span> and the rules are set to warn. The comment above the selectors says the specificity is deliberate.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">Thermo-nuclear review <span class="text-xs text-slate-500 font-normal">round three, after two correction passes; did not see the last edit</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN C0 H0 M1 L4</span>
+        </summary>
+        <div class="px-5 pb-3 text-xs text-slate-600 space-y-1">
+          <p>Check's own result: WARN. "No finding here needs to be fixed before commit." Read-only review: no build, type-check, test or browser run; type behaviour and the CSS cascade are reasoned from the source.</p>
+          <p>Round-one findings as this check now states them: 1 (Medium, the editable rule written three times) fixed with a Low residue (findings 2 and 3); 2 (Medium, the read-only look covered buttons only) fixed; 3 (Low) half no longer applies, half still open (finding 4); 4 (Low) fixed.</p>
+          <p>Line numbers are those of the tree before the last edit.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+            <th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th>
+          </tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs"><a class="text-blue-700 underline" href="../../frontend/src/screens/smo/SubmissionPrepareScreen.tsx">frontend/src/screens/smo/SubmissionPrepareScreen.tsx</a></td>
+              <td class="px-4 py-2 font-mono text-xs">104-111, 172, 180</td>
+              <td class="px-4 py-2 space-y-2">
+                <p>1. The focus move detects "turned read-only while open" through three facts that are not in the effect: <span class="font-mono text-xs">editable</span> is false while loading; the notice is mounted above the <span class="font-mono text-xs">data ?</span> gate; the ref is null on the first run. Behaviour traced correct on four paths. Two ordinary edits (changing the loading default, or moving the notice under the gate) would break it without any error, and no test guards it. Remedy proposed: remember the last value in a <span class="font-mono text-xs">wasEditable</span> ref. Fix before commit: no, but do not move the notice without it.</p>
+                <p class="rounded border border-slate-200 bg-slate-50 p-2 text-xs text-slate-700"><span class="font-semibold">Aggregator note:</span> remedy applied after this check ran; verified present by the aggregator; not re-reviewed by the check. Now at <span class="font-mono">:107-111</span>; the loading default is at <span class="font-mono">:174</span> and the notice at <span class="font-mono">:182</span>, still above the gate.</p>
+              </td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SubmissionPrepareScreen.tsx; <a class="text-blue-700 underline" href="../../frontend/src/api/submissions.ts">frontend/src/api/submissions.ts</a></td>
+              <td class="px-4 py-2 font-mono text-xs">69, 81, 90-95, 103, 115; 21-26</td>
+              <td class="px-4 py-2">2. The reason table is typed twice (a <span class="font-mono text-xs">Partial&lt;Record&gt;</span> annotation wider than its <span class="font-mono text-xs">satisfies</span> check), so <span class="font-mono text-xs">readOnlyReason</span> can return <span class="font-mono text-xs">undefined</span> and the notice would then show no reason and no error. It cannot happen from the one call site today. The new type predicate is never used to narrow.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SubmissionPrepareScreen.tsx; frontend/src/api/submissions.ts</td>
+              <td class="px-4 py-2 font-mono text-xs">65-67; 21, 25</td>
+              <td class="px-4 py-2">3. The comment "does not compile when the rule changes" is only half true. TypeScript does not check a predicate's body against its declared type, so a change to the body of <span class="font-mono text-xs">isEditable</span> alone compiles. The rule is written twice on adjacent lines and kept in step by hand. Cheaper remedy: correct the comment.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SubmissionPrepareScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">51-52, 103, 111, 130-135, 180-183</td>
+              <td class="px-4 py-2">4. Three notices still take <span class="font-mono text-xs">Submission | undefined</span> only because they render above the <span class="font-mono text-xs">data ?</span> gate; <span class="font-mono text-xs">ConditionalExemptionNotice</span> leans on alias narrowing to read <span class="font-mono text-xs">submission.state</span> without <span class="font-mono text-xs">?.</span>. Remedy: render the notices inside the provider, only together with finding 1's remedy.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs"><a class="text-blue-700 underline" href="../../frontend/src/styles.css">frontend/src/styles.css</a></td>
+              <td class="px-4 py-2 font-mono text-xs">438, 451, 459</td>
+              <td class="px-4 py-2">5. Two CSS comments do not match their rules. The tick-box exclusion and its comment disagree (if author colours do not reach a tick box, the exclusion changes nothing; if it is needed, the reason given is wrong). The <span class="font-mono text-xs">.plain-fieldset</span> comment now describes what <span class="font-mono text-xs">.editable</span> means.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-3 text-xs text-slate-600 border-t border-slate-100">Considered and not raised by the check: a screen reader may read the notice twice (status region and focus); the page scrolls to the top after Submit; the Submit button is live for a moment after a successful submit (predates the diff); "Read-only" is said twice on a submitted screen (the ticket asks for it).</div>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">Code review (Standards and Spec) <span class="text-xs text-slate-500 font-normal">round three, after two correction passes; did not see the last edit or browser run B</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN C0 H0 M1 L10</span>
+        </summary>
+        <div class="px-5 pb-3 text-xs text-slate-600 space-y-1">
+          <p>Check's own result: WARN. Standards: 6 Low, no hard violation of a documented standard. Spec: 1 Medium, 4 Low. Nothing was built, run or changed by the check; statements about how a control looks come from reading the CSS and from the first browser-test report.</p>
+          <p>Round-one findings as this check now states them: S1 (Medium) fixed; S2 (Medium) partly fixed, now Low; S3, S4 (Low) still open; P1 (Medium) fixed; P2 (Low) still open, outside the ticket's scope; P3, P4, P5 (Low) fixed.</p>
+          <p>Line numbers are those of the tree before the last edit. <span class="font-mono">SPS</span> is <span class="font-mono">frontend/src/screens/smo/SubmissionPrepareScreen.tsx</span>.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+            <th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th>
+          </tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-amber-600">Medium</td>
+              <td class="px-4 py-2 font-mono text-xs"><a class="text-blue-700 underline" href="../browser-test/65-smo-read-only-after-submit-browsertest.md">artifacts/browser-test/65-smo-read-only-after-submit-browsertest.md</a></td>
+              <td class="px-4 py-2 font-mono text-xs">63-65, 83</td>
+              <td class="px-4 py-2 space-y-2">
+                <p>P6 (Spec). Criterion 7 is partly evidenced. Walked: SMO submit, Cyber Manager return, SMO again. Not walked: the Cyber Manager's pass to endorsement and the VA POC's endorsement. Notices never seen in a browser: Awaiting Endorsement, Exemption Requested, Exempted (plain and conditional), Not Endorsed, Withdrawn and Not Started. Also unseen: every sub-state of a conditional Exemption, a file download, a second page, a real screen reader, Firefox, Safari, forced colours. "Fix or accept before closeout."</p>
+                <p class="rounded border border-slate-200 bg-slate-50 p-2 text-xs text-slate-700"><span class="font-semibold">Aggregator note:</span> a second browser run was made after this check; the check has not seen it. The report now shows the endorsement leg walked and the Awaiting Endorsement, Exemption Requested, Exempted (conditional, to record) and Withdrawn notices seen. Still not reached: Not Endorsed, non-conditional Exempted, Not Started (not mentioned), the other conditional sub-states, a download, a second page, a screen reader, Firefox, Safari, forced colours. Details under "Medium findings still recorded". Rating unchanged.</p>
+              </td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs"><a class="text-blue-700 underline" href="../../frontend/src/api/submissions.ts">frontend/src/api/submissions.ts</a>; SPS</td>
+              <td class="px-4 py-2 font-mono text-xs">21, 24-25; 65-66, 69</td>
+              <td class="px-4 py-2">S2 (Standards, was Medium, partly fixed). The rule is still written twice in <span class="font-mono text-xs">submissions.ts</span> (the <span class="font-mono text-xs">EditableState</span> union and the body of <span class="font-mono text-xs">isEditable</span>), one comment overstates what the compiler checks, and the <span class="font-mono text-xs">Partial</span> annotation widens what <span class="font-mono text-xs">satisfies</span> proved.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">SPS</td>
+              <td class="px-4 py-2 font-mono text-xs">125-137</td>
+              <td class="px-4 py-2">S3 (Standards, still open). Possible Middle Man and Mysterious Name: <span class="font-mono text-xs">ConditionalExemptionNotice</span> is a two-line guard forwarding three props, and "Notice" names something that can render a card with a form.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">SPS</td>
+              <td class="px-4 py-2 font-mono text-xs">79 (also 77)</td>
+              <td class="px-4 py-2">S4 (Standards, still open). "The work below is kept for audit" is untrue for a Not Endorsed row with no work; the Not Endorsed wording lives in two places. The check records that its Standards sub-agent rated the first point Medium and that the reviewer kept Low, as in round one. Recorded here as the check's file rates it: Low.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">SPS</td>
+              <td class="px-4 py-2 font-mono text-xs">88, 115</td>
+              <td class="px-4 py-2">S5 (Standards, new). Under a bold "Read-only.", the conditional sentence lists what still works and leaves out the live "Record that the VA happened" form. The check calls this incomplete, not false.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">SPS</td>
+              <td class="px-4 py-2 font-mono text-xs">83-85</td>
+              <td class="px-4 py-2">S6 (Standards, new). The code comment on <span class="font-mono text-xs">CONDITIONAL_EXEMPTION_REASON</span> is inaccurate on two points: confirming is the VA POC's action, not done in the panel; a recorded but unconfirmed Exemption never lapses. The user-facing sentence is correct.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">SPS</td>
+              <td class="px-4 py-2 font-mono text-xs">105-106</td>
+              <td class="px-4 py-2 space-y-2">
+                <p>S7 (Standards, new). The comment on the focus effect ("The notice is on screen only after a change to read-only") is loosely worded, though its conclusion is correct.</p>
+                <p class="rounded border border-slate-200 bg-slate-50 p-2 text-xs text-slate-700"><span class="font-semibold">Aggregator note:</span> the sentence this finding quotes is no longer in the working tree. The last edit replaced the comment at <span class="font-mono">:105-106</span> together with the effect. The new comment was not reviewed by this check. Rating unchanged.</p>
+              </td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs"><a class="text-blue-700 underline" href="../../frontend/src/styles.css">frontend/src/styles.css</a></td>
+              <td class="px-4 py-2 font-mono text-xs">133-136 (unchanged)</td>
+              <td class="px-4 py-2">P2 (Spec, still open, outside scope). In Draft, a button disabled with no request running still looks busy (60 % opacity, <span class="font-mono text-xs">progress</span> cursor). The ticket's title limits it to after submit.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">SPS</td>
+              <td class="px-4 py-2 font-mono text-xs">172, 208</td>
+              <td class="px-4 py-2">P7 (Spec). "Editable again straight after a return for rework" holds on the next load only; another person makes the return and nothing on the screen polls.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">SPS</td>
+              <td class="px-4 py-2 font-mono text-xs">104-109, 113</td>
+              <td class="px-4 py-2">P8 (Spec, not asked for). The focus move after Submit, which also scrolls the page to the top; a person reading the Declaration card loses their place. The effect of focusing a <span class="font-mono text-xs">role="status"</span> element in a real screen reader is not checked.</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">SPS</td>
+              <td class="px-4 py-2 font-mono text-xs">77, 135</td>
+              <td class="px-4 py-2">P9 (Spec, not from this diff, not confirmed). A lapsed panel could sit under "It is decided" after a later unconditional approval. The removed code paired the same panel with an Exempted notice; the check did not read the SQL.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-3 border-t border-slate-100 space-y-2">
+          <p class="text-xs font-semibold text-slate-700 uppercase tracking-wide">Verdict per acceptance criterion, as the check recorded it (before browser run B)</p>
+          <table class="w-full text-xs text-left border border-slate-100">
+            <thead><tr class="uppercase tracking-wider text-slate-500 bg-slate-50"><th class="px-3 py-1">#</th><th class="px-3 py-1">Criterion</th><th class="px-3 py-1">Verdict</th><th class="px-3 py-1">Evidence</th></tr></thead>
+            <tbody>
+              <tr class="border-t border-slate-100"><td class="px-3 py-1">1</td><td class="px-3 py-1">Every control ADR 0032 lists is disabled, in In Review and one more state</td><td class="px-3 py-1">Met</td><td class="px-3 py-1">Code, plus browser: In Review 7 of 7 groups, Endorsed 46 of 46.</td></tr>
+              <tr class="border-t border-slate-100"><td class="px-3 py-1">2</td><td class="px-3 py-1">Disabled reads as unavailable, not busy; the busy look is kept for live controls</td><td class="px-3 py-1">Met</td><td class="px-3 py-1">CSS reading, plus browser computed styles in both colour schemes.</td></tr>
+              <tr class="border-t border-slate-100"><td class="px-3 py-1">3</td><td class="px-3 py-1">A read-only notice with the reason near the top</td><td class="px-3 py-1">Met in code</td><td class="px-3 py-1">Browser saw In Review and Endorsed only (P6).</td></tr>
+              <tr class="border-t border-slate-100"><td class="px-3 py-1">4</td><td class="px-3 py-1">Read-only straight after Submit; editable again after a return</td><td class="px-3 py-1">Met</td><td class="px-3 py-1">Browser, with the limit in P7.</td></tr>
+              <tr class="border-t border-slate-100"><td class="px-3 py-1">5</td><td class="px-3 py-1">Downloads, filters and paging stay usable</td><td class="px-3 py-1">Met</td><td class="px-3 py-1">Thin: no file downloaded, no second page.</td></tr>
+              <tr class="border-t border-slate-100"><td class="px-3 py-1">6</td><td class="px-3 py-1">Server refusals unchanged</td><td class="px-3 py-1">Met</td><td class="px-3 py-1">The diff touches four front-end files only.</td></tr>
+              <tr class="border-t border-slate-100"><td class="px-3 py-1">7</td><td class="px-3 py-1"><span class="font-mono">npm run check</span> passes; the flow is checked again in the browser</td><td class="px-3 py-1">Partial</td><td class="px-3 py-1">P6. The check log shows a pass; the check did not run it.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">React review <span class="text-xs text-slate-500 font-normal">round two, after the first correction pass; not rerun; did not see the type predicate or the last edit</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN C0 H0 M0 L4</span>
+        </summary>
+        <div class="px-5 pb-3 text-xs text-slate-600 space-y-1">
+          <p>Check's own result: PASS (0 Critical, 0 High, 0 Medium, 4 Low). Shown as WARN under the dispatcher's rule, because Low findings remain.</p>
+          <p>Scope then: three files (<span class="font-mono">Editable.tsx</span>, <span class="font-mono">SubmissionPrepareScreen.tsx</span>, <span class="font-mono">styles.css</span>). Evidence: a static probe page rendered in headless Microsoft Edge 157 against the working-tree, HEAD and built stylesheets, in light and dark. The focus move was verified by reading the code only.</p>
+          <p>Round-one findings as this check states them: 1 (High, disabled inputs still look live) fixed; 2 (Medium, "It is decided" above a live form) fixed; 3 (Medium, the switch to read-only is not announced) fixed by reading the code, no screen-reader run; 4 (Low) still open; 5 (Low) partly fixed; 6 (Low) no longer applies; 7 (Low) still open.</p>
+          <p>Not verified by the check: a real screen reader; the focus move in the running app; Firefox and Safari; <span class="font-mono">:focus-visible</span> after a mouse click; forced-colours mode. Line numbers are those of the tree after the first correction pass.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+            <th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th>
+          </tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs"><a class="text-blue-700 underline" href="../../frontend/src/screens/smo/SubmissionPrepareScreen.tsx">frontend/src/screens/smo/SubmissionPrepareScreen.tsx</a> (with frontend/src/hooks/useResource.ts)</td>
+              <td class="px-4 py-2 font-mono text-xs">105-107, 170 (17)</td>
+              <td class="px-4 py-2 space-y-2">
+                <p>1. The focus move is correct today, but only because of two facts held in other files (<span class="font-mono text-xs">useResource</span> starts with no data; the screen reports <span class="font-mono text-xs">editable = false</span> while loading). Remedy proposed: a <span class="font-mono text-xs">wasEditable</span> ref.</p>
+                <p class="rounded border border-slate-200 bg-slate-50 p-2 text-xs text-slate-700"><span class="font-semibold">Aggregator note:</span> a <span class="font-mono">wasEditable</span> ref was added after this check, in the form thermo-nuclear proposed (<span class="font-mono">useRef(false)</span>); this check's own sketch starts it at <span class="font-mono">useRef(editable)</span>. Verified present by the aggregator; not re-reviewed by this check. Rating unchanged.</p>
+              </td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SubmissionPrepareScreen.tsx (with frontend/src/api/submissions.ts)</td>
+              <td class="px-4 py-2 font-mono text-xs">67, 79, 113 (21-23)</td>
+              <td class="px-4 py-2 space-y-2">
+                <p>2. The list of editable states is still written twice; if the two drift, the notice says "Read-only." with no reason and nothing fails. Remedy proposed: an <span class="font-mono text-xs">EditableState</span> type, <span class="font-mono text-xs">isEditable</span> as a type predicate, and an exact <span class="font-mono text-xs">Record</span> for the table.</p>
+                <p class="rounded border border-slate-200 bg-slate-50 p-2 text-xs text-slate-700"><span class="font-semibold">Aggregator note:</span> the second correction pass, after this check, added <span class="font-mono">EditableState</span> and the type predicate; the table's <span class="font-mono">Partial</span> annotation remains. Thermo-nuclear round three (findings 2 and 3) and code review round three (S2) reviewed that state and record the residue as Low. Not re-reviewed by this check. Rating unchanged.</p>
+              </td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs"><a class="text-blue-700 underline" href="../../frontend/src/screens/smo/Editable.tsx">frontend/src/screens/smo/Editable.tsx</a></td>
+              <td class="px-4 py-2 font-mono text-xs">19</td>
+              <td class="px-4 py-2">3. The reason is not tied to the disabled controls for assistive technology (round-one finding 4, not addressed). Suggested: <span class="font-mono text-xs">aria-describedby</span> on the fieldset pointing at the notice; "a help, not a guarantee".</td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs">frontend/src/screens/smo/SubmissionPrepareScreen.tsx</td>
+              <td class="px-4 py-2 font-mono text-xs">113 (with 68)</td>
+              <td class="px-4 py-2">4. "Downloads, filters and paging still work." is said in every state, including Not Started, where there is nothing to download or page through (round-one finding 7, not addressed).</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-5 py-3 text-xs text-slate-600 border-t border-slate-100">Outside this diff, listed by the check for information and not as findings: <span class="font-mono">.button:disabled</span> still gives the busy look to buttons disabled for another reason on an editable screen; an input with its own <span class="font-mono">disabled={busy}</span> on a live screen still looks live; <span class="font-mono">EditableContext</span> defaults to <span class="font-mono">true</span>.</div>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">Semgrep <span class="text-xs text-slate-500 font-normal">round one; carried over, not rerun; did not see the corrected code or submissions.ts</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS C0 H0 M0 L0</span>
+        </summary>
+        <div class="px-5 pb-3 text-xs text-slate-600 space-y-1">
+          <p>Check's own result: PASS. The scan ran to completion: Semgrep 1.182.1 (OSS engine), <span class="font-mono">p/security-audit</span> and <span class="font-mono">p/default</span>, 211 applicable rules on 3 files, 0 findings, exit 0, no scanner errors, no <span class="font-mono">nosemgrep</span> suppressions under <span class="font-mono">frontend/src</span>.</p>
+          <p>What it scanned: <span class="font-mono">Editable.tsx</span> (23 lines), <span class="font-mono">SubmissionPrepareScreen.tsx</span> (186 lines then; 219 now), <span class="font-mono">styles.css</span> (608 lines then; 611 now). <span class="font-mono">frontend/src/api/submissions.ts</span> was not in the diff then and was not scanned.</p>
+          <p>Limits the check states: changed files only; Semgrep has no CSS parser, so <span class="font-mono">styles.css</span> was checked only by 47 language-independent rules; free registry rules only, no Pro rules or cross-file engine.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+            <th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th>
+          </tr></thead>
+          <tbody>
+            <tr><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">IM8 Application Technical Controls <span class="text-xs text-slate-500 font-normal">round one; carried over, not rerun; did not see the corrected code or submissions.ts as changed</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN C0 H0 M0 L2</span>
+        </summary>
+        <div class="px-5 pb-3 text-xs text-slate-600 space-y-1">
+          <p>Check's own result: PASS. No control fails or warns; the two Low items are observations under controls that pass. Shown as WARN under the dispatcher's rule, because Low findings remain.</p>
+          <p>Controls recorded PASS: as-1, as-2, as-3, as-7, ac-1, as-8, as-9, as-13, lm-4, lm-19, dp-3, dp-8. Recorded N/A for a presentation-only front-end diff: as-4, as-5, as-6, as-10, as-11, as-12, as-14, as-15, lm-15, lm-16, lm-18, ck-1, ck-2, ck-4, ga-8, ac-2, ac-3, ac-4, ac-6, ac-7, ac-8, ac-12, pm-6, st-3.</p>
+          <p>How it ran: read-only; the Bedrock knowledge base was not used (<span class="font-mono">uv</span> is not installed), so control wording comes from the catalogue the skills ship with; the spec does not state the system's risk level; the Seam 1 tests it cites were read, not run. Scope then: three files, 63 insertions and 31 deletions, before both correction passes. Line numbers are those of that tree.</p>
+          <p>Its manual review checklist, as content: the browser check of criterion 1; a decision on O-1; running the Seam 1 suite in the build check; querying the knowledge base if full policy text is needed.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+            <th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th>
+          </tr></thead>
+          <tbody>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs"><a class="text-blue-700 underline" href="../../frontend/src/screens/smo/SubmissionPrepareScreen.tsx">frontend/src/screens/smo/SubmissionPrepareScreen.tsx</a></td>
+              <td class="px-4 py-2 font-mono text-xs">72, 87, 149-151</td>
+              <td class="px-4 py-2 space-y-2">
+                <p>O-1 (ac-1, control passes). In the Exempted state the "Read-only. It is decided ..." notice can sit directly above the live "Record the scheduled VA" form of a conditional Exemption. Wording only; no control is bypassed and the server decides.</p>
+                <p class="rounded border border-slate-200 bg-slate-50 p-2 text-xs text-slate-700"><span class="font-semibold">Aggregator note:</span> this check ran before the correction passes. React round two (its round-one finding 2) and code review round three (S1, P4) report that a conditional Exemption now gets a different sentence that does not say "decided"; code review S5 (Low) records that the new sentence still leaves the live form out of what "still works". Not re-reviewed by this check. Rating unchanged.</p>
+              </td>
+            </tr>
+            <tr class="border-t border-slate-100 align-top">
+              <td class="px-4 py-2 text-slate-500">Low</td>
+              <td class="px-4 py-2 font-mono text-xs"><a class="text-blue-700 underline" href="../../frontend/src/screens/smo/Editable.tsx">frontend/src/screens/smo/Editable.tsx</a></td>
+              <td class="px-4 py-2 font-mono text-xs">8</td>
+              <td class="px-4 py-2">O-2 (as-7, control passes). <span class="font-mono text-xs">EditableContext</span> defaults to editable, so an <span class="font-mono text-xs">&lt;Editable&gt;</span> outside a provider shows live controls. Pre-existing and unchanged by this diff; the server still refuses with 409. The check says no action is needed for this ticket.</td>
+            </tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">Spring Boot review (seven skills) <span class="text-xs text-slate-500 font-normal">round one; carried over, not rerun; no back-end file in the diff</span></span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS C0 H0 M0 L0</span>
+        </summary>
+        <div class="px-5 pb-3 text-xs text-slate-600 space-y-1">
+          <p>Check's own result: PASS (nothing in scope) for each of spring-core, spring-web, spring-data, spring-batch, spring-security, spring-logging and spring-test review. The check reviewed no code: the diff had no Java, Maven, Spring configuration, logging configuration or migration file. Its evidence is a set of empty <span class="font-mono">git</span> outputs for <span class="font-mono">backend/</span> on the round-one tree (three changed files).</p>
+          <p>Unchanged back-end code was not reviewed. The front-end diff adds no HTTP call.</p>
+          <p><span class="font-semibold">Aggregator note:</span> on the final tree <span class="font-mono">git diff HEAD --stat -- backend</span> and <span class="font-mono">git status --short -- backend</span> are still empty. The fourth file added to the diff since (<span class="font-mono">frontend/src/api/submissions.ts</span>) is a front-end file.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead><tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 text-left">
+            <th class="px-4 py-2">Severity</th><th class="px-4 py-2">File</th><th class="px-4 py-2">Line</th><th class="px-4 py-2">Description</th>
+          </tr></thead>
+          <tbody>
+            <tr><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td></tr>
+          </tbody>
+        </table>
+      </details>
+    </main>
+  </body>
+</html>
