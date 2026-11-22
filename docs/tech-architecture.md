@@ -1,5 +1,5 @@
 # Technical Architecture Document
-> Generated: 2026-11-22T13:04:49Z
+> Generated: 2026-11-22T16:34:15Z
 > Project: Annual VA (annualVA2): `frontend/` (React) and `backend/` (Spring Boot)
 > Laid out as `/tech-arch-doc` lays it out, for ticket 52 (IM8 pm-6). A point-in-time document: the tables and diagrams that can be read from the code are rewritten by `python scripts/refresh-tech-arch-doc.py`, the prose is written and reviewed by a person, and `DocumentationCompletenessTest` fails the build when a module, boundary port or adapter, profile, ADR or table is not named here. Section 7 says how to refresh it in the change that adds one.
 
@@ -37,11 +37,11 @@ Annual VA is the internal application that runs the organisation's annual vulner
 | `register` | 31 | The System Register: the Excel template, upload and preview, the locked apply, the Systems list, SMO Unreachable, the role-holder review. |
 | `retention` | 11 | Retention and disposal: the disposal list a VA POC approves and the executor that deletes files, then records, through the one path the append-only tables allow; the database checks every history row it deletes against the approved list (ADR 0050). |
 | `scan` | 4 | Quarantine and malware scan shared by the Scan Report pipeline and the Register upload. |
-| `submission` | 33 | The VA Submission state machine, submit, review steps, endorsement, Exemptions, the Overdue sweep, the Cycle lifecycle and role lapses. |
+| `submission` | 34 | The VA Submission state machine, submit, review steps, endorsement, Exemptions, the Overdue sweep, the Cycle lifecycle and role lapses. |
 | `web` | 10 | Cross-cutting HTTP: RFC 9457 problems, the correlation id, the refusal listener, CSRF and session bootstrap. |
 | `frontend` | see section 1.8 | The React single-page application. |
 
-20 back-end modules, 358 source files.
+20 back-end modules, 359 source files.
 <!-- /generated:module-summary -->
 
 ### 1.3 Module Interaction Diagram
@@ -165,7 +165,7 @@ Platform modules: `web`, `config`, `jdbc`, `boundary`, `monitoring`, `audit`, `a
 
 - **Sign-in and roles (`access`).** The browser is sent to MCC SSO through the OIDC authorization-code flow; the callback links the sign-in to a user (by `sso_id`, else pre-registered email, else new), rotates the session and audits it. Roles live in `role_grant` and are read into a `RoleAuthentication` on every request. `AccessGuard` is the one ownership check every service path that addresses a System calls. `StepUp.require(intent)` makes a sensitive command need a sign-in within five minutes.
 - **Register and submissions.** A VA POC uploads the System Register workbook; `register` scans it synchronously through `scan`, reads it into a preview, and applies a confirmed preview in one locked transaction that also grants the SMO/Tech Lead and Cyber Manager roles through `access` and withdraws in-flight work through the `InFlightWork` port the `submission` module implements. An SMO/Tech Lead starts a VA Submission (`submission`), uploads Scan Reports (`ingestion`), proposes Finding statuses (`finding`), submits; a Cyber Manager reviews and passes or returns it; a VA POC endorses with a fresh sign-in.
-- **Files.** `ingestion` puts every upload in the quarantine zone of the file store through `scan`, the scan job asks the scanner for a verdict, and only the scanner's unchanged copy is type-checked, schema-checked and parsed (`parser`) into Findings (`finding`). Nobody can view a file until it is clean (ADR 0021).
+- **Files.** `ingestion` puts every upload in the quarantine zone of the file store through `scan`, the scan job asks the scanner for a verdict, and only the scanner's unchanged copy is type-checked, schema-checked and parsed (`parser`) into Findings (`finding`). Nobody can view a file until it is clean (ADR 0021). While the VA Submission is editable, an SMO/Tech Lead can delete a report file, which is deleted softly and re-rates the Findings it touched through `finding`, or a Manually Entered Finding that never had a proposal (ADR 0061).
 - **Time-driven work.** `@Scheduled` jobs (only where `annualva.scheduling.enabled`; Seam 1 runs each by hand) sweep Overdue (`submission`), open and close Cycles, lapse Exemptions and roles, plan deadline reminders and dispatch the mail outbox (`notification`), make exports (`export`) and propose disposal lists (`retention`). The jobs coordinate through the database, without ShedLock (ADR 0012): each claims its rows (`FOR UPDATE SKIP LOCKED`, a lease on a claimed mail, a write guarded by the status it read) and is idempotent, so two instances do not double the work. ADR 0012 also names a `scheduler_lock` table: no migration creates one and no code uses one.
 - **Notifications and mail.** Workflow modules publish events inside their transaction; `notification` writes the in-app notice and queues the mail after the commit, and `MailOutbox` hands it to the mail relay with allow-listed values only (ADR 0043, 0046).
 - **Audit.** Modules that act call `AuditLog.record` in their own transaction (`recordIndependently` for refusals and sign-ins); the entry is also emitted as an ECS event on the `annualva.audit` logger after the commit. The audit read scope is a port (`AuditReaders`) the `submission` module answers (ADR 0038).
@@ -516,6 +516,7 @@ Each module lists its purpose, the modules it imports and the modules that impor
 | Method | Path |
 |---|---|
 | POST | `/api/batches/{id}/reviews` |
+| DELETE | `/api/findings/{id}` |
 | GET | `/api/findings/{id}/proposals` |
 | POST | `/api/findings/{id}/proposals` |
 | POST | `/api/findings/{id}/reviews` |
@@ -577,6 +578,7 @@ Each module lists its purpose, the modules it imports and the modules that impor
 |---|---|
 | GET | `/api/submissions/{id}/files` |
 | POST | `/api/submissions/{id}/files` |
+| DELETE | `/api/submissions/{id}/files/{fileId}` |
 | GET | `/api/submissions/{id}/files/{fileId}` |
 | GET | `/api/submissions/{id}/files/{fileId}/content` |
 | GET | `/api/submissions/{id}/files/{fileId}/metadata` |
@@ -746,7 +748,7 @@ Each module lists its purpose, the modules it imports and the modules that impor
 | `ScanProperties` | record | How the malware scan is driven (prefix annualva.scan). |
 
 #### `submission`
-- **Source files:** 33 under `backend/src/main/java/sg/annualva/submission/`
+- **Source files:** 34 under `backend/src/main/java/sg/annualva/submission/`
 - **Purpose:** The VA Submission state machine, submit, review steps, endorsement, Exemptions, the Overdue sweep, the Cycle lifecycle and role lapses.
 - **Uses (imports):** access, audit, cycle, jdbc, monitoring, parser, register, web
 - **Used by:** dashboard, finding, ingestion, notification
@@ -757,6 +759,8 @@ Each module lists its purpose, the modules it imports and the modules that impor
 |---|---|
 | POST | `/api/cycles/{year}/close` |
 | GET | `/api/declaration-text` |
+| GET | `/api/declaration-text/versions` |
+| POST | `/api/declaration-text/versions` |
 | POST | `/api/exemptions/{id}/approve` |
 | POST | `/api/exemptions/{id}/confirm-va` |
 | POST | `/api/exemptions/{id}/reject` |
@@ -775,7 +779,7 @@ Each module lists its purpose, the modules it imports and the modules that impor
 | `CycleCloseController` | class | Closing a VA Cycle early (stories 17 and 68): a VA POC's command, after a fresh sign-in. |
 | `CycleClosed` | record | A VA Cycle closed (stories 17 and 68). |
 | `CycleLifecycle` | class | The VA Cycle lifecycle (stories 17 and 68, ADR 0044). |
-| `DeclarationController` | class | The current Declaration wording, for the people who read VA Submissions: the SMO/Tech Lead accepts it when submitting, and the Cyber Manager and the VA POCs read what was declared. |
+| `DeclarationController` | class | The Declaration wording: the current version, for the people who read VA Submissions (the SMO/Tech Lead accepts it when submitting, and the Cyber Manager and the VA POCs read what was declared), and every version, which a VA POC reads and adds to (ticket 61). |
 | `Declarations` | class | The fixed Declaration wording the SMO/Tech Lead accepts when submitting (stories 40 and 41). |
 | `ExemptionController` | class | Exemptions (ADR 0048). |
 | `ExemptionEvent` | record | Something happened to a conditional Exemption (ticket 42, story 47): its VA was recorded or confirmed, or it lapsed. |
@@ -824,7 +828,7 @@ Each module lists its purpose, the modules it imports and the modules that impor
 ### 3.1 Decision Index
 
 <!-- generated:adr-index by scripts/refresh-tech-arch-doc.py -->
-Every architecture decision record is under `docs/adr/` (60 in all). Each states the decision, why it was taken and what it does not do; those with alternatives name them in the record. The status is the first sentence of the record's status line.
+Every architecture decision record is under `docs/adr/` (61 in all). Each states the decision, why it was taken and what it does not do; those with alternatives name them in the record. The status is the first sentence of the record's status line.
 
 | ID | Title | Status | Record |
 |---|---|---|---|
@@ -877,7 +881,7 @@ Every architecture decision record is under `docs/adr/` (60 in all). Each states
 | ADR 0047 | A VA POC return is the return at the endorsing step, with a required comment | accepted (items 1, 2 and 4 decided 2026-10-25, and the migration ordering in item 6, docs/agents/reviewer-decisions.md) | [0047-a-va-poc-return-is-the-return-at-the-endorsing-step-with-a-required-comment](adr/0047-a-va-poc-return-is-the-return-at-the-endorsing-step-with-a-required-comment.md) |
 | ADR 0048 | An Exemption request freezes the VA Submission, and a rejection puts back its state and Overdue flag | accepted (items 3, 4, 5 and 6 decided 2026-10-25, docs/agents/reviewer-decisions.md) | [0048-an-exemption-request-freezes-the-va-submission-and-a-rejection-puts-back-its-state-and-overdue-flag](adr/0048-an-exemption-request-freezes-the-va-submission-and-a-rejection-puts-back-its-state-and-overdue-flag.md) |
 | ADR 0049 | A Register change names its effects on in-flight work, and withdraws only what a VA POC confirms | accepted (item 6 decided 2026-10-25, the suspension exception in item 2 decided 2026-10-26, docs/agents/reviewer-decisions.md) | [0049-a-register-change-names-its-effects-on-in-flight-work-and-withdraws-only-what-a-va-poc-confirms](adr/0049-a-register-change-names-its-effects-on-in-flight-work-and-withdraws-only-what-a-va-poc-confirms.md) |
-| ADR 0050 | Records are disposed of from a list a VA POC approves, through one audited path in the append-only tables | accepted (items 2, 3, 4 and 8 decided 2026-10-25, the role-holder reviews in item 6 decided 2026-10-26, docs/agents/reviewer-decisions.md; the delete window first accepted under Consequences was narrowed to the rows the approved list names by ticket 62, migration V44; what that check still trusts is tracked by ticket 66, decided 2026-11-22) | [0050-records-are-disposed-of-from-a-list-a-va-poc-approves-through-one-audited-path-in-the-append-only-tables](adr/0050-records-are-disposed-of-from-a-list-a-va-poc-approves-through-one-audited-path-in-the-append-only-tables.md) |
+| ADR 0050 | Records are disposed of from a list a VA POC approves, through one audited path in the append-only tables | accepted (items 2, 3, 4 and 8 decided 2026-10-25, the role-holder reviews in item 6 decided 2026-10-26, docs/agents/reviewer-decisions.md; the delete window first accepted under Consequences was narrowed to the rows the approved list names by ticket 62, migration V44; the list's items and a Finding's VA Submission that check trusted were frozen by ticket 66, migration V45, decided 2026-11-22) | [0050-records-are-disposed-of-from-a-list-a-va-poc-approves-through-one-audited-path-in-the-append-only-tables](adr/0050-records-are-disposed-of-from-a-list-a-va-poc-approves-through-one-audited-path-in-the-append-only-tables.md) |
 | ADR 0051 | A conditional Exemption is recorded and confirmed, or lapses back with new windows | accepted (items 2 to 7 decided 2026-10-25, items 8 and 9 decided 2026-10-26, docs/agents/reviewer-decisions.md) | [0051-a-conditional-exemption-is-recorded-and-confirmed-or-lapses-back-with-new-windows](adr/0051-a-conditional-exemption-is-recorded-and-confirmed-or-lapses-back-with-new-windows.md) |
 | ADR 0052 | Deadline reminders are planned daily from the stored windows and written once per person and day | accepted (items 3, 4 and 5 decided 2026-10-25; item 8 and the VA POC reminders' scope in item 2 decided 2026-10-26, docs/agents/reviewer-decisions.md) | [0052-deadline-reminders-are-planned-daily-from-the-stored-windows-and-written-once-per-person-and-day](adr/0052-deadline-reminders-are-planned-daily-from-the-stored-windows-and-written-once-per-person-and-day.md) |
 | ADR 0053 | SMO Unreachable is set by the relay's refusal of an address, and cleared by a later delivery or a new SMO | accepted (items 5 and 6 decided 2026-10-25, item 7 acknowledged the same day, docs/agents/reviewer-decisions.md) | [0053-smo-unreachable-is-set-by-the-relays-refusal-of-an-address-and-cleared-by-a-later-delivery-or-a-new-smo](adr/0053-smo-unreachable-is-set-by-the-relays-refusal-of-an-address-and-cleared-by-a-later-delivery-or-a-new-smo.md) |
@@ -888,6 +892,7 @@ Every architecture decision record is under `docs/adr/` (60 in all). Each states
 | ADR 0058 | A dev-local profile signs in as a persona on local fakes and cannot start anywhere but a developer's machine | accepted (the profile, the persona sign-in, the local fakes and the guards of item 6 decided 2026-10-27, docs/agents/reviewer-decisions.md) | [0058-a-dev-local-profile-signs-in-as-a-persona-on-local-fakes-and-cannot-start-anywhere-but-a-developers-machine](adr/0058-a-dev-local-profile-signs-in-as-a-persona-on-local-fakes-and-cannot-start-anywhere-but-a-developers-machine.md) |
 | ADR 0059 | The file store is S3 with SSE-KMS, switched on by a property, and the other real adapters wait for mock-m-sso | accepted for the scope (the user's decision of 2026-10-29, recorded on ticket 51: build only the file store now) | [0059-the-file-store-is-s3-with-sse-kms-switched-on-by-property-and-the-other-real-adapters-wait-for-mock-m-sso](adr/0059-the-file-store-is-s3-with-sse-kms-switched-on-by-property-and-the-other-real-adapters-wait-for-mock-m-sso.md) |
 | ADR 0060 | The key signals are counted in one place and scraped with a bearer token, and health says only that the process is up | accepted as provisional for the repository's part of ticket 52 (IM8 lm-16, pm-6), by the user's decision of 2026-11-22 that ticket 52 lands as provisional | [0060-the-key-signals-are-counted-in-one-place-and-scraped-with-a-bearer-token](adr/0060-the-key-signals-are-counted-in-one-place-and-scraped-with-a-bearer-token.md) |
+| ADR 0061 | A report file is deleted softly, and a Finding goes only if it never had a proposal | accepted (ticket 60; the user's decisions of 2026-11-22 settle item 3, on the ticket's HITL 2 comment, item 4, docs/agents/reviewer-decisions.md "Ticket 60: a Manually Entered Finding that has had a proposal is not deleted", the hard delete of items 3 and 4, "Ticket 60: a Finding that never had a proposal is hard-deleted, an exception to the soft-delete rule", and items 1 and 5 on a rescan and the file it replaced, "Ticket 60: a parsed rescan and then the file it replaced can both be deleted") | [0061-a-report-file-is-deleted-softly-and-a-finding-goes-only-if-it-never-had-a-proposal](adr/0061-a-report-file-is-deleted-softly-and-a-finding-goes-only-if-it-never-had-a-proposal.md) |
 <!-- /generated:adr-index -->
 
 ### 3.2 Decision Details
@@ -990,7 +995,7 @@ The decisions that shape the whole architecture, with the alternatives they were
 ### 4.1 Entity-Relationship Diagram
 
 <!-- generated:er-diagram by scripts/refresh-tech-arch-doc.py -->
-The schema is the result of applying Flyway migrations V1 to V44 (44 files) to an empty PostgreSQL 17 database: 34 tables, plus Flyway's own history table. Foreign keys are drawn parent to child.
+The schema is the result of applying Flyway migrations V1 to V47 (47 files) to an empty PostgreSQL 17 database: 34 tables, plus Flyway's own history table. Foreign keys are drawn parent to child.
 
 ```mermaid
 erDiagram
@@ -1003,6 +1008,7 @@ erDiagram
     app_user ||--o{ declaration : "accepted_by"
     va_submission ||--o{ declaration : "submission_id"
     declaration_text ||--o{ declaration : "version"
+    app_user ||--o{ declaration_text : "published_by"
     disposal_list ||--o{ disposal_item : "list_id"
     app_user ||--o{ disposal_list : "approved_by"
     app_user ||--o{ exemption : "confirmed_by"
@@ -1028,8 +1034,8 @@ erDiagram
     va_submission ||--o{ notification : "submission_id"
     va_system ||--o{ notification : "system_id"
     app_user ||--o{ register_upload : "applied_by"
+    app_user ||--o{ report_file : "deleted_by"
     va_submission ||--o{ report_file : "submission_id"
-    app_user ||--o{ report_file : "uploaded_by"
     report_file ||--o{ report_file_stage : "file_id"
     report_slot ||--o{ report_review : "report_type"
     app_user ||--o{ report_review : "reviewed_by"
@@ -1108,6 +1114,8 @@ erDiagram
         integer version PK
         text text
         boolean placeholder
+        uuid published_by FK
+        timestamp_with_time_zone published_at
     }
     disposal_item {
         uuid list_id PK,FK
@@ -1299,6 +1307,8 @@ erDiagram
         date scan_date_confirmed
         text target_confirmed
         timestamp_with_time_zone content_disposed_at
+        timestamp_with_time_zone deleted_at
+        uuid deleted_by FK
     }
     report_file_stage {
         uuid id PK
@@ -1443,7 +1453,7 @@ erDiagram
 | `cycle_register` | 2 | cycle_year | The System Register as a Cycle saw it, once a newer Cycle has opened (written by the register module). |
 | `cycle_register_system` | 3 | cycle_year, system_id | each System that was active when a newer Cycle opened, with its Quarter in the older Cycle. |
 | `declaration` | 7 | id | what one SMO/Tech Lead accepted when submitting one VA Submission, kept as it was shown (a snapshot of the text, not a reference only), with who accepted it and when. |
-| `declaration_text` | 3 | version | the fixed wording the SMO/Tech Lead accepts when submitting, one row per version. |
+| `declaration_text` | 5 | version | the fixed wording the SMO/Tech Lead accepts when submitting, one row per version. |
 | `disposal_item` | 8 | list_id, seq | one record, or one group of records, the list disposes of, with why. |
 | `disposal_list` | 9 | id | one list the retention job wrote. |
 | `exemption` | 22 | id | one row per request; the request's columns are never changed, the decision's are written once. |
@@ -1456,7 +1466,7 @@ erDiagram
 | `not_started_overdue` | 3 | system_id, cycle_year | a System with no VA Submission in a VA Cycle (Not Started has no va_submission row) whose Submission Window passed, flagged by the sweep at overdue_since (UTC). |
 | `notification` | 15 | id | one row per person per item; never deleted by the application. |
 | `register_upload` | 8 | id | one uploaded Register file's preview. |
-| `report_file` | 28 | id | one uploaded file of one Scan Report of a VA Submission. |
+| `report_file` | 30 | id | one uploaded file of one Scan Report of a VA Submission. |
 | `report_file_stage` | 5 | id | the order the stages ran in, one row each time a file enters a status. |
 | `report_review` | 10 | id | one review of a not-applicable Scan Report's justification. |
 | `report_slot` | 6 | submission_id, report_type | one Scan Report of a VA Submission. |
@@ -1474,7 +1484,7 @@ erDiagram
 
 Report content (CVE ids, rule and check names, titles, locators and hosts) is stored in `finding` and `finding_occurrence`; `report_file` keeps the scan date and the target a parsed file names (`scan_date_from_file`, `target_from_file`) beside the ones the SMO/Tech Lead confirmed. It is returned as data and rendered only as text, and the audit log holds ids and fixed codes, never report content (ADR 0014).
 
-Triggers, which the diagram does not show. Ten tables are append-only: `audit_entry`, `declaration_text` and the eight history tables `bulk_batch`, `batch_review`, `declaration`, `finding_status_proposal`, `finding_review`, `report_review`, `submission_return` and `submission_return_item`. A statement-level `_append_only` trigger on each refuses every `UPDATE` and `TRUNCATE`, and every `DELETE` outside a transaction that names an `APPROVED` disposal list (migration V36); `declaration_text` is never opened. Inside such a transaction a row-level trigger decides row by row: an `audit_entry` only before the list's cutoff (`audit_entry_disposal_range`, V36), and a row of a history table only when its VA Submission is a `SUBMISSION` item of that list (`history_row_disposal_listed()` behind one `_disposal_listed` trigger per table, migration V44, ticket 62). A statement of the executor that reached another VA Submission's history fails the whole disposal. The check trusts the approved list's items as stored and a Finding's link to its VA Submission; neither is frozen by the database yet, and ticket 66 tracks that (ADR 0050 item 7, decided 2026-11-22). A new append-only history table needs both triggers and a branch in that function; `DisposalGuardTest` fails until it has them.
+Triggers, which the diagram does not show. Ten tables are append-only: `audit_entry`, `declaration_text` and the eight history tables `bulk_batch`, `batch_review`, `declaration`, `finding_status_proposal`, `finding_review`, `report_review`, `submission_return` and `submission_return_item`. A statement-level `_append_only` trigger on each refuses every `UPDATE` and `TRUNCATE`, and every `DELETE` outside a transaction that names an `APPROVED` disposal list (migration V36); `declaration_text` is never opened. Inside such a transaction a row-level trigger decides row by row: an `audit_entry` only before the list's cutoff (`audit_entry_disposal_range`, V36), and a row of a history table only when its VA Submission is a `SUBMISSION` item of that list (`history_row_disposal_listed()` behind one `_disposal_listed` trigger per table, migration V44, ticket 62). A statement of the executor that reached another VA Submission's history fails the whole disposal. Migration V45 (ticket 66) freezes what the check reads: a disposal list's items can only be inserted, and only into a `DRAFT` list (`disposal_item_insert_while_draft()`), and a Finding's `submission_id` cannot change. The check still trusts the `disposal_list` row as stored; that residual is accepted under ADR 0014's threat model (ADR 0050 item 7, decided 2026-11-22). A new append-only history table needs both triggers and a branch in that function; `DisposalGuardTest` fails until it has them.
 
 Other structures: the RFC 9457 problem body (type, title, status, detail, traceId, and `field`, `reasons` or `stepUpPath` where they apply; `reason` only on a refused `dev-local` persona sign-in), the ECS audit event (`event.*`, `user.*`, `labels.*`, `trace.id`), the Prometheus scrape of the key signals, and the Excel and PDF files of the exports (header, footer and first row carry the classification). Business dates are `date` columns; instants are `timestamptz` in UTC (`jdbc.Timestamps`).
 

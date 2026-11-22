@@ -204,7 +204,7 @@ td:first-child {
 </head>
 <body>
 <h1 id="technical-architecture-document">Technical Architecture Document</h1>
-<blockquote><p>Generated: 2026-11-22T13:04:49Z Project: Annual VA (annualVA2): <code>frontend/</code> (React) and <code>backend/</code> (Spring Boot) Laid out as <code>/tech-arch-doc</code> lays it out, for ticket 52 (IM8 pm-6). A point-in-time document: the tables and diagrams that can be read from the code are rewritten by <code>python scripts/refresh-tech-arch-doc.py</code>, the prose is written and reviewed by a person, and <code>DocumentationCompletenessTest</code> fails the build when a module, boundary port or adapter, profile, ADR or table is not named here. Section 7 says how to refresh it in the change that adds one.</p></blockquote>
+<blockquote><p>Generated: 2026-11-22T16:34:15Z Project: Annual VA (annualVA2): <code>frontend/</code> (React) and <code>backend/</code> (Spring Boot) Laid out as <code>/tech-arch-doc</code> lays it out, for ticket 52 (IM8 pm-6). A point-in-time document: the tables and diagrams that can be read from the code are rewritten by <code>python scripts/refresh-tech-arch-doc.py</code>, the prose is written and reviewed by a person, and <code>DocumentationCompletenessTest</code> fails the build when a module, boundary port or adapter, profile, ADR or table is not named here. Section 7 says how to refresh it in the change that adds one.</p></blockquote>
 <h2 id="1-architecture-narrative">1. Architecture Narrative</h2>
 <h3 id="1-1-system-overview">1.1 System Overview</h3>
 <p>Annual VA is the internal application that runs the organisation&#x27;s annual vulnerability assessment (VA): the VA Cycle and its Quarters, the System Register, VA Submissions with their Scan Reports and Findings, Cyber Manager review, VA POC endorsement, Exemptions, notifications, exports, the audit log and retention. Terms are those of <code>CONTEXT.md</code>; the authoritative requirements are the Gate-1-approved spec (<code>.scratch/annual-va/spec.md</code>).</p>
@@ -314,7 +314,7 @@ td:first-child {
 </tr>
 <tr>
 <td><code>submission</code></td>
-<td>33</td>
+<td>34</td>
 <td>The VA Submission state machine, submit, review steps, endorsement, Exemptions, the Overdue sweep, the Cycle lifecycle and role lapses.</td>
 </tr>
 <tr>
@@ -328,7 +328,7 @@ td:first-child {
 <td>The React single-page application.</td>
 </tr>
 </tbody></table></div>
-<p>20 back-end modules, 358 source files.</p>
+<p>20 back-end modules, 359 source files.</p>
 <h3 id="1-3-module-interaction-diagram">1.3 Module Interaction Diagram</h3>
 <p>Arrows run from the module that uses to the module used, read from the <code>import</code> statements of the source. <code>ArchitectureTest.modulesDependOnlyDownwards</code> names which module may use which and fails the build on any other use; <code>ModuleConventionsArchTest</code> keeps the modules free of cycles and the platform modules free of any dependency on a business module. The <code>app</code> composition root may use every module and nothing uses it, so its arrows are left out; <code>adapters</code> implements the ports of <code>boundary</code> and no module imports it (Spring wires its beans by type).</p>
 <pre class="mermaid">graph TD
@@ -442,7 +442,7 @@ td:first-child {
 <ul>
 <li><strong>Sign-in and roles (<code>access</code>).</strong> The browser is sent to MCC SSO through the OIDC authorization-code flow; the callback links the sign-in to a user (by <code>sso_id</code>, else pre-registered email, else new), rotates the session and audits it. Roles live in <code>role_grant</code> and are read into a <code>RoleAuthentication</code> on every request. <code>AccessGuard</code> is the one ownership check every service path that addresses a System calls. <code>StepUp.require(intent)</code> makes a sensitive command need a sign-in within five minutes.</li>
 <li><strong>Register and submissions.</strong> A VA POC uploads the System Register workbook; <code>register</code> scans it synchronously through <code>scan</code>, reads it into a preview, and applies a confirmed preview in one locked transaction that also grants the SMO/Tech Lead and Cyber Manager roles through <code>access</code> and withdraws in-flight work through the <code>InFlightWork</code> port the <code>submission</code> module implements. An SMO/Tech Lead starts a VA Submission (<code>submission</code>), uploads Scan Reports (<code>ingestion</code>), proposes Finding statuses (<code>finding</code>), submits; a Cyber Manager reviews and passes or returns it; a VA POC endorses with a fresh sign-in.</li>
-<li><strong>Files.</strong> <code>ingestion</code> puts every upload in the quarantine zone of the file store through <code>scan</code>, the scan job asks the scanner for a verdict, and only the scanner&#x27;s unchanged copy is type-checked, schema-checked and parsed (<code>parser</code>) into Findings (<code>finding</code>). Nobody can view a file until it is clean (ADR 0021).</li>
+<li><strong>Files.</strong> <code>ingestion</code> puts every upload in the quarantine zone of the file store through <code>scan</code>, the scan job asks the scanner for a verdict, and only the scanner&#x27;s unchanged copy is type-checked, schema-checked and parsed (<code>parser</code>) into Findings (<code>finding</code>). Nobody can view a file until it is clean (ADR 0021). While the VA Submission is editable, an SMO/Tech Lead can delete a report file, which is deleted softly and re-rates the Findings it touched through <code>finding</code>, or a Manually Entered Finding that never had a proposal (ADR 0061).</li>
 <li><strong>Time-driven work.</strong> <code>@Scheduled</code> jobs (only where <code>annualva.scheduling.enabled</code>; Seam 1 runs each by hand) sweep Overdue (<code>submission</code>), open and close Cycles, lapse Exemptions and roles, plan deadline reminders and dispatch the mail outbox (<code>notification</code>), make exports (<code>export</code>) and propose disposal lists (<code>retention</code>). The jobs coordinate through the database, without ShedLock (ADR 0012): each claims its rows (<code>FOR UPDATE SKIP LOCKED</code>, a lease on a claimed mail, a write guarded by the status it read) and is idempotent, so two instances do not double the work. ADR 0012 also names a <code>scheduler_lock</code> table: no migration creates one and no code uses one.</li>
 <li><strong>Notifications and mail.</strong> Workflow modules publish events inside their transaction; <code>notification</code> writes the in-app notice and queues the mail after the commit, and <code>MailOutbox</code> hands it to the mail relay with allow-listed values only (ADR 0043, 0046).</li>
 <li><strong>Audit.</strong> Modules that act call <code>AuditLog.record</code> in their own transaction (<code>recordIndependently</code> for refusals and sign-ins); the entry is also emitted as an ECS event on the <code>annualva.audit</code> logger after the commit. The audit read scope is a port (<code>AuditReaders</code>) the <code>submission</code> module answers (ADR 0038).</li>
@@ -1350,6 +1350,10 @@ td:first-child {
 <td><code>/api/batches/{id}/reviews</code></td>
 </tr>
 <tr>
+<td>DELETE</td>
+<td><code>/api/findings/{id}</code></td>
+</tr>
+<tr>
 <td>GET</td>
 <td><code>/api/findings/{id}/proposals</code></td>
 </tr>
@@ -1592,6 +1596,10 @@ td:first-child {
 <tr>
 <td>POST</td>
 <td><code>/api/submissions/{id}/files</code></td>
+</tr>
+<tr>
+<td>DELETE</td>
+<td><code>/api/submissions/{id}/files/{fileId}</code></td>
 </tr>
 <tr>
 <td>GET</td>
@@ -2145,7 +2153,7 @@ td:first-child {
 </tbody></table></div>
 <h4 id="submission"><code>submission</code></h4>
 <ul>
-<li><strong>Source files:</strong> 33 under <code>backend/src/main/java/sg/annualva/submission/</code></li>
+<li><strong>Source files:</strong> 34 under <code>backend/src/main/java/sg/annualva/submission/</code></li>
 <li><strong>Purpose:</strong> The VA Submission state machine, submit, review steps, endorsement, Exemptions, the Overdue sweep, the Cycle lifecycle and role lapses.</li>
 <li><strong>Uses (imports):</strong> access, audit, cycle, jdbc, monitoring, parser, register, web</li>
 <li><strong>Used by:</strong> dashboard, finding, ingestion, notification</li>
@@ -2164,6 +2172,14 @@ td:first-child {
 <tr>
 <td>GET</td>
 <td><code>/api/declaration-text</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/declaration-text/versions</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/declaration-text/versions</code></td>
 </tr>
 <tr>
 <td>POST</td>
@@ -2239,7 +2255,7 @@ td:first-child {
 <tr>
 <td><code>DeclarationController</code></td>
 <td>class</td>
-<td>The current Declaration wording, for the people who read VA Submissions: the SMO/Tech Lead accepts it when submitting, and the Cyber Manager and the VA POCs read what was declared.</td>
+<td>The Declaration wording: the current version, for the people who read VA Submissions (the SMO/Tech Lead accepts it when submitting, and the Cyber Manager and the VA POCs read what was declared), and every version, which a VA POC reads and adds to (ticket 61).</td>
 </tr>
 <tr>
 <td><code>Declarations</code></td>
@@ -2401,7 +2417,7 @@ td:first-child {
 </tbody></table></div>
 <h2 id="3-technology-decisions">3. Technology Decisions</h2>
 <h3 id="3-1-decision-index">3.1 Decision Index</h3>
-<p>Every architecture decision record is under <code>docs/adr/</code> (60 in all). Each states the decision, why it was taken and what it does not do; those with alternatives name them in the record. The status is the first sentence of the record&#x27;s status line.</p>
+<p>Every architecture decision record is under <code>docs/adr/</code> (61 in all). Each states the decision, why it was taken and what it does not do; those with alternatives name them in the record. The status is the first sentence of the record&#x27;s status line.</p>
 <div class="table-wrap"><table>
 <thead><tr>
 <th>ID</th>
@@ -2707,7 +2723,7 @@ td:first-child {
 <tr>
 <td>ADR 0050</td>
 <td>Records are disposed of from a list a VA POC approves, through one audited path in the append-only tables</td>
-<td>accepted (items 2, 3, 4 and 8 decided 2026-10-25, the role-holder reviews in item 6 decided 2026-10-26, docs/agents/reviewer-decisions.md; the delete window first accepted under Consequences was narrowed to the rows the approved list names by ticket 62, migration V44; what that check still trusts is tracked by ticket 66, decided 2026-11-22)</td>
+<td>accepted (items 2, 3, 4 and 8 decided 2026-10-25, the role-holder reviews in item 6 decided 2026-10-26, docs/agents/reviewer-decisions.md; the delete window first accepted under Consequences was narrowed to the rows the approved list names by ticket 62, migration V44; the list&#x27;s items and a Finding&#x27;s VA Submission that check trusted were frozen by ticket 66, migration V45, decided 2026-11-22)</td>
 <td><a href="adr/0050-records-are-disposed-of-from-a-list-a-va-poc-approves-through-one-audited-path-in-the-append-only-tables.md">0050-records-are-disposed-of-from-a-list-a-va-poc-approves-through-one-audited-path-in-the-append-only-tables</a></td>
 </tr>
 <tr>
@@ -2769,6 +2785,12 @@ td:first-child {
 <td>The key signals are counted in one place and scraped with a bearer token, and health says only that the process is up</td>
 <td>accepted as provisional for the repository&#x27;s part of ticket 52 (IM8 lm-16, pm-6), by the user&#x27;s decision of 2026-11-22 that ticket 52 lands as provisional</td>
 <td><a href="adr/0060-the-key-signals-are-counted-in-one-place-and-scraped-with-a-bearer-token.md">0060-the-key-signals-are-counted-in-one-place-and-scraped-with-a-bearer-token</a></td>
+</tr>
+<tr>
+<td>ADR 0061</td>
+<td>A report file is deleted softly, and a Finding goes only if it never had a proposal</td>
+<td>accepted (ticket 60; the user&#x27;s decisions of 2026-11-22 settle item 3, on the ticket&#x27;s HITL 2 comment, item 4, docs/agents/reviewer-decisions.md &quot;Ticket 60: a Manually Entered Finding that has had a proposal is not deleted&quot;, the hard delete of items 3 and 4, &quot;Ticket 60: a Finding that never had a proposal is hard-deleted, an exception to the soft-delete rule&quot;, and items 1 and 5 on a rescan and the file it replaced, &quot;Ticket 60: a parsed rescan and then the file it replaced can both be deleted&quot;)</td>
+<td><a href="adr/0061-a-report-file-is-deleted-softly-and-a-finding-goes-only-if-it-never-had-a-proposal.md">0061-a-report-file-is-deleted-softly-and-a-finding-goes-only-if-it-never-had-a-proposal</a></td>
 </tr>
 </tbody></table></div>
 <h3 id="3-2-decision-details">3.2 Decision Details</h3>
@@ -2960,7 +2982,7 @@ td:first-child {
 <p><strong>Chosen Option:</strong> The bearer token, provisionally (decided 2026-11-22: ticket 52 lands as provisional) <strong>Rationale:</strong> IM8 lm-16. Three choices are not final and wait for ticket 55 (choose products and non-functional targets, with a person): the scraper&#x27;s credential (the bearer token stands in; mutual TLS or a platform service identity is the alternative), the alert thresholds of the run book (starting values), and where each environment keeps the token.</p>
 <h2 id="4-database-design">4. Database Design</h2>
 <h3 id="4-1-entity-relationship-diagram">4.1 Entity-Relationship Diagram</h3>
-<p>The schema is the result of applying Flyway migrations V1 to V44 (44 files) to an empty PostgreSQL 17 database: 34 tables, plus Flyway&#x27;s own history table. Foreign keys are drawn parent to child.</p>
+<p>The schema is the result of applying Flyway migrations V1 to V47 (47 files) to an empty PostgreSQL 17 database: 34 tables, plus Flyway&#x27;s own history table. Foreign keys are drawn parent to child.</p>
 <pre class="mermaid">erDiagram
     bulk_batch ||--o{ batch_review : "batch_id"
     app_user ||--o{ batch_review : "reviewed_by"
@@ -2971,6 +2993,7 @@ td:first-child {
     app_user ||--o{ declaration : "accepted_by"
     va_submission ||--o{ declaration : "submission_id"
     declaration_text ||--o{ declaration : "version"
+    app_user ||--o{ declaration_text : "published_by"
     disposal_list ||--o{ disposal_item : "list_id"
     app_user ||--o{ disposal_list : "approved_by"
     app_user ||--o{ exemption : "confirmed_by"
@@ -2996,8 +3019,8 @@ td:first-child {
     va_submission ||--o{ notification : "submission_id"
     va_system ||--o{ notification : "system_id"
     app_user ||--o{ register_upload : "applied_by"
+    app_user ||--o{ report_file : "deleted_by"
     va_submission ||--o{ report_file : "submission_id"
-    app_user ||--o{ report_file : "uploaded_by"
     report_file ||--o{ report_file_stage : "file_id"
     report_slot ||--o{ report_review : "report_type"
     app_user ||--o{ report_review : "reviewed_by"
@@ -3076,6 +3099,8 @@ td:first-child {
         integer version PK
         text text
         boolean placeholder
+        uuid published_by FK
+        timestamp_with_time_zone published_at
     }
     disposal_item {
         uuid list_id PK,FK
@@ -3267,6 +3292,8 @@ td:first-child {
         date scan_date_confirmed
         text target_confirmed
         timestamp_with_time_zone content_disposed_at
+        timestamp_with_time_zone deleted_at
+        uuid deleted_by FK
     }
     report_file_stage {
         uuid id PK
@@ -3449,7 +3476,7 @@ td:first-child {
 </tr>
 <tr>
 <td><code>declaration_text</code></td>
-<td>3</td>
+<td>5</td>
 <td>version</td>
 <td>the fixed wording the SMO/Tech Lead accepts when submitting, one row per version.</td>
 </tr>
@@ -3527,7 +3554,7 @@ td:first-child {
 </tr>
 <tr>
 <td><code>report_file</code></td>
-<td>28</td>
+<td>30</td>
 <td>id</td>
 <td>one uploaded file of one Scan Report of a VA Submission.</td>
 </tr>
@@ -3611,7 +3638,7 @@ td:first-child {
 </tr>
 </tbody></table></div>
 <p>Report content (CVE ids, rule and check names, titles, locators and hosts) is stored in <code>finding</code> and <code>finding_occurrence</code>; <code>report_file</code> keeps the scan date and the target a parsed file names (<code>scan_date_from_file</code>, <code>target_from_file</code>) beside the ones the SMO/Tech Lead confirmed. It is returned as data and rendered only as text, and the audit log holds ids and fixed codes, never report content (ADR 0014).</p>
-<p>Triggers, which the diagram does not show. Ten tables are append-only: <code>audit_entry</code>, <code>declaration_text</code> and the eight history tables <code>bulk_batch</code>, <code>batch_review</code>, <code>declaration</code>, <code>finding_status_proposal</code>, <code>finding_review</code>, <code>report_review</code>, <code>submission_return</code> and <code>submission_return_item</code>. A statement-level <code>_append_only</code> trigger on each refuses every <code>UPDATE</code> and <code>TRUNCATE</code>, and every <code>DELETE</code> outside a transaction that names an <code>APPROVED</code> disposal list (migration V36); <code>declaration_text</code> is never opened. Inside such a transaction a row-level trigger decides row by row: an <code>audit_entry</code> only before the list&#x27;s cutoff (<code>audit_entry_disposal_range</code>, V36), and a row of a history table only when its VA Submission is a <code>SUBMISSION</code> item of that list (<code>history_row_disposal_listed()</code> behind one <code>_disposal_listed</code> trigger per table, migration V44, ticket 62). A statement of the executor that reached another VA Submission&#x27;s history fails the whole disposal. The check trusts the approved list&#x27;s items as stored and a Finding&#x27;s link to its VA Submission; neither is frozen by the database yet, and ticket 66 tracks that (ADR 0050 item 7, decided 2026-11-22). A new append-only history table needs both triggers and a branch in that function; <code>DisposalGuardTest</code> fails until it has them.</p>
+<p>Triggers, which the diagram does not show. Ten tables are append-only: <code>audit_entry</code>, <code>declaration_text</code> and the eight history tables <code>bulk_batch</code>, <code>batch_review</code>, <code>declaration</code>, <code>finding_status_proposal</code>, <code>finding_review</code>, <code>report_review</code>, <code>submission_return</code> and <code>submission_return_item</code>. A statement-level <code>_append_only</code> trigger on each refuses every <code>UPDATE</code> and <code>TRUNCATE</code>, and every <code>DELETE</code> outside a transaction that names an <code>APPROVED</code> disposal list (migration V36); <code>declaration_text</code> is never opened. Inside such a transaction a row-level trigger decides row by row: an <code>audit_entry</code> only before the list&#x27;s cutoff (<code>audit_entry_disposal_range</code>, V36), and a row of a history table only when its VA Submission is a <code>SUBMISSION</code> item of that list (<code>history_row_disposal_listed()</code> behind one <code>_disposal_listed</code> trigger per table, migration V44, ticket 62). A statement of the executor that reached another VA Submission&#x27;s history fails the whole disposal. Migration V45 (ticket 66) freezes what the check reads: a disposal list&#x27;s items can only be inserted, and only into a <code>DRAFT</code> list (<code>disposal_item_insert_while_draft()</code>), and a Finding&#x27;s <code>submission_id</code> cannot change. The check still trusts the <code>disposal_list</code> row as stored; that residual is accepted under ADR 0014&#x27;s threat model (ADR 0050 item 7, decided 2026-11-22). A new append-only history table needs both triggers and a branch in that function; <code>DisposalGuardTest</code> fails until it has them.</p>
 <p>Other structures: the RFC 9457 problem body (type, title, status, detail, traceId, and <code>field</code>, <code>reasons</code> or <code>stepUpPath</code> where they apply; <code>reason</code> only on a refused <code>dev-local</code> persona sign-in), the ECS audit event (<code>event.<em></code>, <code>user.</em></code>, <code>labels.*</code>, <code>trace.id</code>), the Prometheus scrape of the key signals, and the Excel and PDF files of the exports (header, footer and first row carry the classification). Business dates are <code>date</code> columns; instants are <code>timestamptz</code> in UTC (<code>jdbc.Timestamps</code>).</p>
 <h2 id="5-dependency-inventory">5. Dependency Inventory</h2>
 <p>Versions are those Maven resolves (<code>cd backend &amp;&amp; ./mvnw dependency:list -DexcludeTransitive</code>) and those pinned in <code>frontend/package-lock.json</code>, checked against both on 2026-11-22. Licences are the projects&#x27; published licences, not machine-verified by this scan. This section is written by hand: check it when <code>backend/pom.xml</code> or <code>frontend/package.json</code> changes (section 7).</p>
