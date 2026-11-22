@@ -47,6 +47,7 @@ const ACTIONS: Readonly<Record<string, string>> = {
   "disposal-approve": "Approving the disposal list",
   "role-suspend": "Suspending a role",
   "role-restore": "Restoring a suspended role",
+  "declaration-publish": "Publishing a Declaration version",
 };
 
 export function describeAction(intent: string): string {

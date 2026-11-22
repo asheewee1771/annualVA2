@@ -179,7 +179,8 @@ class AuditCompletenessTest extends ExemptionSeam1 {
             AuditAction.PROPOSAL_WITHDRAWN, "ingestion/ReplaceFileTest",
             AuditAction.SMO_UNREACHABLE, "ingestion/SmoUnreachableTest",
             AuditAction.SMO_UNREACHABLE_CLEARED, "ingestion/SmoUnreachableTest",
-            AuditAction.EXEMPTION_LAPSED, "ingestion/StateTableTest");
+            AuditAction.EXEMPTION_LAPSED, "ingestion/StateTableTest",
+            AuditAction.DECLARATION_PUBLISHED, "ingestion/DeclarationPublishTest");
 
     /** Where the Seam 1 tests' sources are, from the back end's directory, where the build runs them. */
     static final Path TESTS = Path.of("src/test/java/sg/annualva");
