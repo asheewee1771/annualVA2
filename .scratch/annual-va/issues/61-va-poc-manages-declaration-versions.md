@@ -19,3 +19,5 @@
 ## Comments
 
 **2026-11-22, issue verification (HITL 2):** the three open questions are decided by the user. (1) One VA POC with step-up publishes; no second approver. (2) A version takes effect at once; an SMO with the older wording open is refused as `declaration-changed` (ADR 0032) and re-ticks. (3) The version list shows each version as current or superseded, the placeholder included, with a count of the VA Submissions that accepted it, not a list of them. The decisions are folded into the criteria. It is one vertical slice (a migration if one is needed, the endpoints, a VA POC screen, Seam 1 tests), can be demonstrated alone, and its blocker (25) is built. `declaration_text` is append-only and no disposal opens it (ADR 0050); a new version is an insert, so tickets 62 and 66 do not block this one. Approved for execution.
+
+**2026-11-22, implementation:** two behaviours are left as they are, as product choices: a wording identical to the current version is not refused (it is published as the next version, and every SMO/Tech Lead ticks it again), and two publishes close together both succeed, each as its own version, the later superseding the earlier.
