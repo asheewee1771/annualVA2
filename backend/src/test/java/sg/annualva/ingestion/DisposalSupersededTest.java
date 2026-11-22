@@ -26,10 +26,7 @@ class DisposalSupersededTest extends DisposalSeam1 {
         String rescan = replacedAndSettled(draft, first, "rescan.json",
                 jsonReportOf("{\"name\":\"throwaway-project\",\"reportDate\":\"" + SCANNED + "\"}",
                         dependency(PKG_A, "/srv/alpha.js", "CVE-2027-0001", "9.8"))).get("id").asString();
-        modeSet(draft.smo(), sub, SECURE_CONFIGURATION, mode(MANUAL, "The scanner exports PDF only."));
-        entered(draft.smo(), sub, manualFinding(SECURE_CONFIGURATION, "Password policy too weak", "SC-PWD-1",
-                "password-min-length", "HIGH"));
-        modeSet(draft.smo(), sub, BURP_SUITE, mode(NOT_APPLICABLE, "The System has no web interface."));
+        enteredByHandAndNotApplicable(draft);
         proposeEvery(draft);
         submitted(draft.smo(), sub);
         ApiClient cm = signedInAs(CM);

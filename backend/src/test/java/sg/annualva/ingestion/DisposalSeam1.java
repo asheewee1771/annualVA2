@@ -60,6 +60,26 @@ abstract class DisposalSeam1 extends CycleLifecycleSeam1 {
         return items;
     }
 
+    /** A Dependency-Check report made at this instant (ISO text) that reads into two Findings, alpha and bravo. */
+    protected static byte[] twoFindings(String scanned) {
+        return jsonReportOf("{\"name\":\"throwaway-project\",\"reportDate\":\"" + scanned + "\"}",
+                dependency(PKG_A, "/app/alpha.js", "CVE-2027-0001", "9.8"),
+                dependency(PKG_B, "/app/bravo.js", "CVE-2027-0002", "7.5"));
+    }
+
+    /**
+     * The Draft's other two Scan Reports: Secure Configuration entered by hand with one Finding, and Burp Suite not
+     * applicable.
+     */
+    protected static void enteredByHandAndNotApplicable(Draft draft) {
+        ApiClient smo = draft.smo();
+        String sub = draft.submissionId();
+        modeSet(smo, sub, SECURE_CONFIGURATION, mode(MANUAL, "The scanner exports PDF only."));
+        entered(smo, sub, manualFinding(SECURE_CONFIGURATION, "Password policy too weak", "SC-PWD-1",
+                "password-min-length", "HIGH"));
+        modeSet(smo, sub, BURP_SUITE, mode(NOT_APPLICABLE, "The System has no web interface."));
+    }
+
     /** Asks for the management summary of the Cycle running today as this VA POC and has the export job make it; its id. */
     protected String exportMade(ApiClient poc) {
         var response = poc.postJson("/api/exports", "{\"type\":\"MGMT_SUMMARY\",\"format\":\"XLSX\"}");
