@@ -17,8 +17,11 @@ export type SubmissionState =
   | "WITHDRAWN"
   | "NOT_ENDORSED";
 
+/** The states in which the SMO/Tech Lead is still preparing it: the ones {@link isEditable} accepts. */
+export type EditableState = "DRAFT" | "RETURNED_FOR_REWORK";
+
 /** Whether the SMO/Tech Lead is still preparing it: anything else is read-only (the server refuses changes). */
-export function isEditable(state: SubmissionState): boolean {
+export function isEditable(state: SubmissionState): state is EditableState {
   return state === "DRAFT" || state === "RETURNED_FOR_REWORK";
 }
 

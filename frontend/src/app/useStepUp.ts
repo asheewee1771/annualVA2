@@ -1,13 +1,7 @@
 import { useEffect, useState } from "react";
 import { setStepUpRequiredHandler } from "../api/client.ts";
-import { clearStepUpState, takeStepUpArrival, type StepUpNeeded, type StepUpOutcome } from "../api/stepUp.ts";
+import { clearStepUpState, stepUpArrival, type StepUpNeeded, type StepUpOutcome } from "../api/stepUp.ts";
 import { navigate } from "./router.ts";
-
-/**
- * Read once as the page loads, before the workspace can redirect and rewrite the address (which would
- * lose the outcome). Whether the person is signed in is only known later; see the effect below.
- */
-const arrival = takeStepUpArrival();
 
 /**
  * The app's side of step-up (story 77): `needed` is set when a sensitive command is refused for want
@@ -26,6 +20,8 @@ export function useStepUp(signedIn: boolean | undefined) {
   }, []);
 
   useEffect(() => {
+    // The arrival was read as the page loaded; whether the person is signed in is only known now.
+    const arrival = stepUpArrival();
     if (signedIn === false) {
       clearStepUpState();
     } else if (signedIn === true && arrival) {

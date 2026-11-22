@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Code Review &mdash; 64-register-preview-resumes-after-local-step-up</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS overall</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">build WARN C0 H0 M0 L2</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN C0 H0 M1 L5</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN C0 H0 M0 L8</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">semgrep PASS C0 H0 M0 L0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN C0 H0 M0 L1 (round 1)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react WARN C0 H0 M0 L4</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">springboot PASS C0 H0 M0 L0 (round 1)</span>
+      <span class="font-mono text-sm text-slate-500 ml-auto">main</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report</h1>
+          <p class="text-sm text-slate-600 mt-1">Ticket 64: Register change preview resumes after the local step-up. Final round of the gate, after the correction pass.</p>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Executive Summary</h2>
+          <p class="text-xs text-slate-500 mt-1">Overall compliance evaluation status across all active checks.</p>
+        </div>
+        <div class="text-sm text-slate-700 space-y-2">
+          <p><span class="font-semibold">Overall: PASS.</span> No check reported FAIL and no check raised a Critical or High finding. Five of the seven checks are WARN (Medium or Low findings only); two are PASS with zero findings. One Medium finding is still recorded (thermo-nuclear 1, about evidence, not code); a later browser-test report speaks to it and is noted beside it without changing its rating.</p>
+          <p><span class="font-semibold">Reviewed change:</span> the uncommitted working-tree diff against HEAD <span class="font-mono text-xs">ba45b05</span> on branch <span class="font-mono text-xs">main</span>, four files, 83 insertions and 30 deletions: <span class="font-mono text-xs">frontend/src/api/stepUp.ts</span>, <span class="font-mono text-xs">frontend/src/app/useStepUp.ts</span>, <span class="font-mono text-xs">frontend/src/app/devLocal.ts</span>, <span class="font-mono text-xs">frontend/src/app/Bodies.tsx</span>.</p>
+          <p><span class="font-semibold">Rounds:</span> round one passed with Medium findings; a correction pass then restructured the code. Four checks were rerun on the corrected tree (thermo-nuclear, code-review, react, semgrep) and the build check was run last, on the current tree. Two checks were carried over from round one and <span class="font-semibold">not rerun</span>: im8 (it saw only the two files of the first diff, before the correction) and springboot (no back-end file in the diff). Each check below is labelled with its round and whether it saw the final code.</p>
+          <p><span class="font-semibold">Artifacts:</span> exactly one unique, readable artifact was found at the top level of the run directory for each of the seven active checks (<span class="font-mono text-xs">build.md</span>, <span class="font-mono text-xs">thermo-nuclear.md</span>, <span class="font-mono text-xs">code-review.md</span>, <span class="font-mono text-xs">react.md</span>, <span class="font-mono text-xs">semgrep.md</span>, <span class="font-mono text-xs">im8.md</span>, <span class="font-mono text-xs">springboot.md</span>). None is missing or duplicated at that level. The <span class="font-mono text-xs">round1</span> subfolder holds five superseded files and byte-identical copies of <span class="font-mono text-xs">im8.md</span> and <span class="font-mono text-xs">springboot.md</span>; they are history and were not used.</p>
+          <p><span class="font-semibold">Was the final code what the checks saw?</span> Checked at aggregation:</p>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>The build check records a SHA-1 for each of the four files and for <span class="font-mono text-xs">git diff</span>. All five equal the values computed at aggregation (<span class="font-mono text-xs">330cc936&hellip;</span>, <span class="font-mono text-xs">b2e67998&hellip;</span>, <span class="font-mono text-xs">297d8297&hellip;</span>, <span class="font-mono text-xs">c626d5f1&hellip;</span>; diff <span class="font-mono text-xs">56e839c7&hellip;</span>). The build check therefore saw the tree as it stands.</li>
+            <li>The four round-two check files record no hashes. The four source files were last written at 00:56 on 2026-11-22 (+08:00); the round-two check files were written between 01:00 and 01:06, the browser re-run was 01:21 to 01:30, and the build check ran at 01:36. So no source file changed after the round-two checks ran. This rests on file times plus the build check's hashes, not on hashes recorded by those four checks. The semgrep file's line counts (257, 39, 10, 18) equal the current files.</li>
+            <li>The two round-one files (im8, springboot) are dated 2026-11-19 and describe a two-file diff (<span class="font-mono text-xs">stepUp.ts</span>, <span class="font-mono text-xs">devLocal.ts</span>). They did not see the final code.</li>
+          </ul>
+          <p><span class="font-semibold">What this PASS does not cover:</span></p>
+          <ul class="list-disc pl-5 space-y-1">
+            <li><span class="font-semibold">IM8 on the corrected code.</span> The im8 result is for the pre-correction code and two of the four files. Its line references (<span class="font-mono text-xs">stepUp.ts:203</span>, <span class="font-mono text-xs">:141</span>, <span class="font-mono text-xs">takeStepUpArrival</span>) no longer exist in that form. The move of the restored draft from sessionStorage to memory, the module-load read, and the changes to <span class="font-mono text-xs">useStepUp.ts</span> and <span class="font-mono text-xs">Bodies.tsx</span> have no IM8 assessment. Its control wording was not checked against the live catalogue, the system's risk class is undecided, and its manual checklist is open.</li>
+            <li><span class="font-semibold">A back-end run on this tree.</span> The back-end gate was not run. The build check reused a saved <span class="font-mono text-xs">clean verify</span> log whose recorded whole-tree fingerprint does <span class="font-semibold">not</span> match the current tree; the reuse rests on the build check's own scoped comparison of back-end inputs (build Low 1). The environment outside the working tree (JDK, Docker images, local Maven repository) has no fingerprint.</li>
+            <li><span class="font-semibold">The browser test is not one of the seven checks.</span> It was run by the calling workflow after the round-two checks and is reported here as evidence only. By its own account it does not cover: an entry older than 15 minutes; the drop when the app finds no session; a production build (it ran on the Vite dev server); HTTPS and the secure cookie (it ran over plain HTTP); the single sign-on round trip (not possible on this machine, ADR 0058).</li>
+            <li><span class="font-semibold">Five checks were static reading only</span> (thermo-nuclear, code-review, react, im8, springboot). Only the build check and semgrep executed tools. There is no front-end unit test by repo convention (ADR 0009).</li>
+            <li><span class="font-semibold">Semgrep limits:</span> Community rules only, the four changed files only, one file at a time (no cross-file data flow).</li>
+            <li><span class="font-semibold">Spring Boot:</span> nothing was reviewed, because nothing in <span class="font-mono text-xs">backend/</span> changed. Unchanged back-end code, including the server side of the local step-up, was not re-reviewed.</li>
+            <li><span class="font-semibold">Things asked for at commit time, not yet done:</span> the commit message and a ticket comment should say that a draft is now restored only on a <span class="font-mono text-xs">?stepup=</span> return under the single sign-on too (code-review P1, thermo-nuclear round-one finding 5).</li>
+          </ul>
+          <p><span class="font-semibold">How statuses were assigned:</span> the dispatcher rule was applied: FAIL if the check reports FAIL or has a Critical or High finding; WARN if it has Medium or Low findings only; PASS if it has none. Two checks (build, react) declare PASS in their own file and carry Low findings, so they are WARN here; their own declared result is shown beside the assigned one. No severity was changed. Findings are counted as each check reported them; several checks raise the same point (see &quot;Overlap between checks&quot;), so the 21 findings are fewer distinct issues.</p>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left border border-slate-100">
+            <thead>
+              <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+                <th class="px-4 py-2">Check</th>
+                <th class="px-4 py-2">Status</th>
+                <th class="px-4 py-2">Check's own result</th>
+                <th class="px-4 py-2">Findings</th>
+                <th class="px-4 py-2">Round; saw final code?</th>
+                <th class="px-4 py-2">Summary</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 font-medium">Build</td>
+                <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+                <td class="px-4 py-2 text-xs text-slate-600">PASS</td>
+                <td class="px-4 py-2 font-mono text-xs">C0 H0 M0 L2</td>
+                <td class="px-4 py-2 text-xs text-slate-600">Final round. Yes (hashes match).</td>
+                <td class="px-4 py-2 text-xs text-slate-600">Front-end gate <span class="font-mono">npm run check</span> and <span class="font-mono">fallow audit</span> run fresh, exit 0. Back-end gate not run: a saved log was reused on a scoped fingerprint; its recorded whole-tree fingerprint does not match. Vitest step skipped (the repo has none).</td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 font-medium">Thermo-nuclear review (maintainability)</td>
+                <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+                <td class="px-4 py-2 text-xs text-slate-600">WARN</td>
+                <td class="px-4 py-2 font-mono text-xs">C0 H0 M1 L5</td>
+                <td class="px-4 py-2 text-xs text-slate-600">Round two. Yes (corrected tree; no source change since).</td>
+                <td class="px-4 py-2 text-xs text-slate-600">Both round-one Mediums answered; structure meets the skill's bar. One Medium about evidence: the browser test had been run on the pre-correction code. Five Low structural findings.</td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 font-medium">Code review (Standards and Spec)</td>
+                <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+                <td class="px-4 py-2 text-xs text-slate-600">WARN</td>
+                <td class="px-4 py-2 font-mono text-xs">C0 H0 M0 L8</td>
+                <td class="px-4 py-2 text-xs text-slate-600">Round two. Yes (corrected tree; no source change since).</td>
+                <td class="px-4 py-2 text-xs text-slate-600">No hard violation of a documented standard. Round-one Medium (S1) fixed. Standards 4 Low, Spec 4 Low. Criteria 1 to 4 met in code with the browser re-test pending when the check ran; criterion 6 pending then.</td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 font-medium">Semgrep (p/security-audit, p/default)</td>
+                <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+                <td class="px-4 py-2 text-xs text-slate-600">PASS</td>
+                <td class="px-4 py-2 font-mono text-xs">C0 H0 M0 L0</td>
+                <td class="px-4 py-2 text-xs text-slate-600">Round two. Yes (all four files; line counts match).</td>
+                <td class="px-4 py-2 text-xs text-slate-600">Scan completed on 4 of 4 files, 211 applicable rules, exit 0, no errors, nothing skipped, no <span class="font-mono">nosemgrep</span> suppression. Community rules only.</td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 font-medium">IM8 Application Technical Controls</td>
+                <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+                <td class="px-4 py-2 text-xs text-slate-600">WARN</td>
+                <td class="px-4 py-2 font-mono text-xs">C0 H0 M0 L1</td>
+                <td class="px-4 py-2 text-xs text-slate-600 font-semibold">Round one, carried over, not rerun. No: two of four files, pre-correction code.</td>
+                <td class="px-4 py-2 text-xs text-slate-600">No control failed on the code it saw. One Low defence-in-depth finding (as-11): the keep-on-load exemption is keyed on the path alone. Four manual review items open.</td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 font-medium">React review (front end)</td>
+                <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></td>
+                <td class="px-4 py-2 text-xs text-slate-600">PASS</td>
+                <td class="px-4 py-2 font-mono text-xs">C0 H0 M0 L4</td>
+                <td class="px-4 py-2 text-xs text-slate-600">Round two. Yes (corrected tree; no source change since).</td>
+                <td class="px-4 py-2 text-xs text-slate-600">The effect fires at most once per page load; the module-load read is safe in this app; the three draft takers cannot collide. Four Low findings; the reviewer says none blocks the commit.</td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 font-medium">Spring Boot review (core, web, data, batch, security, logging, test)</td>
+                <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+                <td class="px-4 py-2 text-xs text-slate-600">PASS (nothing to review)</td>
+                <td class="px-4 py-2 font-mono text-xs">C0 H0 M0 L0</td>
+                <td class="px-4 py-2 text-xs text-slate-600 font-semibold">Round one, carried over, not rerun. No back-end file then or now.</td>
+                <td class="px-4 py-2 text-xs text-slate-600">No back-end file is in the diff, so all seven Spring skills had no changed code to review. Unchanged back-end code was not reviewed.</td>
+              </tr>
+              <tr class="border-t border-slate-200 align-top bg-slate-50">
+                <td class="px-4 py-2 font-semibold">Total</td>
+                <td class="px-4 py-2"><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></td>
+                <td class="px-4 py-2 text-xs text-slate-600">n/a</td>
+                <td class="px-4 py-2 font-mono text-xs">C0 H0 M1 L20</td>
+                <td class="px-4 py-2 text-xs text-slate-600">5 on the final code, 2 carried over</td>
+                <td class="px-4 py-2 text-xs text-slate-600">21 findings as reported by the checks, not de-duplicated.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-700">No Critical or High finding was raised by any check, so there is no blocker under the dispatcher's rule.</p>
+          <p class="text-xs text-slate-500">The most significant items below that line, for the calling workflow to weigh:</p>
+          <ul class="space-y-2 text-sm list-disc pl-5">
+            <li><span class="text-amber-600">Medium</span> <span class="font-medium">thermo-nuclear 1</span> (rated &quot;fix before commit&quot; by the check), <a class="font-mono text-xs text-sky-700 underline" href="../browser-test/64-register-preview-resumes-browsertest.md">artifacts/browser-test/64-register-preview-resumes-browsertest.md</a> line 7 and <a class="font-mono text-xs text-sky-700 underline" href="../../frontend/src/api/stepUp.ts">frontend/src/api/stepUp.ts</a> lines 222-239: the browser test, the ticket's only check of this behaviour, had been run on the round-one code and not on the restructured code. The check asked for a re-run of the Confirm and &quot;Not now&quot; scenarios on this tree and an updated scope line, and said &quot;if a re-run is already planned after this review, that answers this finding&quot;.
+              <div class="mt-1 text-xs text-slate-600 border-l-2 border-slate-200 pl-3"><span class="font-semibold">Note added at aggregation (rating unchanged).</span> A re-run was made after this check. The report now gives its scope as HEAD <span class="font-mono">ba45b05</span> plus the four changed files and says the served <span class="font-mono">stepUp.ts</span> contained <span class="font-mono">readLanding</span> and <span class="font-mono">midRoundTrip</span>. It records criteria 1 to 4 as passed, covering both Confirm and &quot;Not now&quot;, and this time with a ticked withdrawal (DEV-004) that was still ticked after Confirm and was then applied (&quot;1 VA Submission withdrawn&quot;). Criterion 5 is skipped there as not a browser criterion. Still not covered by its own account: an entry older than 15 minutes, the drop when there is no session, a production build, HTTPS, and the single sign-on round trip. The source files were not changed between the re-run and this report (hashes above). The browser-test report was not produced by one of the seven checks and was not re-verified here.</div>
+            </li>
+            <li><span class="text-slate-500">Low</span> <span class="font-medium">build Low 1</span>, <span class="font-mono text-xs">backend/</span> (gate, not a file in the diff): the back-end result is a reused log. Its recorded whole-tree fingerprint does not match the current tree; the build check judged the reuse sound on a scoped comparison it made itself. Read as an exact whole-tree match, the back end has no evidence for this tree. This is a gap in evidence, not a defect found in the diff.</li>
+            <li><span class="text-slate-500">Low</span> <span class="font-medium">im8 F1</span> (round one), <a class="font-mono text-xs text-sky-700 underline" href="../../frontend/src/api/stepUp.ts">frontend/src/api/stepUp.ts</a>: listed here only because the check that raised it did not see the corrected code. The finding itself is unchanged in substance in the current tree (the address test is now <span class="font-mono text-xs">midRoundTrip()</span>, lines 211-213 and 223).</li>
+          </ul>
+        </div>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Round-one Medium findings: status as the round-two checks record it</h3>
+          <ul class="space-y-1 text-sm list-disc pl-5 text-slate-700">
+            <li><span class="font-medium">thermo-nuclear round-one 1</span> (draft read gated by a side-effecting call into a lazy memo): <span class="font-semibold">Fixed</span>, per thermo-nuclear round two. One <span class="font-mono text-xs">readLanding()</span> runs once at module load (<span class="font-mono text-xs">stepUp.ts:239</span>).</li>
+            <li><span class="font-medium">thermo-nuclear round-one 2</span> (dev-local special case in the shared step-up path; <span class="font-mono text-xs">api</span> owns an <span class="font-mono text-xs">app</span> route): <span class="font-semibold">Fixed as far as the constraint allows</span>, per thermo-nuclear round two. The <span class="font-mono text-xs">api</span> layer still owns the path; the remainder is recorded as Low (thermo-nuclear 6, code-review S3).</li>
+            <li><span class="font-medium">code-review round-one S1</span> (the step-up module owns a dev-local route and its comments claim a profile the code cannot check): <span class="font-semibold">Fixed</span>, per code-review round two, with a Low residue (S3) that needs no action.</li>
+          </ul>
+        </div>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Overlap between checks</h3>
+          <ul class="space-y-1 text-sm list-disc pl-5 text-slate-700">
+            <li><span class="font-medium">The browser re-test</span>: thermo-nuclear 1 (Medium), code-review P2 (Low) and its &quot;pending&quot; verdicts for criteria 1 to 4 and 6, im8 manual checklist item 1. All were written before the re-run.</li>
+            <li><span class="font-medium"><span class="font-mono text-xs">clearStepUpState</span> does less than its comment says, and the draft lives in two places</span> (<span class="font-mono text-xs">stepUp.ts:129-134</span>): thermo-nuclear 4 (Low), code-review S4 and P4 (Low), react 4 (Low). All three found it not reachable as a defect.</li>
+            <li><span class="font-medium">The <span class="font-mono text-xs">landing</span> object: one mutable object, and its name</span> (<span class="font-mono text-xs">stepUp.ts:198-202, 222, 239</span>): thermo-nuclear 2 (Low), code-review S1 and S2 (Low).</li>
+            <li><span class="font-medium">Use of <span class="font-mono text-xs">landing</span> before its declaration</span>: thermo-nuclear 3 (Low, asks for one sentence of comment). The code-review and react checks examined the same point and judged it safe as written.</li>
+            <li><span class="font-medium">Two dev-local routes with two homes and two prefixes</span> (<span class="font-mono text-xs">stepUp.ts:18</span>, <span class="font-mono text-xs">devLocal.ts:5</span>): thermo-nuclear 6 (Low), code-review S3 (Low). Both say no change is needed.</li>
+            <li><span class="font-medium"><span class="font-mono text-xs">/dev-step-up</span> accepted as its own return path</span>: react 1 (Low, with a suggested fix), code-review P3 (Low, no action).</li>
+            <li><span class="font-medium">The exemption is keyed on the address alone, so it is live in every profile</span>: im8 F1 (Low, round one). On the corrected code, thermo-nuclear (round-one finding 6: accepted and documented), code-review (&quot;checked and harmless&quot;) and react (round-one finding 2: accepted and now documented) each found that this load restores nothing.</li>
+            <li><span class="font-medium">The single sign-on draft behaviour tightens</span>: code-review P1 (Low), thermo-nuclear round-one 5 (partly fixed). The im8 and react checks record the same change as an improvement. Both ask for it to be stated in the commit message and the ticket.</li>
+            <li><span class="font-medium">Fast Refresh and hot update in development</span>: react 2 (Low), thermo-nuclear 5 (Low, last sentence). Development only.</li>
+          </ul>
+        </div>
+      </div>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none gap-3 flex-wrap">
+          <span class="font-medium">Build (formatting, type-check, production build, audits) <span class="text-xs font-normal text-slate-500">&middot; final round &middot; saw the final code</span></span>
+          <span class="flex items-center gap-2">
+            <span class="text-xs text-slate-500">C0 H0 M0 L2</span>
+            <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+          </span>
+        </summary>
+        <p class="px-5 py-3 text-xs text-slate-600 border-t border-slate-100">The check's own result is PASS. It is WARN here because it carries two Low findings, and because a back-end gate that was not run on this tree is not a pass by itself: what follows is what the check's file says and on what evidence. Technologies in the changeset: TypeScript/React only; <span class="font-mono">git diff --stat -- backend</span> and <span class="font-mono">git status --short -- backend</span> are empty. The check records that the tree was the same before and after its runs. Tool versions: Node v24.15.0, npm 11.12.1. Side effects of the run: git-ignored build outputs only.</p>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-t border-slate-100 text-left">
+            <thead>
+              <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+                <th class="px-4 py-2">Gate</th>
+                <th class="px-4 py-2">Command</th>
+                <th class="px-4 py-2">Run, reused or skipped</th>
+                <th class="px-4 py-2">Result</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2">Front end (repo gate)</td>
+                <td class="px-4 py-2 font-mono text-xs">cd frontend &amp;&amp; npm run check</td>
+                <td class="px-4 py-2">Run fresh (24 s)</td>
+                <td class="px-4 py-2">exit 0. Prettier, <span class="font-mono text-xs">tsc -b</span>, <span class="font-mono text-xs">vite build</span> (124 modules, JS <span class="font-mono text-xs">index-DWJTSXUO.js</span> 395.50 kB, gzip 112.07 kB), no raw HTML, dependency-cruiser (118 modules, 515 dependencies, no violations), fallow dead-code, fallow health (0 of 793 functions above threshold, maintainability 90.9, health score 78 B): all pass. The log's first and last lines carry the same diff SHA-1 as the current tree.</td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2">Front end (skill)</td>
+                <td class="px-4 py-2 font-mono text-xs">npx --no-install fallow audit</td>
+                <td class="px-4 py-2">Run fresh</td>
+                <td class="px-4 py-2">exit 0. No issues in the 4 changed files (dead code 0, complexity 0, duplication 0); one styling candidate, not an issue.</td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2">Front end (skill)</td>
+                <td class="px-4 py-2 font-mono text-xs">npx --no-install tsc --noEmit</td>
+                <td class="px-4 py-2">Run fresh</td>
+                <td class="px-4 py-2">exit 0, but the check says it proves little here: the root <span class="font-mono text-xs">tsconfig.json</span> only holds project references. The real type-check is <span class="font-mono text-xs">tsc -b</span> in the repo gate, which passed.</td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2">Front end (skill)</td>
+                <td class="px-4 py-2 font-mono text-xs">npx vitest run --coverage</td>
+                <td class="px-4 py-2 font-semibold">Skipped, not applicable</td>
+                <td class="px-4 py-2">No result. The front end has no Vitest (repo convention: no React unit tests), so the skill's test and coverage step has nothing to run.</td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2">Back end (repo gate)</td>
+                <td class="px-4 py-2 font-mono text-xs">cd backend &amp;&amp; ./mvnw -B -ntp clean verify</td>
+                <td class="px-4 py-2 font-semibold">Not run. Saved log reused</td>
+                <td class="px-4 py-2">The log (<span class="font-mono text-xs">artifacts/do-work/verify/backend-verify.log</span>) ends <span class="font-mono text-xs">BUILD SUCCESS</span>, <span class="font-mono text-xs">MVN_EXIT=0</span>: 1358 tests, 0 failures, 0 errors, 1 skipped (by design); ArchUnit classes ran; JaCoCo check met (line 97.16 %, branch 91.53 % computed by the check from the report). It is a result for the tree as it was when that run started, not a run on this tree. See &quot;Back-end reuse&quot; below and Low 1.</td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2">Back end (skill)</td>
+                <td class="px-4 py-2 font-mono text-xs">mvn compile</td>
+                <td class="px-4 py-2 font-semibold">Not run</td>
+                <td class="px-4 py-2">Covered by the reused log, in which 354 main and 222 test sources compiled.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="px-5 py-3 text-xs text-slate-600 border-t border-slate-100 space-y-2">
+          <p><span class="font-semibold">Back-end reuse: the check's judgement.</span> The rule is that a clean back-end verify log may be reused only when its working-tree fingerprint matches. The check's plain answer:</p>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>Read as the whole-tree SHA the log records, the rule is <span class="font-semibold">not</span> satisfied. The log records <span class="font-mono">diffsha 3afd4087&hellip;</span>; the current <span class="font-mono">git diff</span> SHA is <span class="font-mono">56e839c7&hellip;</span>.</li>
+            <li>Read as a fingerprint of everything the Maven build reads, the rule <span class="font-semibold">is</span> satisfied, on the check's own comparison: same commit and checkout; all 646 tracked files under <span class="font-mono">backend/</span>, <span class="font-mono">scripts/localstack-init/</span>, <span class="font-mono">scripts/dev-data/</span> and <span class="font-mono">frontend/src/api/audit.ts</span> hash equal to their HEAD blobs; no file under <span class="font-mono">backend/</span> outside <span class="font-mono">target/</span> modified after the run started; the three tests that read outside <span class="font-mono">backend/</span> read unchanged inputs; the build outputs on disk are from that run.</li>
+            <li>The check judged the reuse sound and reused the log. It explains the mismatch by the four front-end files, saved after that run had started, none of which the back-end build reads.</li>
+            <li>Not covered by the reuse, per the check: the environment outside the working tree (JDK, Docker images, the local Maven repository).</li>
+          </ul>
+          <p>The implementer's saved front-end log (<span class="font-mono">artifacts/do-work/verify/frontend-check.log</span>) was compared only, not used as the result; it shows the same content-hashed bundle and health line. Three stale round-one files in the run directory (<span class="font-mono">frontend-check.log</span>, <span class="font-mono">fallow-audit.log</span>, <span class="font-mono">build-inputs.sha1</span>) are not part of this result.</p>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-t border-slate-100 text-left">
+            <thead>
+              <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+                <th class="px-4 py-2">Severity</th>
+                <th class="px-4 py-2">File</th>
+                <th class="px-4 py-2">Line</th>
+                <th class="px-4 py-2">Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">backend/ (gate, not a file in the diff)</td>
+                <td class="px-4 py-2 text-xs">n/a</td>
+                <td class="px-4 py-2"><span class="font-medium">Low 1: the back-end reuse rests on a scoped check, not on the recorded fingerprint.</span> The log records one SHA for the whole-tree <span class="font-mono text-xs">git diff</span>, so any front-end edit changes it even when no back-end input changes; that is what happened here. The two saved fingerprint files are stale and match nothing current (<span class="font-mono text-xs">backend-verify.fingerprint</span> <span class="font-mono text-xs">cf036cab&hellip;</span>, <span class="font-mono text-xs">backend-verify.fingerprint.pending</span> <span class="font-mono text-xs">a167955f&hellip;</span>). Consequence, in the check's words: a mechanical comparison of fingerprints would refuse this log; if the rule is meant as an exact whole-tree match, the back end has no evidence for this tree and <span class="font-mono text-xs">cd backend &amp;&amp; ./mvnw -B -ntp clean verify</span> (about 30 minutes) must be run again. The check did not start that run. Risk to the back end from the ticket 64 diff itself: none found. Suggestion, outside this ticket: record a fingerprint of the back-end inputs with the log.</td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs"><a class="text-sky-700 underline" href="../../frontend/src/api/stepUp.ts">frontend/src/api/stepUp.ts</a></td>
+                <td class="px-4 py-2 text-xs">n/a (whole file)</td>
+                <td class="px-4 py-2"><span class="font-medium">Low 2: <span class="font-mono text-xs">src/api/stepUp.ts</span> is the top churn hotspot (information only).</span> <span class="font-mono text-xs">fallow health</span> lists it first: score 52.1, 11 commits, 246 churn, 11 importers, trend accelerating; this diff adds 92 changed lines to it. No threshold is breached: no function is above the complexity threshold and <span class="font-mono text-xs">fallow audit</span> reports complexity 0 and duplication 0 for the four changed files. Health score 78 B. Nothing to fix for this ticket.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none gap-3 flex-wrap">
+          <span class="font-medium">Thermo-nuclear review (maintainability) <span class="text-xs font-normal text-slate-500">&middot; round two &middot; saw the final code</span></span>
+          <span class="flex items-center gap-2">
+            <span class="text-xs text-slate-500">C0 H0 M1 L5</span>
+            <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+          </span>
+        </summary>
+        <p class="px-5 py-3 text-xs text-slate-600 border-t border-slate-100">The check's own result is WARN. Method: read-only reading of the diff and its callers; no build, test or browser run, so every behaviour statement is from the code. Reviewer's summary: the structure now meets this skill's approval bar; both round-one Mediums are answered and every structural finding left is Low. The WARN is for one Medium about evidence, not structure. Approval text: &quot;On structure this would pass&quot;; re-run the browser test on this tree before commit; and say in the commit message that the single sign-on path is tightened too. Round-one findings as this check records them now: 1 Fixed, 2 Fixed as far as the constraint allows, 3 Fixed, 4 Fixed, 5 Partly fixed (commit message not yet written; single sign-on round trip not seen in a browser), 6 Accepted and documented, 7 Fixed.</p>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-t border-slate-100 text-left">
+            <thead>
+              <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+                <th class="px-4 py-2">Severity</th>
+                <th class="px-4 py-2">File</th>
+                <th class="px-4 py-2">Line</th>
+                <th class="px-4 py-2">Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 text-amber-600">Medium</td>
+                <td class="px-4 py-2 font-mono text-xs"><a class="text-sky-700 underline" href="../browser-test/64-register-preview-resumes-browsertest.md">artifacts/browser-test/64-register-preview-resumes-browsertest.md</a><br /><a class="text-sky-700 underline" href="../../frontend/src/api/stepUp.ts">frontend/src/api/stepUp.ts</a></td>
+                <td class="px-4 py-2 text-xs">7<br />222-239</td>
+                <td class="px-4 py-2"><span class="font-medium">1 (fix before commit): the only check was run on different code.</span> When this check ran, the browser-test report's scope line named HEAD plus two changed files and predated the four source files now in the diff. The correction pass changed the mechanics that test observes: when the read happens (module load in place of a lazy first call), where the draft lives after the return (memory in place of sessionStorage), and which module reads the route. The ticket's last criterion and ADR 0009 make the browser test the only check of this behaviour. By reading, the new code does what the ticket asks; that is a reading, not a run. Ask: re-run the dev-local Confirm and &quot;Not now&quot; scenarios on this tree and update the report's scope line; &quot;if a re-run is already planned after this review, that answers this finding&quot;. The check also notes that the ticked-withdrawals part of criterion 1 was skipped in the first run and was still unproven.
+                  <div class="mt-2 text-xs text-slate-600 border-l-2 border-slate-200 pl-3"><span class="font-semibold">Note added at aggregation (rating unchanged; the check was not rerun).</span> The browser-test report was replaced after this check. As it reads now: run on 2026-11-22, 01:21 to 01:30 (+08:00), on the Vite dev server over plain HTTP with the back end in <span class="font-mono">dev-local</span>; tree under test HEAD <span class="font-mono">ba45b05</span> plus the uncommitted change in the four files, with the served <span class="font-mono">stepUp.ts</span> containing <span class="font-mono">readLanding</span> and <span class="font-mono">midRoundTrip</span>. Results it records: AC1 PASS (after Confirm the same preview reopened with &quot;Withdraw the Draft VA Submission of DEV-004&quot; still ticked, and Apply succeeded with 1 VA Submission withdrawn); AC2 PASS (both entries present on <span class="font-mono">/dev-step-up</span>, dropped by a load with no <span class="font-mono">?stepup=</span>, gone from sessionStorage at once after the <span class="font-mono">?stepup=done</span> return); AC3 PASS (one <span class="font-mono">register-applied</span>, after the button was pressed again); AC4 PASS (&quot;Not now&quot; left no preview, no notice and neither storage key); AC5 skipped as not a browser criterion. Not covered, by its own account: an entry older than 15 minutes; the drop when the app finds no session; a production build; HTTPS and the secure cookie. The single sign-on round trip was not seen in a browser. The four source files have the same hashes now as when the build check ran after that re-run.</div>
+                </td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs"><a class="text-sky-700 underline" href="../../frontend/src/api/stepUp.ts">frontend/src/api/stepUp.ts</a></td>
+                <td class="px-4 py-2 text-xs">133, 156, 198-202, 239</td>
+                <td class="px-4 py-2"><span class="font-medium">2: one object, two lifetimes, mutated with <span class="font-mono text-xs">delete</span>.</span> <span class="font-mono text-xs">Landing</span> is documented as &quot;What a page load found&quot;. <span class="font-mono text-xs">landing.arrival</span> is fixed for the page; <span class="font-mono text-xs">landing.draft</span> is a slot two functions empty with <span class="font-mono text-xs">delete</span>, so after the first take the object no longer says what the load found. Suggested: destructure <span class="font-mono text-xs">readLanding()</span> into a constant <span class="font-mono text-xs">arrival</span> and a separately named mutable <span class="font-mono text-xs">restoredDraft</span>.</td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs"><a class="text-sky-700 underline" href="../../frontend/src/api/stepUp.ts">frontend/src/api/stepUp.ts</a></td>
+                <td class="px-4 py-2 text-xs">130-134, 153-158, 222-239</td>
+                <td class="px-4 py-2"><span class="font-medium">3: use before declaration inside the module.</span> <span class="font-mono text-xs">clearStepUpState</span> and <span class="font-mono text-xs">takeRestoredDraft</span> read <span class="font-mono text-xs">landing</span>, a <span class="font-mono text-xs">const</span> declared about 100 lines below them. Safe today because neither runs while <span class="font-mono text-xs">readLanding()</span> runs. Anyone who puts the natural <span class="font-mono text-xs">clearStepUpState()</span> call back into <span class="font-mono text-xs">readLanding</span> gets a <span class="font-mono text-xs">ReferenceError</span> while the module loads, and the whole app fails to start; <span class="font-mono text-xs">tsc</span> does not catch it. Ask: one sentence on <span class="font-mono text-xs">landing</span> saying <span class="font-mono text-xs">readLanding</span> must not call anything that reads <span class="font-mono text-xs">landing</span>.</td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs"><a class="text-sky-700 underline" href="../../frontend/src/api/stepUp.ts">frontend/src/api/stepUp.ts</a><br />frontend/src/screens/va-poc/RegisterScreen.tsx<br />EndorseScreen.tsx<br />ExportsScreen.tsx</td>
+                <td class="px-4 py-2 text-xs">130-134, 153-158<br />170<br />110<br />79</td>
+                <td class="px-4 py-2"><span class="font-medium">4: the draft is still tracked in two places (follow-up, not for this commit).</span> The three screens take their draft at import, so by the time <span class="font-mono text-xs">clearStepUpState</span> runs in an effect, <span class="font-mono text-xs">delete landing.draft</span> can only remove a draft no screen asks for; the copies that matter are in three module-level variables it cannot reach. This does not leak across people (both ways to sign in are full page loads, and the workspace is not mounted while signed out). The structure is older than this diff. A simpler model is now available (a plain getter plus one <span class="font-mono text-xs">forgetRestoredDraft()</span>). It touches three screens outside the ticket: raise it as a follow-up; do not hold the commit for it.</td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs"><a class="text-sky-700 underline" href="../../frontend/src/api/stepUp.ts">frontend/src/api/stepUp.ts</a></td>
+                <td class="px-4 py-2 text-xs">234-239</td>
+                <td class="px-4 py-2"><span class="font-medium">5: what the module-load read rests on.</span> Importing <span class="font-mono text-xs">api/stepUp.ts</span> now rewrites the address bar and empties two sessionStorage keys. The check asked for this in round one and calls it the right trade. It is sound on three conditions: the module has no runtime import (kept so by <span class="font-mono text-xs">no-circular</span>); nothing else touches the address or these keys at module scope; the module needs <span class="font-mono text-xs">window</span> when imported (a worker or Node script importing any <span class="font-mono text-xs">api</span> module would now fail at import). The comment states the first; adding the third in a few words would help. A hot update of this module in development re-runs the read and empties <span class="font-mono text-xs">landing</span>; that costs a developer a reload.</td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs"><a class="text-sky-700 underline" href="../../frontend/src/api/stepUp.ts">frontend/src/api/stepUp.ts</a><br /><a class="text-sky-700 underline" href="../../frontend/src/app/devLocal.ts">frontend/src/app/devLocal.ts</a></td>
+                <td class="px-4 py-2 text-xs">18, 117, 142-147<br />5</td>
+                <td class="px-4 py-2"><span class="font-medium">6: small leftovers.</span> (a) Line 117 writes <span class="font-mono text-xs">{ intent, draft }</span> as an anonymous literal while <span class="font-mono text-xs">SavedDraft</span> types only the read side. (b) Line 146 nests a ternary inside an object inside a ternary. (c) The two dev-local routes have two homes and two prefixes (<span class="font-mono text-xs">LOCAL_STEP_UP_PATH</span>, <span class="font-mono text-xs">DEV_SIGN_IN_PATH</span>); both comments explain it and the cause is real. This is the accepted remainder of round-one finding 2. No change asked for (c).</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none gap-3 flex-wrap">
+          <span class="font-medium">Code review (Standards and Spec) <span class="text-xs font-normal text-slate-500">&middot; round two &middot; saw the final code</span></span>
+          <span class="flex items-center gap-2">
+            <span class="text-xs text-slate-500">C0 H0 M0 L8</span>
+            <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+          </span>
+        </summary>
+        <p class="px-5 py-3 text-xs text-slate-600 border-t border-slate-100">The check's own result is WARN: Low findings only (Standards 4, Spec 4), no hard violation of a documented standard, &quot;nothing here needs a fix or an explicit acceptance before closeout&quot;. Method: each axis reviewed by its own sub-agent, load-bearing claims then checked against the source; nothing was built or run. Round-one findings as this check records them now: S1 (Medium) Fixed with a Low residue; S2 Fixed; S3 Partly fixed; S4 Fixed; P1 still the case, by intent. The check verified eight claims of the correction pass against the code (all true) and answers two questions by reading: a legitimate restore cannot be lost, and nothing can be restored without a <span class="font-mono">?stepup=</span> return.</p>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-t border-slate-100 text-left">
+            <thead>
+              <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+                <th class="px-4 py-2">Severity</th>
+                <th class="px-4 py-2">File</th>
+                <th class="px-4 py-2">Line</th>
+                <th class="px-4 py-2">Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs"><a class="text-sky-700 underline" href="../../frontend/src/api/stepUp.ts">frontend/src/api/stepUp.ts</a></td>
+                <td class="px-4 py-2 text-xs">199, 222, 239</td>
+                <td class="px-4 py-2"><span class="font-medium">S1 (Standards), Mysterious Name: &quot;landing&quot; already means a role's home screen.</span> The app uses the word for the screen a role starts on (<span class="font-mono text-xs">LANDINGS</span> and <span class="font-mono text-xs">Landing</span> in <span class="font-mono text-xs">app/Workspace.tsx</span>, <span class="font-mono text-xs">screens/auditor/Landing.tsx</span>, <span class="font-mono text-xs">screens/shared/AreaLanding.tsx</span>). Suggested: a name tied to the page load, for example <span class="font-mono text-xs">PageLoad</span> and <span class="font-mono text-xs">thisLoad</span>.</td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs"><a class="text-sky-700 underline" href="../../frontend/src/api/stepUp.ts">frontend/src/api/stepUp.ts</a></td>
+                <td class="px-4 py-2 text-xs">222</td>
+                <td class="px-4 py-2"><span class="font-medium">S2 (Standards), Mysterious Name: <span class="font-mono text-xs">readLanding</span> is a &quot;read&quot; that removes</span> (rest of round-one S3). In this module <span class="font-mono text-xs">read</span> changes nothing and <span class="font-mono text-xs">take</span> reads and removes; <span class="font-mono text-xs">readLanding</span> rewrites the address and removes both entries. Suggested: <span class="font-mono text-xs">takeLanding</span>.</td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs"><a class="text-sky-700 underline" href="../../frontend/src/api/stepUp.ts">frontend/src/api/stepUp.ts</a><br /><a class="text-sky-700 underline" href="../../frontend/src/app/devLocal.ts">frontend/src/app/devLocal.ts</a></td>
+                <td class="px-4 py-2 text-xs">18<br />5</td>
+                <td class="px-4 py-2"><span class="font-medium">S3 (Standards): the two dev-local routes are named in two layers with two prefixes</span> (rest of round-one S1). This is the first route constant in <span class="font-mono text-xs">api/</span>; both sides say why. The layer rules allow it, and the alternatives break a rule (<span class="font-mono text-xs">api-has-no-ui</span> or <span class="font-mono text-xs">no-circular</span>). No action needed; a rename to <span class="font-mono text-xs">DEV_STEP_UP_PATH</span> would match the sibling, if wanted.</td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs"><a class="text-sky-700 underline" href="../../frontend/src/api/stepUp.ts">frontend/src/api/stepUp.ts</a></td>
+                <td class="px-4 py-2 text-xs">16, 129, 217</td>
+                <td class="px-4 py-2"><span class="font-medium">S4 (Standards): three comments say slightly more than the code does.</span> Line 129, &quot;Forgets everything kept for a step-up&quot;: <span class="font-mono text-xs">landing.arrival</span> is not forgotten (harmless). Line 16, &quot;the app's router takes it from here&quot;: the taker is <span class="font-mono text-xs">app/Bodies.tsx:17</span>; <span class="font-mono text-xs">router.ts</span> names no route. Line 217, &quot;so after it nothing is left saved&quot;, is followed two sentences later by the exception.</td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs"><a class="text-sky-700 underline" href="../../frontend/src/api/stepUp.ts">frontend/src/api/stepUp.ts</a></td>
+                <td class="px-4 py-2 text-xs">153-158, 222-232</td>
+                <td class="px-4 py-2"><span class="font-medium">P1 (Spec): a draft is now restored only by a step-up return, on the single sign-on path too (intended).</span> At HEAD the three screens read the draft from sessionStorage at module load, before it was cleared, so a load with no <span class="font-mono text-xs">?stepup=</span> within 15 minutes could still refill the Register change preview, the Return comment or the export request. Now such a load removes both entries and restores nothing. This is the rule the ticket states. The normal single sign-on return is not affected. No code change needed. Record the change in the commit message and in a ticket comment, because it also touches the Endorse and Exports screens. The check notes it is still not recorded in the ticket.</td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs"><a class="text-sky-700 underline" href="../browser-test/64-register-preview-resumes-browsertest.md">artifacts/browser-test/64-register-preview-resumes-browsertest.md</a></td>
+                <td class="px-4 py-2 text-xs">44-46 (of the earlier report)</td>
+                <td class="px-4 py-2"><span class="font-medium">P2 (Spec): the re-test must show the ticked withdrawals.</span> The earlier run skipped that part for want of data (the sample Register changed nothing, so <span class="font-mono text-xs">withdraw</span> was empty). The re-test needs a Register file that withdraws at least one VA Submission, with its box ticked before Apply. An evidence gap, not a defect of the diff.
+                  <div class="mt-2 text-xs text-slate-600 border-l-2 border-slate-200 pl-3"><span class="font-semibold">Note added at aggregation (rating unchanged).</span> The re-run report says a Register file without DEV-004 was uploaded, the preview offered &quot;Withdraw the Draft VA Submission of DEV-004&quot;, the box was ticked before Apply, was still ticked after Confirm, and Apply then reported &quot;1 VA Submission withdrawn&quot;. Screenshot named by the report: <span class="font-mono">artifacts/browser-test/64-screens/02-after-confirm-withdrawal-still-ticked.jpg</span>.</div>
+                </td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs"><a class="text-sky-700 underline" href="../../frontend/src/api/stepUp.ts">frontend/src/api/stepUp.ts</a></td>
+                <td class="px-4 py-2 text-xs">212, 223</td>
+                <td class="px-4 py-2"><span class="font-medium">P3 (Spec): a return whose path is <span class="font-mono text-xs">/dev-step-up</span> is treated as the middle of a round trip.</span> The server allows <span class="font-mono text-xs">returnTo=/dev-step-up</span>, but only from a hand-made start address. Effect: the <span class="font-mono text-xs">?stepup=done</span> on that load is ignored and the entries stay until the next load. Nothing is restored. No action needed.</td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs"><a class="text-sky-700 underline" href="../../frontend/src/api/stepUp.ts">frontend/src/api/stepUp.ts</a></td>
+                <td class="px-4 py-2 text-xs">133</td>
+                <td class="px-4 py-2"><span class="font-medium">P4 (Spec): a draft a screen has already taken is not dropped when there is no session (same as HEAD).</span> <span class="font-mono text-xs">delete landing.draft</span> reaches only a draft no screen has claimed. The screens' own copies stay in memory, but a signed-out page never shows a screen, and signing in is always a full load, which empties memory. Not reachable. No action needed.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="px-5 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-500 border-t border-slate-100">Verdict per acceptance criterion, as the check recorded it</p>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-t border-slate-100 text-left">
+            <thead>
+              <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+                <th class="px-4 py-2">#</th>
+                <th class="px-4 py-2">Acceptance criterion (short)</th>
+                <th class="px-4 py-2">Check's verdict</th>
+                <th class="px-4 py-2">What the later browser-test report records</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 text-xs">1</td>
+                <td class="px-4 py-2 text-xs">After Confirm, the preview reopens with the ticked withdrawals; Apply then succeeds</td>
+                <td class="px-4 py-2 text-xs">Met in code, browser re-test pending</td>
+                <td class="px-4 py-2 text-xs">AC1 PASS on the four-file tree, with a ticked withdrawal</td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 text-xs">2</td>
+                <td class="px-4 py-2 text-xs">Only a load of the local step-up page keeps the route and draft; dropped on any other load with no return, when too old, and with no session</td>
+                <td class="px-4 py-2 text-xs">Met in code, browser re-test pending</td>
+                <td class="px-4 py-2 text-xs">AC2 PASS for keep-on-<span class="font-mono">/dev-step-up</span> and drop-on-other-load. Not covered: the 15-minute age limit and the no-session drop</td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 text-xs">3</td>
+                <td class="px-4 py-2 text-xs">The refused command is never replayed</td>
+                <td class="px-4 py-2 text-xs">Met in code, browser re-test pending</td>
+                <td class="px-4 py-2 text-xs">AC3 PASS (audit log: one <span class="font-mono">register-applied</span>, after the button was pressed again)</td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 text-xs">4</td>
+                <td class="px-4 py-2 text-xs">&quot;Not now&quot; leaves nothing restorable</td>
+                <td class="px-4 py-2 text-xs">Met in code, browser re-test pending</td>
+                <td class="px-4 py-2 text-xs">AC4 PASS (no preview, no notice, neither storage key)</td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 text-xs">5</td>
+                <td class="px-4 py-2 text-xs">No back-end change; both gates pass</td>
+                <td class="px-4 py-2 text-xs">No back-end change: confirmed. Gates not run by this check (read-only)</td>
+                <td class="px-4 py-2 text-xs">Skipped there (not a browser criterion). See the build check: front-end gate run fresh and passed; back-end gate not run, log reused</td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 text-xs">6</td>
+                <td class="px-4 py-2 text-xs">Browser test of Confirm and &quot;Not now&quot; recorded under <span class="font-mono">artifacts/browser-test/</span></td>
+                <td class="px-4 py-2 text-xs">Pending (the record then tested the earlier code, two files)</td>
+                <td class="px-4 py-2 text-xs">A record for the four-file tree now exists at that path, covering Confirm and &quot;Not now&quot;. The check has not been rerun against it</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="px-5 py-3 text-xs text-slate-600 border-t border-slate-100">Checked and satisfied by this check, by reading: the layer rules, dead code, the glossary term &quot;Step-up&quot;, ADR 0004 (no replay), ADR 0058 and the <span class="font-mono">dev-local</span> reviewer decision (&quot;Not a breach&quot;: <span class="font-mono">midRoundTrip()</span> runs in every profile but restores nothing), ADR 0002 and 0009, the <span class="font-mono">AGENTS.md</span> conventions, and Prettier line width. Checked and harmless: the ungated address check, Back from the confirmation page, the context path, the age limit, and a draft for an intent no screen restores.</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none gap-3 flex-wrap">
+          <span class="font-medium">Semgrep (p/security-audit, p/default) <span class="text-xs font-normal text-slate-500">&middot; round two &middot; saw the final code</span></span>
+          <span class="flex items-center gap-2">
+            <span class="text-xs text-slate-500">C0 H0 M0 L0</span>
+            <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+          </span>
+        </summary>
+        <p class="px-5 py-3 text-xs text-slate-600 border-t border-slate-100">The check's own result is PASS: zero P0 and zero P1 findings. Semgrep CLI 1.182.1, rulesets <span class="font-mono">p/security-audit</span> and <span class="font-mono">p/default</span> from the registry, <span class="font-mono">--metrics=off</span>. 1087 Community rules loaded, 211 applicable; 4 of 4 targets scanned (<span class="font-mono">stepUp.ts</span> 257 lines, <span class="font-mono">useStepUp.ts</span> 39, <span class="font-mono">devLocal.ts</span> 10, <span class="font-mono">Bodies.tsx</span> 18); about 100 % of lines parsed; no errors, no skipped paths or rules; exit 0; no <span class="font-mono">nosemgrep</span> annotation in the four files. It replaces the round-one result, which covered two of the four files. The raw output in the run directory agrees: 0 results, <span class="font-mono">errors: []</span>, four paths scanned. Limits stated by the check: scoped to the four changed files, so pre-existing issues elsewhere were not looked for; one file at a time, so cross-file data flow is not followed; Community rules only; &quot;a clean result means none of the 211 applicable rules matched. It is not a manual security review of the change.&quot;</p>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-t border-slate-100 text-left">
+            <thead>
+              <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+                <th class="px-4 py-2">Severity</th>
+                <th class="px-4 py-2">File</th>
+                <th class="px-4 py-2">Line</th>
+                <th class="px-4 py-2">Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-t border-slate-100">
+                <td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none gap-3 flex-wrap">
+          <span class="font-medium">IM8 Application Technical Controls <span class="text-xs font-normal text-amber-700">&middot; round one, carried over, not rerun &middot; did not see the final code</span></span>
+          <span class="flex items-center gap-2">
+            <span class="text-xs text-slate-500">C0 H0 M0 L1</span>
+            <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+          </span>
+        </summary>
+        <div class="px-5 py-3 text-xs text-slate-600 border-t border-slate-100 space-y-2">
+          <p><span class="font-semibold">This result is for the code before the correction.</span> The check's file is dated 2026-11-19 and gives its target as the diff of two files (<span class="font-mono">frontend/src/api/stepUp.ts</span>, <span class="font-mono">frontend/src/app/devLocal.ts</span>). It was not rerun after the correction pass, so it has not assessed: the module-load read (<span class="font-mono">readLanding</span>), the restored draft being held in memory in place of sessionStorage, or the changes to <span class="font-mono">useStepUp.ts</span> and <span class="font-mono">Bodies.tsx</span>. Its line numbers and one function name (<span class="font-mono">takeStepUpArrival</span>) refer to that earlier code. Its status is carried as reported and is not evidence about the corrected code.</p>
+          <p>The check's own result is WARN (Critical 0, High 0, Medium 0, Low 1): &quot;No control fails. One Low defence-in-depth finding and three manual checks remain.&quot; (its checklist has four items). Method: static reading only. Policy source: the Bedrock knowledge base was not available; controls come from the skill's text and the shipped policy reference, and control wording was not checked against the live catalogue. The system's risk class is undecided.</p>
+          <p>Its answers on the earlier code: saved state survives on the single sign-on path in one narrow case only (F1), with no new way to restore anything; nothing sensitive is newly stored (no new <span class="font-mono">sessionStorage.setItem</span>, key or field; no token, credential or session identifier; no <span class="font-mono">localStorage</span>).</p>
+          <p><span class="font-semibold">Facts noted at aggregation, not an IM8 re-review:</span> in the current diff no added line contains <span class="font-mono">setItem</span>, <span class="font-mono">localStorage</span> or <span class="font-mono">console.</span> (text search of the diff). The address test F1 describes is now <span class="font-mono">midRoundTrip()</span> at <span class="font-mono">stepUp.ts:211-213</span>, used at <span class="font-mono">:223</span>, still keyed on the path alone. The no-session clear the check cites at <span class="font-mono">useStepUp.ts:29-30</span> is now at <span class="font-mono">:25-26</span>.</p>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-t border-slate-100 text-left">
+            <thead>
+              <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+                <th class="px-4 py-2">Severity</th>
+                <th class="px-4 py-2">File</th>
+                <th class="px-4 py-2">Line</th>
+                <th class="px-4 py-2">Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs"><a class="text-sky-700 underline" href="../../frontend/src/api/stepUp.ts">frontend/src/api/stepUp.ts</a></td>
+                <td class="px-4 py-2 text-xs">203 and 18 (round-one line numbers)</td>
+                <td class="px-4 py-2"><span class="font-medium">F1 (as-11 Session Management, defence in depth; no as-11 check fails): the keep-on-load exemption is keyed on the path alone, so it is live in every profile.</span> At HEAD every page load with no <span class="font-mono text-xs">?stepup=</span> outcome dropped the saved route and draft. Now a load of <span class="font-mono text-xs">/dev-step-up</span> keeps both, and the front end cannot tell at page load whether <span class="font-mono text-xs">dev-local</span> is active. Reachable on the single sign-on path only by a full page load of <span class="font-mono text-xs">/dev-step-up</span> while state is saved, and only if the host serves the app for that path (open hosting decision, ticket 55). Why Low, per the check: no new way to restore; the other limits are unchanged (this tab only, 15 minutes, cleared with no session, dropped by the next load of any other path); nothing on that page can consume the state; what is kept is not a credential. Severity note from the check: the skill's table would give Medium if scored as an as-11 WARN; it is rated Low because every as-11 check still passes. Options: (a) accept and record with ADR 0058; (b) narrow the exemption to the shape of the server's redirect; (c) leave the dev-local screens and this exemption out of production builds.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="px-5 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-500 border-t border-slate-100">Controls, as assessed on the round-one code</p>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-t border-slate-100 text-left">
+            <thead>
+              <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+                <th class="px-4 py-2">Control</th>
+                <th class="px-4 py-2">Status</th>
+                <th class="px-4 py-2">Note</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-xs">as-11 Session Management</td><td class="px-4 py-2 text-xs">PASS, one observation (F1)</td><td class="px-4 py-2 text-xs">Sign-out, 401 and expiry still clear the saved state on every path; storage is tab-scoped.</td></tr>
+              <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-xs">ac-2 MFA / step-up</td><td class="px-4 py-2 text-xs">PASS</td><td class="px-4 py-2 text-xs">The refused command is never replayed; the server's <span class="font-mono">auth_time</span> check is untouched.</td></tr>
+              <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-xs">ac-12 Single sign-on</td><td class="px-4 py-2 text-xs">PASS</td><td class="px-4 py-2 text-xs">The single sign-on round trip is unchanged.</td></tr>
+              <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-xs">as-1 Input Validation</td><td class="px-4 py-2 text-xs">PASS</td><td class="px-4 py-2 text-xs">Exact string match on the path; the saved route is still validated by <span class="font-mono">isSafeRoute</span>.</td></tr>
+              <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-xs">as-2 Parameterised Interfaces</td><td class="px-4 py-2 text-xs">PASS</td><td class="px-4 py-2 text-xs">Not changed.</td></tr>
+              <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-xs">as-3 Output Sanitisation</td><td class="px-4 py-2 text-xs">PASS</td><td class="px-4 py-2 text-xs">No raw HTML, DOM writes, <span class="font-mono">eval</span> or dynamic <span class="font-mono">href</span> in the diff.</td></tr>
+              <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-xs">as-6 / as-8 Secrets in browser storage</td><td class="px-4 py-2 text-xs">PASS</td><td class="px-4 py-2 text-xs">No password, token or key stored; no new storage write.</td></tr>
+              <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-xs">as-13 Internal details</td><td class="px-4 py-2 text-xs">PASS</td><td class="px-4 py-2 text-xs">No <span class="font-mono">console.*</span> call and no error text added.</td></tr>
+              <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-xs">as-14 Cryptography, lm-19 Log Sanitisation</td><td class="px-4 py-2 text-xs">N/A</td><td class="px-4 py-2 text-xs">Nothing of either in the diff.</td></tr>
+              <tr class="border-t border-slate-100 align-top"><td class="px-4 py-2 text-xs">All other controls</td><td class="px-4 py-2 text-xs">Not assessed</td><td class="px-4 py-2 text-xs">Not touched by the diff; out of this scoped review.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="px-5 py-3 text-xs text-slate-600 border-t border-slate-100 space-y-1">
+          <p class="font-semibold">Manual review checklist from the check (all open in its file):</p>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>Run the ticket's browser test under <span class="font-mono">dev-local</span> (Confirm and &quot;Not now&quot;) and confirm in the storage view that both <span class="font-mono">annualva.stepUp.*</span> keys are gone after &quot;Not now&quot; and after the preview reopens. <span class="text-slate-500">Note added at aggregation: the browser-test report of the re-run records both keys absent after &quot;Not now&quot; and gone at once after the <span class="font-mono">?stepup=done</span> return. The checklist item was not ticked by the check.</span></li>
+            <li>When the hosting decision of ticket 55 is made, confirm whether <span class="font-mono">/dev-step-up</span> is served as an app route in deployed profiles.</li>
+            <li>Decide whether F1 is accepted (and noted with ADR 0058) or narrowed.</li>
+            <li>Confirm the session timeout and the five-minute freshness window against organisational policy (standing item).</li>
+          </ul>
+        </div>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none gap-3 flex-wrap">
+          <span class="font-medium">React review (front end) <span class="text-xs font-normal text-slate-500">&middot; round two &middot; saw the final code</span></span>
+          <span class="flex items-center gap-2">
+            <span class="text-xs text-slate-500">C0 H0 M0 L4</span>
+            <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+          </span>
+        </summary>
+        <div class="px-5 py-3 text-xs text-slate-600 border-t border-slate-100 space-y-2">
+          <p>The check's own result is PASS (&quot;None blocks the commit&quot;). It is WARN here because it carries four Low findings. Method: static reading only; nothing built, run or changed. Round-one findings as this check records them now: 1 still open (carried forward as finding 1), 2 partly fixed (accepted and now documented; not carried forward), 3 fixed apart from the hot-update remark (see finding 2).</p>
+          <p>What the check answered by reading: the effect in <span class="font-mono">useStepUp.ts:22-31</span> has complete dependencies and navigates or sets the notice at most once per page load, in production and under StrictMode; the module-level read at <span class="font-mono">stepUp.ts:239</span> is safe in this app (no server render, no unit-test runner, leaf module, no cycle); the three module-level callers of <span class="font-mono">takeRestoredDraft</span> ask for different intents and cannot collide. The Register preview being fetched twice on return is attributed to StrictMode's development-only double effect in <span class="font-mono">RegisterScreen.tsx:177-196</span>: &quot;none (development only, not a defect)&quot;; a production build issues one request by reading, not by a run.</p>
+          <p><span class="font-semibold">Notes added at aggregation.</span> (a) The check says it did not verify the front-end gate on the current tree and that the build check has to confirm <span class="font-mono">tsc -b</span> on the new code: the final-round build check ran <span class="font-mono">npm run check</span> fresh on this tree and <span class="font-mono">tsc -b</span> passed. (b) The check was written before the browser re-run; the 170 ms gap it quotes between the two audit entries is not the figure in the current browser-test report, which says 40 ms and that the double fetch &quot;was not checked against a production build&quot;.</p>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-t border-slate-100 text-left">
+            <thead>
+              <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+                <th class="px-4 py-2">Severity</th>
+                <th class="px-4 py-2">File</th>
+                <th class="px-4 py-2">Line</th>
+                <th class="px-4 py-2">Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs">frontend/src/app/DevStepUpScreen.tsx<br /><a class="text-sky-700 underline" href="../../frontend/src/api/stepUp.ts">frontend/src/api/stepUp.ts</a></td>
+                <td class="px-4 py-2 text-xs">8-10, 28<br />211-213, 223</td>
+                <td class="px-4 py-2"><span class="font-medium">1: the confirmation page is accepted as its own return path (round-one finding 1, still open).</span> With <span class="font-mono text-xs">returnTo=/dev-step-up</span>, Confirm lands on <span class="font-mono text-xs">/dev-step-up?stepup=done</span>, where <span class="font-mono text-xs">readLanding</span> returns before the outcome is taken: the outcome stays in the address, nothing is restored, and the saved route and draft stay in sessionStorage until another page loads or they age out. Reach: a crafted link only; dev-local only. Suggested fix: have <span class="font-mono text-xs">safeReturn</span> in <span class="font-mono text-xs">DevStepUpScreen.tsx</span> refuse <span class="font-mono text-xs">LOCAL_STEP_UP_PATH</span> and fall back to the root. That file is not in the diff.</td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs"><a class="text-sky-700 underline" href="../../frontend/src/app/useStepUp.ts">frontend/src/app/useStepUp.ts</a><br /><a class="text-sky-700 underline" href="../../frontend/src/api/stepUp.ts">frontend/src/api/stepUp.ts</a></td>
+                <td class="px-4 py-2 text-xs">22-31<br />239</td>
+                <td class="px-4 py-2"><span class="font-medium">2: under Fast Refresh the effect runs again and the in-memory landing can be dropped (development only).</span> Editing <span class="font-mono text-xs">App.tsx</span>, <span class="font-mono text-xs">useStepUp.ts</span> or <span class="font-mono text-xs">router.ts</span> after a step-up return re-runs the effect, so a developer is taken back to the arrival route and a dismissed notice comes back. Editing <span class="font-mono text-xs">stepUp.ts</span> re-evaluates it and <span class="font-mono text-xs">landing</span> becomes empty. None of this exists in a production build, and HEAD behaved the same way. No change needed; recorded so nobody chases it as a bug.</td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs"><a class="text-sky-700 underline" href="../../frontend/src/app/useStepUp.ts">frontend/src/app/useStepUp.ts</a></td>
+                <td class="px-4 py-2 text-xs">16, 29</td>
+                <td class="px-4 py-2"><span class="font-medium">3: <span class="font-mono text-xs">returned</span> is state set in an effect, although it can now be derived while rendering.</span> The notice is shown by <span class="font-mono text-xs">setReturned</span> inside the effect, so the signed-in tree commits once without the notice and then again with it. Now that <span class="font-mono text-xs">stepUpArrival()</span> is a getter over a value that never changes after load, reading it during render is pure and only the navigation needs an effect. Optional fix given in the check's file (derive <span class="font-mono text-xs">returned</span> from the arrival and a <span class="font-mono text-xs">dismissed</span> flag).</td>
+              </tr>
+              <tr class="border-t border-slate-100 align-top">
+                <td class="px-4 py-2 text-slate-500">Low</td>
+                <td class="px-4 py-2 font-mono text-xs"><a class="text-sky-700 underline" href="../../frontend/src/api/stepUp.ts">frontend/src/api/stepUp.ts</a></td>
+                <td class="px-4 py-2 text-xs">129-134</td>
+                <td class="px-4 py-2"><span class="font-medium">4: <span class="font-mono text-xs">clearStepUpState</span> forgets the unclaimed draft in memory but not the arrival.</span> The comment says it &quot;forgets everything kept for a step-up&quot;. It removes both storage keys and <span class="font-mono text-xs">landing.draft</span> but leaves <span class="font-mono text-xs">landing.arrival</span>, and a draft a screen already took at load is out of its reach. Why only Low: nothing can use what is left; signed-in cannot follow signed-out without a full page load, and no screen mounts without a session. It is an invariant held by the sign-in flow, not by this function. Suggested one-line fix: also <span class="font-mono text-xs">delete landing.arrival</span>.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="px-5 py-3 text-xs text-slate-600 border-t border-slate-100">Checked with nothing to raise: <span class="font-mono">Bodies.tsx:17</span> is a pure render-time comparison and the import direction is the one <span class="font-mono">api-has-no-ui</span> requires; <span class="font-mono">devLocal.ts</span> no longer has the duplicate constant; no state or prop mutation, index keys, async effect, missing cleanup or new context in the diff. Not raised, by decision: no component or hook test (ADR 0009), no router or state library (ADR 0002); two points outside the diff in <span class="font-mono">EndorseScreen.tsx:114</span> and <span class="font-mono">RegisterScreen.tsx:170-196</span>; the step-up dialog's &quot;organisation single sign-on&quot; wording under <span class="font-mono">dev-local</span> is copy, not React.</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none gap-3 flex-wrap">
+          <span class="font-medium">Spring Boot review (core, web, data, batch, security, logging, test) <span class="text-xs font-normal text-amber-700">&middot; round one, carried over, not rerun &middot; no back-end file in the diff</span></span>
+          <span class="flex items-center gap-2">
+            <span class="text-xs text-slate-500">C0 H0 M0 L0</span>
+            <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+          </span>
+        </summary>
+        <div class="px-5 py-3 text-xs text-slate-600 border-t border-slate-100 space-y-2">
+          <p>The check's own result is PASS, and it is a pass of the kind &quot;nothing to review&quot;: all seven Spring skills (core, web, data, batch, security, logging, test) had zero back-end files in scope. The check read all seven skill files, ran read-only git commands, and reviewed no unchanged back-end code. It notes that the server side of the local step-up (<span class="font-mono">backend/src/main/java/sg/annualva/access/DevLocalStepUp.java</span>) is unchanged and its profile gating was not re-reviewed.</p>
+          <p><span class="font-semibold">Round and evidence.</span> This file is from round one: its recorded <span class="font-mono">git status</span> shows two changed files, both under <span class="font-mono">frontend/</span>. It was not rerun. At aggregation, <span class="font-mono">git status --short -- backend</span> is empty and the four changed files are all under <span class="font-mono">frontend/</span>, so its premise (no back-end file in the diff) still holds for the final diff.</p>
+          <p>Note for other reviewers from the check (not a finding): <span class="font-mono">LOCAL_STEP_UP_PATH = "/dev-step-up"</span> duplicates the back-end constant <span class="font-mono">DevLocalStepUp.CONFIRMATION_PAGE</span> with no shared source; the two agree at HEAD.</p>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-t border-slate-100 text-left">
+            <thead>
+              <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+                <th class="px-4 py-2">Severity</th>
+                <th class="px-4 py-2">File</th>
+                <th class="px-4 py-2">Line</th>
+                <th class="px-4 py-2">Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-t border-slate-100">
+                <td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </main>
+  </body>
+</html>
