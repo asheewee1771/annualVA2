@@ -388,6 +388,74 @@ Each fails the build when the code grows past it: a new endpoint (as Spring MVC 
 
 The one-session rule reads a person's sessions with Spring Session's query ordered by session id (`SessionStoreConfig`): without the order, a store holding many of one person's rows returned sessions split in parts, an older session stayed live, and the person's next step-up signed them out (`OneSessionRuleTest`). The Seam 1 reset no longer deletes signed-in sessions.
 
+## Monitoring and run book (ticket 52)
+
+The key signals of IM8 lm-16 are Micrometer meters, all named in one class (`monitoring.KeySignals`, ADR 0060), exposed in the Prometheus text format at `GET /actuator/prometheus`. The endpoint has a chain of its own (`app.MetricsScrapeSecurity`): stateless, no session and no cookie, one credential, `Authorization: Bearer <ANNUALVA_MONITORING_SCRAPE_TOKEN>`. A request with another token, with a person's session or with none is a `401` and an audit entry like any refused request (so a scraper with the wrong token fills the log with `request-refused`: fix the scraper, do not silence the entry). The token is 32 to 200 visible characters, a secret with no default (the application does not start without it), and opens nothing else under `/actuator`; only `health`, `info` and `prometheus` are exposed. `GET /actuator/health` is anonymous and liveness-only: it answers `{"status":"UP"}` for the process and says nothing about the database or any boundary, so use it to restart a hung instance and the signals below to find a failing dependency.
+
+Under `dev-mcc` and `dev-local` the token is a mock: `curl -k -H "Authorization: Bearer dev-mcc-mock-scrape-token-0123456789abcdef" https://localhost:8443/actuator/prometheus` (use `dev-local-mock-scrape-token-0123456789abcdef` under `dev-local`). Port 8443 and its key store are the dev profiles' only: in SIT, UAT and production TLS terminates in front of the application ("Before a first start" below), so the scraper goes through that TLS ingress, by the application's own HTTPS host name, and never over plain HTTP to an instance, where the token would cross that hop in clear. A scraper's job, for Prometheus:
+
+```yaml
+scrape_configs:
+  - job_name: annualva
+    scheme: https
+    metrics_path: /actuator/prometheus
+    authorization: { type: Bearer, credentials_file: /etc/prometheus/annualva-scrape-token }
+    static_configs: [{ targets: ["<the application's HTTPS host name>:443"] }]
+```
+
+Through the ingress a scrape reaches one instance at a time. Scraping each instance of several needs TLS re-encrypted to the instance or the platform's own service discovery; ticket 55 decides it with the hosting tier.
+
+Every counter is on the scrape at zero from the start, and none carries an id, a name or any text from a report, a request or a person, only a fixed `kind`. A counter is cumulative since the application started and restarts at zero with it, so alert on `increase(...)`. The JVM, HTTP-server and datasource meters Spring Boot adds are also on the scrape; no alert is set on them until ticket 55 sets the targets.
+
+| Signal | Meter | Alert threshold (starting values) | Operator response |
+|---|---|---|---|
+| Audit write failures | `annualva_audit_write_failures_total` | `increase(...[5m]) > 0`: page at once. | The action whose entry failed was rolled back (the person saw a `500` with a reference) or, for a refusal or a sign-in, went unrecorded (counted whether its own transaction could not begin, its insert failed or its commit failed). Find the log line `event.action=audit-write-failed` (an independent write) or the `unhandled-exception` with the same `trace.id`; the exception type says why. Check that PostgreSQL has disk and connections, that the application's role still has `INSERT` and `SELECT` on `audit_entry`, and that no one added a trigger or constraint that refuses an entry. Never drop the append-only trigger or run the application without the audit write to get past it. Tell the VA POCs which actions failed in the window so they can be done again. |
+| Scan failures | `annualva_scan_failures_total` | `increase(...[15m]) >= 3`: warn. `>= 10`, or any increase for 30 minutes running: page in business hours. | A call to the malware scanner or the file store failed, or the scanner answered `ERROR`; each call counts once. A Scan Report file is tried again, up to three attempts. An upload the store could not quarantine is one failure and no timeout: nothing was kept, the person saw `503 storage-unavailable` (or `503 scan-timeout` for a Register workbook) and uploads it again. Check the scanner's (SFS) status and the network path to it, then the object store (`S3FileStore` failures are one fixed sentence, `BoundaryFailureException`; the SDK's own logging is pinned at WARN on purpose, ADR 0059) and its KMS key. The counted failures are not logged one by one: the scan job's `file-status` lines show each file being retried (`labels.attempts`). Nothing needs a restart: the next pass of the scan job picks the files up again. |
+| Scan timeouts | `annualva_scan_timeouts_total` | `increase(...[1h]) >= 1`: warn. `>= 3`: treat as a scanner outage. | A file used its three attempts and was rejected (`REJECTED_SCAN_TIMEOUT`, `rejectCode` `SCAN_TIMEOUT`); the SMO/Tech Lead was told to upload it again, and a Register workbook was refused the same way. Find the cause as for scan failures; once the scanner answers, tell the SMOs of the affected Systems (`report_file` rows with that status) to upload again, since a rejected file is never rescanned. |
+| Mail failures | `annualva_mail_failures_total{kind="send_failed"}` | `increase(...[15m]) >= 5`: warn. | The mail relay (MCNS) did not take a mail; each is tried again after 1, 2, 4 and 8 minutes. Check the relay and its network path; the log line is `mail-send-failed` with the outbox id and attempt, never an address. Mail resumes by itself when the relay does. |
+| | `{kind="abandoned"}` | any `increase(...[1h]) > 0`: page in business hours. | A required message (a reminder, Overdue, Return for Rework, Disputed, a Register change) never went out after five attempts, or a dispatcher stopped after its last attempt (`mail_outbox` `status` `FAILED`). The in-app notification is still there. Fix the relay, then tell the VA POCs which Systems were affected (`mail-abandoned` log lines; `SELECT n.system_id FROM mail_outbox o JOIN notification n ON n.id = o.notification_id WHERE o.status = 'FAILED'`) so they can follow up in person. A failed mail is not sent again by the application. |
+| | `{kind="record_failed"}` | any `increase(...[1h]) > 0`: warn. | The relay answered and the application could not write the answer (the database); the lease runs out and the mail may be sent a second time (at least once, ADR 0046). Treat it as a database problem: see the audit row above. |
+| | `{kind="refused"}` | any `increase(...[24h]) > 0`: ticket. | A value of the mail (a System ID or name with a control character, say) broke the allow-list and the mail is never sent (`mail-refused`, `event.reason` names the value's field). A VA POC corrects the System in the Register; the next notification for it goes out. |
+| | `{kind="address_rejected"}` | informational; ticket if `increase(...[24h]) >= 5`. | The relay refused a recipient's address, so every System naming that SMO/Tech Lead is flagged SMO Unreachable (story 13). A VA POC corrects the address in the Register. Many at once point at the relay, not the addresses. |
+| Step-up refusals | `annualva_stepup_refusals_total{kind="failed"}` | `increase(...[15m]) >= 5`: warn. | A step-up round trip came back and did not prove a fresh sign-in. The audit entry `step-up-refused` carries the reason: `stale-auth-time` means MCC SSO ignores `prompt=login` or the clocks differ (check `annualva.step-up.clock-skew`, then `ANNUALVA_STEPUP_MODE=full-sign-in`, ADR 0004, "SIT onboarding checks"); `missing-auth-time`, `mfa-not-evidenced` or `missing-identity` mean the provider's claims changed; `identity-mismatch` means someone else signed in at the prompt. Sensitive actions (endorsing, approving an Exemption, uploading the Register, exports, disposal) are blocked for everyone while it persists. |
+| | `{kind="required"}` | no alert; read it beside `failed`. | A person tried a sensitive action more than five minutes after signing in: normal, the screen sends them to sign in again. A sudden rise with no `step-up-started` audit entries means the screen no longer starts the step-up. |
+| Overdue submissions | `annualva_submissions_overdue{kind="submission"}` and `{kind="not_started"}` (gauges) | `sum(annualva_submissions_overdue) > 0` for 24 hours: notify the cyber team (not on-call). Either series `NaN` for 15 minutes: ticket. | Overdue is a business state, not a fault: the windows are soft (ADR 0033). The sweep runs hourly (and once at startup), flags what passed its window, and counts what is flagged; the gauges hold that count until the next sweep, so a VA Submission finished or a System retired leaves the gauge up to an hour later. The VA POCs follow up from the Cycle matrix. If a window has passed and the gauges stay at zero, check that the scheduler is running (`annualva.scheduling.enabled`, `OverdueSweepJob`) and the Overdue notices in `notification`. `NaN` means no sweep has committed since the application started: look for the sweep's errors in the log, the database first. A sweep that fails leaves the last counts in place. |
+
+Not covered, on purpose: availability, response time and recovery objectives (ticket 55 sets the targets, so no alert is set on `http_server_requests`), a heartbeat for each scheduled job (ticket 67), and a readiness check on the dependencies. The thresholds above are starting values for the monitoring product's alert rules, to be reviewed against the targets (ADR 0060, item 6).
+
+Provisional (decided 2026-11-22, ADR 0060): ticket 52 landed as provisional. The bearer token as the scraper's credential, the thresholds above and where each environment keeps the token are not final: ticket 55 (choose products and non-functional targets, with a person) decides them, and this run book changes with that decision.
+
+## Architecture document (ticket 52)
+
+`docs/tech-architecture.md` (and its `.html` copy) is the technical architecture document; its section 7 says how it is kept current. Two checks, run differently:
+
+- `DocumentationCompletenessTest` runs in the back-end gate (`./mvnw -B -ntp clean verify`, no Docker of its own): it fails when a module, a class of `boundary` or `adapters`, a profile or a table the migrations leave is not named in backticks in the Markdown, or an ADR is not linked by its file name. It checks names only.
+- `python scripts/refresh-tech-arch-doc.py --check` (from the repository root) says whether any generated block (modules, imports, endpoints and public types, the ADR index, the schema) is stale, and exits 1 if one is. It applies every migration to a throwaway PostgreSQL in Docker, so it is not part of the Maven gate. Run it, or the script without `--check` to rewrite the blocks and the HTML, in every change that adds or alters a module, a controller, a public type, an ADR or a migration, before the review; `--schema FILE` reads a dump saved with `--save-schema` instead of starting Docker. The HTML step needs `/tech-arch-doc`'s converter (`.claude/skills/tech-arch-doc/md-to-html.py`), which comes with the agent skills and is not tracked in this repository; `--html-converter PATH` names a copy.
+
+## Profiles, secrets and environments (SIT, UAT, production)
+
+| Environment | Profile | Configuration | What an unset value does |
+|---|---|---|---|
+| Developer machine | `dev-local` or `dev-mcc` | mock literals in `application-dev-local.yml` or `application-dev-mcc.yml`; `compose.yml` | nothing is secret; every value is a mock |
+| CI (Seam 1) | `ci` | `backend/src/test/resources/application-ci.yml`, Testcontainers PostgreSQL and in-process fakes | nothing is secret; test values only |
+| SIT | `sit` | `application-sit.yml`: `${VAR:default}` for what is not secret, the mock stack's values as defaults; optional `backend/.env.sit` (copied from `.env.sit.example`, ignored by git) | a secret has no default, and the application does not start without it |
+| UAT and production | none of the above (the base `application.yml`; a deployment may name its own profile for its own overrides, never one of the dev profiles) | bare `${VAR}` for every environment value; no file with real values is in the repository | the application does not start (ADR 0005) |
+
+`dev-local` refuses to start with any other profile active and anywhere but a loopback address (ADR 0058), so it cannot be switched on by mistake in a deployed environment.
+
+Secrets, which have no default in any deployed profile and are set only in the environment (a secret store or the platform's secret mechanism, never a file in the repository, an image or a build log):
+
+| Variable | What it is | Notes |
+|---|---|---|
+| `ANNUALVA_DB_PASSWORD` | the application's database login | the role needs `INSERT` and `SELECT` only on `audit_entry`; migrations run under another owner ("Audit log") |
+| `ANNUALVA_MCC_SIGNING_PRIVATE`, `ANNUALVA_MCC_SIGNING_PUBLIC` | the EC P-521 key pair of the `private_key_jwt` client authentication (base64 of the PKCS#8 and SPKI PEM) | the public half is registered with MCC SSO under `ANNUALVA_MCC_SIGNING_KID`; one pair for each environment, never the `dev-mcc` pair |
+| `ANNUALVA_MONITORING_SCRAPE_TOKEN` | the monitoring scraper's bearer token | 32 to 200 visible characters, for example `openssl rand -hex 32`; one for each environment; rotate by changing it here and in the scraper together |
+| `ANNUALVA_VA_POCS` | exactly two VA POC email addresses | not a secret, but an identity: changed only through its change request (story 75) |
+
+Environment values with no default in UAT and production (SIT supplies a placeholder until ticket 56 or 57 records the real one): `ANNUALVA_DB_URL`, `ANNUALVA_DB_USERNAME`, `ANNUALVA_APP_URL`, the seven `ANNUALVA_MAIL_TEMPLATE_*` ids (ticket 57), the MCC SSO endpoints and client (`ANNUALVA_MCC_ISSUER`, `_AUTHORIZATION_URI`, `_TOKEN_URI`, `_JWK_SET_URI`, `_USER_INFO_URI`, `_LOGIN_CLIENT_ID`, `_IDP_HINT`, `_SIGNING_KID`, ticket 56). Optional, with the base value as the default: `ANNUALVA_VA_POC_ROLE_RETURNS`, the sign-in checks (`ANNUALVA_SIGNIN_*`), `ANNUALVA_STEPUP_MODE`. The S3 file store is switched on with `ANNUALVA_AWS_ENABLED=true` and the bucket, region and key-alias values of "The file store"; it takes its credentials from the platform's role and has no key pair in any deployed environment. The scanner, mail relay and MCC service client have no production adapter yet (ticket 51 is open beyond the file store).
+
+Before a first start in a new environment: set every variable above, confirm TLS terminates in front of the application (the base profile has no key store; `server.forward-headers-strategy` is `framework`), start it, then check `GET /actuator/health` (anonymous) and one scrape with the token. SIT's own checks of MCC SSO are in "SIT onboarding checks".
+
 ## Database migrations
 
 Flyway applies `backend/src/main/resources/db/migration` in version order, with no out-of-order mode. The versions are one gapless sequence of whole numbers, V1 to V47: a new migration takes the next number after the highest, whatever its ticket (`MigrationSequenceTest` fails the build otherwise).
@@ -438,8 +506,10 @@ Before release, the migrations that tickets had numbered by their ticket (V129 t
 ```
 backend/            Spring Boot API (one package per module under sg.annualva)
 frontend/           React SPA (src/app shell, src/api typed client, src/components, src/screens/<role>)
-scripts/            dev key generation, LocalStack init, MockPass personas, dev data
+scripts/            dev key generation, LocalStack init, MockPass personas, dev data, refresh-tech-arch-doc.py
 docs/adr/           architecture decision records
+docs/tech-architecture.md (.html)
+                    the technical architecture document; its section 7 says how to refresh it
 docs/agents/        agent conventions and human reviewer decisions
 .scratch/annual-va/ spec, structured stories, tickets
 artifacts/, reports/ skill outputs (code review reports, dependency orchestrator reports)

@@ -64,6 +64,11 @@ public abstract class Seam1Test {
         issuer.clientJwksUrl("http://localhost:" + port + "/.well-known/jwks.json");
     }
 
+    /** One scrape of the key signals, as the monitoring system's scraper reads them (ticket 52). */
+    protected Metrics metrics() {
+        return Metrics.scrape(anotherBrowser());
+    }
+
     /** A second browser, for tests about concurrent sessions. */
     protected ApiClient anotherBrowser() {
         return new ApiClient(port);

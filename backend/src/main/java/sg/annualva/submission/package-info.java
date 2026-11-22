@@ -10,7 +10,7 @@
  * Endorsed (ADR 0044). An SMO/Tech Lead requests an Exemption ({@code POST /api/systems/{id}/exemptions}), which freezes
  * the VA Submission until a VA POC approves or rejects it after a fresh sign-in (ADR 0048). It owns the state machine
  * and the segregation-of-duties guard (ADR 0035). It answers the audit log's read scope: a Cyber Manager reads the
- * history of the VA Submissions they reviewed (ADR 0038). Depends on access, audit, cycle, register, web, and parser for
+ * history of the VA Submissions they reviewed (ADR 0038). Depends on access, audit, cycle, monitoring, register, web, and parser for
  * the one text rule only.
  */
 package sg.annualva.submission;

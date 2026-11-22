@@ -16,9 +16,19 @@ server:
       cookie:
         secure: false
 
+# Spring Boot's tests switch every metrics exporter off; the key signals are read from the Prometheus endpoint (ADR 0060).
+management:
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
 annualva:
   scheduling:
     enabled: false
+  # The scraper's bearer token of the tests (a test value, never a real one).
+  monitoring:
+    scrape-token: ci-scrape-token-0123456789abcdef0123456789
   scan:
     # Short, so the tests that time a scan out finish quickly. A Scan Report attempt is timed by the controllable clock
     # (a test moves it past two minutes); the Register upload waits in real time, a few polls of a few milliseconds.

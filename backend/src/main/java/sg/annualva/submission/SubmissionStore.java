@@ -532,6 +532,30 @@ class SubmissionStore {
         }).list();
     }
 
+    /** The VA Submissions flagged Overdue now: the flag is set by the sweep and cleared by every move into a final state. */
+    private static final String COUNT_OVERDUE_SUBMISSIONS = "SELECT count(*) FROM va_submission WHERE overdue";
+
+    /**
+     * The Systems flagged Overdue as Not Started and still without a VA Submission in that Cycle (a started one's flag went
+     * with its row, and a Cycle's close gives each such System a Not Endorsed one), among these active Systems.
+     */
+    private static final String COUNT_OVERDUE_NOT_STARTED =
+            "SELECT count(*) FROM not_started_overdue n WHERE n.system_id = ANY(CAST(:systems AS uuid[])) "
+            + "AND NOT EXISTS (SELECT 1 FROM va_submission s WHERE s.system_id = n.system_id AND s.cycle_year = n.cycle_year)";
+
+    /** How many VA Submissions are flagged Overdue (the monitoring gauge, ADR 0060). */
+    int countOverdueSubmissions() {
+        return jdbc.sql(COUNT_OVERDUE_SUBMISSIONS).query(Integer.class).single();
+    }
+
+    /** How many of these active Systems are flagged Overdue as Not Started (the monitoring gauge, ADR 0060). */
+    int countOverdueNotStarted(Collection<UUID> activeSystems) {
+        if (activeSystems.isEmpty()) {
+            return 0;
+        }
+        return jdbc.sql(COUNT_OVERDUE_NOT_STARTED).param("systems", ids(activeSystems)).query(Integer.class).single();
+    }
+
     /** Flags what is overdue on this business date at this instant, among these active Systems; what was flagged. */
     List<Flagged> flagOverdue(Collection<UUID> activeSystems, LocalDate today, Instant now) {
         if (activeSystems.isEmpty()) {

@@ -50,7 +50,22 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        # lm-16 (ADR 0060): health and info are anonymous (nothing more than that the process answers); prometheus has its own
+        # chain with a bearer token (app.MetricsScrapeSecurity). Nothing else is exposed.
+        include: health,info,prometheus
+  endpoint:
+    health:
+      # No component, no detail: /actuator/health says only UP.
+      show-details: never
+      show-components: never
+      # No liveness and readiness groups (nor a list of them in the answer): /actuator/health is the one liveness check.
+      probes:
+        enabled: false
+  health:
+    # Liveness only: the anonymous health answers for the process, not for the database, the disk or any boundary, so an outage
+    # of one of them (which the signals and the run book cover) cannot make the platform restart a healthy application.
+    defaults:
+      enabled: false
 
 logging:
   level:
@@ -68,6 +83,10 @@ logging:
         name: annualva
 
 annualva:
+  # lm-16 (ADR 0060): the bearer token the metrics scraper sends to /actuator/prometheus, 32 to 200 visible characters. A
+  # secret with no default, like the database password: the application refuses to start without it.
+  monitoring:
+    scrape-token: ${ANNUALVA_MONITORING_SCRAPE_TOKEN}
   # Business calendar for VA Cycle, Quarter and Window arithmetic (timestamps are stored in UTC).
   time-zone: Asia/Singapore
   # IM8 dp-8 banner shown on every screen (assumption A-1: single report Restricted / Sensitive-Normal).

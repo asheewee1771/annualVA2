@@ -25,6 +25,9 @@ server:
     key-alias: mcc-dev
 
 annualva:
+  # A mock: the scraper's bearer token for /actuator/prometheus (ADR 0060). Never a real one.
+  monitoring:
+    scrape-token: dev-local-mock-scrape-token-0123456789abcdef
   # The jobs that scan files, send mail and sweep Overdue run, so a whole VA Submission can be followed.
   scheduling:
     enabled: true

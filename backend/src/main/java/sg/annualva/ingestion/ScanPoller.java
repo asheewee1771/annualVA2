@@ -21,6 +21,7 @@ import sg.annualva.boundary.MalwareScanner.Verdict;
 import sg.annualva.cycle.CycleCalendar;
 import sg.annualva.finding.Findings;
 import sg.annualva.finding.ProposalView;
+import sg.annualva.monitoring.KeySignals;
 import sg.annualva.parser.ParsedReport;
 import sg.annualva.scan.CleanFiles;
 import sg.annualva.scan.MalwareScan;
@@ -68,10 +69,12 @@ public class ScanPoller {
     private final CycleCalendar calendar;
     private final Clock clock;
     private final TransactionTemplate transaction;
+    private final KeySignals signals;
 
     ScanPoller(ReportFileStore store, MalwareScan scan, CleanFiles cleanFiles, ScanProperties properties,
             AuditLog audit, AuditActor actor, Findings findings, CycleCalendar calendar, Clock clock,
-            TransactionTemplate transaction) {
+            TransactionTemplate transaction, KeySignals signals) {
+        this.signals = signals;
         this.store = store;
         this.scan = scan;
         this.cleanFiles = cleanFiles;
@@ -163,20 +166,19 @@ public class ScanPoller {
      * checks refuse), keep the copy, then write the whole outcome at once.
      */
     private void accept(ReportFileStore.Row file, Instant now) {
-        byte[] bytes;
+        Optional<byte[]> unchanged;
         try {
-            Optional<byte[]> unchanged = scan.fetchUnchanged(Objects.requireNonNull(file.scanTicket()),
-                    file.uploadSha256());
-            if (unchanged.isEmpty()) {
-                reject(file, RejectCode.HASH_MISMATCH, now);
-                return;
-            }
-            bytes = unchanged.get();
+            unchanged = scan.fetchUnchanged(Objects.requireNonNull(file.scanTicket()), file.uploadSha256());
         } catch (RuntimeException e) {
             // The verdict stands but the copy could not be fetched: try again next pass, until the attempt is due.
             retryWhenDue(file, now);
             return;
         }
+        if (unchanged.isEmpty()) {
+            reject(file, RejectCode.HASH_MISMATCH, now);
+            return;
+        }
+        byte[] bytes = unchanged.get();
         String cleanSha = MalwareScan.sha256(bytes);
         LocalDate today = calendar.dateOf(now);
         FileChecks.Outcome checked = FileChecks.run(file.reportType(), file.kind(), bytes,
@@ -298,6 +300,9 @@ public class ScanPoller {
             return true;
         }) == Boolean.TRUE;
         if (written) {
+            if (settlement.rejectCode() == RejectCode.SCAN_TIMEOUT) {
+                signals.scanTimedOut();
+            }
             logged(file.id(), settlement.resting(), file.scanAttempts());
         }
         return written;

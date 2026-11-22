@@ -11,6 +11,8 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import sg.annualva.audit.AuditAction;
 import sg.annualva.audit.AuditEvent;
 import sg.annualva.audit.AuditLog;
@@ -19,6 +21,8 @@ import sg.annualva.audit.DetailKey;
 import sg.annualva.cycle.CycleCalendar;
 import sg.annualva.cycle.CyclePhase;
 import sg.annualva.cycle.VaCycle;
+import sg.annualva.monitoring.KeySignals;
+import sg.annualva.monitoring.KeySignals.Overdue;
 import sg.annualva.register.RegisterSystems;
 import sg.annualva.register.SystemChangeEvent;
 
@@ -32,7 +36,8 @@ import sg.annualva.register.SystemChangeEvent;
  * System, which nobody acts on until the Register's withdraw (ticket 43). The clock is read once per pass: the instant
  * from the {@code Clock} bean and today's business date (Asia/Singapore) from that instant. The scheduler
  * ({@code OverdueSweepJob}) or a Seam 1 test runs it. The entries carry ids and a fixed state code only, and have no
- * actor: the sweep acts for nobody.
+ * actor: the sweep acts for nobody. Each pass also counts what is flagged now, for the Overdue gauges (IM8 lm-16, ADR 0060
+ * item 4), and hands the counts to {@link KeySignals} once it has committed, so a scrape never reads the database.
  */
 @Service
 public class OverdueSweep {
@@ -44,9 +49,11 @@ public class OverdueSweep {
     private final AuditLog audit;
     private final Clock clock;
     private final ApplicationEventPublisher events;
+    private final KeySignals signals;
 
     OverdueSweep(SubmissionStore store, RegisterSystems register, CycleCalendar calendar, OpenQuarters openQuarters,
-            AuditLog audit, Clock clock, ApplicationEventPublisher events) {
+            AuditLog audit, Clock clock, ApplicationEventPublisher events, KeySignals signals) {
+        this.signals = signals;
         this.store = store;
         this.openQuarters = openQuarters;
         this.register = register;
@@ -90,13 +97,24 @@ public class OverdueSweep {
     public void sweep() {
         Instant now = clock.instant();
         LocalDate today = calendar.dateOf(now);
-        List<RegisterSystems.ActiveSystem> systems = register.everyActive();
-        List<SubmissionStore.Flagged> flagged = new ArrayList<>(
-                store.flagOverdue(systems.stream().map(RegisterSystems.ActiveSystem::id).toList(), today, now));
+        List<UUID> active = register.everyActive().stream().map(RegisterSystems.ActiveSystem::id).toList();
+        List<SubmissionStore.Flagged> flagged = new ArrayList<>(store.flagOverdue(active, today, now));
         for (OpenQuarters.InQuarter open : openQuarters.on(today)) {
             flagged.addAll(store.flagNotStarted(open.quarter(), open.systems(), today, now));
         }
         flagged.forEach(flag -> recorded(flag, now));
+        counted(store.countOverdueSubmissions(), store.countOverdueNotStarted(active));
+    }
+
+    /** The Overdue gauges take the counts once the pass has committed; a pass that rolls back leaves them as they were. */
+    private void counted(int submissions, int notStarted) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                signals.overdue(Overdue.SUBMISSION, submissions);
+                signals.overdue(Overdue.NOT_STARTED, notStarted);
+            }
+        });
     }
 
     /**

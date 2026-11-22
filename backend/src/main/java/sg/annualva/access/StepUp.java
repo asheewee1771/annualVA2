@@ -17,6 +17,8 @@ import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.stereotype.Service;
 import sg.annualva.access.StepUpProperties.Mode;
 import sg.annualva.boundary.IdentityProvider.Identity;
+import sg.annualva.monitoring.KeySignals;
+import sg.annualva.monitoring.KeySignals.StepUpRefusal;
 import sg.annualva.web.StepUpRequiredException;
 
 /**
@@ -52,12 +54,15 @@ public class StepUp {
     private final AccessAudit audit;
     private final ObjectProvider<OAuth2AuthorizationRequestResolver> authorizationRequests;
     private final IdentityDisablement disablement;
+    private final KeySignals signals;
     private final HttpSessionOAuth2AuthorizationRequestRepository savedRequests =
             new HttpSessionOAuth2AuthorizationRequestRepository();
 
     StepUp(Clock clock, StepUpProperties properties, SignInProperties signIn, AppUserStore users, AccessAudit audit,
-            ObjectProvider<OAuth2AuthorizationRequestResolver> authorizationRequests, IdentityDisablement disablement) {
+            ObjectProvider<OAuth2AuthorizationRequestResolver> authorizationRequests, IdentityDisablement disablement,
+            KeySignals signals) {
         this.disablement = disablement;
+        this.signals = signals;
         this.clock = clock;
         this.properties = properties;
         this.signIn = signIn;
@@ -81,7 +86,8 @@ public class StepUp {
             return;
         }
         // The refusal is audited where the 403 is written (the exception handler), once, after the command's own
-        // transaction has ended.
+        // transaction has ended. It is counted here, where it is decided (ADR 0060).
+        signals.stepUpRefused(StepUpRefusal.REQUIRED);
         throw new StepUpRequiredException(intent);
     }
 

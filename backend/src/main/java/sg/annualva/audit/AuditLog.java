@@ -6,10 +6,14 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 import org.slf4j.spi.LoggingEventBuilder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
+import sg.annualva.monitoring.KeySignals;
 import sg.annualva.web.CorrelationIdFilter;
 import sg.annualva.web.Page;
 
@@ -26,6 +30,10 @@ import sg.annualva.web.Page;
  *   <li>{@link #recordIndependently}: in a transaction of its own, committed whatever the caller's transaction does
  *       afterwards. For a refusal, a sign-in and anything else that no domain transaction owns.
  * </ul>
+ *
+ * <p>An entry that cannot be written is counted once as an audit write failure (IM8 lm-16, ADR 0060 item 5) and the
+ * failure is thrown on: for {@link #record}, an insert the database refused; for {@link #recordIndependently}, anything
+ * that fails in its own transaction, from beginning it (the database is down, no connection is free) to the commit.
  */
 @Service
 public class AuditLog {
@@ -38,11 +46,17 @@ public class AuditLog {
     private final AuditStore store;
     private final Clock clock;
     private final AuditCaller caller;
+    private final KeySignals signals;
+    private final TransactionTemplate independent;
 
-    AuditLog(AuditStore store, Clock clock, AuditCaller caller) {
+    AuditLog(AuditStore store, Clock clock, AuditCaller caller, KeySignals signals,
+            PlatformTransactionManager transactions) {
         this.store = store;
         this.clock = clock;
         this.caller = caller;
+        this.signals = signals;
+        this.independent = new TransactionTemplate(transactions);
+        independent.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
     /** Writes in the caller's transaction; fails when there is none, so an entry cannot be written by accident without one. */
@@ -51,10 +65,17 @@ public class AuditLog {
         write(event);
     }
 
-    /** Writes in a new transaction that commits on its own, even if the caller's transaction later rolls back. */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    /**
+     * Writes in a new transaction that commits on its own, even if the caller's transaction later rolls back. The
+     * transaction is begun here, not by a proxy, so a failure to begin it or to commit it is counted like a refused insert.
+     */
     public void recordIndependently(AuditEvent event) {
-        write(event);
+        try {
+            independent.executeWithoutResult(status -> insert(event));
+        } catch (RuntimeException failure) {
+            signals.auditWriteFailed();
+            throw failure;
+        }
     }
 
     /** Newest first; {@code page} counts from zero. */
@@ -74,7 +95,18 @@ public class AuditLog {
         return entries;
     }
 
+    /** In the caller's transaction. */
     private void write(AuditEvent event) {
+        try {
+            insert(event);
+        } catch (RuntimeException failure) {
+            // Counted, then thrown on as before: the caller's transaction rolls back, so the action is not done unrecorded.
+            signals.auditWriteFailed();
+            throw failure;
+        }
+    }
+
+    private void insert(AuditEvent event) {
         AuditEntry entry = store.insert(event, clock.instant(), CorrelationIdFilter.current());
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override

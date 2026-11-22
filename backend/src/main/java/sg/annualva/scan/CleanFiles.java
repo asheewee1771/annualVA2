@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import sg.annualva.boundary.FileStore;
+import sg.annualva.monitoring.KeySignals;
 
 /**
  * The clean zone of the file store: the only place a file the scanner passed is kept, and the only bytes the application
@@ -17,20 +18,28 @@ public class CleanFiles {
     private static final Logger log = LoggerFactory.getLogger(CleanFiles.class);
 
     private final FileStore files;
+    private final KeySignals signals;
 
-    CleanFiles(FileStore files) {
+    CleanFiles(FileStore files, KeySignals signals) {
         this.files = files;
+        this.signals = signals;
     }
 
     /**
-     * Keeps the bytes under the file's id, replacing any copy a failed attempt left.
+     * Keeps the bytes under the file's id, replacing any copy a failed attempt left. A write that fails is one scan failure
+     * (ADR 0060 item 5), counted here, and thrown on.
      *
      * @return the key the bytes are kept under
      * @throws RuntimeException when the store cannot be written
      */
     public String put(UUID fileId, byte[] content) {
         String key = fileId.toString();
-        files.put(FileStore.Zone.CLEAN, key, content);
+        try {
+            files.put(FileStore.Zone.CLEAN, key, content);
+        } catch (RuntimeException failure) {
+            signals.scanFailed();
+            throw failure;
+        }
         return key;
     }
 

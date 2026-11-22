@@ -12,6 +12,8 @@ import sg.annualva.audit.AuditEvent;
 import sg.annualva.audit.AuditLog;
 import sg.annualva.audit.AuditOutcome;
 import sg.annualva.audit.DetailKey;
+import sg.annualva.monitoring.KeySignals;
+import sg.annualva.monitoring.KeySignals.StepUpRefusal;
 import sg.annualva.web.RefusalListener;
 
 /**
@@ -30,8 +32,10 @@ class AccessAudit implements RefusalListener {
 
     private final AuditLog audit;
     private final RoleResolver roles;
+    private final KeySignals signals;
 
-    AccessAudit(AuditLog audit, RoleResolver roles) {
+    AccessAudit(AuditLog audit, RoleResolver roles, KeySignals signals) {
+        this.signals = signals;
         this.audit = audit;
         this.roles = roles;
     }
@@ -74,6 +78,7 @@ class AccessAudit implements RefusalListener {
 
     /** @param userId the person whose session the step-up was for, when the session still names one */
     void stepUpFailed(@Nullable UUID userId, String intent, String reason) {
+        signals.stepUpRefused(StepUpRefusal.FAILED);
         write(by(AuditEvent.of(AuditAction.STEP_UP_FAILED, AuditOutcome.REFUSED), userId)
                 .with(DetailKey.INTENT, intent)
                 .with(DetailKey.REASON, reason));

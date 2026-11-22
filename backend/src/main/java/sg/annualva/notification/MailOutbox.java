@@ -11,6 +11,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 import sg.annualva.boundary.MailRelay;
+import sg.annualva.monitoring.KeySignals;
+import sg.annualva.monitoring.KeySignals.MailFailure;
 import sg.annualva.notification.MailOutboxStore.Claimed;
 import sg.annualva.notification.MailOutboxStore.Settled;
 import sg.annualva.register.RegisterSystems;
@@ -44,9 +46,12 @@ public class MailOutbox {
     private final SmoReachability reachability;
     private final TransactionTemplate transaction;
     private final RegisterSystems register;
+    private final KeySignals signals;
 
     MailOutbox(MailOutboxStore store, MailRelay relay, MailProperties properties, Clock clock,
-            SmoReachability reachability, TransactionTemplate transaction, RegisterSystems register) {
+            SmoReachability reachability, TransactionTemplate transaction, RegisterSystems register,
+            KeySignals signals) {
+        this.signals = signals;
         this.register = register;
         this.reachability = reachability;
         this.transaction = transaction;
@@ -65,6 +70,7 @@ public class MailOutbox {
     public void dispatch() {
         int abandoned = store.abandonExpired(clock.instant(), properties.maxAttempts());
         if (abandoned > 0) {
+            signals.mailFailed(MailFailure.ABANDONED, abandoned);
             log.atError().setMessage("Mails whose last attempt never finished were given up on")
                     .addKeyValue(ACTION, "mail-abandoned").addKeyValue("labels.count", abandoned).log();
         }
@@ -78,6 +84,7 @@ public class MailOutbox {
                 send(next.get());
             } catch (RuntimeException e) {
                 // The outcome could not be written: the lease runs out and a later pass claims the mail again.
+                signals.mailFailed(MailFailure.RECORD_FAILED);
                 log.atError().setMessage("A mail's outcome could not be recorded").addKeyValue(ACTION, "mail-record-failed")
                         .addKeyValue(MAIL_ID, next.get().id()).addKeyValue(ERROR_TYPE, e.getClass().getName()).log();
             }
@@ -90,6 +97,7 @@ public class MailOutbox {
         Optional<String> refusal = named.map(MailValues::refusal).orElse(Optional.of(MailValues.SYSTEM_ID));
         if (refusal.isPresent()) {
             settled(mail, Settled.REFUSED);
+            signals.mailFailed(MailFailure.REFUSED);
             log.atWarn().setMessage("A mail was not sent: a value is outside the allow-list")
                     .addKeyValue(ACTION, "mail-refused").addKeyValue(MAIL_ID, mail.id())
                     .addKeyValue("event.reason", refusal.get()).log();
@@ -113,6 +121,7 @@ public class MailOutbox {
                 }
             }
             case MailRelay.AddressRejected rejected -> {
+                signals.mailFailed(MailFailure.ADDRESS_REJECTED);
                 Instant at = clock.instant();
                 if (!recorded(() -> store.settle(mail, Settled.REJECTED),
                         () -> reachability.refused(mail.recipient(), at))) {
@@ -126,8 +135,10 @@ public class MailOutbox {
 
     /** The relay could not take the mail: try again after a wait that doubles each time, or give up after the last. */
     private void failed(Claimed mail, RuntimeException e) {
+        signals.mailFailed(MailFailure.SEND_FAILED);
         if (mail.attempts() >= properties.maxAttempts()) {
             settled(mail, Settled.FAILED);
+            signals.mailFailed(MailFailure.ABANDONED);
             log.atError().setMessage("A mail was given up on after its last attempt").addKeyValue(ACTION, "mail-abandoned")
                     .addKeyValue(MAIL_ID, mail.id()).addKeyValue(ATTEMPTS, mail.attempts())
                     .addKeyValue(ERROR_TYPE, e.getClass().getName()).log();

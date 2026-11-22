@@ -1,0 +1,3969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Technical Architecture Document</title>
+<style>
+
+:root {
+  --bg: #ffffff;
+  --fg: #1a1a2e;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --accent: #2563eb;
+  --accent-light: #dbeafe;
+  --surface: #f9fafb;
+  --code-bg: #f3f4f6;
+  --severity-critical: #dc2626;
+  --severity-high: #ea580c;
+  --severity-medium: #d97706;
+  --severity-low: #65a30d;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f172a;
+    --fg: #e2e8f0;
+    --muted: #94a3b8;
+    --border: #334155;
+    --accent: #60a5fa;
+    --accent-light: #1e3a5f;
+    --surface: #1e293b;
+    --code-bg: #1e293b;
+  }
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.7;
+  color: var(--fg);
+  background: var(--bg);
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 3px solid var(--accent);
+}
+
+h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--accent);
+}
+
+h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-top: 1.75rem;
+  margin-bottom: 0.75rem;
+}
+
+h4, h5, h6 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+p { margin-bottom: 1rem; }
+
+blockquote {
+  border-left: 4px solid var(--accent);
+  background: var(--surface);
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+  border-radius: 0 6px 6px 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+blockquote p { margin-bottom: 0; }
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover { text-decoration: underline; }
+
+code {
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  font-size: 0.875em;
+  background: var(--code-bg);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+}
+
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  margin: 1rem 0;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+thead {
+  background: var(--surface);
+}
+
+th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+}
+
+td {
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+tbody tr:last-child td { border-bottom: none; }
+
+tbody tr:hover { background: var(--surface); }
+
+ul, ol {
+  margin: 0.5rem 0 1rem 1.5rem;
+}
+
+li {
+  margin-bottom: 0.35rem;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2rem 0;
+}
+
+/* Severity badges in vulnerability tables */
+td:first-child {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.03em;
+}
+
+/* Mermaid diagrams */
+.mermaid {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+  text-align: center;
+  overflow-x: auto;
+}
+
+/* Print styles */
+@media print {
+  body { max-width: none; padding: 1cm; }
+  h2 { page-break-before: always; }
+  h2:first-of-type { page-break-before: auto; }
+  table { font-size: 0.8rem; }
+  pre { white-space: pre-wrap; word-break: break-all; }
+}
+
+</style>
+</head>
+<body>
+<h1 id="technical-architecture-document">Technical Architecture Document</h1>
+<blockquote><p>Generated: 2026-11-22T16:34:15Z Project: Annual VA (annualVA2): <code>frontend/</code> (React) and <code>backend/</code> (Spring Boot) Laid out as <code>/tech-arch-doc</code> lays it out, for ticket 52 (IM8 pm-6). A point-in-time document: the tables and diagrams that can be read from the code are rewritten by <code>python scripts/refresh-tech-arch-doc.py</code>, the prose is written and reviewed by a person, and <code>DocumentationCompletenessTest</code> fails the build when a module, boundary port or adapter, profile, ADR or table is not named here. Section 7 says how to refresh it in the change that adds one.</p></blockquote>
+<h2 id="1-architecture-narrative">1. Architecture Narrative</h2>
+<h3 id="1-1-system-overview">1.1 System Overview</h3>
+<p>Annual VA is the internal application that runs the organisation&#x27;s annual vulnerability assessment (VA): the VA Cycle and its Quarters, the System Register, VA Submissions with their Scan Reports and Findings, Cyber Manager review, VA POC endorsement, Exemptions, notifications, exports, the audit log and retention. Terms are those of <code>CONTEXT.md</code>; the authoritative requirements are the Gate-1-approved spec (<code>.scratch/annual-va/spec.md</code>).</p>
+<ul>
+<li><strong>Back end:</strong> Spring Boot 4.0.8 on Java 21 (the Java 21 baseline is recorded in <code>docs/agents/reviewer-decisions.md</code>), a modular monolith of the packages under <code>sg.annualva</code> that section 1.2 lists, one deployable. PostgreSQL 17 through <code>JdbcClient</code> with Flyway migrations (ADR 0001), static SQL in <code>*Store</code> classes only (IM8 as-2), UUID primary keys (ADR 0010), timestamps in UTC and business dates in <code>Asia/Singapore</code> read only through the <code>Clock</code> bean (ADR 0006).</li>
+<li><strong>Front end:</strong> Vite, React 19 and TypeScript (ADR 0002): a thin shell over the HTTP API. Every business rule is decided in the back end and is tested at the HTTP API (Seam 1, ADR 0009); report content is only ever rendered as text.</li>
+<li><strong>Platform:</strong> MCC SSO (OIDC, <code>private_key_jwt</code>, step-up as a fresh sign-in, ADR 0004), a malware scanner (SFS), a mail relay (MCNS), an S3 object store with SSE-KMS, the MCC service client. Each is reached through a port in <code>boundary</code> (section 1.7). Locally the stack is <code>../mock-m-sso</code> plus LocalStack and PostgreSQL (ADR 0003), or PostgreSQL alone under <code>dev-local</code> (ADR 0058).</li>
+<li><strong>Security posture:</strong> deny by default with method-level <code>@PreAuthorize</code> and a per-System ownership guard (ADR 0013), roles read from the database on each request and never from token claims (ADR 0011), JDBC sessions with idle and absolute limits (ADR 0008), a minimal CSP and HSTS, an append-only audit log that also records every refusal (ADR 0014), and no report content in logs, audit entries, errors or metrics.</li>
+</ul>
+<h3 id="1-2-module-summary">1.2 Module Summary</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Module</th>
+<th>Source files</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>access</code></td>
+<td>64</td>
+<td>Sign-in through MCC SSO, users, sessions, the role store, step-up and the per-System ownership check.</td>
+</tr>
+<tr>
+<td><code>adapters</code></td>
+<td>21</td>
+<td>The production and local implementations of the boundary ports (identity provider, malware scanner, mail relay, file store, account status).</td>
+</tr>
+<tr>
+<td><code>app</code></td>
+<td>5</td>
+<td>The composition root: the Spring Boot entry point, the clock bean, the security filter chains (the application and the metrics scrape).</td>
+</tr>
+<tr>
+<td><code>audit</code></td>
+<td>15</td>
+<td>The append-only audit log: writing entries in the action&#x27;s transaction or on their own, the ECS event after the commit, and the read scope port.</td>
+</tr>
+<tr>
+<td><code>boundary</code></td>
+<td>7</td>
+<td>The ports at the edge of the application: identity provider, account status, malware scanner, mail relay, file store. The only things Seam 1 tests fake (with the clock).</td>
+</tr>
+<tr>
+<td><code>config</code></td>
+<td>3</td>
+<td>Shared configuration: application properties and the dev-local and not-dev-local profile markers.</td>
+</tr>
+<tr>
+<td><code>cycle</code></td>
+<td>10</td>
+<td>The VA Cycle and Quarter calendar, computed from the year, two settings and the clock; the stored record of a Cycle opening and closing.</td>
+</tr>
+<tr>
+<td><code>dashboard</code></td>
+<td>16</td>
+<td>Read models for the roles: the SMO inbox, the Cyber Manager inbox, the Quarter board and the VA POC Cycle matrix.</td>
+</tr>
+<tr>
+<td><code>export</code></td>
+<td>17</td>
+<td>Exports made in the background and kept 24 hours in the export zone: the management summary in Excel and PDF.</td>
+</tr>
+<tr>
+<td><code>finding</code></td>
+<td>43</td>
+<td>Findings read from Scan Reports, their status proposals, the Cyber Manager review, the rework queue and the manual Findings.</td>
+</tr>
+<tr>
+<td><code>ingestion</code></td>
+<td>21</td>
+<td>The Scan Report upload pipeline: quarantine, scan job, type and schema checks, parsing, and the file views.</td>
+</tr>
+<tr>
+<td><code>jdbc</code></td>
+<td>2</td>
+<td>What every store shares about PostgreSQL through JdbcClient: how an instant is written and read.</td>
+</tr>
+<tr>
+<td><code>monitoring</code></td>
+<td>2</td>
+<td>The key signals (meters) an operator watches, named and registered in one place (ADR 0060).</td>
+</tr>
+<tr>
+<td><code>notification</code></td>
+<td>19</td>
+<td>In-app notifications, the mail outbox and its dispatcher, deadline reminders.</td>
+</tr>
+<tr>
+<td><code>parser</code></td>
+<td>24</td>
+<td>Reading Scan Report files: the hardened XML reader and one parser per vendor format (Dependency-Check, SCAP, Nessus, Burp Suite).</td>
+</tr>
+<tr>
+<td><code>register</code></td>
+<td>31</td>
+<td>The System Register: the Excel template, upload and preview, the locked apply, the Systems list, SMO Unreachable, the role-holder review.</td>
+</tr>
+<tr>
+<td><code>retention</code></td>
+<td>11</td>
+<td>Retention and disposal: the disposal list a VA POC approves and the executor that deletes files, then records, through the one path the append-only tables allow; the database checks every history row it deletes against the approved list (ADR 0050).</td>
+</tr>
+<tr>
+<td><code>scan</code></td>
+<td>4</td>
+<td>Quarantine and malware scan shared by the Scan Report pipeline and the Register upload.</td>
+</tr>
+<tr>
+<td><code>submission</code></td>
+<td>34</td>
+<td>The VA Submission state machine, submit, review steps, endorsement, Exemptions, the Overdue sweep, the Cycle lifecycle and role lapses.</td>
+</tr>
+<tr>
+<td><code>web</code></td>
+<td>10</td>
+<td>Cross-cutting HTTP: RFC 9457 problems, the correlation id, the refusal listener, CSRF and session bootstrap.</td>
+</tr>
+<tr>
+<td><code>frontend</code></td>
+<td>see section 1.8</td>
+<td>The React single-page application.</td>
+</tr>
+</tbody></table></div>
+<p>20 back-end modules, 359 source files.</p>
+<h3 id="1-3-module-interaction-diagram">1.3 Module Interaction Diagram</h3>
+<p>Arrows run from the module that uses to the module used, read from the <code>import</code> statements of the source. <code>ArchitectureTest.modulesDependOnlyDownwards</code> names which module may use which and fails the build on any other use; <code>ModuleConventionsArchTest</code> keeps the modules free of cycles and the platform modules free of any dependency on a business module. The <code>app</code> composition root may use every module and nothing uses it, so its arrows are left out; <code>adapters</code> implements the ports of <code>boundary</code> and no module imports it (Spring wires its beans by type).</p>
+<pre class="mermaid">graph TD
+  subgraph Frontend["Frontend (SPA)"]
+    FE[React screens by role]
+  end
+  subgraph Business["Business modules"]
+    register[register]
+    submission[submission]
+    finding[finding]
+    ingestion[ingestion]
+    dashboard[dashboard]
+    notification[notification]
+    export[export]
+    retention[retention]
+  end
+  subgraph Platform["Platform modules"]
+    web[web]
+    config[config]
+    jdbc[jdbc]
+    boundary[boundary]
+    monitoring[monitoring]
+    audit[audit]
+    access[access]
+    cycle[cycle]
+    scan[scan]
+    parser[parser]
+  end
+  subgraph Adapters["Adapters (wired by Spring type only)"]
+    adapters[adapters: local, oidc, pending, s3]
+  end
+  FE -.->|REST API| web
+  access --> audit
+  access --> boundary
+  access --> config
+  access --> jdbc
+  access --> monitoring
+  access --> web
+  audit --> config
+  audit --> jdbc
+  audit --> monitoring
+  audit --> web
+  cycle --> config
+  cycle --> jdbc
+  cycle --> web
+  dashboard --> access
+  dashboard --> cycle
+  dashboard --> finding
+  dashboard --> register
+  dashboard --> submission
+  export --> access
+  export --> audit
+  export --> boundary
+  export --> cycle
+  export --> dashboard
+  export --> finding
+  export --> jdbc
+  export --> web
+  finding --> access
+  finding --> audit
+  finding --> cycle
+  finding --> jdbc
+  finding --> parser
+  finding --> submission
+  finding --> web
+  ingestion --> access
+  ingestion --> audit
+  ingestion --> boundary
+  ingestion --> cycle
+  ingestion --> finding
+  ingestion --> jdbc
+  ingestion --> monitoring
+  ingestion --> parser
+  ingestion --> scan
+  ingestion --> submission
+  ingestion --> web
+  notification --> access
+  notification --> boundary
+  notification --> cycle
+  notification --> jdbc
+  notification --> monitoring
+  notification --> register
+  notification --> submission
+  notification --> web
+  register --> access
+  register --> audit
+  register --> cycle
+  register --> jdbc
+  register --> scan
+  register --> web
+  retention --> access
+  retention --> audit
+  retention --> boundary
+  retention --> cycle
+  retention --> jdbc
+  retention --> register
+  retention --> web
+  scan --> boundary
+  scan --> monitoring
+  submission --> access
+  submission --> audit
+  submission --> cycle
+  submission --> jdbc
+  submission --> monitoring
+  submission --> parser
+  submission --> register
+  submission --> web
+  adapters -.->|implements| boundary</pre>
+<p>Platform modules: <code>web</code>, <code>config</code>, <code>jdbc</code>, <code>boundary</code>, <code>monitoring</code>, <code>audit</code>, <code>access</code>, <code>cycle</code>, <code>scan</code>, <code>parser</code>. Business modules: <code>register</code>, <code>submission</code>, <code>finding</code>, <code>ingestion</code>, <code>dashboard</code>, <code>notification</code>, <code>export</code>, <code>retention</code>. <code>adapters</code> uses <code>boundary</code>, <code>config</code>; <code>app</code> uses <code>access</code>, <code>web</code>.</p>
+<h3 id="1-4-module-interactions">1.4 Module Interactions</h3>
+<ul>
+<li><strong>Sign-in and roles (<code>access</code>).</strong> The browser is sent to MCC SSO through the OIDC authorization-code flow; the callback links the sign-in to a user (by <code>sso_id</code>, else pre-registered email, else new), rotates the session and audits it. Roles live in <code>role_grant</code> and are read into a <code>RoleAuthentication</code> on every request. <code>AccessGuard</code> is the one ownership check every service path that addresses a System calls. <code>StepUp.require(intent)</code> makes a sensitive command need a sign-in within five minutes.</li>
+<li><strong>Register and submissions.</strong> A VA POC uploads the System Register workbook; <code>register</code> scans it synchronously through <code>scan</code>, reads it into a preview, and applies a confirmed preview in one locked transaction that also grants the SMO/Tech Lead and Cyber Manager roles through <code>access</code> and withdraws in-flight work through the <code>InFlightWork</code> port the <code>submission</code> module implements. An SMO/Tech Lead starts a VA Submission (<code>submission</code>), uploads Scan Reports (<code>ingestion</code>), proposes Finding statuses (<code>finding</code>), submits; a Cyber Manager reviews and passes or returns it; a VA POC endorses with a fresh sign-in.</li>
+<li><strong>Files.</strong> <code>ingestion</code> puts every upload in the quarantine zone of the file store through <code>scan</code>, the scan job asks the scanner for a verdict, and only the scanner&#x27;s unchanged copy is type-checked, schema-checked and parsed (<code>parser</code>) into Findings (<code>finding</code>). Nobody can view a file until it is clean (ADR 0021). While the VA Submission is editable, an SMO/Tech Lead can delete a report file, which is deleted softly and re-rates the Findings it touched through <code>finding</code>, or a Manually Entered Finding that never had a proposal (ADR 0061).</li>
+<li><strong>Time-driven work.</strong> <code>@Scheduled</code> jobs (only where <code>annualva.scheduling.enabled</code>; Seam 1 runs each by hand) sweep Overdue (<code>submission</code>), open and close Cycles, lapse Exemptions and roles, plan deadline reminders and dispatch the mail outbox (<code>notification</code>), make exports (<code>export</code>) and propose disposal lists (<code>retention</code>). The jobs coordinate through the database, without ShedLock (ADR 0012): each claims its rows (<code>FOR UPDATE SKIP LOCKED</code>, a lease on a claimed mail, a write guarded by the status it read) and is idempotent, so two instances do not double the work. ADR 0012 also names a <code>scheduler_lock</code> table: no migration creates one and no code uses one.</li>
+<li><strong>Notifications and mail.</strong> Workflow modules publish events inside their transaction; <code>notification</code> writes the in-app notice and queues the mail after the commit, and <code>MailOutbox</code> hands it to the mail relay with allow-listed values only (ADR 0043, 0046).</li>
+<li><strong>Audit.</strong> Modules that act call <code>AuditLog.record</code> in their own transaction (<code>recordIndependently</code> for refusals and sign-ins); the entry is also emitted as an ECS event on the <code>annualva.audit</code> logger after the commit. The audit read scope is a port (<code>AuditReaders</code>) the <code>submission</code> module answers (ADR 0038).</li>
+<li><strong>Monitoring.</strong> <code>monitoring.KeySignals</code> is injected by the modules that have a signal to record; the endpoint <code>/actuator/prometheus</code> is served behind its own security chain (section 1.9, ADR 0060).</li>
+</ul>
+<h3 id="1-5-execution-flow">1.5 Execution Flow</h3>
+<p><strong>Request lifecycle.</strong> <code>CorrelationIdFilter</code> assigns or accepts a correlation id; the security chain (the application&#x27;s, or the scrape chain for <code>/actuator/prometheus</code>) authenticates and applies CSRF (synchronizer token), the CSP and HSTS headers; <code>RoleResolutionFilter</code> loads the caller&#x27;s grants; the controller&#x27;s <code>@PreAuthorize</code> rule and <code>AccessGuard</code> decide; a service runs the command in one transaction that includes its audit entry; <code>ApiExceptionHandler</code> turns any failure into an RFC 9457 problem with the correlation id and reports each 401 or 403 to the refusal listener, which audits it.</p>
+<p><strong>Background processes.</strong> Each is a <code>*Job</code> class that exists only where <code>annualva.scheduling.enabled</code> is true and calls a plain bean, which a Seam 1 test runs through a test-only endpoint. Defaults: the scan job every 10 s (<code>ScanPollerJob</code>), the export worker every 5 s (<code>ExportWorkerJob</code>), mail dispatch every 30 s (<code>MailDispatchJob</code>), the Overdue sweep, the Cycle lifecycle, the Exemption lapse and the role lapse each hourly and once at start (<code>OverdueSweepJob</code>, <code>CycleLifecycleJob</code>, <code>ExemptionLapseJob</code>, <code>RoleLapseJob</code>), deadline reminders on the hour from 08:00 to 23:00 business time, written once per person and day (<code>DeadlineReminderJob</code>, ADR 0052), and retention (<code>RetentionJob</code>): the disposal list at 02:30 business time and the executor every 5 minutes.</p>
+<p><strong>Initialisation.</strong> Flyway applies <code>db/migration</code> (the range is in section 4.1; gapless: <code>MigrationSequenceTest</code>); the two VA POCs are synced from <code>annualva.va-pocs</code>; configuration is validated at start and a missing secret stops the application (ADR 0005).</p>
+<h3 id="1-6-execution-flow-diagrams">1.6 Execution Flow Diagrams</h3>
+<p>Sign-in and step-up (ADR 0004):</p>
+<pre class="mermaid">sequenceDiagram
+  participant B as Browser
+  participant A as Application (access)
+  participant I as MCC SSO
+  participant D as audit_entry
+  B->>A: GET /oauth2/authorization/mcc-sso-login
+  A->>I: authorization request (PKCE, nonce)
+  I-->>B: sign-in and MFA
+  B->>A: callback with code
+  A->>I: token request (private_key_jwt)
+  A->>A: link user, rotate session, load roles
+  A->>D: sign-in entry (own transaction)
+  B->>A: sensitive command (POST)
+  A-->>B: 403 step-up-required (audited, counted)
+  B->>A: GET /auth/step-up?intent=...
+  A->>I: authorization request prompt=login, max_age=0
+  I-->>A: fresh auth_time
+  A->>D: step-up entry
+  B->>A: sensitive command again (200)</pre>
+<p>Scan Report upload (ADR 0021):</p>
+<pre class="mermaid">sequenceDiagram
+  participant S as SMO/Tech Lead
+  participant U as ingestion
+  participant Q as scan and FileStore
+  participant J as ScanPoller job
+  participant M as MalwareScanner
+  participant F as finding
+  S->>U: POST /api/submissions/{id}/files
+  U->>Q: put bytes in quarantine zone
+  U-->>S: 202 QUARANTINED
+  J->>M: submit(file)
+  J->>M: check(ticket)
+  M-->>J: CLEAN_UNCHANGED
+  J->>Q: fetch clean copy, compare SHA-256
+  J->>J: type check, schema check, parse
+  J->>F: record Findings (same transaction as the status)
+  J->>Q: delete quarantined bytes after the commit</pre>
+<p>Required mail (ADR 0043, 0046):</p>
+<pre class="mermaid">sequenceDiagram
+  participant W as workflow module
+  participant N as notification
+  participant O as mail_outbox
+  participant J as MailDispatchJob
+  participant R as MailRelay
+  W->>N: event (inside its transaction)
+  N->>O: queue mail with the notification
+  J->>O: claim next due mail (lease)
+  J->>R: send(recipient, template id, allow-listed values)
+  R-->>J: accepted, or address rejected, or failure
+  J->>O: settle (SENT, REJECTED) or retry after 1, 2, 4, 8 minutes
+  J->>J: count a failure in KeySignals</pre>
+<h3 id="1-7-boundary-ports-and-adapters">1.7 Boundary Ports and Adapters</h3>
+<p>Seam 1 tests fake only these (and the clock); everything else is real, including PostgreSQL (Testcontainers). Production implementations live only under <code>sg.annualva.adapters</code> and no module imports them (<code>ArchitectureTest</code>). The AWS SDK is used only by the S3 adapter.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Port (<code>boundary</code>)</th>
+<th>Adapter</th>
+<th>Package</th>
+<th>Where it is active</th>
+<th>Seam 1 fake</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>FileStore</code></td>
+<td><code>S3FileStore</code> (S3 with SSE-KMS, ADR 0059)</td>
+<td><code>adapters.s3</code></td>
+<td>where <code>annualva.aws.enabled=true</code> and not <code>dev-local</code> (<code>dev-mcc</code>; a deployment by property)</td>
+<td><code>InMemoryFileStore</code></td>
+</tr>
+<tr>
+<td><code>FileStore</code></td>
+<td><code>LocalFileStore</code></td>
+<td><code>adapters.local</code></td>
+<td><code>dev-local</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>FileStore</code></td>
+<td><code>UnwiredFileStore</code> (fail-closed stand-in)</td>
+<td><code>adapters.pending</code></td>
+<td>where <code>annualva.aws.enabled</code> is off, not <code>dev-local</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>MalwareScanner</code></td>
+<td><code>LocalMalwareScanner</code></td>
+<td><code>adapters.local</code></td>
+<td><code>dev-local</code></td>
+<td><code>FakeMalwareScanner</code></td>
+</tr>
+<tr>
+<td><code>MalwareScanner</code></td>
+<td><code>UnwiredMalwareScanner</code> (fail-closed)</td>
+<td><code>adapters.pending</code></td>
+<td>not <code>dev-local</code>, until ticket 51&#x27;s scanner adapter</td>
+<td></td>
+</tr>
+<tr>
+<td><code>MailRelay</code></td>
+<td><code>LocalMailRelay</code></td>
+<td><code>adapters.local</code></td>
+<td><code>dev-local</code></td>
+<td><code>CapturingMailRelay</code></td>
+</tr>
+<tr>
+<td><code>MailRelay</code></td>
+<td><code>UnwiredMailRelay</code> (fail-closed)</td>
+<td><code>adapters.pending</code></td>
+<td>not <code>dev-local</code>, until ticket 51&#x27;s mail adapter</td>
+<td></td>
+</tr>
+<tr>
+<td><code>IdentityStatus</code></td>
+<td><code>LocalIdentityStatus</code></td>
+<td><code>adapters.local</code></td>
+<td><code>dev-local</code></td>
+<td><code>FakeIdentityStatus</code></td>
+</tr>
+<tr>
+<td><code>IdentityStatus</code></td>
+<td><code>UnwiredIdentityStatus</code> (fail-closed)</td>
+<td><code>adapters.pending</code></td>
+<td>not <code>dev-local</code>, until ticket 51&#x27;s service-client adapter</td>
+<td></td>
+</tr>
+<tr>
+<td><code>IdentityProvider</code></td>
+<td><code>MccIdentityProvider</code> (MCC SSO: explicit endpoints, <code>private_key_jwt</code>, EC P-521; with <code>MccClientConfig</code>, <code>MccHttp</code>, <code>SigningKeys</code>, <code>JwksController</code>)</td>
+<td><code>adapters.oidc</code></td>
+<td>every profile but <code>dev-local</code></td>
+<td><code>FakeOidcIssuer</code> (an in-process issuer)</td>
+</tr>
+<tr>
+<td><code>Clock</code></td>
+<td><code>ClockConfig</code> (<code>app</code>)</td>
+<td><code>app</code></td>
+<td>always</td>
+<td><code>MutableClock</code></td>
+</tr>
+</tbody></table></div>
+<p>Configuration of the adapters: <code>LocalAdapterProperties</code> (<code>adapters.local</code>), <code>MccSsoProperties</code> (<code>adapters.oidc</code>), <code>AwsProperties</code> (<code>adapters.s3</code>). The scanner, mail and service-client production adapters wait for <code>mock-m-sso</code> (ticket 51 is open beyond the file store).</p>
+<h3 id="1-8-front-end">1.8 Front end</h3>
+<p><code>frontend/src</code>: <code>app</code> (shell, router, step-up interstitial, sign-in screens for <code>dev-local</code>), <code>api</code> (a typed client per back-end area: <code>session</code>, <code>systemRegister</code>, <code>submissions</code>, <code>scanReports</code>, <code>reportFiles</code>, <code>findings</code>, <code>dashboards</code>, <code>exemptions</code>, <code>exports</code>, <code>disposal</code>, <code>roleHolders</code>, <code>audit</code>, <code>notifications</code>, <code>cycles</code>, <code>stepUp</code>, <code>dev</code>, over the shared <code>client</code>, <code>problem</code>, <code>page</code> and <code>files</code> helpers), <code>components</code> (<code>ClassificationBanner</code>, <code>ClassifiedField</code>, <code>ErrorPanel</code>, <code>FilterChips</code>, <code>ProgressBar</code>), <code>hooks</code>, and <code>screens</code> by role (<code>smo</code>, <code>cyber-manager</code>, <code>va-poc</code>, <code>auditor</code>, <code>shared</code>). Gates: Prettier, <code>tsc -b</code>, <code>vite build</code>, a no-raw-HTML check, dependency-cruiser and fallow. There are no React unit tests (ADR 0009).</p>
+<h3 id="1-9-profiles-and-monitoring">1.9 Profiles and Monitoring</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Profile</th>
+<th>File</th>
+<th>Use</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>(base)</td>
+<td><code>application.yml</code></td>
+<td>the production shape: bare <code>${ENV_VAR}</code> for every environment value (ADR 0005)</td>
+</tr>
+<tr>
+<td><code>dev-mcc</code></td>
+<td><code>application-dev-mcc.yml</code></td>
+<td>local development against <code>../mock-m-sso</code>, LocalStack and compose PostgreSQL; mock values only (ADR 0003)</td>
+</tr>
+<tr>
+<td><code>dev-local</code></td>
+<td><code>application-dev-local.yml</code></td>
+<td>one machine with PostgreSQL only: a persona picker and local fakes; loopback only and refuses to start with another profile (ADR 0058)</td>
+</tr>
+<tr>
+<td><code>ci</code></td>
+<td><code>application-ci.yml</code> (test classpath)</td>
+<td>Seam 1: Testcontainers PostgreSQL, in-process fakes, plain HTTP</td>
+</tr>
+<tr>
+<td><code>sit</code></td>
+<td><code>application-sit.yml</code></td>
+<td>the first deployed target: <code>${VAR:default}</code> for what is not secret; secrets have no default (ADR 0005)</td>
+</tr>
+</tbody></table></div>
+<p>UAT and production run the base configuration with every value supplied by the environment. The README&#x27;s &quot;Profiles, secrets and environments&quot; section lists the variables.</p>
+<p>Monitoring (IM8 lm-16, ADR 0060): <code>monitoring.KeySignals</code> registers the Overdue gauges and the counters for scan failures and timeouts, mail failures, step-up refusals and audit write failures. <code>/actuator/prometheus</code> has its own security chain with a bearer token (<code>app.MetricsScrapeSecurity</code>); <code>/actuator/health</code> is anonymous and liveness-only. The README&#x27;s run book gives each signal&#x27;s alert threshold and the operator response. Provisional (decided 2026-11-22, ADR 0060): the bearer token as the scraper&#x27;s credential, the alert thresholds (starting values) and where each environment keeps the token are not final; ticket 55 (products and non-functional targets, with a person) decides them.</p>
+<h2 id="2-software-module-catalog">2. Software Module Catalog</h2>
+<p>Each module lists its purpose, the modules it imports and the modules that import it, the HTTP endpoints its controllers serve, and its public types with the first sentence of their Javadoc. Types that are not public (most stores, jobs and adapters) are left out: they are not part of a module&#x27;s interface. Method-level detail is in the Javadoc of each class.</p>
+<h4 id="access"><code>access</code></h4>
+<ul>
+<li><strong>Source files:</strong> 64 under <code>backend/src/main/java/sg/annualva/access/</code></li>
+<li><strong>Purpose:</strong> Sign-in through MCC SSO, users, sessions, the role store, step-up and the per-System ownership check.</li>
+<li><strong>Uses (imports):</strong> audit, boundary, config, jdbc, monitoring, web</li>
+<li><strong>Used by:</strong> app, dashboard, export, finding, ingestion, notification, register, retention, submission</li>
+</ul>
+<p><strong>Endpoints:</strong></p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Method</th>
+<th>Path</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/dev/personas</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/dev/step-up</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/session</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/auth/step-up</code></td>
+</tr>
+</tbody></table></div>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Public type</th>
+<th>Kind</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>AccessGuard</code></td>
+<td>class</td>
+<td>Per-System ownership (IM8 ac-1, as-7).</td>
+</tr>
+<tr>
+<td><code>AppUser</code></td>
+<td>record</td>
+<td>A person known to the application: pre-registered by email (System Register) or linked to an identity-provider id at first sign-in.</td>
+</tr>
+<tr>
+<td><code>AppUserStore</code></td>
+<td>class</td>
+<td>The app_user table.</td>
+</tr>
+<tr>
+<td><code>AuditActor</code></td>
+<td>class</td>
+<td>Names the caller on an audit entry.</td>
+</tr>
+<tr>
+<td><code>CurrentUser</code></td>
+<td>class</td>
+<td>The signed-in person behind the current request, for a command that has to record who it was done by (a Register preview remembers its uploader).</td>
+</tr>
+<tr>
+<td><code>DevIdentityProperties</code></td>
+<td>record</td>
+<td>Local-stack identities (prefix annualva.dev): MockPass personas carry an afcas.uuid but no email, while the System Register works by email.</td>
+</tr>
+<tr>
+<td><code>DevLocalController</code></td>
+<td>class</td>
+<td>The endpoints of the dev-local profile that are not the sign-in itself (ticket 63, ADR 0058): the list of the six personas, which the front end reads to offer its picker (a 404 anywhere else is how it knows not to), and the local confirmation of a step-up, which takes the place of the round trip to ...</td>
+</tr>
+<tr>
+<td><code>GrantSource</code></td>
+<td>enum</td>
+<td>Where a role grant came from: the only three ways a role is ever given.</td>
+</tr>
+<tr>
+<td><code>Need</code></td>
+<td>enum</td>
+<td>What a caller wants to do with a System, named after the steps of the VA Submission flow.</td>
+</tr>
+<tr>
+<td><code>RegisterRoles</code></td>
+<td>class</td>
+<td>Makes the role store agree with the System Register (stories 73 and 79, IM8 ac-3): every active System has an SMO/Tech Lead grant and a Cyber Manager grant, with source REGISTER, scoped to that System, and nobody else holds one.</td>
+</tr>
+<tr>
+<td><code>ReturnTrigger</code></td>
+<td>enum</td>
+<td>Why a lapsed grant came back by itself (story 80a, IM8 ac-3, ADR 0055).</td>
+</tr>
+<tr>
+<td><code>Role</code></td>
+<td>enum</td>
+<td>The four roles, in the order a person&#x27;s first role is chosen: the highest privilege first.</td>
+</tr>
+<tr>
+<td><code>RoleAuthentication</code></td>
+<td>class</td>
+<td>The caller as one request sees them: the session&#x27;s SessionUser plus the role grants that count right now, read from the role store at the start of the request (ADR 0011).</td>
+</tr>
+<tr>
+<td><code>RoleGrant</code></td>
+<td>record</td>
+<td>One row of the role store: a person (by email, and by user once they have signed in) holds a role, for one System where the role is per System.</td>
+</tr>
+<tr>
+<td><code>RoleGrantStore</code></td>
+<td>class</td>
+<td>The role_grant table.</td>
+</tr>
+<tr>
+<td><code>RoleHolder</code></td>
+<td>record</td>
+<td>One grant that has not been revoked, as the role-holder review lists it (ticket 47, IM8 ac-4): the grant, and what the person&#x27;s user record says.</td>
+</tr>
+<tr>
+<td><code>RoleHolderChanged</code></td>
+<td>record</td>
+<td>A VA POC gave a System someone who can act at a step again (decided 2026-10-26): they restored its SMO/Tech Lead&#x27;s or Cyber Manager&#x27;s suspended role, or applied a Register that revoked the role or brought a lapsed one back.</td>
+</tr>
+<tr>
+<td><code>RoleHolders</code></td>
+<td>class</td>
+<td>The role store as the VA POCs&#x27; role-holder review sees it (IM8 ac-4, ticket 47, ADR 0056): every grant not revoked, and the review&#x27;s one change, suspending a person&#x27;s role for a System until a Register upload names someone else, or restoring it.</td>
+</tr>
+<tr>
+<td><code>RoleLapse</code></td>
+<td>class</td>
+<td>The role lapse and its automatic return (story 80a, IM8 ac-3, ADR 0055).</td>
+</tr>
+<tr>
+<td><code>SessionAuthentication</code></td>
+<td>class</td>
+<td>The authentication stored in the session after a successful sign-in.</td>
+</tr>
+<tr>
+<td><code>SessionController</code></td>
+<td>class</td>
+<td>What the SPA asks on load: is there a session, who is signed in, what the shell must show and when the session ends.</td>
+</tr>
+<tr>
+<td><code>SessionUser</code></td>
+<td>record</td>
+<td>The signed-in person as kept in the server-side session: the user id (the only identifier that may appear in logs), what the header shows, and the two instants the session rules need.</td>
+</tr>
+<tr>
+<td><code>SignInProperties</code></td>
+<td>record</td>
+<td>Sign-in and session rules (prefix annualva.sign-in).</td>
+</tr>
+<tr>
+<td><code>SignInRefusedException</code></td>
+<td>class</td>
+<td>A sign-in the application refuses after the identity provider accepted it: no session is created.</td>
+</tr>
+<tr>
+<td><code>SignInSecurity</code></td>
+<td>class</td>
+<td>The sign-in and session wiring the composition root applies to the one filter chain: the way a sign-in starts (SignInMethod: OIDC login through the MCC client beans, or the persona picker under dev-local), the lean session principal, sign-out at POST /api/logout, session id rotation at sign-in, one ...</td>
+</tr>
+<tr>
+<td><code>SignInService</code></td>
+<td>class</td>
+<td>The sign-in rules: refuse when the token lacks the person&#x27;s identifier, an auth_time (fail closed, ADR 0004) or, where required, multi-factor evidence (ac-2); then link the identity to a user by sso_id, else by a pre-registered email, else create one.</td>
+</tr>
+<tr>
+<td><code>StepUp</code></td>
+<td>class</td>
+<td>Step-up (IM8 ac-2, story 77, ADR 0004): a sensitive command asks #require(String) first, and is refused unless the person signed in again within the freshness window.</td>
+</tr>
+<tr>
+<td><code>StepUpController</code></td>
+<td>class</td>
+<td>Where the browser goes when a sensitive command answered step-up-required: the person is sent to StepUpStarter&#x27;s fresh sign-in (the identity provider&#x27;s, or the local confirmation under dev-local) and comes back to returnTo.</td>
+</tr>
+<tr>
+<td><code>StepUpProperties</code></td>
+<td>record</td>
+<td>Step-up rules (prefix annualva.step-up, IM8 ac-2, ADR 0004).</td>
+</tr>
+<tr>
+<td><code>SuspensionCause</code></td>
+<td>enum</td>
+<td>Why a grant is suspended (ticket 47, ADR 0056).</td>
+</tr>
+<tr>
+<td><code>SystemScope</code></td>
+<td>record</td>
+<td>Which Systems a caller may reach for one Need: every System (a VA POC), or exactly the listed ones.</td>
+</tr>
+<tr>
+<td><code>VaPocProperties</code></td>
+<td>record</td>
+<td>The two VA POCs, set at deployment (annualva.va-pocs, a comma-separated list) and changed only by changing the deployment&#x27;s configuration through its change request.</td>
+</tr>
+</tbody></table></div>
+<h4 id="adapters"><code>adapters</code></h4>
+<ul>
+<li><strong>Source files:</strong> 21 under <code>backend/src/main/java/sg/annualva/adapters/</code></li>
+<li><strong>Purpose:</strong> The production and local implementations of the boundary ports (identity provider, malware scanner, mail relay, file store, account status).</li>
+<li><strong>Uses (imports):</strong> boundary, config</li>
+<li><strong>Used by:</strong> no other module</li>
+</ul>
+<p><strong>Endpoints:</strong></p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Method</th>
+<th>Path</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/.well-known/jwks.json</code></td>
+</tr>
+</tbody></table></div>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Public type</th>
+<th>Kind</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>AwsProperties</code></td>
+<td>record</td>
+<td>Settings of the S3 file store (prefix annualva.aws); bound only where annualva.aws.enabled is true.</td>
+</tr>
+<tr>
+<td><code>JwksController</code></td>
+<td>class</td>
+<td>Publishes the public half of the client-assertion signing key so MCC SSO can verify private_key_jwt.</td>
+</tr>
+<tr>
+<td><code>LocalAdapterProperties</code></td>
+<td>record</td>
+<td>Settings of the local adapters (prefix annualva.dev-local); only under the dev-local profile.</td>
+</tr>
+<tr>
+<td><code>MccSsoProperties</code></td>
+<td>record</td>
+<td>MCC SSO settings (prefix annualva.mcc).</td>
+</tr>
+</tbody></table></div>
+<h4 id="app"><code>app</code></h4>
+<ul>
+<li><strong>Source files:</strong> 5 under <code>backend/src/main/java/sg/annualva/app/</code></li>
+<li><strong>Purpose:</strong> The composition root: the Spring Boot entry point, the clock bean, the security filter chains (the application and the metrics scrape).</li>
+<li><strong>Uses (imports):</strong> access, web</li>
+<li><strong>Used by:</strong> no other module</li>
+</ul>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Public type</th>
+<th>Kind</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>AnnualVaApplication</code></td>
+<td>class</td>
+<td>Entry point.</td>
+</tr>
+<tr>
+<td><code>MonitoringProperties</code></td>
+<td>record</td>
+<td>The monitoring endpoint&#x27;s credential (prefix annualva.monitoring, IM8 lm-16, ADR 0060).</td>
+</tr>
+</tbody></table></div>
+<h4 id="audit"><code>audit</code></h4>
+<ul>
+<li><strong>Source files:</strong> 15 under <code>backend/src/main/java/sg/annualva/audit/</code></li>
+<li><strong>Purpose:</strong> The append-only audit log: writing entries in the action&#x27;s transaction or on their own, the ECS event after the commit, and the read scope port.</li>
+<li><strong>Uses (imports):</strong> config, jdbc, monitoring, web</li>
+<li><strong>Used by:</strong> access, export, finding, ingestion, register, retention, submission</li>
+</ul>
+<p><strong>Endpoints:</strong></p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Method</th>
+<th>Path</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/audit-entries</code></td>
+</tr>
+</tbody></table></div>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Public type</th>
+<th>Kind</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>AuditAction</code></td>
+<td>enum</td>
+<td>What an audit entry records.</td>
+</tr>
+<tr>
+<td><code>AuditCaller</code></td>
+<td>interface</td>
+<td>Names the caller of the current request on an entry the audit module writes about its own reads (ticket 50): the access module answers, because it knows who is signed in and the roles they hold, so the audit log depends on none of the modules that write to it.</td>
+</tr>
+<tr>
+<td><code>AuditController</code></td>
+<td>class</td>
+<td>Read access to the audit log: a VA POC reads every entry (story 84), a Cyber Manager the history of the VA Submissions they reviewed on Systems still assigned to them (story 85, ADR 0038), with the same filters.</td>
+</tr>
+<tr>
+<td><code>AuditDetail</code></td>
+<td>class</td>
+<td>The allow-listed detail of an audit entry: keys from DetailKey only, values that are a short code (letters, digits and .</td>
+</tr>
+<tr>
+<td><code>AuditEntry</code></td>
+<td>record</td>
+<td>One stored audit entry as the audit log API returns it.</td>
+</tr>
+<tr>
+<td><code>AuditEvent</code></td>
+<td>record</td>
+<td>One thing to be recorded.</td>
+</tr>
+<tr>
+<td><code>AuditFilter</code></td>
+<td>record</td>
+<td>What the audit log is narrowed by; a null field does not narrow.</td>
+</tr>
+<tr>
+<td><code>AuditLog</code></td>
+<td>class</td>
+<td>The one way to write to and read the audit log.</td>
+</tr>
+<tr>
+<td><code>AuditOutcome</code></td>
+<td>enum</td>
+<td>How an audited action ended.</td>
+</tr>
+<tr>
+<td><code>AuditQuery</code></td>
+<td>record</td>
+<td>One read of the audit log as a reader asked for it: the filters (a null one does not narrow), with from and to as business dates, both inclusive, and the page.</td>
+</tr>
+<tr>
+<td><code>AuditReadScope</code></td>
+<td>record</td>
+<td>Which entries a caller may read (the permissions matrix, story 85): every entry (a VA POC), or exactly the entries about these VA Submissions (a Cyber Manager: those they reviewed on Systems still assigned to them).</td>
+</tr>
+<tr>
+<td><code>AuditReaders</code></td>
+<td>interface</td>
+<td>Who may read which entries, answered by the module that knows who reviewed what (the VA Submissions), so the audit log depends on none of the modules that write to it (ADR 0038).</td>
+</tr>
+<tr>
+<td><code>DetailKey</code></td>
+<td>enum</td>
+<td>The only keys an audit entry&#x27;s detail may carry.</td>
+</tr>
+</tbody></table></div>
+<h4 id="boundary"><code>boundary</code></h4>
+<ul>
+<li><strong>Source files:</strong> 7 under <code>backend/src/main/java/sg/annualva/boundary/</code></li>
+<li><strong>Purpose:</strong> The ports at the edge of the application: identity provider, account status, malware scanner, mail relay, file store. The only things Seam 1 tests fake (with the clock).</li>
+<li><strong>Uses (imports):</strong> no other module</li>
+<li><strong>Used by:</strong> access, adapters, export, ingestion, notification, retention, scan</li>
+</ul>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Public type</th>
+<th>Kind</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>BoundaryFailureException</code></td>
+<td>class</td>
+<td>A boundary adapter could not do what it was asked: the object store or the scanner was unreachable, refused the call or answered something unusable.</td>
+</tr>
+<tr>
+<td><code>FileStore</code></td>
+<td>interface</td>
+<td>The file-store port: the encrypted object store that holds uploaded files and the exports the application makes.</td>
+</tr>
+<tr>
+<td><code>IdentityProvider</code></td>
+<td>interface</td>
+<td>The identity-provider port: turns the verified token claims of a sign-in into the identity the access module links to a user.</td>
+</tr>
+<tr>
+<td><code>IdentityStatus</code></td>
+<td>interface</td>
+<td>The identity provider&#x27;s account status (IM8 ac-3, ticket 47, ADR 0056): whether the provider has disabled a person since they signed in.</td>
+</tr>
+<tr>
+<td><code>MailRelay</code></td>
+<td>interface</td>
+<td>The mail-relay port: the organisation&#x27;s notification service, which sends an email from an onboarded template (ADR 0003, assumption A-9).</td>
+</tr>
+<tr>
+<td><code>MalwareScanner</code></td>
+<td>interface</td>
+<td>The malware-scanner port (IM8 as-12, spec story 24): a file in the quarantine zone is submitted, the verdict is checked until it is final, and the unchanged copy is fetched.</td>
+</tr>
+</tbody></table></div>
+<h4 id="config"><code>config</code></h4>
+<ul>
+<li><strong>Source files:</strong> 3 under <code>backend/src/main/java/sg/annualva/config/</code></li>
+<li><strong>Purpose:</strong> Shared configuration: application properties and the dev-local and not-dev-local profile markers.</li>
+<li><strong>Uses (imports):</strong> no other module</li>
+<li><strong>Used by:</strong> access, adapters, audit, cycle</li>
+</ul>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Public type</th>
+<th>Kind</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>AnnualVaProperties</code></td>
+<td>record</td>
+<td>Application-wide settings (prefix annualva).</td>
+</tr>
+<tr>
+<td><code>DevLocal</code></td>
+<td>annotation</td>
+<td>Exists only under the dev-local profile (ticket 63, ADR 0058): the persona sign-in and the local boundary adapters of a developer&#x27;s machine.</td>
+</tr>
+<tr>
+<td><code>NotDevLocal</code></td>
+<td>annotation</td>
+<td>Exists in every profile but dev-local (ticket 63, ADR 0058): the single sign-on client and the stubs of the boundary adapters that ticket 51 replaces.</td>
+</tr>
+</tbody></table></div>
+<h4 id="cycle"><code>cycle</code></h4>
+<ul>
+<li><strong>Source files:</strong> 10 under <code>backend/src/main/java/sg/annualva/cycle/</code></li>
+<li><strong>Purpose:</strong> The VA Cycle and Quarter calendar, computed from the year, two settings and the clock; the stored record of a Cycle opening and closing.</li>
+<li><strong>Uses (imports):</strong> config, jdbc, web</li>
+<li><strong>Used by:</strong> dashboard, export, finding, ingestion, notification, register, retention, submission</li>
+</ul>
+<p><strong>Endpoints:</strong></p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Method</th>
+<th>Path</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/cycles</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/cycles/{year}</code></td>
+</tr>
+</tbody></table></div>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Public type</th>
+<th>Kind</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>CalendarProperties</code></td>
+<td>record</td>
+<td>The one-off first live Quarter: the Quarter of a VA Cycle from which that Cycle runs in this app.</td>
+</tr>
+<tr>
+<td><code>CycleCalendar</code></td>
+<td>class</td>
+<td>The calendar: every date in it is a business date in Asia/Singapore, derived from the Clock bean and never from an instant&#x27;s UTC date (ADR 0006).</td>
+</tr>
+<tr>
+<td><code>CycleController</code></td>
+<td>class</td>
+<td>The calendar, read-only, for anyone who holds a role: it names no System and holds no report content, so there is no ownership to check (ADR 0013) and no action to audit (ADR 0014); a person with no role has no use for it.</td>
+</tr>
+<tr>
+<td><code>CyclePhase</code></td>
+<td>enum</td>
+<td>Where a VA Cycle stands on a business day.</td>
+</tr>
+<tr>
+<td><code>CycleStore</code></td>
+<td>class</td>
+<td>What the calendar cannot derive about a VA Cycle (ADR 0015 item 1, ADR 0044): that the lifecycle job recorded its opening, and its close, with an early close&#x27;s date.</td>
+</tr>
+<tr>
+<td><code>CycleView</code></td>
+<td>record</td>
+<td>What GET /api/cycles/{year} answers, and each item of GET /api/cycles: the Cycle, its Quarters and their windows, and where today falls in it.</td>
+</tr>
+<tr>
+<td><code>Quarter</code></td>
+<td>record</td>
+<td>One Quarter of a VA Cycle: it starts on a Monday and runs to the day before the next Quarter starts (12 to 14 weeks).</td>
+</tr>
+<tr>
+<td><code>VaCycle</code></td>
+<td>record</td>
+<td>One VA Cycle, named after the year it starts.</td>
+</tr>
+<tr>
+<td><code>Window</code></td>
+<td>enum</td>
+<td>The three windows of a Quarter; they are soft, nothing locks when one is missed.</td>
+</tr>
+</tbody></table></div>
+<h4 id="dashboard"><code>dashboard</code></h4>
+<ul>
+<li><strong>Source files:</strong> 16 under <code>backend/src/main/java/sg/annualva/dashboard/</code></li>
+<li><strong>Purpose:</strong> Read models for the roles: the SMO inbox, the Cyber Manager inbox, the Quarter board and the VA POC Cycle matrix.</li>
+<li><strong>Uses (imports):</strong> access, cycle, finding, register, submission</li>
+<li><strong>Used by:</strong> export</li>
+</ul>
+<p><strong>Endpoints:</strong></p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Method</th>
+<th>Path</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/dashboards/cm-inbox</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/dashboards/cycle-matrix</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/dashboards/exemption-queue</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/dashboards/quarter-board</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/dashboards/smo-inbox</code></td>
+</tr>
+</tbody></table></div>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Public type</th>
+<th>Kind</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>CmInbox</code></td>
+<td>class</td>
+<td>The Cyber Manager&#x27;s action inbox (story 48): the Systems assigned to the caller in the System Register, in one VA Cycle, each with its VA Submission&#x27;s state (Not Started while it has none) and due dates, under the heading the server decides, Overdue first and then by the day its current window ends ...</td>
+</tr>
+<tr>
+<td><code>CmInboxController</code></td>
+<td>class</td>
+<td>The Cyber Manager&#x27;s action inbox, read-only.</td>
+</tr>
+<tr>
+<td><code>CycleMatrix</code></td>
+<td>class</td>
+<td>The VA POC&#x27;s Cycle matrix (story 64): the whole VA Cycle at once, as a strip of its four Quarters with how many Systems each holds in each state, then one row per System.</td>
+</tr>
+<tr>
+<td><code>CycleMatrixController</code></td>
+<td>class</td>
+<td>The Cycle matrix, read-only, for a VA POC only: an SMO/Tech Lead, a Cyber Manager, an Auditor or a person with no role gets 403.</td>
+</tr>
+<tr>
+<td><code>ExemptionQueue</code></td>
+<td>class</td>
+<td>The VA POC&#x27;s queue of Exemption requests waiting on a decision (story 45), in one VA Cycle, oldest first: the Systems of the endorse scope whose VA Submission is Exemption Requested, read through the one dashboard reader (DashboardSystems), each with its pending request and whether segregation of ...</td>
+</tr>
+<tr>
+<td><code>ExemptionQueueController</code></td>
+<td>class</td>
+<td>The Exemption requests waiting on a VA POC (story 45).</td>
+</tr>
+<tr>
+<td><code>HandledOutside</code></td>
+<td>record</td>
+<td>A System whose Quarter the manual process still runs, as every dashboard lists it apart: named, with no state, dates or action.</td>
+</tr>
+<tr>
+<td><code>InboxGroup</code></td>
+<td>enum</td>
+<td>The heading an inbox lists a System under; which one is the server&#x27;s answer for each role (ADR 0019 item 2).</td>
+</tr>
+<tr>
+<td><code>QuarterBoard</code></td>
+<td>class</td>
+<td>The Quarter board (story 49): one Quarter of a VA Cycle at once, its Systems in one column per state, from Not Started to Not Endorsed in the order of the spec&#x27;s state table, every column present even when it is empty.</td>
+</tr>
+<tr>
+<td><code>QuarterBoardController</code></td>
+<td>class</td>
+<td>The Quarter board, read-only, for a Cyber Manager (the Systems assigned to them and nobody else&#x27;s) and a VA POC (every System).</td>
+</tr>
+<tr>
+<td><code>SmoInbox</code></td>
+<td>class</td>
+<td>The SMO/Tech Lead&#x27;s inbox (stories 18 and 71): the Systems the caller submits for, in one VA Cycle, each in its Quarter with its state, its three due dates and what is needed next.</td>
+</tr>
+<tr>
+<td><code>SmoInboxController</code></td>
+<td>class</td>
+<td>The SMO/Tech Lead&#x27;s inbox, read-only.</td>
+</tr>
+<tr>
+<td><code>SystemState</code></td>
+<td>enum</td>
+<td>How a System in a Quarter is shown on a dashboard: Not Started while it has no VA Submission, otherwise its VA Submission&#x27;s state (Not Started too for one a rejected Exemption request created).</td>
+</tr>
+</tbody></table></div>
+<h4 id="export"><code>export</code></h4>
+<ul>
+<li><strong>Source files:</strong> 17 under <code>backend/src/main/java/sg/annualva/export/</code></li>
+<li><strong>Purpose:</strong> Exports made in the background and kept 24 hours in the export zone: the management summary in Excel and PDF.</li>
+<li><strong>Uses (imports):</strong> access, audit, boundary, cycle, dashboard, finding, jdbc, web</li>
+<li><strong>Used by:</strong> no other module</li>
+</ul>
+<p><strong>Endpoints:</strong></p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Method</th>
+<th>Path</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/exports</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/exports</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/exports/{id}</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/exports/{id}/download</code></td>
+</tr>
+</tbody></table></div>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Public type</th>
+<th>Kind</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>Classification</code></td>
+<td>enum</td>
+<td>The classification an export carries in its header, footer and first row (story 86, assumption A-1): Confidential when it covers the complete set (every System of the Quarter or the Cycle it is about), otherwise Restricted / Sensitive-Normal.</td>
+</tr>
+<tr>
+<td><code>ExportController</code></td>
+<td>class</td>
+<td>Exports, generated in the background and then downloaded (story 81, spec &quot;API contract&quot;).</td>
+</tr>
+<tr>
+<td><code>ExportFormat</code></td>
+<td>enum</td>
+<td>The file an export is made as: an Excel workbook (ticket 44) or a PDF (ticket 45) of the same content.</td>
+</tr>
+<tr>
+<td><code>ExportStatus</code></td>
+<td>enum</td>
+<td>Where an export is: waiting for the export job, made and downloadable, failed, or past its 24 hours.</td>
+</tr>
+<tr>
+<td><code>ExportType</code></td>
+<td>enum</td>
+<td>What an export is.</td>
+</tr>
+<tr>
+<td><code>ExportWorker</code></td>
+<td>class</td>
+<td>The export job (ADR 0045): makes the files of queued exports and removes those whose 24 hours are up.</td>
+</tr>
+<tr>
+<td><code>Exports</code></td>
+<td>class</td>
+<td>Asking for an export, reading where it is, and downloading it (stories 81, 84 and 86).</td>
+</tr>
+</tbody></table></div>
+<h4 id="finding"><code>finding</code></h4>
+<ul>
+<li><strong>Source files:</strong> 43 under <code>backend/src/main/java/sg/annualva/finding/</code></li>
+<li><strong>Purpose:</strong> Findings read from Scan Reports, their status proposals, the Cyber Manager review, the rework queue and the manual Findings.</li>
+<li><strong>Uses (imports):</strong> access, audit, cycle, jdbc, parser, submission, web</li>
+<li><strong>Used by:</strong> dashboard, export, ingestion</li>
+</ul>
+<p><strong>Endpoints:</strong></p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Method</th>
+<th>Path</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>POST</td>
+<td><code>/api/batches/{id}/reviews</code></td>
+</tr>
+<tr>
+<td>DELETE</td>
+<td><code>/api/findings/{id}</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/findings/{id}/proposals</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/findings/{id}/proposals</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/findings/{id}/reviews</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/submissions/{id}/batches</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/submissions/{id}/findings</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/submissions/{id}/findings/bulk-proposals</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/submissions/{id}/findings/manual</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/submissions/{id}/readiness</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/submissions/{id}/reports</code></td>
+</tr>
+<tr>
+<td>PUT</td>
+<td><code>/api/submissions/{id}/reports/{type}/mode</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/submissions/{id}/reports/{type}/review</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/submissions/{id}/rework-queue</code></td>
+</tr>
+</tbody></table></div>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Public type</th>
+<th>Kind</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>BatchReviewView</code></td>
+<td>record</td>
+<td>One review of a Bulk-set batch by a Cyber Manager (story 51): the decision and comment every member it decided now carries in its own review, and the members it left out because they changed since the batch.</td>
+</tr>
+<tr>
+<td><code>BatchSummary</code></td>
+<td>record</td>
+<td>A Bulk-set batch as the review screen lists it (story 51): what was proposed, by whom and when, and where its members stand now.</td>
+</tr>
+<tr>
+<td><code>BatchView</code></td>
+<td>record</td>
+<td>A Bulk-set batch as its step answers it (story 37).</td>
+</tr>
+<tr>
+<td><code>BulkProposalRequest</code></td>
+<td>record</td>
+<td>The body of a Bulk-set (story 37): the Findings to apply it to, then one status and its fields exactly as for one Finding (ProposalRequest).</td>
+</tr>
+<tr>
+<td><code>BulkProposals</code></td>
+<td>class</td>
+<td>Bulk-set (story 37, ADR 0028): the SMO/Tech Lead applies one Finding Status, with one set of its fields, to several Findings of a VA Submission in one step.</td>
+</tr>
+<tr>
+<td><code>FindingController</code></td>
+<td>class</td>
+<td>The Findings read from a VA Submission&#x27;s Scan Reports (story 28), for anyone who may see its System: its SMO/Tech Lead, its Cyber Manager and the VA POCs.</td>
+</tr>
+<tr>
+<td><code>FindingFilter</code></td>
+<td>record</td>
+<td>What a Findings list is narrowed to; every part is optional and the parts that are given all apply.</td>
+</tr>
+<tr>
+<td><code>FindingSource</code></td>
+<td>enum</td>
+<td>Where a Finding came from (story 23).</td>
+</tr>
+<tr>
+<td><code>FindingStatus</code></td>
+<td>enum</td>
+<td>The disposition the SMO/Tech Lead proposes for a Finding (CONTEXT.md, &quot;Finding Status&quot;).</td>
+</tr>
+<tr>
+<td><code>FindingView</code></td>
+<td>record</td>
+<td>A Finding as the list reads it (story 28).</td>
+</tr>
+<tr>
+<td><code>Findings</code></td>
+<td>class</td>
+<td>The Findings of a VA Submission (stories 20a, 25 and 28).</td>
+</tr>
+<tr>
+<td><code>ManualFindingRequest</code></td>
+<td>record</td>
+<td>The body of a Finding entered by hand (story 23), every field as text so that a field that cannot be read is named in the answer rather than failing the whole body.</td>
+</tr>
+<tr>
+<td><code>ManualFindings</code></td>
+<td>class</td>
+<td>Findings the SMO/Tech Lead types in because the tool cannot export a machine-readable report (story 23, ADR 0030).</td>
+</tr>
+<tr>
+<td><code>ProposalRequest</code></td>
+<td>record</td>
+<td>The body of a proposal, every field as text so that a field that cannot be read is named in the answer rather than failing the whole body.</td>
+</tr>
+<tr>
+<td><code>ProposalView</code></td>
+<td>record</td>
+<td>One proposal of a Finding Status, as the list and the history read it (stories 28 and 35).</td>
+</tr>
+<tr>
+<td><code>ProposedAs</code></td>
+<td>enum</td>
+<td>Who made a Finding Status proposal.</td>
+</tr>
+<tr>
+<td><code>Readiness</code></td>
+<td>record</td>
+<td>How far a VA Submission is (stories 26, 38 and 40): what the progress bar shows, the report files whose age stands in the way of submitting, and every reason it cannot be submitted yet.</td>
+</tr>
+<tr>
+<td><code>ReportFileReadiness</code></td>
+<td>interface</td>
+<td>Where a VA Submission&#x27;s files stand for submitting (stories 23, 26 and 40), judged where the files are kept: the Scan Report upload pipeline implements it, so the readiness check reads it without this module reaching up into that one.</td>
+</tr>
+<tr>
+<td><code>ReportMode</code></td>
+<td>enum</td>
+<td>How a Scan Report of a VA Submission is provided (story 23, ADR 0030).</td>
+</tr>
+<tr>
+<td><code>ReportModeRequest</code></td>
+<td>record</td>
+<td>The body of a mode change, every field as text so that a field that cannot be read is named in the answer.</td>
+</tr>
+<tr>
+<td><code>ReportType</code></td>
+<td>enum</td>
+<td>The three Scan Reports every VA Submission holds (CONTEXT.md); Secure Configuration is always required.</td>
+</tr>
+<tr>
+<td><code>ReviewCounts</code></td>
+<td>record</td>
+<td>How far the Cyber Manager&#x27;s review of a VA Submission&#x27;s Findings is, for a dashboard (story 48).</td>
+</tr>
+<tr>
+<td><code>ReviewDecision</code></td>
+<td>enum</td>
+<td>What a Cyber Manager decides about a proposal or a not-applicable justification (story 50).</td>
+</tr>
+<tr>
+<td><code>ReviewRequest</code></td>
+<td>record</td>
+<td>The body of a review, every field as text so that a field that cannot be read is named in the answer.</td>
+</tr>
+<tr>
+<td><code>ReviewState</code></td>
+<td>enum</td>
+<td>Where the Cyber Manager&#x27;s review of a Finding&#x27;s current proposal is.</td>
+</tr>
+<tr>
+<td><code>ReviewView</code></td>
+<td>record</td>
+<td>One review by a Cyber Manager (story 50).</td>
+</tr>
+<tr>
+<td><code>Reviews</code></td>
+<td>class</td>
+<td>The Cyber Manager&#x27;s review (story 50): they confirm each proposed Finding Status of a VA Submission In Review, or mark it Disputed with a comment, and do the same for the justification of a Scan Report marked not applicable (ADR 0030 item 3) and, at once, for the members of a Bulk-set batch (story ...</td>
+</tr>
+<tr>
+<td><code>ReworkQueue</code></td>
+<td>record</td>
+<td>One page of the rework queue of a VA Submission (story 60): the Findings its SMO/Tech Lead still has to act on, stage by stage, and how many each stage holds.</td>
+</tr>
+<tr>
+<td><code>ReworkQueues</code></td>
+<td>class</td>
+<td>The rework queue (stories 60 and 61): the Findings of a VA Submission its SMO/Tech Lead still has to act on, one stage after another (ReworkStage).</td>
+</tr>
+<tr>
+<td><code>ReworkStage</code></td>
+<td>enum</td>
+<td>The stages of the rework queue (story 60), in the order the SMO/Tech Lead works through them.</td>
+</tr>
+<tr>
+<td><code>ScanReportController</code></td>
+<td>class</td>
+<td>How the Scan Reports of a VA Submission are provided (story 23): anyone who may see the System reads them; the SMO/Tech Lead of the System sets each one&#x27;s mode (a Cyber Manager, a VA POC who is not its SMO or an Auditor is refused with 403, an SMO of another System gets 404, ADR 0013).</td>
+</tr>
+<tr>
+<td><code>ScanReportView</code></td>
+<td>record</td>
+<td>How one Scan Report of a VA Submission is provided, as anyone who may see the System reads it (story 23).</td>
+</tr>
+<tr>
+<td><code>ScanReports</code></td>
+<td>class</td>
+<td>How the three Scan Reports of a VA Submission are provided (story 23, ADR 0030): uploaded (the default), not applicable (Dependency-Check or Burp Suite, with a justification the Cyber Manager reviews like a Finding) or entered by hand (with a justification).</td>
+</tr>
+</tbody></table></div>
+<h4 id="ingestion"><code>ingestion</code></h4>
+<ul>
+<li><strong>Source files:</strong> 21 under <code>backend/src/main/java/sg/annualva/ingestion/</code></li>
+<li><strong>Purpose:</strong> The Scan Report upload pipeline: quarantine, scan job, type and schema checks, parsing, and the file views.</li>
+<li><strong>Uses (imports):</strong> access, audit, boundary, cycle, finding, jdbc, monitoring, parser, scan, submission, web</li>
+<li><strong>Used by:</strong> no other module</li>
+</ul>
+<p><strong>Endpoints:</strong></p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Method</th>
+<th>Path</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/submissions/{id}/files</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/submissions/{id}/files</code></td>
+</tr>
+<tr>
+<td>DELETE</td>
+<td><code>/api/submissions/{id}/files/{fileId}</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/submissions/{id}/files/{fileId}</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/submissions/{id}/files/{fileId}/content</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/submissions/{id}/files/{fileId}/metadata</code></td>
+</tr>
+<tr>
+<td>PUT</td>
+<td><code>/api/submissions/{id}/files/{fileId}/metadata</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/submissions/{id}/files/{fileId}/replace</code></td>
+</tr>
+</tbody></table></div>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Public type</th>
+<th>Kind</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>FileKind</code></td>
+<td>enum</td>
+<td>What a file is for.</td>
+</tr>
+<tr>
+<td><code>PipelineStatus</code></td>
+<td>enum</td>
+<td>Where a Scan Report file is in the upload pipeline.</td>
+</tr>
+<tr>
+<td><code>RejectCode</code></td>
+<td>enum</td>
+<td>Why the pipeline rejected a file.</td>
+</tr>
+<tr>
+<td><code>ReportFileController</code></td>
+<td>class</td>
+<td>The Scan Report files of a VA Submission.</td>
+</tr>
+<tr>
+<td><code>ReportFileMetadataRequest</code></td>
+<td>record</td>
+<td>The scan date and target an SMO/Tech Lead confirms or corrects for a parsed report file (story 25).</td>
+</tr>
+<tr>
+<td><code>ReportFileMetadataView</code></td>
+<td>record</td>
+<td>What a parsed Scan Report file says about the scan, offered to the SMO/Tech Lead to confirm or correct (story 25), and what they confirmed.</td>
+</tr>
+<tr>
+<td><code>ReportFileView</code></td>
+<td>record</td>
+<td>A Scan Report file as the API reports it: where it is in the pipeline and, when it was rejected, why.</td>
+</tr>
+<tr>
+<td><code>ReportFiles</code></td>
+<td>class</td>
+<td>The Scan Report files of a VA Submission, as the SMO/Tech Lead and the people who review them see them (stories 20, 24, 27 and 78).</td>
+</tr>
+<tr>
+<td><code>ScanPoller</code></td>
+<td>class</td>
+<td>Walks quarantined Scan Report files through the rest of the pipeline (stories 20, 20a, 24, 26, 27): the malware scan, then the type allowlist, the schema check, the parse and the age check (FileChecks) on the scanner&#x27;s unchanged copy, the age judged against today&#x27;s business date by the Clock bean.</td>
+</tr>
+</tbody></table></div>
+<h4 id="jdbc"><code>jdbc</code></h4>
+<ul>
+<li><strong>Source files:</strong> 2 under <code>backend/src/main/java/sg/annualva/jdbc/</code></li>
+<li><strong>Purpose:</strong> What every store shares about PostgreSQL through JdbcClient: how an instant is written and read.</li>
+<li><strong>Uses (imports):</strong> no other module</li>
+<li><strong>Used by:</strong> access, audit, cycle, export, finding, ingestion, notification, register, retention, submission</li>
+</ul>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Public type</th>
+<th>Kind</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>Timestamps</code></td>
+<td>class</td>
+<td>How every store hands an instant to PostgreSQL and reads one back: a timestamptz is written as the instant at offset UTC, as every timestamp is stored (AGENTS.md), and read back as the instant it names.</td>
+</tr>
+</tbody></table></div>
+<h4 id="monitoring"><code>monitoring</code></h4>
+<ul>
+<li><strong>Source files:</strong> 2 under <code>backend/src/main/java/sg/annualva/monitoring/</code></li>
+<li><strong>Purpose:</strong> The key signals (meters) an operator watches, named and registered in one place (ADR 0060).</li>
+<li><strong>Uses (imports):</strong> no other module</li>
+<li><strong>Used by:</strong> access, audit, ingestion, notification, scan, submission</li>
+</ul>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Public type</th>
+<th>Kind</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>KeySignals</code></td>
+<td>class</td>
+<td>The key signals of the application (IM8 lm-16, ADR 0060), the meters the README&#x27;s runbook gives an alert threshold and an operator response for.</td>
+</tr>
+</tbody></table></div>
+<h4 id="notification"><code>notification</code></h4>
+<ul>
+<li><strong>Source files:</strong> 19 under <code>backend/src/main/java/sg/annualva/notification/</code></li>
+<li><strong>Purpose:</strong> In-app notifications, the mail outbox and its dispatcher, deadline reminders.</li>
+<li><strong>Uses (imports):</strong> access, boundary, cycle, jdbc, monitoring, register, submission, web</li>
+<li><strong>Used by:</strong> no other module</li>
+</ul>
+<p><strong>Endpoints:</strong></p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Method</th>
+<th>Path</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/notifications</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/notifications/{id}/read</code></td>
+</tr>
+</tbody></table></div>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Public type</th>
+<th>Kind</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>Awaits</code></td>
+<td>enum</td>
+<td>The VA POC decision that handles an item both VA POCs received (story 69): when either makes it, the item clears for both, marked with who handled it.</td>
+</tr>
+<tr>
+<td><code>DeadlineReminders</code></td>
+<td>class</td>
+<td>The deadline reminders (stories 88, 89 and 90, ADR 0052).</td>
+</tr>
+<tr>
+<td><code>Links</code></td>
+<td>class</td>
+<td>The app paths a notification links to, the same paths the React app routes (its paths.ts per role): fixed segments and ids only, so a link carries nothing a person typed.</td>
+</tr>
+<tr>
+<td><code>MailOutbox</code></td>
+<td>class</td>
+<td>Email through the mail relay (stories 91 and 94, ADR 0046).</td>
+</tr>
+<tr>
+<td><code>MailProperties</code></td>
+<td>record</td>
+<td>How mail goes out through the relay (prefix annualva.mail, ADR 0046).</td>
+</tr>
+<tr>
+<td><code>Notice</code></td>
+<td>record</td>
+<td>What a notification says, before it is addressed: the System, the state, the action, the due date and a link, and nothing else (story 91).</td>
+</tr>
+<tr>
+<td><code>NoticeAction</code></td>
+<td>enum</td>
+<td>What a notification asks its reader to do, or tells them, as a fixed code with the app&#x27;s own sentence (story 91: only the System, the state, the action, the due date and a link; never a Finding).</td>
+</tr>
+<tr>
+<td><code>NotificationController</code></td>
+<td>class</td>
+<td>Each person&#x27;s in-app notifications (story 92), for every role: only the caller&#x27;s own are ever listed or marked read.</td>
+</tr>
+<tr>
+<td><code>NotificationView</code></td>
+<td>record</td>
+<td>A notification as its reader lists it: the System, the state, the action, the due date and a link (story 91), when it came and was read, and for an item both VA POCs received, who handled it (story 69).</td>
+</tr>
+<tr>
+<td><code>Notifications</code></td>
+<td>class</td>
+<td>The notifications (stories 92 and 69, ADR 0043): the one port through which anything tells a person something, and each person&#x27;s in-app list.</td>
+</tr>
+</tbody></table></div>
+<h4 id="parser"><code>parser</code></h4>
+<ul>
+<li><strong>Source files:</strong> 24 under <code>backend/src/main/java/sg/annualva/parser/</code></li>
+<li><strong>Purpose:</strong> Reading Scan Report files: the hardened XML reader and one parser per vendor format (Dependency-Check, SCAP, Nessus, Burp Suite).</li>
+<li><strong>Uses (imports):</strong> no other module</li>
+<li><strong>Used by:</strong> finding, ingestion, submission</li>
+</ul>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Public type</th>
+<th>Kind</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>BurpXmlParser</code></td>
+<td>class</td>
+<td>Reads a Burp Suite XML issue export: an issues root that holds one issue per finding of the scan.</td>
+</tr>
+<tr>
+<td><code>Confidence</code></td>
+<td>enum</td>
+<td>How sure a scanner says it is that an issue is real, from the most to the least sure: Burp Suite&#x27;s Certain, Firm and Tentative.</td>
+</tr>
+<tr>
+<td><code>DependencyCheckJsonParser</code></td>
+<td>class</td>
+<td>Reads an OWASP Dependency-Check JSON report: an object with reportSchema, scanInfo, projectInfo (the project&#x27;s name and the report date) and a dependencies array.</td>
+</tr>
+<tr>
+<td><code>DependencyCheckXmlParser</code></td>
+<td>class</td>
+<td>Reads an OWASP Dependency-Check XML report: an analysis root in the DependencyCheck namespace holding projectInfo (the project&#x27;s name and the report date) and dependencies.</td>
+</tr>
+<tr>
+<td><code>FindingKeys</code></td>
+<td>class</td>
+<td>The identity key of a Finding for each tool, written in one place: the prefix that tells the tools apart and the parts the key is made of (the implementation plan, section 2.4).</td>
+</tr>
+<tr>
+<td><code>FindingsBuilder</code></td>
+<td>class</td>
+<td>What every parser does with the Findings it reads, so that no vendor format repeats it: it merges what has the same identity key into one Finding with one occurrence per distinct place, merges a place read twice (Occurrence#merge) and takes the worst severity of a Finding&#x27;s places as the Finding&#x27;s, ...</td>
+</tr>
+<tr>
+<td><code>NessusXmlParser</code></td>
+<td>class</td>
+<td>Reads a Nessus compliance audit: a NessusClientData_v2 document whose Report holds one ReportHost per scanned host, each with its HostProperties and one ReportItem per result.</td>
+</tr>
+<tr>
+<td><code>ParsedReport</code></td>
+<td>record</td>
+<td>What a parser read out of one Scan Report file: the metadata the SMO/Tech Lead confirms and the Findings, already merged so that each identity key appears once per file.</td>
+</tr>
+<tr>
+<td><code>ReportDates</code></td>
+<td>class</td>
+<td>Reads the date a report says its scan was made.</td>
+</tr>
+<tr>
+<td><code>ReportParser</code></td>
+<td>interface</td>
+<td>One parser per vendor format behind one interface: the bytes of a file that already passed the malware scan, the type allowlist and the schema check go in, the Findings and the metadata come out.</td>
+</tr>
+<tr>
+<td><code>ReportText</code></td>
+<td>class</td>
+<td>Cleans text before it is kept: the one rule for every text that comes from a person or a report and is later shown to someone else.</td>
+</tr>
+<tr>
+<td><code>ScanFacts</code></td>
+<td>class</td>
+<td>What a report says about the scan itself, gathered as a parser reads it so that no format repeats it: the latest date any of its results was made and the hosts it names.</td>
+</tr>
+<tr>
+<td><code>ScanReading</code></td>
+<td>class</td>
+<td>What the parser of a scan report holds while it reads one file, so that no format declares it again: the Findings so far, what the file says about the scan itself, and whether the file had any section of the shape its format has (a Report of a Nessus audit, a TestResult of a SCAP scan, the root of ...</td>
+</tr>
+<tr>
+<td><code>ScapXmlParser</code></td>
+<td>class</td>
+<td>Reads the results of a SCAP scan, from CIS-CAT Pro or OpenSCAP, in either of the two shapes they export: an XCCDF 1.1 or 1.2 Benchmark that carries its TestResults (or a bare TestResult), and an ARF (asset-report-collection) whose reports each hold one.</td>
+</tr>
+<tr>
+<td><code>SecureXml</code></td>
+<td>class</td>
+<td>The only place an XML reader is made (the OWASP rules against XML external entities).</td>
+</tr>
+<tr>
+<td><code>Severity</code></td>
+<td>enum</td>
+<td>The five-level severity scale every Finding uses (the implementation plan, section 2.4), from the most to the least serious.</td>
+</tr>
+<tr>
+<td><code>UnparseableReportException</code></td>
+<td>class</td>
+<td>The file cannot be read into Findings.</td>
+</tr>
+<tr>
+<td><code>XmlCursor</code></td>
+<td>class</td>
+<td>A forward-only walk over the elements of an untrusted XML report, on a reader from SecureXml.</td>
+</tr>
+</tbody></table></div>
+<h4 id="register"><code>register</code></h4>
+<ul>
+<li><strong>Source files:</strong> 31 under <code>backend/src/main/java/sg/annualva/register/</code></li>
+<li><strong>Purpose:</strong> The System Register: the Excel template, upload and preview, the locked apply, the Systems list, SMO Unreachable, the role-holder review.</li>
+<li><strong>Uses (imports):</strong> access, audit, cycle, jdbc, scan, web</li>
+<li><strong>Used by:</strong> dashboard, notification, retention, submission</li>
+</ul>
+<p><strong>Endpoints:</strong></p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Method</th>
+<th>Path</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/role-holders</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/role-holders/reviews</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/role-holders/{grantId}/restore</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/role-holders/{grantId}/suspend</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/system-register/previews/{id}</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/system-register/previews/{id}/apply</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/system-register/template</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/system-register/uploads</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/systems</code></td>
+</tr>
+</tbody></table></div>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Public type</th>
+<th>Kind</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>BlockReason</code></td>
+<td>enum</td>
+<td>Why a Register row cannot be applied.</td>
+</tr>
+<tr>
+<td><code>CompletedReview</code></td>
+<td>record</td>
+<td>A completed role-holder review (IM8 ac-4, ticket 47): when, by which VA POC (a user id, never a name or an email), how many role holders it listed and which (ADR 0056 item 4, decided 2026-10-26): the ids of the grants the VA POC checked.</td>
+</tr>
+<tr>
+<td><code>Effect</code></td>
+<td>enum</td>
+<td>What a Register change does to in-flight work (story 5, ADR 0049): a VA Submission of the System that is not in a final state.</td>
+</tr>
+<tr>
+<td><code>InFlightWork</code></td>
+<td>interface</td>
+<td>The in-flight work a Register change touches (stories 5 to 7, ADR 0049): the VA Submissions of a System that are not in a final state.</td>
+</tr>
+<tr>
+<td><code>Outcome</code></td>
+<td>enum</td>
+<td>What an upload would do with one row of the file or with one System it leaves out.</td>
+</tr>
+<tr>
+<td><code>Preview</code></td>
+<td>record</td>
+<td>A Register change preview: what one uploaded file would do.</td>
+</tr>
+<tr>
+<td><code>PreviewRow</code></td>
+<td>record</td>
+<td>One line of a Register change preview, and the shape in which it is stored and returned.</td>
+</tr>
+<tr>
+<td><code>RegisterApply</code></td>
+<td>class</td>
+<td>Applies a confirmed Register change preview (stories 2, 3, 4, 73 and 79): in one transaction the Systems it names are added or updated by System ID, the ones the file left out are retired (never deleted, so their history stays), and the SMO/Tech Lead and Cyber Manager grants are made to follow the ...</td>
+</tr>
+<tr>
+<td><code>RegisterSystems</code></td>
+<td>class</td>
+<td>The Register table (stories 2 and 12): the Systems the caller may see, each with its SMO/Tech Lead, Cyber Manager, Quarter, whether it is retired and, for a VA POC, whether its SMO/Tech Lead is an Unlinked SMO.</td>
+</tr>
+<tr>
+<td><code>RegisterTemplates</code></td>
+<td>class</td>
+<td>Hands a VA POC the System Register template and records that it did (IM8 lm-4).</td>
+</tr>
+<tr>
+<td><code>RegisterText</code></td>
+<td>class</td>
+<td>The Register&#x27;s one rule for what a System ID and a System Name may be (ADR 0016): plain text of bounded length.</td>
+</tr>
+<tr>
+<td><code>RegisterUploads</code></td>
+<td>class</td>
+<td>The System Register upload (stories 2, 12 and 14): reads a filled-in template, works out what it would change and keeps that as a preview for an hour.</td>
+</tr>
+<tr>
+<td><code>RoleHolderController</code></td>
+<td>class</td>
+<td>The role-holder review (IM8 ac-4, ticket 47): the VA POCs&#x27; alone (the permissions matrix, &quot;changing roles&quot;).</td>
+</tr>
+<tr>
+<td><code>RoleHolderReviews</code></td>
+<td>class</td>
+<td>The VA POCs&#x27; role-holder review (IM8 ac-4, story 80a, ticket 47, ADR 0056): every role holder listed against the System Register, the roles that came back by themselves since the last review (ADR 0055), whether a review is due, and the record of each completed review.</td>
+</tr>
+<tr>
+<td><code>SmoReachability</code></td>
+<td>class</td>
+<td>SMO Unreachable (story 13, ADR 0053): what the mail relay answered about an address, kept on the Systems that name it as their SMO/Tech Lead.</td>
+</tr>
+<tr>
+<td><code>SystemChangeEvent</code></td>
+<td>record</td>
+<td>A Register apply changed something its SMO/Tech Lead is told about (story 94).</td>
+</tr>
+<tr>
+<td><code>SystemRegisterController</code></td>
+<td>class</td>
+<td>The System Register, for the VA POCs only (the path is also restricted to them in the security chain, so a file from anyone else is refused before it is read): the template to fill in, the upload of the filled-in file and the preview of what it would change, and the apply of a confirmed preview (a ...</td>
+</tr>
+<tr>
+<td><code>SystemSnapshot</code></td>
+<td>record</td>
+<td>A System as the Register has it (before) or as the file would make it (after), for the preview.</td>
+</tr>
+<tr>
+<td><code>SystemsController</code></td>
+<td>class</td>
+<td>The Register&#x27;s Systems, read-only: every System for a VA POC, only their own for an SMO/Tech Lead or Cyber Manager (the service filters by the caller&#x27;s scope; ADR 0013).</td>
+</tr>
+</tbody></table></div>
+<h4 id="retention"><code>retention</code></h4>
+<ul>
+<li><strong>Source files:</strong> 11 under <code>backend/src/main/java/sg/annualva/retention/</code></li>
+<li><strong>Purpose:</strong> Retention and disposal: the disposal list a VA POC approves and the executor that deletes files, then records, through the one path the append-only tables allow; the database checks every history row it deletes against the approved list (ADR 0050).</li>
+<li><strong>Uses (imports):</strong> access, audit, boundary, cycle, jdbc, register, web</li>
+<li><strong>Used by:</strong> no other module</li>
+</ul>
+<p><strong>Endpoints:</strong></p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Method</th>
+<th>Path</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/disposal-lists</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/disposal-lists/{id}/approve</code></td>
+</tr>
+</tbody></table></div>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Public type</th>
+<th>Kind</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>DisposalController</code></td>
+<td>class</td>
+<td>The disposal lists (story 87): the VA POCs&#x27; alone (the permission matrix, &quot;Approve disposal&quot;).</td>
+</tr>
+<tr>
+<td><code>DisposalExecutor</code></td>
+<td>class</td>
+<td>The executor (story 87): disposes of the approved list.</td>
+</tr>
+<tr>
+<td><code>DisposalLists</code></td>
+<td>class</td>
+<td>The disposal lists as a VA POC reads and approves them (story 87).</td>
+</tr>
+<tr>
+<td><code>DisposalPlanner</code></td>
+<td>class</td>
+<td>The retention job&#x27;s listing (story 87): what is due for disposal on today&#x27;s business date, written as a DRAFT disposal list for a VA POC to approve.</td>
+</tr>
+<tr>
+<td><code>DisposalReason</code></td>
+<td>enum</td>
+<td>Why an item is due: the retention rule that has run out for it (spec &quot;Retention&quot;).</td>
+</tr>
+<tr>
+<td><code>ItemKind</code></td>
+<td>enum</td>
+<td>What one item of a disposal list disposes of (V36 disposal_item.kind).</td>
+</tr>
+<tr>
+<td><code>ListStatus</code></td>
+<td>enum</td>
+<td>Where a disposal list is: written by the retention job and waiting for a VA POC, replaced by a newer one before anyone approved it, approved and waiting for the executor, or executed.</td>
+</tr>
+</tbody></table></div>
+<h4 id="scan"><code>scan</code></h4>
+<ul>
+<li><strong>Source files:</strong> 4 under <code>backend/src/main/java/sg/annualva/scan/</code></li>
+<li><strong>Purpose:</strong> Quarantine and malware scan shared by the Scan Report pipeline and the Register upload.</li>
+<li><strong>Uses (imports):</strong> boundary, monitoring</li>
+<li><strong>Used by:</strong> ingestion, register</li>
+</ul>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Public type</th>
+<th>Kind</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>CleanFiles</code></td>
+<td>class</td>
+<td>The clean zone of the file store: the only place a file the scanner passed is kept, and the only bytes the application ever serves back.</td>
+</tr>
+<tr>
+<td><code>MalwareScan</code></td>
+<td>class</td>
+<td>Quarantine and malware scan (IM8 as-12, story 24): the one way an uploaded file is held and scanned before anything reads it.</td>
+</tr>
+<tr>
+<td><code>ScanProperties</code></td>
+<td>record</td>
+<td>How the malware scan is driven (prefix annualva.scan).</td>
+</tr>
+</tbody></table></div>
+<h4 id="submission"><code>submission</code></h4>
+<ul>
+<li><strong>Source files:</strong> 34 under <code>backend/src/main/java/sg/annualva/submission/</code></li>
+<li><strong>Purpose:</strong> The VA Submission state machine, submit, review steps, endorsement, Exemptions, the Overdue sweep, the Cycle lifecycle and role lapses.</li>
+<li><strong>Uses (imports):</strong> access, audit, cycle, jdbc, monitoring, parser, register, web</li>
+<li><strong>Used by:</strong> dashboard, finding, ingestion, notification</li>
+</ul>
+<p><strong>Endpoints:</strong></p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Method</th>
+<th>Path</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>POST</td>
+<td><code>/api/cycles/{year}/close</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/declaration-text</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/declaration-text/versions</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/declaration-text/versions</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/exemptions/{id}/approve</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/exemptions/{id}/confirm-va</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/exemptions/{id}/reject</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/exemptions/{id}/va-happened</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/submissions</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/submissions/{id}</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/submissions/{id}/endorse</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/submissions/{id}/pass-to-endorsement</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/submissions/{id}/return</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/submissions/{id}/returns</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/submissions/{id}/submit</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/systems/{id}/exemptions</code></td>
+</tr>
+</tbody></table></div>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Public type</th>
+<th>Kind</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>CycleCloseController</code></td>
+<td>class</td>
+<td>Closing a VA Cycle early (stories 17 and 68): a VA POC&#x27;s command, after a fresh sign-in.</td>
+</tr>
+<tr>
+<td><code>CycleClosed</code></td>
+<td>record</td>
+<td>A VA Cycle closed (stories 17 and 68).</td>
+</tr>
+<tr>
+<td><code>CycleLifecycle</code></td>
+<td>class</td>
+<td>The VA Cycle lifecycle (stories 17 and 68, ADR 0044).</td>
+</tr>
+<tr>
+<td><code>DeclarationController</code></td>
+<td>class</td>
+<td>The Declaration wording: the current version, for the people who read VA Submissions (the SMO/Tech Lead accepts it when submitting, and the Cyber Manager and the VA POCs read what was declared), and every version, which a VA POC reads and adds to (ticket 61).</td>
+</tr>
+<tr>
+<td><code>Declarations</code></td>
+<td>class</td>
+<td>The fixed Declaration wording the SMO/Tech Lead accepts when submitting (stories 40 and 41).</td>
+</tr>
+<tr>
+<td><code>ExemptionController</code></td>
+<td>class</td>
+<td>Exemptions (ADR 0048).</td>
+</tr>
+<tr>
+<td><code>ExemptionEvent</code></td>
+<td>record</td>
+<td>Something happened to a conditional Exemption (ticket 42, story 47): its VA was recorded or confirmed, or it lapsed.</td>
+</tr>
+<tr>
+<td><code>ExemptionEvidence</code></td>
+<td>interface</td>
+<td>Whether a file can stand as an Exemption&#x27;s evidence file (ticket 40): a supporting evidence file of the same VA Submission that passed every stage of the upload pipeline (READY, ADR 0026).</td>
+</tr>
+<tr>
+<td><code>ExemptionLapse</code></td>
+<td>class</td>
+<td>The conditional Exemption lapse (story 47, ADR 0051).</td>
+</tr>
+<tr>
+<td><code>Exemptions</code></td>
+<td>class</td>
+<td>Exemptions (stories 43 to 46, ADR 0048).</td>
+</tr>
+<tr>
+<td><code>OverdueEvent</code></td>
+<td>record</td>
+<td>The Overdue sweep flagged a VA Submission, or a System with none in a VA Cycle (Not Started).</td>
+</tr>
+<tr>
+<td><code>OverdueSweep</code></td>
+<td>class</td>
+<td>The Overdue sweep (stories 42 and 71, ADR 0033).</td>
+</tr>
+<tr>
+<td><code>ReviewProgress</code></td>
+<td>interface</td>
+<td>How far the Cyber Manager&#x27;s review of a VA Submission is, for the commands that move it out of In Review (stories 55 and 57).</td>
+</tr>
+<tr>
+<td><code>RoleLapses</code></td>
+<td>class</td>
+<td>What the VA Submissions tell the role lapse (ticket 46, ADR 0055): when each System&#x27;s Quarter began, for the daily pass, and when work on a System is handed to a person whose role has lapsed.</td>
+</tr>
+<tr>
+<td><code>SubmissionController</code></td>
+<td>class</td>
+<td>VA Submissions.</td>
+</tr>
+<tr>
+<td><code>SubmissionEvent</code></td>
+<td>record</td>
+<td>A VA Submission moved from one state to another.</td>
+</tr>
+<tr>
+<td><code>SubmissionState</code></td>
+<td>enum</td>
+<td>Where a VA Submission is in its life: the spec&#x27;s ten states.</td>
+</tr>
+<tr>
+<td><code>SubmissionStep</code></td>
+<td>enum</td>
+<td>The steps of a VA Submission at which a person acts; segregation of duties allows one person only one of them.</td>
+</tr>
+<tr>
+<td><code>Submissions</code></td>
+<td>class</td>
+<td>The VA Submission (stories 19, 40 and 41).</td>
+</tr>
+<tr>
+<td><code>SubmitReadiness</code></td>
+<td>interface</td>
+<td>What stands in the way of submitting a VA Submission, apart from the Declaration (story 40).</td>
+</tr>
+<tr>
+<td><code>WaitingWork</code></td>
+<td>class</td>
+<td>Where every piece of work that waits on a window stands on a business day, for the deadline reminders (ticket 38, ADR 0052), which act for nobody: each VA Submission whose state waits on a window, and each System with none (Not Started), with the step whose person acts next, the last day of that ...</td>
+</tr>
+</tbody></table></div>
+<h4 id="web"><code>web</code></h4>
+<ul>
+<li><strong>Source files:</strong> 10 under <code>backend/src/main/java/sg/annualva/web/</code></li>
+<li><strong>Purpose:</strong> Cross-cutting HTTP: RFC 9457 problems, the correlation id, the refusal listener, CSRF and session bootstrap.</li>
+<li><strong>Uses (imports):</strong> no other module</li>
+<li><strong>Used by:</strong> access, app, audit, cycle, export, finding, ingestion, notification, register, retention, submission</li>
+</ul>
+<p><strong>Endpoints:</strong></p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Method</th>
+<th>Path</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/csrf</code></td>
+</tr>
+</tbody></table></div>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Public type</th>
+<th>Kind</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>ApiExceptionHandler</code></td>
+<td>class</td>
+<td>One handler for every controller error (as-13).</td>
+</tr>
+<tr>
+<td><code>CorrelationIdFilter</code></td>
+<td>class</td>
+<td>Gives every request a correlation id (lm-15): taken from a well-formed X-Correlation-Id header, otherwise generated.</td>
+</tr>
+<tr>
+<td><code>CsrfController</code></td>
+<td>class</td>
+<td>Bootstraps the synchronizer CSRF token for the SPA.</td>
+</tr>
+<tr>
+<td><code>Page</code></td>
+<td>record</td>
+<td>One page of a list answer.</td>
+</tr>
+<tr>
+<td><code>ProblemResponses</code></td>
+<td>class</td>
+<td>Writes RFC 9457 problem responses for refusals that happen in the security filter chain, before any controller runs (as-13: no internal detail; every body carries the traceId).</td>
+</tr>
+<tr>
+<td><code>RefusalListener</code></td>
+<td>interface</td>
+<td>Told about every request the application refuses with a 401 or a 403 (IM8 lm-4), at the moment the problem is written, so the refusal can be recorded whichever part of the stack refused it.</td>
+</tr>
+<tr>
+<td><code>RejectedRequestException</code></td>
+<td>class</td>
+<td>A domain module refusing a request with a fixed problem: a status, a problem type and a sentence written in the source, never anything taken from the request or from a file (as-13).</td>
+</tr>
+<tr>
+<td><code>ResourceNotFoundException</code></td>
+<td>class</td>
+<td>&quot;There is no such resource&quot;, for the caller.</td>
+</tr>
+<tr>
+<td><code>StepUpRequiredException</code></td>
+<td>class</td>
+<td>A sensitive command was refused because the caller has not signed in again recently (IM8 ac-2, ADR 0004).</td>
+</tr>
+</tbody></table></div>
+<h2 id="3-technology-decisions">3. Technology Decisions</h2>
+<h3 id="3-1-decision-index">3.1 Decision Index</h3>
+<p>Every architecture decision record is under <code>docs/adr/</code> (61 in all). Each states the decision, why it was taken and what it does not do; those with alternatives name them in the record. The status is the first sentence of the record&#x27;s status line.</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>ID</th>
+<th>Title</th>
+<th>Status</th>
+<th>Record</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>ADR 0001</td>
+<td>PostgreSQL 17 with JdbcClient and Flyway, not JPA or Liquibase</td>
+<td>accepted</td>
+<td><a href="adr/0001-postgresql-with-jdbcclient-and-flyway.md">0001-postgresql-with-jdbcclient-and-flyway</a></td>
+</tr>
+<tr>
+<td>ADR 0002</td>
+<td>A lighter front-end stack: Vite, React, TypeScript and nothing else</td>
+<td>accepted</td>
+<td><a href="adr/0002-lighter-front-end-stack.md">0002-lighter-front-end-stack</a></td>
+</tr>
+<tr>
+<td>ADR 0003</td>
+<td>The MCC mock stack (mock-m-sso) is the local platform; Seam 1 fakes are the test boundary</td>
+<td>accepted</td>
+<td><a href="adr/0003-mock-m-sso-as-local-platform.md">0003-mock-m-sso-as-local-platform</a></td>
+</tr>
+<tr>
+<td>ADR 0004</td>
+<td>Step-up is a fresh OIDC sign-in with an auth_time check</td>
+<td>accepted</td>
+<td><a href="adr/0004-step-up-is-a-fresh-oidc-sign-in.md">0004-step-up-is-a-fresh-oidc-sign-in</a></td>
+</tr>
+<tr>
+<td>ADR 0005</td>
+<td>Spring profile contract: base is the production shape</td>
+<td>accepted</td>
+<td><a href="adr/0005-spring-profile-contract.md">0005-spring-profile-contract</a></td>
+</tr>
+<tr>
+<td>ADR 0006</td>
+<td>Business dates in Asia/Singapore, timestamps in UTC, time only through the Clock bean</td>
+<td>accepted</td>
+<td><a href="adr/0006-business-time-zone.md">0006-business-time-zone</a></td>
+</tr>
+<tr>
+<td>ADR 0007</td>
+<td>The back end serves HTTPS on 8443 in local development</td>
+<td>accepted</td>
+<td><a href="adr/0007-https-8443-in-dev.md">0007-https-8443-in-dev</a></td>
+</tr>
+<tr>
+<td>ADR 0008</td>
+<td>Session limits: 30 minutes idle, 8 hours absolute, one session per user</td>
+<td>accepted</td>
+<td><a href="adr/0008-session-limits.md">0008-session-limits</a></td>
+</tr>
+<tr>
+<td>ADR 0009</td>
+<td>No React unit-test seam</td>
+<td>accepted</td>
+<td><a href="adr/0009-no-react-unit-test-seam.md">0009-no-react-unit-test-seam</a></td>
+</tr>
+<tr>
+<td>ADR 0010</td>
+<td>UUID primary keys</td>
+<td>accepted</td>
+<td><a href="adr/0010-uuid-primary-keys.md">0010-uuid-primary-keys</a></td>
+</tr>
+<tr>
+<td>ADR 0011</td>
+<td>Authorities resolved per request from the role store; sessions in PostgreSQL</td>
+<td>accepted</td>
+<td><a href="adr/0011-authorities-per-request-and-jdbc-sessions.md">0011-authorities-per-request-and-jdbc-sessions</a></td>
+</tr>
+<tr>
+<td>ADR 0012</td>
+<td>Scheduled jobs coordinate through a small database lock, not ShedLock</td>
+<td>accepted</td>
+<td><a href="adr/0012-scheduler-lock-without-shedlock.md">0012-scheduler-lock-without-shedlock</a></td>
+</tr>
+<tr>
+<td>ADR 0013</td>
+<td>Ownership is checked by the access guard, and &quot;not yours&quot; answers &quot;not found&quot;</td>
+<td>accepted</td>
+<td><a href="adr/0013-ownership-by-access-guard-and-not-found.md">0013-ownership-by-access-guard-and-not-found</a></td>
+</tr>
+<tr>
+<td>ADR 0014</td>
+<td>The audit log is append-only in the database, and refusals are recorded where the 401 or 403 is written</td>
+<td>accepted</td>
+<td><a href="adr/0014-audit-log-is-append-only-and-records-refusals-where-they-are-written.md">0014-audit-log-is-append-only-and-records-refusals-where-they-are-written</a></td>
+</tr>
+<tr>
+<td>ADR 0015</td>
+<td>The VA Cycle and Quarter calendar is computed from the clock, not stored</td>
+<td>accepted</td>
+<td><a href="adr/0015-the-calendar-is-computed-not-stored.md">0015-the-calendar-is-computed-not-stored</a></td>
+</tr>
+<tr>
+<td>ADR 0016</td>
+<td>The System Register template is a fixed five-column sheet that the upload will match by header</td>
+<td>accepted</td>
+<td><a href="adr/0016-the-register-template-is-a-fixed-five-column-sheet.md">0016-the-register-template-is-a-fixed-five-column-sheet</a></td>
+</tr>
+<tr>
+<td>ADR 0017</td>
+<td>The Register upload reads the file as untrusted data and keeps a one-hour preview that changes nothing</td>
+<td>accepted</td>
+<td><a href="adr/0017-the-register-upload-is-untrusted-data-and-makes-a-one-hour-preview.md">0017-the-register-upload-is-untrusted-data-and-makes-a-one-hour-preview</a></td>
+</tr>
+<tr>
+<td>ADR 0018</td>
+<td>The apply is one locked transaction against the baseline the preview saw, and the Register names the SMO and Cyber Manager roles</td>
+<td>accepted</td>
+<td><a href="adr/0018-the-apply-is-one-locked-transaction-and-the-register-names-the-roles.md">0018-the-apply-is-one-locked-transaction-and-the-register-names-the-roles</a></td>
+</tr>
+<tr>
+<td>ADR 0019</td>
+<td>The SMO inbox is a read model over the Register and the calendar, and the server decides what is next</td>
+<td>accepted</td>
+<td><a href="adr/0019-the-smo-inbox-is-a-read-model-over-the-register-and-the-calendar.md">0019-the-smo-inbox-is-a-read-model-over-the-register-and-the-calendar</a></td>
+</tr>
+<tr>
+<td>ADR 0020</td>
+<td>A VA Submission starts in Draft with the windows of its Quarter, and the start is the submitting step</td>
+<td>accepted</td>
+<td><a href="adr/0020-a-va-submission-starts-in-draft-with-the-windows-of-its-quarter.md">0020-a-va-submission-starts-in-draft-with-the-windows-of-its-quarter</a></td>
+</tr>
+<tr>
+<td>ADR 0021</td>
+<td>Scan Report files are quarantined, scanned and checked in a fixed order before anything reads them</td>
+<td>accepted</td>
+<td><a href="adr/0021-scan-report-files-are-quarantined-scanned-and-checked-in-a-fixed-order.md">0021-scan-report-files-are-quarantined-scanned-and-checked-in-a-fixed-order</a></td>
+</tr>
+<tr>
+<td>ADR 0022</td>
+<td>A Dependency-Check report is parsed in the pipeline into Findings keyed by CVE and package</td>
+<td>accepted</td>
+<td><a href="adr/0022-a-dependency-check-report-is-parsed-in-the-pipeline-into-findings-keyed-by-cve-and-package.md">0022-a-dependency-check-report-is-parsed-in-the-pipeline-into-findings-keyed-by-cve-and-package</a></td>
+</tr>
+<tr>
+<td>ADR 0023</td>
+<td>A SCAP results file is parsed in the pipeline into Findings keyed by rule, with an occurrence per host</td>
+<td>accepted</td>
+<td><a href="adr/0023-a-scap-results-file-is-parsed-in-the-pipeline-into-findings-keyed-by-rule-with-an-occurrence-per-host.md">0023-a-scap-results-file-is-parsed-in-the-pipeline-into-findings-keyed-by-rule-with-an-occurrence-per-host</a></td>
+</tr>
+<tr>
+<td>ADR 0024</td>
+<td>A Nessus compliance audit is parsed in the pipeline into Findings keyed by check, with an occurrence per host</td>
+<td>accepted</td>
+<td><a href="adr/0024-a-nessus-compliance-audit-is-parsed-in-the-pipeline-into-findings-keyed-by-check-with-an-occurrence-per-host.md">0024-a-nessus-compliance-audit-is-parsed-in-the-pipeline-into-findings-keyed-by-check-with-an-occurrence-per-host</a></td>
+</tr>
+<tr>
+<td>ADR 0025</td>
+<td>A Burp Suite issue export is parsed in the pipeline into Findings keyed by type, host and path, with a confidence</td>
+<td>accepted</td>
+<td><a href="adr/0025-a-burp-suite-issue-export-is-parsed-in-the-pipeline-into-findings-keyed-by-type-host-and-path-with-a-confidence.md">0025-a-burp-suite-issue-export-is-parsed-in-the-pipeline-into-findings-keyed-by-type-host-and-path-with-a-confidence</a></td>
+</tr>
+<tr>
+<td>ADR 0026</td>
+<td>Supporting evidence is scanned and type-checked like every file, and then never read</td>
+<td>accepted</td>
+<td><a href="adr/0026-supporting-evidence-is-scanned-and-type-checked-like-every-file-and-then-never-read.md">0026-supporting-evidence-is-scanned-and-type-checked-like-every-file-and-then-never-read</a></td>
+</tr>
+<tr>
+<td>ADR 0027</td>
+<td>A Finding Status is proposed as an append-only row with the fields its status requires</td>
+<td>accepted</td>
+<td><a href="adr/0027-a-finding-status-is-proposed-as-an-append-only-row-with-the-fields-its-status-requires.md">0027-a-finding-status-is-proposed-as-an-append-only-row-with-the-fields-its-status-requires</a></td>
+</tr>
+<tr>
+<td>ADR 0028</td>
+<td>A Bulk-set is one batch of ordinary proposals, and readiness is five counts</td>
+<td>accepted</td>
+<td><a href="adr/0028-a-bulk-set-is-one-batch-of-ordinary-proposals-and-readiness-is-five-counts.md">0028-a-bulk-set-is-one-batch-of-ordinary-proposals-and-readiness-is-five-counts</a></td>
+</tr>
+<tr>
+<td>ADR 0029</td>
+<td>A rescan replaces one file once it is parsed, and moves only that file&#x27;s Findings</td>
+<td>accepted</td>
+<td><a href="adr/0029-a-rescan-replaces-one-file-once-it-is-parsed-and-moves-only-that-files-findings.md">0029-a-rescan-replaces-one-file-once-it-is-parsed-and-moves-only-that-files-findings</a></td>
+</tr>
+<tr>
+<td>ADR 0030</td>
+<td>A Scan Report is uploaded, not applicable or entered by hand, and its mode changes only while it is empty</td>
+<td>accepted</td>
+<td><a href="adr/0030-a-scan-report-is-uploaded-not-applicable-or-entered-by-hand-and-its-mode-changes-only-while-it-is-empty.md">0030-a-scan-report-is-uploaded-not-applicable-or-entered-by-hand-and-its-mode-changes-only-while-it-is-empty</a></td>
+</tr>
+<tr>
+<td>ADR 0031</td>
+<td>The scan date is confirmed beside the file&#x27;s, and its age is judged at today&#x27;s business date</td>
+<td>accepted</td>
+<td><a href="adr/0031-the-scan-date-is-confirmed-beside-the-files-and-its-age-is-judged-at-todays-business-date.md">0031-the-scan-date-is-confirmed-beside-the-files-and-its-age-is-judged-at-todays-business-date</a></td>
+</tr>
+<tr>
+<td>ADR 0032</td>
+<td>A submit holds the VA Submission, stores the Declaration it accepted, and is refused with every reason the screen shows</td>
+<td>accepted</td>
+<td><a href="adr/0032-a-submit-holds-the-va-submission-and-is-refused-with-every-reason-the-screen-shows.md">0032-a-submit-holds-the-va-submission-and-is-refused-with-every-reason-the-screen-shows</a></td>
+</tr>
+<tr>
+<td>ADR 0033</td>
+<td>Overdue is a stored flag set by an idempotent sweep, and the windows stay soft</td>
+<td>accepted</td>
+<td><a href="adr/0033-overdue-is-a-stored-flag-set-by-an-idempotent-sweep-and-the-windows-stay-soft.md">0033-overdue-is-a-stored-flag-set-by-an-idempotent-sweep-and-the-windows-stay-soft</a></td>
+</tr>
+<tr>
+<td>ADR 0034</td>
+<td>The Cyber Manager&#x27;s inbox and Quarter board read the review scope, and every state is named</td>
+<td>accepted</td>
+<td><a href="adr/0034-the-cyber-manager-inbox-and-quarter-board-read-the-review-scope-and-name-every-state.md">0034-the-cyber-manager-inbox-and-quarter-board-read-the-review-scope-and-name-every-state</a></td>
+</tr>
+<tr>
+<td>ADR 0035</td>
+<td>A review is an append-only row of what was read, and one segregation-of-duties rule guards every step</td>
+<td>accepted</td>
+<td><a href="adr/0035-a-review-is-an-append-only-row-of-what-was-read-and-one-segregation-of-duties-rule-guards-every-step.md">0035-a-review-is-an-append-only-row-of-what-was-read-and-one-segregation-of-duties-rule-guards-every-step</a></td>
+</tr>
+<tr>
+<td>ADR 0036</td>
+<td>A batch review is one step and an ordinary review of each member still awaiting it</td>
+<td>accepted (items 3 and 4 decided 2026-10-25, see the end)</td>
+<td><a href="adr/0036-a-batch-review-is-one-step-and-an-ordinary-review-of-each-member-still-awaiting-it.md">0036-a-batch-review-is-one-step-and-an-ordinary-review-of-each-member-still-awaiting-it</a></td>
+</tr>
+<tr>
+<td>ADR 0037</td>
+<td>The VA POC&#x27;s board is the Quarter board for the endorse scope, and the Cycle matrix reads the same rows</td>
+<td>accepted (items 3, 4 and 5 decided 2026-10-25, docs/agents/reviewer-decisions.md)</td>
+<td><a href="adr/0037-the-va-poc-board-is-the-quarter-board-for-the-endorse-scope-and-the-cycle-matrix-reads-the-same-rows.md">0037-the-va-poc-board-is-the-quarter-board-for-the-endorse-scope-and-the-cycle-matrix-reads-the-same-rows</a></td>
+</tr>
+<tr>
+<td>ADR 0038</td>
+<td>A Cyber Manager reads the audit history of what they reviewed, through a port the VA Submissions answer</td>
+<td>accepted (items 2, 3 and 5 decided 2026-10-25, see the end; reads of the log are audited, built by ticket 50)</td>
+<td><a href="adr/0038-a-cyber-manager-reads-the-audit-history-of-what-they-reviewed-through-a-port-the-submissions-answer.md">0038-a-cyber-manager-reads-the-audit-history-of-what-they-reviewed-through-a-port-the-submissions-answer</a></td>
+</tr>
+<tr>
+<td>ADR 0039</td>
+<td>A return attaches what is Disputed, and a pass to endorsement needs everything confirmed</td>
+<td>accepted (items 3 and 5 decided 2026-10-25, docs/agents/reviewer-decisions.md)</td>
+<td><a href="adr/0039-a-return-attaches-what-is-disputed-and-a-pass-needs-everything-confirmed.md">0039-a-return-attaches-what-is-disputed-and-a-pass-needs-everything-confirmed</a></td>
+</tr>
+<tr>
+<td>ADR 0040</td>
+<td>A Finding changed since its last review is one whose latest review is not of its current proposal</td>
+<td>accepted (item 2 decided 2026-10-25, docs/agents/reviewer-decisions.md)</td>
+<td><a href="adr/0040-a-finding-changed-since-its-last-review-is-one-whose-latest-review-is-not-of-its-current-proposal.md">0040-a-finding-changed-since-its-last-review-is-one-whose-latest-review-is-not-of-its-current-proposal</a></td>
+</tr>
+<tr>
+<td>ADR 0041</td>
+<td>The rework queue is the needs-attention Findings in stages, for the SMO/Tech Lead alone</td>
+<td>accepted (items 2, 3 and 6 decided 2026-10-25, docs/agents/reviewer-decisions.md)</td>
+<td><a href="adr/0041-the-rework-queue-is-the-needs-attention-findings-in-stages-for-the-smo-alone.md">0041-the-rework-queue-is-the-needs-attention-findings-in-stages-for-the-smo-alone</a></td>
+</tr>
+<tr>
+<td>ADR 0042</td>
+<td>An endorsement is a step-up move, and a VA POC counts at the endorsing step only by acting</td>
+<td>accepted (item 2 decided 2026-10-25, docs/agents/reviewer-decisions.md)</td>
+<td><a href="adr/0042-an-endorsement-is-a-step-up-move-that-a-va-poc-counts-at-only-by-acting.md">0042-an-endorsement-is-a-step-up-move-that-a-va-poc-counts-at-only-by-acting</a></td>
+</tr>
+<tr>
+<td>ADR 0043</td>
+<td>Notifications are written after the commit through one port, and a VA POC pair clears for both</td>
+<td>accepted (items 6 and 7 decided 2026-10-25, the suspended or lapsed addressee in item 2 decided 2026-10-26, docs/agents/reviewer-decisions.md)</td>
+<td><a href="adr/0043-notifications-are-written-after-the-commit-through-one-port-and-a-va-poc-pair-clears-for-both.md">0043-notifications-are-written-after-the-commit-through-one-port-and-a-va-poc-pair-clears-for-both</a></td>
+</tr>
+<tr>
+<td>ADR 0044</td>
+<td>A VA Cycle opens and closes by a stored record, and its close makes everything unfinished Not Endorsed</td>
+<td>accepted (items 4 and 7 decided 2026-10-25, docs/agents/reviewer-decisions.md)</td>
+<td><a href="adr/0044-a-cycle-opens-and-closes-by-a-stored-record-and-its-close-makes-the-unfinished-not-endorsed.md">0044-a-cycle-opens-and-closes-by-a-stored-record-and-its-close-makes-the-unfinished-not-endorsed</a></td>
+</tr>
+<tr>
+<td>ADR 0045</td>
+<td>A management summary is read when it is asked for, made into a file in the background, and kept for its requester alone</td>
+<td>accepted (items 4 and 6 decided 2026-10-25, the Exemption Lapsed count and column in item 3 decided 2026-10-26, docs/agents/reviewer-decisions.md)</td>
+<td><a href="adr/0045-a-management-summary-is-read-when-asked-for-and-made-into-a-file-for-its-requester-alone.md">0045-a-management-summary-is-read-when-asked-for-and-made-into-a-file-for-its-requester-alone</a></td>
+</tr>
+<tr>
+<td>ADR 0046</td>
+<td>A required notification is mailed from an outbox, with allow-listed template values only</td>
+<td>accepted (item 2 decided 2026-10-25 and amended 2026-10-26, docs/agents/reviewer-decisions.md)</td>
+<td><a href="adr/0046-a-required-notification-is-mailed-from-an-outbox-with-allow-listed-template-values.md">0046-a-required-notification-is-mailed-from-an-outbox-with-allow-listed-template-values</a></td>
+</tr>
+<tr>
+<td>ADR 0047</td>
+<td>A VA POC return is the return at the endorsing step, with a required comment</td>
+<td>accepted (items 1, 2 and 4 decided 2026-10-25, and the migration ordering in item 6, docs/agents/reviewer-decisions.md)</td>
+<td><a href="adr/0047-a-va-poc-return-is-the-return-at-the-endorsing-step-with-a-required-comment.md">0047-a-va-poc-return-is-the-return-at-the-endorsing-step-with-a-required-comment</a></td>
+</tr>
+<tr>
+<td>ADR 0048</td>
+<td>An Exemption request freezes the VA Submission, and a rejection puts back its state and Overdue flag</td>
+<td>accepted (items 3, 4, 5 and 6 decided 2026-10-25, docs/agents/reviewer-decisions.md)</td>
+<td><a href="adr/0048-an-exemption-request-freezes-the-va-submission-and-a-rejection-puts-back-its-state-and-overdue-flag.md">0048-an-exemption-request-freezes-the-va-submission-and-a-rejection-puts-back-its-state-and-overdue-flag</a></td>
+</tr>
+<tr>
+<td>ADR 0049</td>
+<td>A Register change names its effects on in-flight work, and withdraws only what a VA POC confirms</td>
+<td>accepted (item 6 decided 2026-10-25, the suspension exception in item 2 decided 2026-10-26, docs/agents/reviewer-decisions.md)</td>
+<td><a href="adr/0049-a-register-change-names-its-effects-on-in-flight-work-and-withdraws-only-what-a-va-poc-confirms.md">0049-a-register-change-names-its-effects-on-in-flight-work-and-withdraws-only-what-a-va-poc-confirms</a></td>
+</tr>
+<tr>
+<td>ADR 0050</td>
+<td>Records are disposed of from a list a VA POC approves, through one audited path in the append-only tables</td>
+<td>accepted (items 2, 3, 4 and 8 decided 2026-10-25, the role-holder reviews in item 6 decided 2026-10-26, docs/agents/reviewer-decisions.md; the delete window first accepted under Consequences was narrowed to the rows the approved list names by ticket 62, migration V44; the list&#x27;s items and a Finding&#x27;s VA Submission that check trusted were frozen by ticket 66, migration V45, decided 2026-11-22)</td>
+<td><a href="adr/0050-records-are-disposed-of-from-a-list-a-va-poc-approves-through-one-audited-path-in-the-append-only-tables.md">0050-records-are-disposed-of-from-a-list-a-va-poc-approves-through-one-audited-path-in-the-append-only-tables</a></td>
+</tr>
+<tr>
+<td>ADR 0051</td>
+<td>A conditional Exemption is recorded and confirmed, or lapses back with new windows</td>
+<td>accepted (items 2 to 7 decided 2026-10-25, items 8 and 9 decided 2026-10-26, docs/agents/reviewer-decisions.md)</td>
+<td><a href="adr/0051-a-conditional-exemption-is-recorded-and-confirmed-or-lapses-back-with-new-windows.md">0051-a-conditional-exemption-is-recorded-and-confirmed-or-lapses-back-with-new-windows</a></td>
+</tr>
+<tr>
+<td>ADR 0052</td>
+<td>Deadline reminders are planned daily from the stored windows and written once per person and day</td>
+<td>accepted (items 3, 4 and 5 decided 2026-10-25; item 8 and the VA POC reminders&#x27; scope in item 2 decided 2026-10-26, docs/agents/reviewer-decisions.md)</td>
+<td><a href="adr/0052-deadline-reminders-are-planned-daily-from-the-stored-windows-and-written-once-per-person-and-day.md">0052-deadline-reminders-are-planned-daily-from-the-stored-windows-and-written-once-per-person-and-day</a></td>
+</tr>
+<tr>
+<td>ADR 0053</td>
+<td>SMO Unreachable is set by the relay&#x27;s refusal of an address, and cleared by a later delivery or a new SMO</td>
+<td>accepted (items 5 and 6 decided 2026-10-25, item 7 acknowledged the same day, docs/agents/reviewer-decisions.md)</td>
+<td><a href="adr/0053-smo-unreachable-is-set-by-the-relays-refusal-of-an-address-and-cleared-by-a-later-delivery-or-a-new-smo.md">0053-smo-unreachable-is-set-by-the-relays-refusal-of-an-address-and-cleared-by-a-later-delivery-or-a-new-smo</a></td>
+</tr>
+<tr>
+<td>ADR 0054</td>
+<td>The management summary PDF is a second renderer of the stored summary, made with Apache PDFBox</td>
+<td>accepted (items 2 and 5 decided 2026-10-25, the Exemption Lapsed column in item 3 decided 2026-10-26, docs/agents/reviewer-decisions.md)</td>
+<td><a href="adr/0054-the-management-summary-pdf-is-a-second-renderer-of-the-stored-summary-with-pdfbox.md">0054-the-management-summary-pdf-is-a-second-renderer-of-the-stored-summary-with-pdfbox</a></td>
+</tr>
+<tr>
+<td>ADR 0055</td>
+<td>A role unused for 90 days lapses and comes back when the Register, the Quarter or handed work names the person</td>
+<td>accepted (items 3, 4, 5 and 6 decided 2026-10-25, docs/agents/reviewer-decisions.md)</td>
+<td><a href="adr/0055-a-role-unused-for-90-days-lapses-and-comes-back-when-the-register-the-quarter-or-handed-work-names-the-person.md">0055-a-role-unused-for-90-days-lapses-and-comes-back-when-the-register-the-quarter-or-handed-work-names-the-person</a></td>
+</tr>
+<tr>
+<td>ADR 0056</td>
+<td>A role-holder review suspends a role for a System, and a person disabled at the identity provider loses every grant</td>
+<td>accepted (items 3, 6, 7 and 8 decided 2026-10-25; item 4, the exception in item 6 and the disposal of reviews decided 2026-10-26, docs/agents/reviewer-decisions.md)</td>
+<td><a href="adr/0056-a-role-holder-review-suspends-a-role-for-a-system-and-a-person-disabled-at-the-identity-provider-loses-every-grant.md">0056-a-role-holder-review-suspends-a-role-for-a-system-and-a-person-disabled-at-the-identity-provider-loses-every-grant</a></td>
+</tr>
+<tr>
+<td>ADR 0057</td>
+<td>The audit list, the state table and the permission matrix are walked whole through the API, and a person&#x27;s sessions are read back whole</td>
+<td>accepted (the filter ids in item 6 decided 2026-10-26, docs/agents/reviewer-decisions.md)</td>
+<td><a href="adr/0057-the-audit-list-the-state-table-and-the-permission-matrix-are-walked-whole-through-the-api-and-a-persons-sessions-are-read-back-whole.md">0057-the-audit-list-the-state-table-and-the-permission-matrix-are-walked-whole-through-the-api-and-a-persons-sessions-are-read-back-whole</a></td>
+</tr>
+<tr>
+<td>ADR 0058</td>
+<td>A dev-local profile signs in as a persona on local fakes and cannot start anywhere but a developer&#x27;s machine</td>
+<td>accepted (the profile, the persona sign-in, the local fakes and the guards of item 6 decided 2026-10-27, docs/agents/reviewer-decisions.md)</td>
+<td><a href="adr/0058-a-dev-local-profile-signs-in-as-a-persona-on-local-fakes-and-cannot-start-anywhere-but-a-developers-machine.md">0058-a-dev-local-profile-signs-in-as-a-persona-on-local-fakes-and-cannot-start-anywhere-but-a-developers-machine</a></td>
+</tr>
+<tr>
+<td>ADR 0059</td>
+<td>The file store is S3 with SSE-KMS, switched on by a property, and the other real adapters wait for mock-m-sso</td>
+<td>accepted for the scope (the user&#x27;s decision of 2026-10-29, recorded on ticket 51: build only the file store now)</td>
+<td><a href="adr/0059-the-file-store-is-s3-with-sse-kms-switched-on-by-property-and-the-other-real-adapters-wait-for-mock-m-sso.md">0059-the-file-store-is-s3-with-sse-kms-switched-on-by-property-and-the-other-real-adapters-wait-for-mock-m-sso</a></td>
+</tr>
+<tr>
+<td>ADR 0060</td>
+<td>The key signals are counted in one place and scraped with a bearer token, and health says only that the process is up</td>
+<td>accepted as provisional for the repository&#x27;s part of ticket 52 (IM8 lm-16, pm-6), by the user&#x27;s decision of 2026-11-22 that ticket 52 lands as provisional</td>
+<td><a href="adr/0060-the-key-signals-are-counted-in-one-place-and-scraped-with-a-bearer-token.md">0060-the-key-signals-are-counted-in-one-place-and-scraped-with-a-bearer-token</a></td>
+</tr>
+<tr>
+<td>ADR 0061</td>
+<td>A report file is deleted softly, and a Finding goes only if it never had a proposal</td>
+<td>accepted (ticket 60; the user&#x27;s decisions of 2026-11-22 settle item 3, on the ticket&#x27;s HITL 2 comment, item 4, docs/agents/reviewer-decisions.md &quot;Ticket 60: a Manually Entered Finding that has had a proposal is not deleted&quot;, the hard delete of items 3 and 4, &quot;Ticket 60: a Finding that never had a proposal is hard-deleted, an exception to the soft-delete rule&quot;, and items 1 and 5 on a rescan and the file it replaced, &quot;Ticket 60: a parsed rescan and then the file it replaced can both be deleted&quot;)</td>
+<td><a href="adr/0061-a-report-file-is-deleted-softly-and-a-finding-goes-only-if-it-never-had-a-proposal.md">0061-a-report-file-is-deleted-softly-and-a-finding-goes-only-if-it-never-had-a-proposal</a></td>
+</tr>
+</tbody></table></div>
+<h3 id="3-2-decision-details">3.2 Decision Details</h3>
+<p>The decisions that shape the whole architecture, with the alternatives they were chosen over. Each table is a summary written for this document: the record itself (section 3.1) is authoritative, and where a record names no alternative in so many words, the one listed here is what its text rules out.</p>
+<h4 id="postgresql-with-jdbcclient-and-flyway-adr-0001">PostgreSQL with JdbcClient and Flyway (ADR 0001)</h4>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Option</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>JPA/Hibernate</td>
+<td>mapping convenience</td>
+<td>hidden SQL, lazy loading, harder to review for IM8 as-2</td>
+</tr>
+<tr>
+<td>JdbcClient with static SQL in <code>*Store</code> classes</td>
+<td>every statement is reviewed as text; an ArchUnit rule keeps SQL out of other classes</td>
+<td>more hand-written SQL</td>
+</tr>
+</tbody></table></div>
+<p><strong>Chosen Option:</strong> JdbcClient with static SQL and Flyway <strong>Rationale:</strong> The data is small (about 48 Systems a year, about 200 Findings per submission) and its rules (append-only tables, locks, one deliberate delete path) are easier to prove in SQL than behind an ORM.</p>
+<h4 id="lighter-front-end-stack-adr-0002">Lighter front-end stack (ADR 0002)</h4>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Option</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>A router, a UI kit, a data-fetching or a form library</td>
+<td>ready-made patterns</td>
+<td>more surface to review and keep current, with no test seam to protect it</td>
+</tr>
+<tr>
+<td>Vite, React and TypeScript only</td>
+<td>few dependencies, plain <code>fetch</code> wrapped once, a small path router of our own</td>
+<td>no component tests; the rules are kept by dependency-cruiser and fallow</td>
+</tr>
+</tbody></table></div>
+<p><strong>Chosen Option:</strong> Vite, React and TypeScript only <strong>Rationale:</strong> The browser holds no business rule; it renders the API.</p>
+<h4 id="mock-m-sso-as-the-local-platform-adr-0003">mock-m-sso as the local platform (ADR 0003)</h4>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Option</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>mock-m-sso (Keycloak, MockPass, mock SFS and MCNS) from day one</td>
+<td>the platform&#x27;s own stand-ins</td>
+<td>a private sibling repository</td>
+</tr>
+<tr>
+<td>A small OIDC stand-in of our own</td>
+<td>self-contained</td>
+<td>drifts from MCC SSO</td>
+</tr>
+</tbody></table></div>
+<p><strong>Chosen Option:</strong> mock-m-sso, with <code>dev-local</code> added later for a machine without it (ADR 0058) <strong>Rationale:</strong> The adapters are checked against the platform&#x27;s mocks, not against our idea of them.</p>
+<h4 id="step-up-is-a-fresh-oidc-sign-in-adr-0004">Step-up is a fresh OIDC sign-in (ADR 0004)</h4>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Option</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Fresh authorization-code round trip with <code>prompt=login</code>, <code>max_age=0</code></td>
+<td>no new factor to run</td>
+<td>depends on MCC SSO honouring <code>prompt</code></td>
+</tr>
+<tr>
+<td>App-level OTP through MCNS</td>
+<td>independent of the provider</td>
+<td>a second factor to build and secure</td>
+</tr>
+</tbody></table></div>
+<p><strong>Chosen Option:</strong> The fresh sign-in, with a full re-login mode as the fallback <strong>Rationale:</strong> IM8 ac-2 asks for a fresh MFA sign-in; the freshness is checked server side and fails closed.</p>
+<h4 id="roles-per-request-and-jdbc-sessions-adr-0011-0008">Roles per request and JDBC sessions (ADR 0011, 0008)</h4>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Option</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Roles from token claims</td>
+<td>no lookup</td>
+<td>a revoked role lives until the token expires</td>
+</tr>
+<tr>
+<td>Roles read from <code>role_grant</code> on each request</td>
+<td>immediate revocation and suspension</td>
+<td>one query per request</td>
+</tr>
+</tbody></table></div>
+<p><strong>Chosen Option:</strong> Roles from the database on every request <strong>Rationale:</strong> A person no longer named in the Register must lose access at once (ac-3).</p>
+<h4 id="append-only-audit-log-adr-0014">Append-only audit log (ADR 0014)</h4>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Option</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Application-level logging only</td>
+<td>simple</td>
+<td>can be altered and may omit refusals</td>
+</tr>
+<tr>
+<td>A table whose trigger refuses update, delete and truncate, written in the action&#x27;s transaction</td>
+<td>the log cannot say something that did not happen</td>
+<td>a deliberate disposal path is needed (ADR 0050), which the database checks row by row</td>
+</tr>
+</tbody></table></div>
+<p><strong>Chosen Option:</strong> The append-only table, plus an ECS event after the commit <strong>Rationale:</strong> IM8 lm-4 and lm-15.</p>
+<h4 id="scan-report-files-are-quarantined-scanned-and-checked-before-anything-reads-them-adr-0021">Scan Report files are quarantined, scanned and checked before anything reads them (ADR 0021)</h4>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Option</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Scan synchronously in the request</td>
+<td>simple</td>
+<td>holds a request thread for a 50 MB file and a slow scanner</td>
+</tr>
+<tr>
+<td>Quarantine, then a scan job with attempts</td>
+<td>bounded request time, observable stages</td>
+<td>a file is not usable until the job has run</td>
+</tr>
+</tbody></table></div>
+<p><strong>Chosen Option:</strong> The asynchronous pipeline (the small Register workbook is scanned synchronously) <strong>Rationale:</strong> IM8 as-12.</p>
+<h4 id="the-file-store-is-s3-with-sse-kms-switched-on-by-a-property-adr-0059">The file store is S3 with SSE-KMS, switched on by a property (ADR 0059)</h4>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Option</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>A profile name selects the store</td>
+<td>obvious</td>
+<td>every deployed profile must be named</td>
+</tr>
+<tr>
+<td><code>annualva.aws.enabled</code></td>
+<td>no code change to deploy</td>
+<td>the property must be set where wanted</td>
+</tr>
+</tbody></table></div>
+<p><strong>Chosen Option:</strong> The property <strong>Rationale:</strong> One FileStore bean in every profile.</p>
+<h4 id="key-signals-counted-in-one-place-and-scraped-with-a-bearer-token-adr-0060">Key signals counted in one place and scraped with a bearer token (ADR 0060)</h4>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Option</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>A role on the application&#x27;s chain</td>
+<td>one chain</td>
+<td>a scraper cannot sign in through MCC SSO</td>
+</tr>
+<tr>
+<td>Anonymous endpoint limited by the network</td>
+<td>simplest</td>
+<td>not authenticated, as the ticket requires</td>
+</tr>
+<tr>
+<td>A bearer token on a chain of its own</td>
+<td>authenticated, stateless, provable in Seam 1</td>
+<td>a secret to manage</td>
+</tr>
+</tbody></table></div>
+<p><strong>Chosen Option:</strong> The bearer token, provisionally (decided 2026-11-22: ticket 52 lands as provisional) <strong>Rationale:</strong> IM8 lm-16. Three choices are not final and wait for ticket 55 (choose products and non-functional targets, with a person): the scraper&#x27;s credential (the bearer token stands in; mutual TLS or a platform service identity is the alternative), the alert thresholds of the run book (starting values), and where each environment keeps the token.</p>
+<h2 id="4-database-design">4. Database Design</h2>
+<h3 id="4-1-entity-relationship-diagram">4.1 Entity-Relationship Diagram</h3>
+<p>The schema is the result of applying Flyway migrations V1 to V47 (47 files) to an empty PostgreSQL 17 database: 34 tables, plus Flyway&#x27;s own history table. Foreign keys are drawn parent to child.</p>
+<pre class="mermaid">erDiagram
+    bulk_batch ||--o{ batch_review : "batch_id"
+    app_user ||--o{ batch_review : "reviewed_by"
+    app_user ||--o{ bulk_batch : "proposed_by"
+    va_submission ||--o{ bulk_batch : "submission_id"
+    cycle_register ||--o{ cycle_register_system : "cycle_year"
+    va_system ||--o{ cycle_register_system : "system_id"
+    app_user ||--o{ declaration : "accepted_by"
+    va_submission ||--o{ declaration : "submission_id"
+    declaration_text ||--o{ declaration : "version"
+    app_user ||--o{ declaration_text : "published_by"
+    disposal_list ||--o{ disposal_item : "list_id"
+    app_user ||--o{ disposal_list : "approved_by"
+    app_user ||--o{ exemption : "confirmed_by"
+    report_file ||--o{ exemption : "evidence_file_id"
+    va_submission ||--o{ exemption : "submission_id"
+    app_user ||--o{ export_request : "requested_by"
+    finding_status_proposal ||--o{ finding : "current_proposal_id"
+    va_submission ||--o{ finding : "submission_id"
+    va_system ||--o{ finding : "system_id"
+    finding ||--o{ finding_occurrence : "finding_id"
+    report_file ||--o{ finding_occurrence : "report_file_id"
+    batch_review ||--o{ finding_review : "batch_review_id"
+    finding_status_proposal ||--o{ finding_review : "finding_id"
+    finding ||--o{ finding_review : "finding_id"
+    app_user ||--o{ finding_review : "reviewed_by"
+    report_file ||--o{ finding_status_proposal : "approval_memo_file_id"
+    bulk_batch ||--o{ finding_status_proposal : "batch_id"
+    finding ||--o{ finding_status_proposal : "finding_id"
+    app_user ||--o{ finding_status_proposal : "proposed_by"
+    notification ||--o{ mail_outbox : "notification_id"
+    va_system ||--o{ not_started_overdue : "system_id"
+    app_user ||--o{ notification : "handled_by"
+    va_submission ||--o{ notification : "submission_id"
+    va_system ||--o{ notification : "system_id"
+    app_user ||--o{ register_upload : "applied_by"
+    app_user ||--o{ report_file : "deleted_by"
+    va_submission ||--o{ report_file : "submission_id"
+    report_file ||--o{ report_file_stage : "file_id"
+    report_slot ||--o{ report_review : "report_type"
+    app_user ||--o{ report_review : "reviewed_by"
+    va_submission ||--o{ report_slot : "submission_id"
+    app_user ||--o{ role_grant : "granted_by"
+    va_system ||--o{ role_grant : "system_id"
+    app_user ||--o{ role_holder_review : "reviewed_by"
+    spring_session ||--o{ spring_session_attributes : "session_primary_id"
+    va_submission ||--o{ submission_participation : "submission_id"
+    app_user ||--o{ submission_participation : "user_id"
+    app_user ||--o{ submission_return : "returned_by"
+    va_submission ||--o{ submission_return : "submission_id"
+    finding ||--o{ submission_return_item : "finding_id"
+    finding_review ||--o{ submission_return_item : "finding_review_id"
+    report_review ||--o{ submission_return_item : "report_review_id"
+    submission_return ||--o{ submission_return_item : "return_id"
+    app_user ||--o{ va_cycle : "closed_by"
+    app_user ||--o{ va_submission : "started_by"
+    va_system ||--o{ va_submission : "system_id"
+    app_user {
+        uuid id PK
+        citext email UK
+        text sso_id UK
+        text display_name
+        timestamp_with_time_zone created_at
+        timestamp_with_time_zone linked_at
+        timestamp_with_time_zone idp_disabled_at
+    }
+    audit_entry {
+        uuid id PK
+        bigint seq
+        timestamp_with_time_zone occurred_at
+        uuid actor_id
+        text actor_role
+        text action
+        text outcome
+        uuid system_id
+        uuid submission_id
+        uuid finding_id
+        text correlation_id
+        jsonb detail
+    }
+    batch_review {
+        uuid id PK
+        bigint seq
+        uuid batch_id FK
+        uuid reviewed_by FK
+        timestamp_with_time_zone reviewed_at
+    }
+    bulk_batch {
+        uuid id PK
+        bigint seq
+        uuid submission_id FK
+        uuid proposed_by FK
+        timestamp_with_time_zone proposed_at
+    }
+    cycle_register {
+        smallint cycle_year PK
+        timestamp_with_time_zone frozen_at
+    }
+    cycle_register_system {
+        smallint cycle_year PK,FK
+        uuid system_id PK,FK
+        smallint quarter
+    }
+    declaration {
+        uuid id PK
+        bigint seq
+        uuid submission_id FK
+        integer version FK
+        text text
+        uuid accepted_by FK
+        timestamp_with_time_zone accepted_at
+    }
+    declaration_text {
+        integer version PK
+        text text
+        boolean placeholder
+        uuid published_by FK
+        timestamp_with_time_zone published_at
+    }
+    disposal_item {
+        uuid list_id PK,FK
+        bigint seq PK
+        text kind
+        uuid target_id
+        uuid system_id
+        smallint cycle_year
+        text reason
+        bigint entries
+    }
+    disposal_list {
+        uuid id PK
+        bigint seq
+        text status
+        date computed_on
+        timestamp_with_time_zone created_at
+        timestamp_with_time_zone cutoff
+        uuid approved_by FK
+        timestamp_with_time_zone approved_at
+        timestamp_with_time_zone executed_at
+    }
+    exemption {
+        uuid id PK
+        bigint seq
+        uuid submission_id FK
+        text basis
+        date va_date
+        text evidence
+        uuid evidence_file_id FK
+        text previous_state
+        timestamp_with_time_zone previous_overdue_since
+        uuid requested_by FK
+        timestamp_with_time_zone requested_at
+        text decision
+        uuid decided_by FK
+        timestamp_with_time_zone decided_at
+        date lapses_on
+        date va_happened_on
+        text va_evidence
+        uuid va_recorded_by FK
+        timestamp_with_time_zone va_recorded_at
+        uuid confirmed_by FK
+        timestamp_with_time_zone confirmed_at
+        timestamp_with_time_zone lapsed_at
+    }
+    export_request {
+        uuid id PK
+        uuid requested_by FK
+        timestamp_with_time_zone requested_at
+        text export_type
+        text format
+        integer cycle
+        integer quarter
+        text classification
+        integer system_count
+        jsonb content
+        text status
+        text file_key
+        timestamp_with_time_zone ready_at
+        timestamp_with_time_zone expires_at
+    }
+    finding {
+        uuid id PK
+        bigint seq
+        uuid submission_id FK
+        uuid system_id FK
+        text report_type
+        text identity_key
+        text identity_hash
+        text identifier
+        text package_or_rule
+        text severity
+        timestamp_with_time_zone created_at
+        uuid current_proposal_id FK
+        text review_state
+        text source
+        text title
+    }
+    finding_occurrence {
+        uuid id PK
+        uuid finding_id FK
+        uuid report_file_id FK
+        text locator
+        text severity
+        boolean did_not_complete
+        text confidence
+    }
+    finding_review {
+        uuid id PK
+        bigint seq
+        uuid finding_id FK
+        uuid proposal_id FK
+        text decision
+        text comment
+        uuid reviewed_by FK
+        timestamp_with_time_zone reviewed_at
+        uuid batch_review_id FK
+    }
+    finding_status_proposal {
+        uuid id PK
+        bigint seq
+        uuid finding_id FK
+        text status
+        text evidence
+        text justification
+        text reason
+        text approver_name
+        text approver_role
+        uuid approval_memo_file_id FK
+        text plan
+        date target_date
+        uuid proposed_by FK
+        timestamp_with_time_zone proposed_at
+        uuid batch_id FK
+        text proposed_as
+        uuid replaced_file_id FK
+    }
+    mail_outbox {
+        uuid id PK
+        uuid notification_id FK,UK
+        text template
+        text status
+        integer attempts
+        timestamp_with_time_zone created_at
+        timestamp_with_time_zone next_attempt_at
+        timestamp_with_time_zone last_attempt_at
+        timestamp_with_time_zone sent_at
+        text relay_message_id
+    }
+    not_started_overdue {
+        uuid system_id PK,FK
+        smallint cycle_year PK
+        timestamp_with_time_zone overdue_since
+    }
+    notification {
+        uuid id PK
+        uuid recipient_id FK
+        uuid system_id FK
+        uuid submission_id FK
+        text state
+        text action
+        date due_on
+        text link
+        timestamp_with_time_zone created_at
+        timestamp_with_time_zone read_at
+        uuid group_key
+        text awaits
+        timestamp_with_time_zone handled_at
+        uuid handled_by FK
+        date reminder_on
+    }
+    register_upload {
+        uuid id PK
+        text status
+        uuid created_by FK
+        timestamp_with_time_zone created_at
+        timestamp_with_time_zone expires_at
+        jsonb rows
+        timestamp_with_time_zone applied_at
+        uuid applied_by FK
+    }
+    report_file {
+        uuid id PK
+        bigint seq
+        uuid submission_id FK
+        text report_type
+        text kind
+        text display_name
+        bigint size_bytes
+        text upload_sha256
+        text clean_sha256
+        text detected_format
+        text quarantine_key
+        text clean_key
+        text pipeline_status
+        text reject_code
+        text scan_ticket
+        smallint scan_attempts
+        timestamp_with_time_zone scan_submitted_at
+        uuid uploaded_by FK
+        timestamp_with_time_zone uploaded_at
+        timestamp_with_time_zone updated_at
+        timestamp_with_time_zone scan_date_from_file
+        text target_from_file
+        uuid replaces_id FK
+        uuid superseded_by FK
+        timestamp_with_time_zone superseded_at
+        date scan_date_confirmed
+        text target_confirmed
+        timestamp_with_time_zone content_disposed_at
+        timestamp_with_time_zone deleted_at
+        uuid deleted_by FK
+    }
+    report_file_stage {
+        uuid id PK
+        bigint seq
+        uuid file_id FK
+        text status
+        timestamp_with_time_zone entered_at
+    }
+    report_review {
+        uuid id PK
+        bigint seq
+        uuid submission_id FK
+        text report_type FK
+        text decision
+        text comment
+        text justification
+        integer justification_version
+        uuid reviewed_by FK
+        timestamp_with_time_zone reviewed_at
+    }
+    report_slot {
+        uuid submission_id PK,FK
+        text report_type PK
+        text mode
+        text justification
+        text review_state
+        integer justification_version
+    }
+    role_grant {
+        uuid id PK
+        text role
+        uuid user_id FK
+        citext email
+        uuid system_id FK
+        text source
+        timestamp_with_time_zone granted_at
+        uuid granted_by FK
+        timestamp_with_time_zone expires_at
+        timestamp_with_time_zone last_used_at
+        timestamp_with_time_zone lapsed_at
+        timestamp_with_time_zone suspended_at
+        timestamp_with_time_zone revoked_at
+        timestamp_with_time_zone returned_at
+        text return_trigger
+        uuid suspended_by FK
+        text suspension_cause
+    }
+    role_holder_review {
+        uuid id PK
+        timestamp_with_time_zone reviewed_at
+        uuid reviewed_by FK
+        integer holders
+        _uuid grant_ids
+    }
+    spring_session {
+        character primary_id PK
+        character session_id
+        bigint creation_time
+        bigint last_access_time
+        integer max_inactive_interval
+        bigint expiry_time
+        character_varying principal_name
+    }
+    spring_session_attributes {
+        character session_primary_id PK,FK
+        character_varying attribute_name PK
+        bytea attribute_bytes
+    }
+    submission_participation {
+        uuid submission_id PK,FK
+        uuid user_id PK,FK
+        text step PK
+        timestamp_with_time_zone first_at
+    }
+    submission_return {
+        uuid id PK
+        bigint seq
+        uuid submission_id FK
+        text step
+        text comment
+        uuid returned_by FK
+        timestamp_with_time_zone returned_at
+    }
+    submission_return_item {
+        uuid id PK
+        uuid return_id FK
+        bigint seq
+        uuid finding_id FK
+        uuid finding_review_id FK
+        text report_type
+        uuid report_review_id FK
+    }
+    va_cycle {
+        smallint year PK
+        timestamp_with_time_zone opened_at
+        date closes_on
+        timestamp_with_time_zone closed_at
+        uuid closed_by FK
+    }
+    va_submission {
+        uuid id PK
+        uuid system_id FK
+        smallint cycle_year
+        smallint quarter
+        text state
+        boolean endorsed_late
+        date submit_due
+        date review_due
+        date endorse_due
+        timestamp_with_time_zone started_at
+        uuid started_by FK
+        timestamp_with_time_zone submitted_at
+        uuid submitted_by FK
+        timestamp_with_time_zone overdue_since
+        boolean overdue
+        timestamp_with_time_zone passed_to_endorsement_at
+        timestamp_with_time_zone endorsed_at
+    }
+    va_system {
+        uuid id PK
+        citext code UK
+        text name
+        citext smo_email
+        citext cm_email
+        smallint quarter
+        date added_on
+        timestamp_with_time_zone retired_at
+        timestamp_with_time_zone smo_unreachable_at
+    }</pre>
+<h3 id="4-2-major-data-structures">4.2 Major Data Structures</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Table</th>
+<th>Columns</th>
+<th>Primary key</th>
+<th>Purpose</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>app_user</code></td>
+<td>7</td>
+<td>id</td>
+<td>Users: one row per person who has signed in or has been pre-registered by email (System Register).</td>
+</tr>
+<tr>
+<td><code>audit_entry</code></td>
+<td>12</td>
+<td>id</td>
+<td>The audit log (IM8 lm-4, lm-15, lm-19; story 84): one row per sign-in, sign-out, refused request and action; append-only (ADR 0014).</td>
+</tr>
+<tr>
+<td><code>batch_review</code></td>
+<td>5</td>
+<td>id</td>
+<td>one review of a batch.</td>
+</tr>
+<tr>
+<td><code>bulk_batch</code></td>
+<td>5</td>
+<td>id</td>
+<td>one Bulk-set step.</td>
+</tr>
+<tr>
+<td><code>cycle_register</code></td>
+<td>2</td>
+<td>cycle_year</td>
+<td>The System Register as a Cycle saw it, once a newer Cycle has opened (written by the register module).</td>
+</tr>
+<tr>
+<td><code>cycle_register_system</code></td>
+<td>3</td>
+<td>cycle_year, system_id</td>
+<td>each System that was active when a newer Cycle opened, with its Quarter in the older Cycle.</td>
+</tr>
+<tr>
+<td><code>declaration</code></td>
+<td>7</td>
+<td>id</td>
+<td>what one SMO/Tech Lead accepted when submitting one VA Submission, kept as it was shown (a snapshot of the text, not a reference only), with who accepted it and when.</td>
+</tr>
+<tr>
+<td><code>declaration_text</code></td>
+<td>5</td>
+<td>version</td>
+<td>the fixed wording the SMO/Tech Lead accepts when submitting, one row per version.</td>
+</tr>
+<tr>
+<td><code>disposal_item</code></td>
+<td>8</td>
+<td>list_id, seq</td>
+<td>one record, or one group of records, the list disposes of, with why.</td>
+</tr>
+<tr>
+<td><code>disposal_list</code></td>
+<td>9</td>
+<td>id</td>
+<td>one list the retention job wrote.</td>
+</tr>
+<tr>
+<td><code>exemption</code></td>
+<td>22</td>
+<td>id</td>
+<td>one row per request; the request&#x27;s columns are never changed, the decision&#x27;s are written once.</td>
+</tr>
+<tr>
+<td><code>export_request</code></td>
+<td>14</td>
+<td>id</td>
+<td>one export a person asked for.</td>
+</tr>
+<tr>
+<td><code>finding</code></td>
+<td>15</td>
+<td>id</td>
+<td>one vulnerability or configuration deviation of one VA Submission, identified by its identity key.</td>
+</tr>
+<tr>
+<td><code>finding_occurrence</code></td>
+<td>7</td>
+<td>id</td>
+<td>one place a Finding was reported, in one file of the Scan Report.</td>
+</tr>
+<tr>
+<td><code>finding_review</code></td>
+<td>9</td>
+<td>id</td>
+<td>one review of one proposal of a Finding.</td>
+</tr>
+<tr>
+<td><code>finding_status_proposal</code></td>
+<td>17</td>
+<td>id</td>
+<td>one proposal.</td>
+</tr>
+<tr>
+<td><code>mail_outbox</code></td>
+<td>10</td>
+<td>id</td>
+<td>one row per notification mailed; never deleted by the application.</td>
+</tr>
+<tr>
+<td><code>not_started_overdue</code></td>
+<td>3</td>
+<td>system_id, cycle_year</td>
+<td>a System with no VA Submission in a VA Cycle (Not Started has no va_submission row) whose Submission Window passed, flagged by the sweep at overdue_since (UTC).</td>
+</tr>
+<tr>
+<td><code>notification</code></td>
+<td>15</td>
+<td>id</td>
+<td>one row per person per item; never deleted by the application.</td>
+</tr>
+<tr>
+<td><code>register_upload</code></td>
+<td>8</td>
+<td>id</td>
+<td>one uploaded Register file&#x27;s preview.</td>
+</tr>
+<tr>
+<td><code>report_file</code></td>
+<td>30</td>
+<td>id</td>
+<td>one uploaded file of one Scan Report of a VA Submission.</td>
+</tr>
+<tr>
+<td><code>report_file_stage</code></td>
+<td>5</td>
+<td>id</td>
+<td>the order the stages ran in, one row each time a file enters a status.</td>
+</tr>
+<tr>
+<td><code>report_review</code></td>
+<td>10</td>
+<td>id</td>
+<td>one review of a not-applicable Scan Report&#x27;s justification.</td>
+</tr>
+<tr>
+<td><code>report_slot</code></td>
+<td>6</td>
+<td>submission_id, report_type</td>
+<td>one Scan Report of a VA Submission.</td>
+</tr>
+<tr>
+<td><code>role_grant</code></td>
+<td>17</td>
+<td>id</td>
+<td>Role grants: the only source of roles (never token claims).</td>
+</tr>
+<tr>
+<td><code>role_holder_review</code></td>
+<td>5</td>
+<td>id</td>
+<td>each completed review of every role holder against the System Register (ac-4: at each Register upload and at least every 3 months).</td>
+</tr>
+<tr>
+<td><code>spring_session</code></td>
+<td>7</td>
+<td>primary_id</td>
+<td>Spring Session JDBC&#x27;s own table: one row per server-side session (ADR 0011), with the idle and absolute limits of ADR 0008.</td>
+</tr>
+<tr>
+<td><code>spring_session_attributes</code></td>
+<td>3</td>
+<td>session_primary_id, attribute_name</td>
+<td>Spring Session JDBC&#x27;s own table: the serialised attributes of each session, among them the signed-in person.</td>
+</tr>
+<tr>
+<td><code>submission_participation</code></td>
+<td>4</td>
+<td>submission_id, user_id, step</td>
+<td>the segregation-of-duties record (CONTEXT.md): one row per person and step on a VA Submission, written the first time they act at that step.</td>
+</tr>
+<tr>
+<td><code>submission_return</code></td>
+<td>7</td>
+<td>id</td>
+<td>one return of one VA Submission.</td>
+</tr>
+<tr>
+<td><code>submission_return_item</code></td>
+<td>7</td>
+<td>id</td>
+<td>what was Disputed when it was returned, each named by the review that Disputed it, so the SMO/Tech Lead and a later reader see exactly what the return was about even after the item is proposed or rewritten again.</td>
+</tr>
+<tr>
+<td><code>va_cycle</code></td>
+<td>5</td>
+<td>year</td>
+<td>one row per VA Cycle the lifecycle job opened (written by the cycle module).</td>
+</tr>
+<tr>
+<td><code>va_submission</code></td>
+<td>17</td>
+<td>id</td>
+<td>one VA Submission per System and VA Cycle, whatever its state (a second start is refused), with its Quarter, its state, the Overdue and endorsed-late flags and the three windows copied from the Quarter when it started.</td>
+</tr>
+<tr>
+<td><code>va_system</code></td>
+<td>9</td>
+<td>id</td>
+<td>one row per System, matched by its System ID (the template&#x27;s first column) and never deleted.</td>
+</tr>
+</tbody></table></div>
+<p>Report content (CVE ids, rule and check names, titles, locators and hosts) is stored in <code>finding</code> and <code>finding_occurrence</code>; <code>report_file</code> keeps the scan date and the target a parsed file names (<code>scan_date_from_file</code>, <code>target_from_file</code>) beside the ones the SMO/Tech Lead confirmed. It is returned as data and rendered only as text, and the audit log holds ids and fixed codes, never report content (ADR 0014).</p>
+<p>Triggers, which the diagram does not show. Ten tables are append-only: <code>audit_entry</code>, <code>declaration_text</code> and the eight history tables <code>bulk_batch</code>, <code>batch_review</code>, <code>declaration</code>, <code>finding_status_proposal</code>, <code>finding_review</code>, <code>report_review</code>, <code>submission_return</code> and <code>submission_return_item</code>. A statement-level <code>_append_only</code> trigger on each refuses every <code>UPDATE</code> and <code>TRUNCATE</code>, and every <code>DELETE</code> outside a transaction that names an <code>APPROVED</code> disposal list (migration V36); <code>declaration_text</code> is never opened. Inside such a transaction a row-level trigger decides row by row: an <code>audit_entry</code> only before the list&#x27;s cutoff (<code>audit_entry_disposal_range</code>, V36), and a row of a history table only when its VA Submission is a <code>SUBMISSION</code> item of that list (<code>history_row_disposal_listed()</code> behind one <code>_disposal_listed</code> trigger per table, migration V44, ticket 62). A statement of the executor that reached another VA Submission&#x27;s history fails the whole disposal. Migration V45 (ticket 66) freezes what the check reads: a disposal list&#x27;s items can only be inserted, and only into a <code>DRAFT</code> list (<code>disposal_item_insert_while_draft()</code>), and a Finding&#x27;s <code>submission_id</code> cannot change. The check still trusts the <code>disposal_list</code> row as stored; that residual is accepted under ADR 0014&#x27;s threat model (ADR 0050 item 7, decided 2026-11-22). A new append-only history table needs both triggers and a branch in that function; <code>DisposalGuardTest</code> fails until it has them.</p>
+<p>Other structures: the RFC 9457 problem body (type, title, status, detail, traceId, and <code>field</code>, <code>reasons</code> or <code>stepUpPath</code> where they apply; <code>reason</code> only on a refused <code>dev-local</code> persona sign-in), the ECS audit event (<code>event.<em></code>, <code>user.</em></code>, <code>labels.*</code>, <code>trace.id</code>), the Prometheus scrape of the key signals, and the Excel and PDF files of the exports (header, footer and first row carry the classification). Business dates are <code>date</code> columns; instants are <code>timestamptz</code> in UTC (<code>jdbc.Timestamps</code>).</p>
+<h2 id="5-dependency-inventory">5. Dependency Inventory</h2>
+<p>Versions are those Maven resolves (<code>cd backend &amp;&amp; ./mvnw dependency:list -DexcludeTransitive</code>) and those pinned in <code>frontend/package-lock.json</code>, checked against both on 2026-11-22. Licences are the projects&#x27; published licences, not machine-verified by this scan. This section is written by hand: check it when <code>backend/pom.xml</code> or <code>frontend/package.json</code> changes (section 7).</p>
+<h3 id="5-1-production-dependencies">5.1 Production Dependencies</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Package</th>
+<th>Version</th>
+<th>Licence</th>
+<th>Purpose</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>org.springframework.boot:spring-boot-starter-webmvc</td>
+<td>4.0.8</td>
+<td>Apache-2.0</td>
+<td>Web MVC and the embedded server</td>
+</tr>
+<tr>
+<td>org.springframework.boot:spring-boot-starter-security</td>
+<td>4.0.8</td>
+<td>Apache-2.0</td>
+<td>Security filter chains and method security</td>
+</tr>
+<tr>
+<td>org.springframework.boot:spring-boot-starter-security-oauth2-client</td>
+<td>4.0.8</td>
+<td>Apache-2.0</td>
+<td>OIDC sign-in with MCC SSO</td>
+</tr>
+<tr>
+<td>org.springframework.boot:spring-boot-starter-jdbc</td>
+<td>4.0.8</td>
+<td>Apache-2.0</td>
+<td>JdbcClient and the connection pool</td>
+</tr>
+<tr>
+<td>org.springframework.boot:spring-boot-starter-session-jdbc</td>
+<td>4.0.8</td>
+<td>Apache-2.0</td>
+<td>Sessions in PostgreSQL</td>
+</tr>
+<tr>
+<td>org.springframework.boot:spring-boot-starter-flyway</td>
+<td>4.0.8</td>
+<td>Apache-2.0</td>
+<td>Schema migrations at start</td>
+</tr>
+<tr>
+<td>org.flywaydb:flyway-database-postgresql</td>
+<td>11.14.1</td>
+<td>Apache-2.0</td>
+<td>Flyway support for PostgreSQL</td>
+</tr>
+<tr>
+<td>org.springframework.boot:spring-boot-starter-validation</td>
+<td>4.0.8</td>
+<td>Apache-2.0</td>
+<td>Bean validation of configuration and requests</td>
+</tr>
+<tr>
+<td>org.springframework.boot:spring-boot-starter-actuator</td>
+<td>4.0.8</td>
+<td>Apache-2.0</td>
+<td>Health, info and the metrics endpoint</td>
+</tr>
+<tr>
+<td>io.micrometer:micrometer-registry-prometheus</td>
+<td>1.16.7</td>
+<td>Apache-2.0</td>
+<td>The Prometheus scrape of the key signals (ADR 0060)</td>
+</tr>
+<tr>
+<td>org.apache.poi:poi-ooxml</td>
+<td>5.4.1</td>
+<td>Apache-2.0</td>
+<td>The Register workbook and the Excel exports</td>
+</tr>
+<tr>
+<td>org.apache.pdfbox:pdfbox</td>
+<td>3.0.8</td>
+<td>Apache-2.0</td>
+<td>The management summary PDF (ADR 0054)</td>
+</tr>
+<tr>
+<td>software.amazon.awssdk:s3</td>
+<td>2.57.7</td>
+<td>Apache-2.0</td>
+<td>The S3 file store (ADR 0059)</td>
+</tr>
+<tr>
+<td>software.amazon.awssdk:apache-client</td>
+<td>2.57.7</td>
+<td>Apache-2.0</td>
+<td>The synchronous HTTP client of the SDK</td>
+</tr>
+<tr>
+<td>org.postgresql:postgresql</td>
+<td>42.7.13</td>
+<td>BSD-2-Clause</td>
+<td>JDBC driver (runtime)</td>
+</tr>
+<tr>
+<td>react</td>
+<td>19.3.0</td>
+<td>MIT</td>
+<td>The user interface</td>
+</tr>
+<tr>
+<td>react-dom</td>
+<td>19.3.0</td>
+<td>MIT</td>
+<td>The user interface</td>
+</tr>
+</tbody></table></div>
+<h3 id="5-2-development-dependencies">5.2 Development Dependencies</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Package</th>
+<th>Version</th>
+<th>Licence</th>
+<th>Purpose</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>org.springframework.boot:spring-boot-starter-test</td>
+<td>4.0.8</td>
+<td>Apache-2.0</td>
+<td>JUnit 5, AssertJ and Spring test support</td>
+</tr>
+<tr>
+<td>org.springframework.boot:spring-boot-testcontainers</td>
+<td>4.0.8</td>
+<td>Apache-2.0</td>
+<td>Service connections for Testcontainers</td>
+</tr>
+<tr>
+<td>org.testcontainers:testcontainers-junit-jupiter</td>
+<td>2.0.5</td>
+<td>MIT</td>
+<td>Container lifecycle in tests</td>
+</tr>
+<tr>
+<td>org.testcontainers:testcontainers-postgresql</td>
+<td>2.0.5</td>
+<td>MIT</td>
+<td>A real PostgreSQL for Seam 1</td>
+</tr>
+<tr>
+<td>org.testcontainers:testcontainers-localstack</td>
+<td>2.0.5</td>
+<td>MIT</td>
+<td>LocalStack for the S3 adapter test</td>
+</tr>
+<tr>
+<td>com.tngtech.archunit:archunit-junit5</td>
+<td>1.4.1</td>
+<td>Apache-2.0</td>
+<td>Architecture tests</td>
+</tr>
+<tr>
+<td>org.jacoco:jacoco-maven-plugin</td>
+<td>0.8.15</td>
+<td>EPL-2.0</td>
+<td>Line and branch coverage gate (80 %)</td>
+</tr>
+<tr>
+<td>vite</td>
+<td>8.3.2</td>
+<td>MIT</td>
+<td>Front-end build and dev server</td>
+</tr>
+<tr>
+<td>@vitejs/plugin-react</td>
+<td>6.1.1</td>
+<td>MIT</td>
+<td>React support for Vite</td>
+</tr>
+<tr>
+<td>@vitejs/plugin-basic-ssl</td>
+<td>2.3.0</td>
+<td>MIT</td>
+<td>Self-signed HTTPS for the dev server</td>
+</tr>
+<tr>
+<td>typescript</td>
+<td>5.9.3</td>
+<td>Apache-2.0</td>
+<td>Type checking</td>
+</tr>
+<tr>
+<td>prettier</td>
+<td>3.9.9</td>
+<td>MIT</td>
+<td>Formatting gate</td>
+</tr>
+<tr>
+<td>dependency-cruiser</td>
+<td>18.5.0</td>
+<td>MIT</td>
+<td>Front-end dependency rules</td>
+</tr>
+<tr>
+<td>fallow</td>
+<td>3.31.0</td>
+<td>see package</td>
+<td>Dead-code and health gate</td>
+</tr>
+<tr>
+<td>@types/node, @types/react, @types/react-dom</td>
+<td>24.19.1, 19.3.0, 19.3.0</td>
+<td>MIT</td>
+<td>Type definitions</td>
+</tr>
+</tbody></table></div>
+<h3 id="5-3-summary">5.3 Summary</h3>
+<ul>
+<li>Back end: 15 direct production dependencies (the Spring Boot BOM manages most versions) and 6 test dependencies; transitive dependencies are resolved by Maven.</li>
+<li>Front end: 2 production dependencies (<code>react</code>, <code>react-dom</code>) and 10 development dependencies (the three <code>@types</code> packages share a row above); the production bundle contains React and the application only.</li>
+<li>Licences of the direct dependencies: Apache-2.0 (most), MIT, BSD-2-Clause, EPL-2.0 (JaCoCo, build time only).</li>
+</ul>
+<h2 id="6-vulnerability-findings">6. Vulnerability Findings</h2>
+<p>Scan of 2026-11-22 by <code>/dependency-vuln-scan</code>; the full report is <code>artifacts/dependency-vuln-scan/2026-11-22-dependency-vuln-scan.md</code>. <strong>Only the front end has a result.</strong> The back-end scan (OWASP Dependency-Check through Maven) was tried and did not complete, so nothing here says the back end is free of known vulnerabilities; see 6.3.</p>
+<h3 id="6-1-summary">6.1 Summary</h3>
+<ul>
+<li>Front end (<code>npm audit --json</code> in <code>frontend/</code>), by advisory: Critical: 0 | High: 1 | Medium: 4 | Low: 3. By package, as <code>npm audit</code> itself counts: 2 packages (<code>vite</code> high, <code>fallow</code> low). Both are development-only tools; neither reaches the production bundle or the deployed back end.</li>
+<li>Back end (Maven): <strong>not scanned</strong>. The scan did not complete; no counts exist.</li>
+</ul>
+<h3 id="6-2-findings">6.2 Findings</h3>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Severity</th>
+<th>ID</th>
+<th>Package</th>
+<th>Installed</th>
+<th>Fixed</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>High</td>
+<td>GHSA-587h-7wmj-h5pm</td>
+<td>vite (launch-editor)</td>
+<td>8.3.2</td>
+<td>after 8.3.2 (<code>npm audit fix</code>)</td>
+<td>an existence check can be bypassed on Windows (dev server)</td>
+</tr>
+<tr>
+<td>Medium</td>
+<td>GHSA-698v-4r3x-3vcv, GHSA-r825-w8mm-5pxw</td>
+<td>vite (launch-editor)</td>
+<td>8.3.2</td>
+<td>after 8.3.2 (<code>npm audit fix</code>)</td>
+<td>command-argument escaping and editor flag handling (dev server)</td>
+</tr>
+<tr>
+<td>Medium</td>
+<td>GHSA-rq7h-c2jc-7f22, GHSA-vfpm-58rq-9qcg</td>
+<td>vite</td>
+<td>8.3.2</td>
+<td>after 8.3.2 (<code>npm audit fix</code>)</td>
+<td>files outside the allowed folders can be served or partly read (dev server)</td>
+</tr>
+<tr>
+<td>Low</td>
+<td>GHSA-9jrq-w75r-8gcw</td>
+<td>vite</td>
+<td>8.3.2</td>
+<td>after 8.3.2 (<code>npm audit fix</code>)</td>
+<td>cross-origin script execution through custom middleware (dev server)</td>
+</tr>
+<tr>
+<td>Low</td>
+<td>GHSA-h4fr-cmh5-qr62, GHSA-jfwm-3p3c-6hx5</td>
+<td>fallow</td>
+<td>3.31.0</td>
+<td>3.34.0</td>
+<td>analysis of an untrusted repository can reach outside the project root (build-time tool)</td>
+</tr>
+</tbody></table></div>
+<p>The <code>picomatch</code> advisory that the scan of 2026-11-18 listed against <code>dependency-cruiser</code>, <code>fdir</code>, <code>tinyglobby</code> and <code>vite</code> is no longer reported by <code>npm audit</code> for the installed versions.</p>
+<h3 id="6-3-remediation">6.3 Remediation</h3>
+<ul>
+<li>Front end: every finding is in a tool used only while developing or building (<code>vite</code>&#x27;s dev server, <code>fallow</code>); the deployed application serves the built bundle, not the dev server. Upgrade both with <code>cd frontend &amp;&amp; npm audit fix</code> (each stays within its major line), then run <code>npm run check</code>.</li>
+<li>Back end, what happened on 2026-11-22: <code>./mvnw org.owasp:dependency-check-maven:update-only</code> could not finish downloading the NVD data without an NVD API key (no key or other credential was used). Plugin 13.0.0 is refused by the NVD API without a key; plugin 12.2.2 ran without one, was cut off at 86 % when drive C: ran out of space, and on a second try with its data and temporary files on drive D: reached 77 % and stalled on NVD request failures until it was stopped after about an hour. The <code>check</code> goal never ran. The fallback, <code>./mvnw -o dependency:tree -Dscope=runtime</code>, lists 15 direct dependencies and 157 entries in the runtime tree and says nothing about vulnerabilities. Until the scan completes, the back end is covered only by the versions Spring Boot 4.0.8 manages and the pinned versions of section 5.</li>
+<li>To complete the back-end scan: give the plugin an NVD API key from the environment (<code>-DnvdApiKey=...</code>, never committed) or an internal NVD mirror (<code>-DnvdDatafeedUrl=...</code>), keep its data on a drive with at least 2 GB free (<code>-DdataDirectory=...</code> and <code>MAVEN_OPTS=-Djava.io.tmpdir=...</code>), run <code>cd backend &amp;&amp; ./mvnw org.owasp:dependency-check-maven:12.2.2:check -DfailBuildOnCVSS=0 -Dformat=JSON</code>, and put the counts by severity and the findings here.</li>
+<li>Re-run <code>/dependency-vuln-scan</code> before each release (section 7).</li>
+</ul>
+<h2 id="7-keeping-this-document-current">7. Keeping this document current</h2>
+<p>The document is point-in-time and has three kinds of content, each kept current in its own way:</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Content</th>
+<th>Where</th>
+<th>How it is kept current</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Generated blocks, between <code>generated:</code> marker lines in the Markdown</td>
+<td>the table of 1.2, the diagram of 1.3, section 2, section 3.1, section 4.1 and the table of 4.2</td>
+<td><code>python scripts/refresh-tech-arch-doc.py</code> rewrites them from the source, the ADRs and the migrations. Only the description column of the two tables is written by hand, and a refresh keeps it.</td>
+</tr>
+<tr>
+<td>Prose</td>
+<td>the rest of sections 1, 3.2 and 4.2, and this section</td>
+<td>written by hand and read by a person at the doc review; no tool checks that it is right</td>
+</tr>
+<tr>
+<td>Dependencies and vulnerabilities</td>
+<td>sections 5 and 6</td>
+<td>written by hand from <code>./mvnw dependency:list -DexcludeTransitive</code>, <code>frontend/package-lock.json</code> and <code>/dependency-vuln-scan</code>; the scan reports are under <code>artifacts/dependency-vuln-scan/</code></td>
+</tr>
+</tbody></table></div>
+<p>In a change that adds or alters a module, a controller, a public type, an ADR or a migration:</p>
+<ul>
+<li>Run <code>python scripts/refresh-tech-arch-doc.py</code> from the repository root (Python 3, standard library only). It applies every migration, in order, to a throwaway PostgreSQL in Docker (<code>postgres:17-alpine</code>, removed afterwards), rewrites the generated blocks and the <code>Generated</code> line, and rewrites <code>docs/tech-architecture.html</code> with the converter of <code>/tech-arch-doc</code> (<code>.claude/skills/tech-arch-doc/md-to-html.py</code>, which comes with the agent skills and is not tracked in the repository; it is looked for in this checkout and then in the main checkout of a worktree; <code>--html-converter PATH</code> names another copy).</li>
+<li>If it reports a description that says <code>TODO</code>, a module or a table is new: write its description in the table (1.2 or 4.2) and run the script again.</li>
+<li>Update by hand what the script does not own: a new boundary port or adapter in 1.7, a new profile in 1.9, a new job, flow or rule in 1.4 to 1.6, a decision that shapes the architecture in 3.2, a changed <code>pom.xml</code> or <code>package.json</code> in section 5. After editing prose only, run the script again so the HTML follows.</li>
+<li>Check: <code>python scripts/refresh-tech-arch-doc.py --check</code> changes nothing and exits 0 only when every generated block matches the code. It needs Docker, so it is not part of the Maven gate: run it in the change itself, before the review. <code>DocumentationCompletenessTest</code> (part of <code>cd backend &amp;&amp; ./mvnw -B -ntp clean verify</code>) fails when a module, a class of <code>boundary</code> or <code>adapters</code>, a profile or a table the migrations leave is not named in backticks in the Markdown, or an ADR is not linked by its file name.</li>
+<li>Before each release, run <code>/dependency-vuln-scan</code> for both stacks and bring section 6 up to date.</li>
+</ul>
+<p><code>DocumentationCompletenessTest</code> checks names only. It does not fail for a migration that only alters a table (the range and the columns of 4.1 would be stale), for an ADR whose title or status changed, or for a new endpoint or public type: <code>--check</code> reports those. Neither checks the prose.</p>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs';
+mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'strict' });
+</script>
+</body>
+</html>
