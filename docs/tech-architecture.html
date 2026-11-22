@@ -204,7 +204,7 @@ td:first-child {
 </head>
 <body>
 <h1 id="technical-architecture-document">Technical Architecture Document</h1>
-<blockquote><p>Generated: 2026-11-22T16:34:15Z Project: Annual VA (annualVA2): <code>frontend/</code> (React) and <code>backend/</code> (Spring Boot) Laid out as <code>/tech-arch-doc</code> lays it out, for ticket 52 (IM8 pm-6). A point-in-time document: the tables and diagrams that can be read from the code are rewritten by <code>python scripts/refresh-tech-arch-doc.py</code>, the prose is written and reviewed by a person, and <code>DocumentationCompletenessTest</code> fails the build when a module, boundary port or adapter, profile, ADR or table is not named here. Section 7 says how to refresh it in the change that adds one.</p></blockquote>
+<blockquote><p>Generated: 2026-11-22T18:35:13Z Project: Annual VA (annualVA2): <code>frontend/</code> (React) and <code>backend/</code> (Spring Boot) Laid out as <code>/tech-arch-doc</code> lays it out, for ticket 52 (IM8 pm-6). A point-in-time document: the tables and diagrams that can be read from the code are rewritten by <code>python scripts/refresh-tech-arch-doc.py</code>, the prose is written and reviewed by a person, and <code>DocumentationCompletenessTest</code> fails the build when a module, boundary port or adapter, profile, ADR or table is not named here. Section 7 says how to refresh it in the change that adds one.</p></blockquote>
 <h2 id="1-architecture-narrative">1. Architecture Narrative</h2>
 <h3 id="1-1-system-overview">1.1 System Overview</h3>
 <p>Annual VA is the internal application that runs the organisation&#x27;s annual vulnerability assessment (VA): the VA Cycle and its Quarters, the System Register, VA Submissions with their Scan Reports and Findings, Cyber Manager review, VA POC endorsement, Exemptions, notifications, exports, the audit log and retention. Terms are those of <code>CONTEXT.md</code>; the authoritative requirements are the Gate-1-approved spec (<code>.scratch/annual-va/spec.md</code>).</p>
@@ -234,8 +234,8 @@ td:first-child {
 </tr>
 <tr>
 <td><code>app</code></td>
-<td>5</td>
-<td>The composition root: the Spring Boot entry point, the clock bean, the security filter chains (the application and the metrics scrape).</td>
+<td>6</td>
+<td>The composition root: the Spring Boot entry point, the clock bean, the scheduler switch, the security filter chains (the application and the metrics scrape).</td>
 </tr>
 <tr>
 <td><code>audit</code></td>
@@ -284,7 +284,7 @@ td:first-child {
 </tr>
 <tr>
 <td><code>monitoring</code></td>
-<td>2</td>
+<td>3</td>
 <td>The key signals (meters) an operator watches, named and registered in one place (ADR 0060).</td>
 </tr>
 <tr>
@@ -328,7 +328,7 @@ td:first-child {
 <td>The React single-page application.</td>
 </tr>
 </tbody></table></div>
-<p>20 back-end modules, 359 source files.</p>
+<p>20 back-end modules, 361 source files.</p>
 <h3 id="1-3-module-interaction-diagram">1.3 Module Interaction Diagram</h3>
 <p>Arrows run from the module that uses to the module used, read from the <code>import</code> statements of the source. <code>ArchitectureTest.modulesDependOnlyDownwards</code> names which module may use which and fails the build on any other use; <code>ModuleConventionsArchTest</code> keeps the modules free of cycles and the platform modules free of any dependency on a business module. The <code>app</code> composition root may use every module and nothing uses it, so its arrows are left out; <code>adapters</code> implements the ports of <code>boundary</code> and no module imports it (Spring wires its beans by type).</p>
 <pre class="mermaid">graph TD
@@ -386,6 +386,7 @@ td:first-child {
   export --> dashboard
   export --> finding
   export --> jdbc
+  export --> monitoring
   export --> web
   finding --> access
   finding --> audit
@@ -424,6 +425,7 @@ td:first-child {
   retention --> boundary
   retention --> cycle
   retention --> jdbc
+  retention --> monitoring
   retention --> register
   retention --> web
   scan --> boundary
@@ -443,14 +445,14 @@ td:first-child {
 <li><strong>Sign-in and roles (<code>access</code>).</strong> The browser is sent to MCC SSO through the OIDC authorization-code flow; the callback links the sign-in to a user (by <code>sso_id</code>, else pre-registered email, else new), rotates the session and audits it. Roles live in <code>role_grant</code> and are read into a <code>RoleAuthentication</code> on every request. <code>AccessGuard</code> is the one ownership check every service path that addresses a System calls. <code>StepUp.require(intent)</code> makes a sensitive command need a sign-in within five minutes.</li>
 <li><strong>Register and submissions.</strong> A VA POC uploads the System Register workbook; <code>register</code> scans it synchronously through <code>scan</code>, reads it into a preview, and applies a confirmed preview in one locked transaction that also grants the SMO/Tech Lead and Cyber Manager roles through <code>access</code> and withdraws in-flight work through the <code>InFlightWork</code> port the <code>submission</code> module implements. An SMO/Tech Lead starts a VA Submission (<code>submission</code>), uploads Scan Reports (<code>ingestion</code>), proposes Finding statuses (<code>finding</code>), submits; a Cyber Manager reviews and passes or returns it; a VA POC endorses with a fresh sign-in.</li>
 <li><strong>Files.</strong> <code>ingestion</code> puts every upload in the quarantine zone of the file store through <code>scan</code>, the scan job asks the scanner for a verdict, and only the scanner&#x27;s unchanged copy is type-checked, schema-checked and parsed (<code>parser</code>) into Findings (<code>finding</code>). Nobody can view a file until it is clean (ADR 0021). While the VA Submission is editable, an SMO/Tech Lead can delete a report file, which is deleted softly and re-rates the Findings it touched through <code>finding</code>, or a Manually Entered Finding that never had a proposal (ADR 0061).</li>
-<li><strong>Time-driven work.</strong> <code>@Scheduled</code> jobs (only where <code>annualva.scheduling.enabled</code>; Seam 1 runs each by hand) sweep Overdue (<code>submission</code>), open and close Cycles, lapse Exemptions and roles, plan deadline reminders and dispatch the mail outbox (<code>notification</code>), make exports (<code>export</code>) and propose disposal lists (<code>retention</code>). The jobs coordinate through the database, without ShedLock (ADR 0012): each claims its rows (<code>FOR UPDATE SKIP LOCKED</code>, a lease on a claimed mail, a write guarded by the status it read) and is idempotent, so two instances do not double the work. ADR 0012 also names a <code>scheduler_lock</code> table: no migration creates one and no code uses one.</li>
+<li><strong>Time-driven work.</strong> <code>@Scheduled</code> jobs (the scheduler runs only where <code>annualva.scheduling.enabled</code>; Seam 1 runs each job&#x27;s bean by hand) sweep Overdue (<code>submission</code>), open and close Cycles, lapse Exemptions and roles, plan deadline reminders and dispatch the mail outbox (<code>notification</code>), make exports (<code>export</code>) and propose disposal lists (<code>retention</code>). The jobs coordinate through the database, without ShedLock (ADR 0012): each claims its rows (<code>FOR UPDATE SKIP LOCKED</code>, a lease on a claimed mail, a write guarded by the status it read) and is idempotent, so two instances do not double the work. ADR 0012 also names a <code>scheduler_lock</code> table: no migration creates one and no code uses one.</li>
 <li><strong>Notifications and mail.</strong> Workflow modules publish events inside their transaction; <code>notification</code> writes the in-app notice and queues the mail after the commit, and <code>MailOutbox</code> hands it to the mail relay with allow-listed values only (ADR 0043, 0046).</li>
 <li><strong>Audit.</strong> Modules that act call <code>AuditLog.record</code> in their own transaction (<code>recordIndependently</code> for refusals and sign-ins); the entry is also emitted as an ECS event on the <code>annualva.audit</code> logger after the commit. The audit read scope is a port (<code>AuditReaders</code>) the <code>submission</code> module answers (ADR 0038).</li>
 <li><strong>Monitoring.</strong> <code>monitoring.KeySignals</code> is injected by the modules that have a signal to record; the endpoint <code>/actuator/prometheus</code> is served behind its own security chain (section 1.9, ADR 0060).</li>
 </ul>
 <h3 id="1-5-execution-flow">1.5 Execution Flow</h3>
 <p><strong>Request lifecycle.</strong> <code>CorrelationIdFilter</code> assigns or accepts a correlation id; the security chain (the application&#x27;s, or the scrape chain for <code>/actuator/prometheus</code>) authenticates and applies CSRF (synchronizer token), the CSP and HSTS headers; <code>RoleResolutionFilter</code> loads the caller&#x27;s grants; the controller&#x27;s <code>@PreAuthorize</code> rule and <code>AccessGuard</code> decide; a service runs the command in one transaction that includes its audit entry; <code>ApiExceptionHandler</code> turns any failure into an RFC 9457 problem with the correlation id and reports each 401 or 403 to the refusal listener, which audits it.</p>
-<p><strong>Background processes.</strong> Each is a <code>*Job</code> class that exists only where <code>annualva.scheduling.enabled</code> is true and calls a plain bean, which a Seam 1 test runs through a test-only endpoint. Defaults: the scan job every 10 s (<code>ScanPollerJob</code>), the export worker every 5 s (<code>ExportWorkerJob</code>), mail dispatch every 30 s (<code>MailDispatchJob</code>), the Overdue sweep, the Cycle lifecycle, the Exemption lapse and the role lapse each hourly and once at start (<code>OverdueSweepJob</code>, <code>CycleLifecycleJob</code>, <code>ExemptionLapseJob</code>, <code>RoleLapseJob</code>), deadline reminders on the hour from 08:00 to 23:00 business time, written once per person and day (<code>DeadlineReminderJob</code>, ADR 0052), and retention (<code>RetentionJob</code>): the disposal list at 02:30 business time and the executor every 5 minutes.</p>
+<p><strong>Background processes.</strong> Each is a <code>*Job</code> bean that calls a plain bean. The bean exists in every profile; the scheduler that calls it is enabled only where <code>annualva.scheduling.enabled</code> is true (<code>app.SchedulingConfig</code>, ADR 0012), so a Seam 1 test runs the job&#x27;s own bean through a test-only endpoint. Defaults: the scan job every 10 s (<code>ScanPollerJob</code>), the export worker every 5 s (<code>ExportWorkerJob</code>), mail dispatch every 30 s (<code>MailDispatchJob</code>), the Overdue sweep, the Cycle lifecycle, the Exemption lapse and the role lapse each hourly and once at start (<code>OverdueSweepJob</code>, <code>CycleLifecycleJob</code>, <code>ExemptionLapseJob</code>, <code>RoleLapseJob</code>), deadline reminders on the hour from 08:00 to 23:00 business time, written once per person and day (<code>DeadlineReminderJob</code>, ADR 0052), and retention (<code>RetentionJob</code>): the disposal list at 02:30 business time and the executor every 5 minutes. Each scheduled method records its last completed run in <code>KeySignals</code> (ticket 67, section 1.9); <code>ScheduledJobSignalTest</code> finds every <code>@Scheduled</code> method of the context&#x27;s beans and runs it as the scheduler would.</p>
 <p><strong>Initialisation.</strong> Flyway applies <code>db/migration</code> (the range is in section 4.1; gapless: <code>MigrationSequenceTest</code>); the two VA POCs are synced from <code>annualva.va-pocs</code>; configuration is validated at start and a missing secret stops the application (ADR 0005).</p>
 <h3 id="1-6-execution-flow-diagrams">1.6 Execution Flow Diagrams</h3>
 <p>Sign-in and step-up (ADR 0004):</p>
@@ -632,7 +634,7 @@ td:first-child {
 </tr>
 </tbody></table></div>
 <p>UAT and production run the base configuration with every value supplied by the environment. The README&#x27;s &quot;Profiles, secrets and environments&quot; section lists the variables.</p>
-<p>Monitoring (IM8 lm-16, ADR 0060): <code>monitoring.KeySignals</code> registers the Overdue gauges and the counters for scan failures and timeouts, mail failures, step-up refusals and audit write failures. <code>/actuator/prometheus</code> has its own security chain with a bearer token (<code>app.MetricsScrapeSecurity</code>); <code>/actuator/health</code> is anonymous and liveness-only. The README&#x27;s run book gives each signal&#x27;s alert threshold and the operator response. Provisional (decided 2026-11-22, ADR 0060): the bearer token as the scraper&#x27;s credential, the alert thresholds (starting values) and where each environment keeps the token are not final; ticket 55 (products and non-functional targets, with a person) decides them.</p>
+<p>Monitoring (IM8 lm-16, ADR 0060): <code>monitoring.KeySignals</code> registers the Overdue gauges and the counters for scan failures and timeouts, mail failures, step-up refusals and audit write failures, and one gauge per scheduled job holding when it last completed a run (<code>annualva_job_last_completed_seconds</code>, tag <code>kind</code> from the closed enum <code>KeySignals.Job</code>; each <code>*Job</code> method records it as its last step, so a run that throws, or that caught the failure of all its work (every piece of an export pass, a failed listing included, a disposal, the retention listing, every reminder due, every file of a scan pass, a refused discard included), does not move it; ticket 67, ADR 0060 item 8). <code>/actuator/prometheus</code> has its own security chain with a bearer token (<code>app.MetricsScrapeSecurity</code>); <code>/actuator/health</code> is anonymous and liveness-only. The README&#x27;s run book gives each signal&#x27;s alert threshold and the operator response. Provisional (decided 2026-11-22, ADR 0060): the bearer token as the scraper&#x27;s credential, the alert thresholds (starting values) and where each environment keeps the token are not final; ticket 55 (products and non-functional targets, with a person) decides them.</p>
 <h2 id="2-software-module-catalog">2. Software Module Catalog</h2>
 <p>Each module lists its purpose, the modules it imports and the modules that import it, the HTTP endpoints its controllers serve, and its public types with the first sentence of their Javadoc. Types that are not public (most stores, jobs and adapters) are left out: they are not part of a module&#x27;s interface. Method-level detail is in the Javadoc of each class.</p>
 <h4 id="access"><code>access</code></h4>
@@ -883,8 +885,8 @@ td:first-child {
 </tbody></table></div>
 <h4 id="app"><code>app</code></h4>
 <ul>
-<li><strong>Source files:</strong> 5 under <code>backend/src/main/java/sg/annualva/app/</code></li>
-<li><strong>Purpose:</strong> The composition root: the Spring Boot entry point, the clock bean, the security filter chains (the application and the metrics scrape).</li>
+<li><strong>Source files:</strong> 6 under <code>backend/src/main/java/sg/annualva/app/</code></li>
+<li><strong>Purpose:</strong> The composition root: the Spring Boot entry point, the clock bean, the scheduler switch, the security filter chains (the application and the metrics scrape).</li>
 <li><strong>Uses (imports):</strong> access, web</li>
 <li><strong>Used by:</strong> no other module</li>
 </ul>
@@ -1261,7 +1263,7 @@ td:first-child {
 <ul>
 <li><strong>Source files:</strong> 17 under <code>backend/src/main/java/sg/annualva/export/</code></li>
 <li><strong>Purpose:</strong> Exports made in the background and kept 24 hours in the export zone: the management summary in Excel and PDF.</li>
-<li><strong>Uses (imports):</strong> access, audit, boundary, cycle, dashboard, finding, jdbc, web</li>
+<li><strong>Uses (imports):</strong> access, audit, boundary, cycle, dashboard, finding, jdbc, monitoring, web</li>
 <li><strong>Used by:</strong> no other module</li>
 </ul>
 <p><strong>Endpoints:</strong></p>
@@ -1697,10 +1699,10 @@ td:first-child {
 </tbody></table></div>
 <h4 id="monitoring"><code>monitoring</code></h4>
 <ul>
-<li><strong>Source files:</strong> 2 under <code>backend/src/main/java/sg/annualva/monitoring/</code></li>
+<li><strong>Source files:</strong> 3 under <code>backend/src/main/java/sg/annualva/monitoring/</code></li>
 <li><strong>Purpose:</strong> The key signals (meters) an operator watches, named and registered in one place (ADR 0060).</li>
 <li><strong>Uses (imports):</strong> no other module</li>
-<li><strong>Used by:</strong> access, audit, ingestion, notification, scan, submission</li>
+<li><strong>Used by:</strong> access, audit, export, ingestion, notification, retention, scan, submission</li>
 </ul>
 <div class="table-wrap"><table>
 <thead><tr>
@@ -1713,6 +1715,11 @@ td:first-child {
 <td><code>KeySignals</code></td>
 <td>class</td>
 <td>The key signals of the application (IM8 lm-16, ADR 0060), the meters the README&#x27;s runbook gives an alert threshold and an operator response for.</td>
+</tr>
+<tr>
+<td><code>PassTally</code></td>
+<td>class</td>
+<td>Whether a scheduled job&#x27;s pass did its work, for the job&#x27;s last-completed-run signal (ticket 67, ADR 0060 item 8): it did unless it had work and none of it went through.</td>
 </tr>
 </tbody></table></div>
 <h4 id="notification"><code>notification</code></h4>
@@ -2059,7 +2066,7 @@ td:first-child {
 <ul>
 <li><strong>Source files:</strong> 11 under <code>backend/src/main/java/sg/annualva/retention/</code></li>
 <li><strong>Purpose:</strong> Retention and disposal: the disposal list a VA POC approves and the executor that deletes files, then records, through the one path the append-only tables allow; the database checks every history row it deletes against the approved list (ADR 0050).</li>
-<li><strong>Uses (imports):</strong> access, audit, boundary, cycle, jdbc, register, web</li>
+<li><strong>Uses (imports):</strong> access, audit, boundary, cycle, jdbc, monitoring, register, web</li>
 <li><strong>Used by:</strong> no other module</li>
 </ul>
 <p><strong>Endpoints:</strong></p>
