@@ -422,6 +422,8 @@ Before release, the migrations that tickets had numbered by their ticket (V129 t
 | (new) | V43 | `role_holder_review_grants` |
 | (new) | V44 | `disposal_row_checks` |
 | (new) | V45 | `disposal_item_and_finding_freeze` |
+| (new) | V46 | `declaration_publish` |
+| (new) | V47 | `delete_report_file_and_manual_finding` |
 
 ## Quality gates
 
