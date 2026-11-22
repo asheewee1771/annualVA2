@@ -204,12 +204,12 @@ td:first-child {
 </head>
 <body>
 <h1 id="technical-architecture-document">Technical Architecture Document</h1>
-<blockquote><p>Generated: 2026-11-18T11:03:54Z Project: Annual VA (annualVA2): <code>frontend/</code> (React) and <code>backend/</code> (Spring Boot) Produced by <code>/tech-arch-doc</code> for ticket 52 (IM8 pm-6). A point-in-time document: <code>DocumentationCompletenessTest</code> fails the build when a module, boundary adapter, profile or ADR is added without being named here, so refresh it (re-run <code>/tech-arch-doc</code>) in the change that adds one.</p></blockquote>
+<blockquote><p>Generated: 2026-11-22T13:04:49Z Project: Annual VA (annualVA2): <code>frontend/</code> (React) and <code>backend/</code> (Spring Boot) Laid out as <code>/tech-arch-doc</code> lays it out, for ticket 52 (IM8 pm-6). A point-in-time document: the tables and diagrams that can be read from the code are rewritten by <code>python scripts/refresh-tech-arch-doc.py</code>, the prose is written and reviewed by a person, and <code>DocumentationCompletenessTest</code> fails the build when a module, boundary port or adapter, profile, ADR or table is not named here. Section 7 says how to refresh it in the change that adds one.</p></blockquote>
 <h2 id="1-architecture-narrative">1. Architecture Narrative</h2>
 <h3 id="1-1-system-overview">1.1 System Overview</h3>
 <p>Annual VA is the internal application that runs the organisation&#x27;s annual vulnerability assessment (VA): the VA Cycle and its Quarters, the System Register, VA Submissions with their Scan Reports and Findings, Cyber Manager review, VA POC endorsement, Exemptions, notifications, exports, the audit log and retention. Terms are those of <code>CONTEXT.md</code>; the authoritative requirements are the Gate-1-approved spec (<code>.scratch/annual-va/spec.md</code>).</p>
 <ul>
-<li><strong>Back end:</strong> Spring Boot 4.0.8 on Java 21 (the Java 21 baseline is recorded in <code>docs/agents/reviewer-decisions.md</code>), a modular monolith of 20 packages under <code>sg.annualva</code>, one deployable. PostgreSQL 17 through <code>JdbcClient</code> with Flyway migrations (ADR 0001), static SQL in <code>*Store</code> classes only (IM8 as-2), UUID primary keys (ADR 0010), timestamps in UTC and business dates in <code>Asia/Singapore</code> read only through the <code>Clock</code> bean (ADR 0006).</li>
+<li><strong>Back end:</strong> Spring Boot 4.0.8 on Java 21 (the Java 21 baseline is recorded in <code>docs/agents/reviewer-decisions.md</code>), a modular monolith of the packages under <code>sg.annualva</code> that section 1.2 lists, one deployable. PostgreSQL 17 through <code>JdbcClient</code> with Flyway migrations (ADR 0001), static SQL in <code>*Store</code> classes only (IM8 as-2), UUID primary keys (ADR 0010), timestamps in UTC and business dates in <code>Asia/Singapore</code> read only through the <code>Clock</code> bean (ADR 0006).</li>
 <li><strong>Front end:</strong> Vite, React 19 and TypeScript (ADR 0002): a thin shell over the HTTP API. Every business rule is decided in the back end and is tested at the HTTP API (Seam 1, ADR 0009); report content is only ever rendered as text.</li>
 <li><strong>Platform:</strong> MCC SSO (OIDC, <code>private_key_jwt</code>, step-up as a fresh sign-in, ADR 0004), a malware scanner (SFS), a mail relay (MCNS), an S3 object store with SSE-KMS, the MCC service client. Each is reached through a port in <code>boundary</code> (section 1.7). Locally the stack is <code>../mock-m-sso</code> plus LocalStack and PostgreSQL (ADR 0003), or PostgreSQL alone under <code>dev-local</code> (ADR 0058).</li>
 <li><strong>Security posture:</strong> deny by default with method-level <code>@PreAuthorize</code> and a per-System ownership guard (ADR 0013), roles read from the database on each request and never from token claims (ADR 0011), JDBC sessions with idle and absolute limits (ADR 0008), a minimal CSP and HSTS, an append-only audit log that also records every refusal (ADR 0014), and no report content in logs, audit entries, errors or metrics.</li>
@@ -305,7 +305,7 @@ td:first-child {
 <tr>
 <td><code>retention</code></td>
 <td>11</td>
-<td>Retention and disposal: the disposal list a VA POC approves and the executor that deletes files and records.</td>
+<td>Retention and disposal: the disposal list a VA POC approves and the executor that deletes files, then records, through the one path the append-only tables allow; the database checks every history row it deletes against the approved list (ADR 0050).</td>
 </tr>
 <tr>
 <td><code>scan</code></td>
@@ -314,7 +314,7 @@ td:first-child {
 </tr>
 <tr>
 <td><code>submission</code></td>
-<td>34</td>
+<td>33</td>
 <td>The VA Submission state machine, submit, review steps, endorsement, Exemptions, the Overdue sweep, the Cycle lifecycle and role lapses.</td>
 </tr>
 <tr>
@@ -328,36 +328,37 @@ td:first-child {
 <td>The React single-page application.</td>
 </tr>
 </tbody></table></div>
+<p>20 back-end modules, 358 source files.</p>
 <h3 id="1-3-module-interaction-diagram">1.3 Module Interaction Diagram</h3>
-<p>Arrows run from the module that uses to the module used, as <code>ArchitectureTest.modulesDependOnlyDownwards</code> allows them (the <code>app</code> composition root may use every module and nothing uses it, so its arrows are left out). The tests enforce that the modules are free of cycles and that the platform modules (<code>web</code>, <code>config</code>, <code>jdbc</code>, <code>boundary</code>, <code>monitoring</code>, <code>audit</code>, <code>access</code>, <code>cycle</code>, <code>scan</code>, <code>parser</code>) depend on no business module.</p>
+<p>Arrows run from the module that uses to the module used, read from the <code>import</code> statements of the source. <code>ArchitectureTest.modulesDependOnlyDownwards</code> names which module may use which and fails the build on any other use; <code>ModuleConventionsArchTest</code> keeps the modules free of cycles and the platform modules free of any dependency on a business module. The <code>app</code> composition root may use every module and nothing uses it, so its arrows are left out; <code>adapters</code> implements the ports of <code>boundary</code> and no module imports it (Spring wires its beans by type).</p>
 <pre class="mermaid">graph TD
   subgraph Frontend["Frontend (SPA)"]
     FE[React screens by role]
   end
   subgraph Business["Business modules"]
-    ingestion[ingestion]
-    finding[finding]
-    submission[submission]
     register[register]
+    submission[submission]
+    finding[finding]
+    ingestion[ingestion]
     dashboard[dashboard]
     notification[notification]
     export[export]
     retention[retention]
   end
   subgraph Platform["Platform modules"]
-    access[access]
-    audit[audit]
-    cycle[cycle]
-    scan[scan]
-    parser[parser]
     web[web]
     config[config]
     jdbc[jdbc]
-    monitoring[monitoring]
     boundary[boundary]
+    monitoring[monitoring]
+    audit[audit]
+    access[access]
+    cycle[cycle]
+    scan[scan]
+    parser[parser]
   end
   subgraph Adapters["Adapters (wired by Spring type only)"]
-    adapters[adapters: s3, oidc, local, pending]
+    adapters[adapters: local, oidc, pending, s3]
   end
   FE -.->|REST API| web
   access --> audit
@@ -378,7 +379,6 @@ td:first-child {
   dashboard --> finding
   dashboard --> register
   dashboard --> submission
-  dashboard --> web
   export --> access
   export --> audit
   export --> boundary
@@ -436,23 +436,22 @@ td:first-child {
   submission --> parser
   submission --> register
   submission --> web
-  web --> boundary
-  web --> config
   adapters -.->|implements| boundary</pre>
+<p>Platform modules: <code>web</code>, <code>config</code>, <code>jdbc</code>, <code>boundary</code>, <code>monitoring</code>, <code>audit</code>, <code>access</code>, <code>cycle</code>, <code>scan</code>, <code>parser</code>. Business modules: <code>register</code>, <code>submission</code>, <code>finding</code>, <code>ingestion</code>, <code>dashboard</code>, <code>notification</code>, <code>export</code>, <code>retention</code>. <code>adapters</code> uses <code>boundary</code>, <code>config</code>; <code>app</code> uses <code>access</code>, <code>web</code>.</p>
 <h3 id="1-4-module-interactions">1.4 Module Interactions</h3>
 <ul>
 <li><strong>Sign-in and roles (<code>access</code>).</strong> The browser is sent to MCC SSO through the OIDC authorization-code flow; the callback links the sign-in to a user (by <code>sso_id</code>, else pre-registered email, else new), rotates the session and audits it. Roles live in <code>role_grant</code> and are read into a <code>RoleAuthentication</code> on every request. <code>AccessGuard</code> is the one ownership check every service path that addresses a System calls. <code>StepUp.require(intent)</code> makes a sensitive command need a sign-in within five minutes.</li>
 <li><strong>Register and submissions.</strong> A VA POC uploads the System Register workbook; <code>register</code> scans it synchronously through <code>scan</code>, reads it into a preview, and applies a confirmed preview in one locked transaction that also grants the SMO/Tech Lead and Cyber Manager roles through <code>access</code> and withdraws in-flight work through the <code>InFlightWork</code> port the <code>submission</code> module implements. An SMO/Tech Lead starts a VA Submission (<code>submission</code>), uploads Scan Reports (<code>ingestion</code>), proposes Finding statuses (<code>finding</code>), submits; a Cyber Manager reviews and passes or returns it; a VA POC endorses with a fresh sign-in.</li>
 <li><strong>Files.</strong> <code>ingestion</code> puts every upload in the quarantine zone of the file store through <code>scan</code>, the scan job asks the scanner for a verdict, and only the scanner&#x27;s unchanged copy is type-checked, schema-checked and parsed (<code>parser</code>) into Findings (<code>finding</code>). Nobody can view a file until it is clean (ADR 0021).</li>
-<li><strong>Time-driven work.</strong> <code>@Scheduled</code> jobs (only where <code>annualva.scheduling.enabled</code>; Seam 1 runs each by hand) sweep Overdue (<code>submission</code>), open and close Cycles, lapse Exemptions and roles, plan deadline reminders and dispatch the mail outbox (<code>notification</code>), make exports (<code>export</code>) and propose disposal lists (<code>retention</code>). A scheduler lock without ShedLock keeps instances from doubling the work (ADR 0012).</li>
+<li><strong>Time-driven work.</strong> <code>@Scheduled</code> jobs (only where <code>annualva.scheduling.enabled</code>; Seam 1 runs each by hand) sweep Overdue (<code>submission</code>), open and close Cycles, lapse Exemptions and roles, plan deadline reminders and dispatch the mail outbox (<code>notification</code>), make exports (<code>export</code>) and propose disposal lists (<code>retention</code>). The jobs coordinate through the database, without ShedLock (ADR 0012): each claims its rows (<code>FOR UPDATE SKIP LOCKED</code>, a lease on a claimed mail, a write guarded by the status it read) and is idempotent, so two instances do not double the work. ADR 0012 also names a <code>scheduler_lock</code> table: no migration creates one and no code uses one.</li>
 <li><strong>Notifications and mail.</strong> Workflow modules publish events inside their transaction; <code>notification</code> writes the in-app notice and queues the mail after the commit, and <code>MailOutbox</code> hands it to the mail relay with allow-listed values only (ADR 0043, 0046).</li>
 <li><strong>Audit.</strong> Modules that act call <code>AuditLog.record</code> in their own transaction (<code>recordIndependently</code> for refusals and sign-ins); the entry is also emitted as an ECS event on the <code>annualva.audit</code> logger after the commit. The audit read scope is a port (<code>AuditReaders</code>) the <code>submission</code> module answers (ADR 0038).</li>
 <li><strong>Monitoring.</strong> <code>monitoring.KeySignals</code> is injected by the modules that have a signal to record; the endpoint <code>/actuator/prometheus</code> is served behind its own security chain (section 1.9, ADR 0060).</li>
 </ul>
 <h3 id="1-5-execution-flow">1.5 Execution Flow</h3>
 <p><strong>Request lifecycle.</strong> <code>CorrelationIdFilter</code> assigns or accepts a correlation id; the security chain (the application&#x27;s, or the scrape chain for <code>/actuator/prometheus</code>) authenticates and applies CSRF (synchronizer token), the CSP and HSTS headers; <code>RoleResolutionFilter</code> loads the caller&#x27;s grants; the controller&#x27;s <code>@PreAuthorize</code> rule and <code>AccessGuard</code> decide; a service runs the command in one transaction that includes its audit entry; <code>ApiExceptionHandler</code> turns any failure into an RFC 9457 problem with the correlation id and reports each 401 or 403 to the refusal listener, which audits it.</p>
-<p><strong>Background processes.</strong> Scan job (10 s), Overdue sweep (hourly and at start), mail dispatch (30 s), deadline reminders (daily), Cycle lifecycle, Exemption lapse, role lapse, exports and retention. Each is a plain bean a Seam 1 test calls through a test-only endpoint.</p>
-<p><strong>Initialisation.</strong> Flyway applies <code>db/migration</code> (V1 to V43, gapless: <code>MigrationSequenceTest</code>); the two VA POCs are synced from <code>annualva.va-pocs</code>; configuration is validated at start and a missing secret stops the application (ADR 0005).</p>
+<p><strong>Background processes.</strong> Each is a <code>*Job</code> class that exists only where <code>annualva.scheduling.enabled</code> is true and calls a plain bean, which a Seam 1 test runs through a test-only endpoint. Defaults: the scan job every 10 s (<code>ScanPollerJob</code>), the export worker every 5 s (<code>ExportWorkerJob</code>), mail dispatch every 30 s (<code>MailDispatchJob</code>), the Overdue sweep, the Cycle lifecycle, the Exemption lapse and the role lapse each hourly and once at start (<code>OverdueSweepJob</code>, <code>CycleLifecycleJob</code>, <code>ExemptionLapseJob</code>, <code>RoleLapseJob</code>), deadline reminders on the hour from 08:00 to 23:00 business time, written once per person and day (<code>DeadlineReminderJob</code>, ADR 0052), and retention (<code>RetentionJob</code>): the disposal list at 02:30 business time and the executor every 5 minutes.</p>
+<p><strong>Initialisation.</strong> Flyway applies <code>db/migration</code> (the range is in section 4.1; gapless: <code>MigrationSequenceTest</code>); the two VA POCs are synced from <code>annualva.va-pocs</code>; configuration is validated at start and a missing secret stops the application (ADR 0005).</p>
 <h3 id="1-6-execution-flow-diagrams">1.6 Execution Flow Diagrams</h3>
 <p>Sign-in and step-up (ADR 0004):</p>
 <pre class="mermaid">sequenceDiagram
@@ -597,7 +596,7 @@ td:first-child {
 </tbody></table></div>
 <p>Configuration of the adapters: <code>LocalAdapterProperties</code> (<code>adapters.local</code>), <code>MccSsoProperties</code> (<code>adapters.oidc</code>), <code>AwsProperties</code> (<code>adapters.s3</code>). The scanner, mail and service-client production adapters wait for <code>mock-m-sso</code> (ticket 51 is open beyond the file store).</p>
 <h3 id="1-8-front-end">1.8 Front end</h3>
-<p><code>frontend/src</code>: <code>app</code> (shell, router, step-up interstitial, sign-in screens for <code>dev-local</code>), <code>api</code> (a typed client per back-end area: <code>session</code>, <code>systemRegister</code>, <code>submissions</code>, <code>scanReports</code>, <code>reportFiles</code>, <code>findings</code>, <code>dashboards</code>, <code>exemptions</code>, <code>exports</code>, <code>disposal</code>, <code>roleHolders</code>, <code>audit</code>, <code>notifications</code>, <code>cycles</code>, <code>stepUp</code>, <code>dev</code>), <code>components</code> (<code>ClassificationBanner</code>, <code>ClassifiedField</code>, <code>ErrorPanel</code>, <code>FilterChips</code>, <code>ProgressBar</code>), <code>hooks</code>, and <code>screens</code> by role (<code>smo</code>, <code>cyber-manager</code>, <code>va-poc</code>, <code>auditor</code>, <code>shared</code>). Gates: Prettier, <code>tsc -b</code>, <code>vite build</code>, a no-raw-HTML check, dependency-cruiser and fallow. There are no React unit tests (ADR 0009).</p>
+<p><code>frontend/src</code>: <code>app</code> (shell, router, step-up interstitial, sign-in screens for <code>dev-local</code>), <code>api</code> (a typed client per back-end area: <code>session</code>, <code>systemRegister</code>, <code>submissions</code>, <code>scanReports</code>, <code>reportFiles</code>, <code>findings</code>, <code>dashboards</code>, <code>exemptions</code>, <code>exports</code>, <code>disposal</code>, <code>roleHolders</code>, <code>audit</code>, <code>notifications</code>, <code>cycles</code>, <code>stepUp</code>, <code>dev</code>, over the shared <code>client</code>, <code>problem</code>, <code>page</code> and <code>files</code> helpers), <code>components</code> (<code>ClassificationBanner</code>, <code>ClassifiedField</code>, <code>ErrorPanel</code>, <code>FilterChips</code>, <code>ProgressBar</code>), <code>hooks</code>, and <code>screens</code> by role (<code>smo</code>, <code>cyber-manager</code>, <code>va-poc</code>, <code>auditor</code>, <code>shared</code>). Gates: Prettier, <code>tsc -b</code>, <code>vite build</code>, a no-raw-HTML check, dependency-cruiser and fallow. There are no React unit tests (ADR 0009).</p>
 <h3 id="1-9-profiles-and-monitoring">1.9 Profiles and Monitoring</h3>
 <div class="table-wrap"><table>
 <thead><tr>
@@ -633,15 +632,15 @@ td:first-child {
 </tr>
 </tbody></table></div>
 <p>UAT and production run the base configuration with every value supplied by the environment. The README&#x27;s &quot;Profiles, secrets and environments&quot; section lists the variables.</p>
-<p>Monitoring (IM8 lm-16, ADR 0060): <code>monitoring.KeySignals</code> registers the Overdue gauges and the counters for scan failures and timeouts, mail failures, step-up refusals and audit write failures. <code>/actuator/prometheus</code> has its own security chain with a bearer token (<code>app.MetricsScrapeSecurity</code>); <code>/actuator/health</code> is anonymous and liveness-only. The README&#x27;s run book gives each signal&#x27;s alert threshold and the operator response.</p>
+<p>Monitoring (IM8 lm-16, ADR 0060): <code>monitoring.KeySignals</code> registers the Overdue gauges and the counters for scan failures and timeouts, mail failures, step-up refusals and audit write failures. <code>/actuator/prometheus</code> has its own security chain with a bearer token (<code>app.MetricsScrapeSecurity</code>); <code>/actuator/health</code> is anonymous and liveness-only. The README&#x27;s run book gives each signal&#x27;s alert threshold and the operator response. Provisional (decided 2026-11-22, ADR 0060): the bearer token as the scraper&#x27;s credential, the alert thresholds (starting values) and where each environment keeps the token are not final; ticket 55 (products and non-functional targets, with a person) decides them.</p>
 <h2 id="2-software-module-catalog">2. Software Module Catalog</h2>
-<p>Each module lists its purpose, what it depends on (from its <code>package-info.java</code> and the layering test), the HTTP endpoints its controllers serve, and its public types. Method-level detail is in the Javadoc of each class.</p>
+<p>Each module lists its purpose, the modules it imports and the modules that import it, the HTTP endpoints its controllers serve, and its public types with the first sentence of their Javadoc. Types that are not public (most stores, jobs and adapters) are left out: they are not part of a module&#x27;s interface. Method-level detail is in the Javadoc of each class.</p>
 <h4 id="access"><code>access</code></h4>
 <ul>
 <li><strong>Source files:</strong> 64 under <code>backend/src/main/java/sg/annualva/access/</code></li>
 <li><strong>Purpose:</strong> Sign-in through MCC SSO, users, sessions, the role store, step-up and the per-System ownership check.</li>
-<li><strong>Dependencies:</strong> audit, boundary, config, monitoring and web only</li>
-<li><strong>Used by:</strong> dashboard, export, finding, ingestion, notification, register, retention, submission, app</li>
+<li><strong>Uses (imports):</strong> audit, boundary, config, jdbc, monitoring, web</li>
+<li><strong>Used by:</strong> app, dashboard, export, finding, ingestion, notification, register, retention, submission</li>
 </ul>
 <p><strong>Endpoints:</strong></p>
 <div class="table-wrap"><table>
@@ -664,12 +663,12 @@ td:first-child {
 </tr>
 <tr>
 <td>GET</td>
-<td><code>&lt;StepUpRequiredException.START_PATH&gt;</code></td>
+<td><code>/auth/step-up</code></td>
 </tr>
 </tbody></table></div>
 <div class="table-wrap"><table>
 <thead><tr>
-<th>Type</th>
+<th>Public type</th>
 <th>Kind</th>
 <th>Description</th>
 </tr></thead>
@@ -677,7 +676,7 @@ td:first-child {
 <tr>
 <td><code>AccessGuard</code></td>
 <td>class</td>
-<td></td>
+<td>Per-System ownership (IM8 ac-1, as-7).</td>
 </tr>
 <tr>
 <td><code>AppUser</code></td>
@@ -687,27 +686,27 @@ td:first-child {
 <tr>
 <td><code>AppUserStore</code></td>
 <td>class</td>
-<td></td>
+<td>The app_user table.</td>
 </tr>
 <tr>
 <td><code>AuditActor</code></td>
 <td>class</td>
-<td></td>
+<td>Names the caller on an audit entry.</td>
 </tr>
 <tr>
 <td><code>CurrentUser</code></td>
 <td>class</td>
-<td></td>
+<td>The signed-in person behind the current request, for a command that has to record who it was done by (a Register preview remembers its uploader).</td>
 </tr>
 <tr>
 <td><code>DevIdentityProperties</code></td>
 <td>record</td>
-<td></td>
+<td>Local-stack identities (prefix annualva.dev): MockPass personas carry an afcas.uuid but no email, while the System Register works by email.</td>
 </tr>
 <tr>
 <td><code>DevLocalController</code></td>
 <td>class</td>
-<td></td>
+<td>The endpoints of the dev-local profile that are not the sign-in itself (ticket 63, ADR 0058): the list of the six personas, which the front end reads to offer its picker (a 404 anywhere else is how it knows not to), and the local confirmation of a step-up, which takes the place of the round trip to ...</td>
 </tr>
 <tr>
 <td><code>GrantSource</code></td>
@@ -722,7 +721,7 @@ td:first-child {
 <tr>
 <td><code>RegisterRoles</code></td>
 <td>class</td>
-<td></td>
+<td>Makes the role store agree with the System Register (stories 73 and 79, IM8 ac-3): every active System has an SMO/Tech Lead grant and a Cyber Manager grant, with source REGISTER, scoped to that System, and nobody else holds one.</td>
 </tr>
 <tr>
 <td><code>ReturnTrigger</code></td>
@@ -747,7 +746,7 @@ td:first-child {
 <tr>
 <td><code>RoleGrantStore</code></td>
 <td>class</td>
-<td></td>
+<td>The role_grant table.</td>
 </tr>
 <tr>
 <td><code>RoleHolder</code></td>
@@ -762,12 +761,12 @@ td:first-child {
 <tr>
 <td><code>RoleHolders</code></td>
 <td>class</td>
-<td></td>
+<td>The role store as the VA POCs&#x27; role-holder review sees it (IM8 ac-4, ticket 47, ADR 0056): every grant not revoked, and the review&#x27;s one change, suspending a person&#x27;s role for a System until a Register upload names someone else, or restoring it.</td>
 </tr>
 <tr>
 <td><code>RoleLapse</code></td>
 <td>class</td>
-<td></td>
+<td>The role lapse and its automatic return (story 80a, IM8 ac-3, ADR 0055).</td>
 </tr>
 <tr>
 <td><code>SessionAuthentication</code></td>
@@ -777,7 +776,7 @@ td:first-child {
 <tr>
 <td><code>SessionController</code></td>
 <td>class</td>
-<td></td>
+<td>What the SPA asks on load: is there a session, who is signed in, what the shell must show and when the session ends.</td>
 </tr>
 <tr>
 <td><code>SessionUser</code></td>
@@ -787,7 +786,7 @@ td:first-child {
 <tr>
 <td><code>SignInProperties</code></td>
 <td>record</td>
-<td></td>
+<td>Sign-in and session rules (prefix annualva.sign-in).</td>
 </tr>
 <tr>
 <td><code>SignInRefusedException</code></td>
@@ -797,27 +796,27 @@ td:first-child {
 <tr>
 <td><code>SignInSecurity</code></td>
 <td>class</td>
-<td></td>
+<td>The sign-in and session wiring the composition root applies to the one filter chain: the way a sign-in starts (SignInMethod: OIDC login through the MCC client beans, or the persona picker under dev-local), the lean session principal, sign-out at POST /api/logout, session id rotation at sign-in, one ...</td>
 </tr>
 <tr>
 <td><code>SignInService</code></td>
 <td>class</td>
-<td></td>
+<td>The sign-in rules: refuse when the token lacks the person&#x27;s identifier, an auth_time (fail closed, ADR 0004) or, where required, multi-factor evidence (ac-2); then link the identity to a user by sso_id, else by a pre-registered email, else create one.</td>
 </tr>
 <tr>
 <td><code>StepUp</code></td>
 <td>class</td>
-<td></td>
+<td>Step-up (IM8 ac-2, story 77, ADR 0004): a sensitive command asks #require(String) first, and is refused unless the person signed in again within the freshness window.</td>
 </tr>
 <tr>
 <td><code>StepUpController</code></td>
 <td>class</td>
-<td></td>
+<td>Where the browser goes when a sensitive command answered step-up-required: the person is sent to StepUpStarter&#x27;s fresh sign-in (the identity provider&#x27;s, or the local confirmation under dev-local) and comes back to returnTo.</td>
 </tr>
 <tr>
 <td><code>StepUpProperties</code></td>
 <td>record</td>
-<td></td>
+<td>Step-up rules (prefix annualva.step-up, IM8 ac-2, ADR 0004).</td>
 </tr>
 <tr>
 <td><code>SuspensionCause</code></td>
@@ -832,14 +831,15 @@ td:first-child {
 <tr>
 <td><code>VaPocProperties</code></td>
 <td>record</td>
-<td></td>
+<td>The two VA POCs, set at deployment (annualva.va-pocs, a comma-separated list) and changed only by changing the deployment&#x27;s configuration through its change request.</td>
 </tr>
 </tbody></table></div>
 <h4 id="adapters"><code>adapters</code></h4>
 <ul>
 <li><strong>Source files:</strong> 21 under <code>backend/src/main/java/sg/annualva/adapters/</code></li>
 <li><strong>Purpose:</strong> The production and local implementations of the boundary ports (identity provider, malware scanner, mail relay, file store, account status).</li>
-<li><strong>Dependencies:</strong> see section 1.3</li>
+<li><strong>Uses (imports):</strong> boundary, config</li>
+<li><strong>Used by:</strong> no other module</li>
 </ul>
 <p><strong>Endpoints:</strong></p>
 <div class="table-wrap"><table>
@@ -855,41 +855,42 @@ td:first-child {
 </tbody></table></div>
 <div class="table-wrap"><table>
 <thead><tr>
-<th>Type</th>
+<th>Public type</th>
 <th>Kind</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
 <tr>
-<td><code>LocalAdapterProperties</code></td>
+<td><code>AwsProperties</code></td>
 <td>record</td>
-<td></td>
+<td>Settings of the S3 file store (prefix annualva.aws); bound only where annualva.aws.enabled is true.</td>
 </tr>
 <tr>
 <td><code>JwksController</code></td>
 <td>class</td>
-<td></td>
+<td>Publishes the public half of the client-assertion signing key so MCC SSO can verify private_key_jwt.</td>
+</tr>
+<tr>
+<td><code>LocalAdapterProperties</code></td>
+<td>record</td>
+<td>Settings of the local adapters (prefix annualva.dev-local); only under the dev-local profile.</td>
 </tr>
 <tr>
 <td><code>MccSsoProperties</code></td>
 <td>record</td>
-<td></td>
-</tr>
-<tr>
-<td><code>AwsProperties</code></td>
-<td>record</td>
-<td></td>
+<td>MCC SSO settings (prefix annualva.mcc).</td>
 </tr>
 </tbody></table></div>
 <h4 id="app"><code>app</code></h4>
 <ul>
 <li><strong>Source files:</strong> 5 under <code>backend/src/main/java/sg/annualva/app/</code></li>
 <li><strong>Purpose:</strong> The composition root: the Spring Boot entry point, the clock bean, the security filter chains (the application and the metrics scrape).</li>
-<li><strong>Dependencies:</strong> see section 1.3</li>
+<li><strong>Uses (imports):</strong> access, web</li>
+<li><strong>Used by:</strong> no other module</li>
 </ul>
 <div class="table-wrap"><table>
 <thead><tr>
-<th>Type</th>
+<th>Public type</th>
 <th>Kind</th>
 <th>Description</th>
 </tr></thead>
@@ -897,20 +898,20 @@ td:first-child {
 <tr>
 <td><code>AnnualVaApplication</code></td>
 <td>class</td>
-<td></td>
+<td>Entry point.</td>
 </tr>
 <tr>
 <td><code>MonitoringProperties</code></td>
 <td>record</td>
-<td></td>
+<td>The monitoring endpoint&#x27;s credential (prefix annualva.monitoring, IM8 lm-16, ADR 0060).</td>
 </tr>
 </tbody></table></div>
 <h4 id="audit"><code>audit</code></h4>
 <ul>
 <li><strong>Source files:</strong> 15 under <code>backend/src/main/java/sg/annualva/audit/</code></li>
 <li><strong>Purpose:</strong> The append-only audit log: writing entries in the action&#x27;s transaction or on their own, the ECS event after the commit, and the read scope port.</li>
-<li><strong>Dependencies:</strong> config, web and monitoring only</li>
-<li><strong>Used by:</strong> access, export, finding, ingestion, register, retention, submission, app</li>
+<li><strong>Uses (imports):</strong> config, jdbc, monitoring, web</li>
+<li><strong>Used by:</strong> access, export, finding, ingestion, register, retention, submission</li>
 </ul>
 <p><strong>Endpoints:</strong></p>
 <div class="table-wrap"><table>
@@ -926,7 +927,7 @@ td:first-child {
 </tbody></table></div>
 <div class="table-wrap"><table>
 <thead><tr>
-<th>Type</th>
+<th>Public type</th>
 <th>Kind</th>
 <th>Description</th>
 </tr></thead>
@@ -944,7 +945,7 @@ td:first-child {
 <tr>
 <td><code>AuditController</code></td>
 <td>class</td>
-<td></td>
+<td>Read access to the audit log: a VA POC reads every entry (story 84), a Cyber Manager the history of the VA Submissions they reviewed on Systems still assigned to them (story 85, ADR 0038), with the same filters.</td>
 </tr>
 <tr>
 <td><code>AuditDetail</code></td>
@@ -969,7 +970,7 @@ td:first-child {
 <tr>
 <td><code>AuditLog</code></td>
 <td>class</td>
-<td></td>
+<td>The one way to write to and read the audit log.</td>
 </tr>
 <tr>
 <td><code>AuditOutcome</code></td>
@@ -1001,12 +1002,12 @@ td:first-child {
 <ul>
 <li><strong>Source files:</strong> 7 under <code>backend/src/main/java/sg/annualva/boundary/</code></li>
 <li><strong>Purpose:</strong> The ports at the edge of the application: identity provider, account status, malware scanner, mail relay, file store. The only things Seam 1 tests fake (with the clock).</li>
-<li><strong>Dependencies:</strong> see section 1.3</li>
-<li><strong>Used by:</strong> access, adapters, export, ingestion, notification, retention, scan, web, app</li>
+<li><strong>Uses (imports):</strong> no other module</li>
+<li><strong>Used by:</strong> access, adapters, export, ingestion, notification, retention, scan</li>
 </ul>
 <div class="table-wrap"><table>
 <thead><tr>
-<th>Type</th>
+<th>Public type</th>
 <th>Kind</th>
 <th>Description</th>
 </tr></thead>
@@ -1046,12 +1047,12 @@ td:first-child {
 <ul>
 <li><strong>Source files:</strong> 3 under <code>backend/src/main/java/sg/annualva/config/</code></li>
 <li><strong>Purpose:</strong> Shared configuration: application properties and the dev-local and not-dev-local profile markers.</li>
-<li><strong>Dependencies:</strong> see section 1.3</li>
-<li><strong>Used by:</strong> access, adapters, audit, cycle, web, app</li>
+<li><strong>Uses (imports):</strong> no other module</li>
+<li><strong>Used by:</strong> access, adapters, audit, cycle</li>
 </ul>
 <div class="table-wrap"><table>
 <thead><tr>
-<th>Type</th>
+<th>Public type</th>
 <th>Kind</th>
 <th>Description</th>
 </tr></thead>
@@ -1059,15 +1060,25 @@ td:first-child {
 <tr>
 <td><code>AnnualVaProperties</code></td>
 <td>record</td>
-<td></td>
+<td>Application-wide settings (prefix annualva).</td>
+</tr>
+<tr>
+<td><code>DevLocal</code></td>
+<td>annotation</td>
+<td>Exists only under the dev-local profile (ticket 63, ADR 0058): the persona sign-in and the local boundary adapters of a developer&#x27;s machine.</td>
+</tr>
+<tr>
+<td><code>NotDevLocal</code></td>
+<td>annotation</td>
+<td>Exists in every profile but dev-local (ticket 63, ADR 0058): the single sign-on client and the stubs of the boundary adapters that ticket 51 replaces.</td>
 </tr>
 </tbody></table></div>
 <h4 id="cycle"><code>cycle</code></h4>
 <ul>
 <li><strong>Source files:</strong> 10 under <code>backend/src/main/java/sg/annualva/cycle/</code></li>
 <li><strong>Purpose:</strong> The VA Cycle and Quarter calendar, computed from the year, two settings and the clock; the stored record of a Cycle opening and closing.</li>
-<li><strong>Dependencies:</strong> config and web only</li>
-<li><strong>Used by:</strong> dashboard, export, finding, ingestion, notification, register, retention, submission, app</li>
+<li><strong>Uses (imports):</strong> config, jdbc, web</li>
+<li><strong>Used by:</strong> dashboard, export, finding, ingestion, notification, register, retention, submission</li>
 </ul>
 <p><strong>Endpoints:</strong></p>
 <div class="table-wrap"><table>
@@ -1087,7 +1098,7 @@ td:first-child {
 </tbody></table></div>
 <div class="table-wrap"><table>
 <thead><tr>
-<th>Type</th>
+<th>Public type</th>
 <th>Kind</th>
 <th>Description</th>
 </tr></thead>
@@ -1095,17 +1106,17 @@ td:first-child {
 <tr>
 <td><code>CalendarProperties</code></td>
 <td>record</td>
-<td></td>
+<td>The one-off first live Quarter: the Quarter of a VA Cycle from which that Cycle runs in this app.</td>
 </tr>
 <tr>
 <td><code>CycleCalendar</code></td>
 <td>class</td>
-<td></td>
+<td>The calendar: every date in it is a business date in Asia/Singapore, derived from the Clock bean and never from an instant&#x27;s UTC date (ADR 0006).</td>
 </tr>
 <tr>
 <td><code>CycleController</code></td>
 <td>class</td>
-<td></td>
+<td>The calendar, read-only, for anyone who holds a role: it names no System and holds no report content, so there is no ownership to check (ADR 0013) and no action to audit (ADR 0014); a person with no role has no use for it.</td>
 </tr>
 <tr>
 <td><code>CyclePhase</code></td>
@@ -1115,7 +1126,7 @@ td:first-child {
 <tr>
 <td><code>CycleStore</code></td>
 <td>class</td>
-<td></td>
+<td>What the calendar cannot derive about a VA Cycle (ADR 0015 item 1, ADR 0044): that the lifecycle job recorded its opening, and its close, with an early close&#x27;s date.</td>
 </tr>
 <tr>
 <td><code>CycleView</code></td>
@@ -1142,8 +1153,8 @@ td:first-child {
 <ul>
 <li><strong>Source files:</strong> 16 under <code>backend/src/main/java/sg/annualva/dashboard/</code></li>
 <li><strong>Purpose:</strong> Read models for the roles: the SMO inbox, the Cyber Manager inbox, the Quarter board and the VA POC Cycle matrix.</li>
-<li><strong>Dependencies:</strong> access, cycle, register, submission, finding and web only</li>
-<li><strong>Used by:</strong> export, app</li>
+<li><strong>Uses (imports):</strong> access, cycle, finding, register, submission</li>
+<li><strong>Used by:</strong> export</li>
 </ul>
 <p><strong>Endpoints:</strong></p>
 <div class="table-wrap"><table>
@@ -1175,7 +1186,7 @@ td:first-child {
 </tbody></table></div>
 <div class="table-wrap"><table>
 <thead><tr>
-<th>Type</th>
+<th>Public type</th>
 <th>Kind</th>
 <th>Description</th>
 </tr></thead>
@@ -1183,32 +1194,32 @@ td:first-child {
 <tr>
 <td><code>CmInbox</code></td>
 <td>class</td>
-<td></td>
+<td>The Cyber Manager&#x27;s action inbox (story 48): the Systems assigned to the caller in the System Register, in one VA Cycle, each with its VA Submission&#x27;s state (Not Started while it has none) and due dates, under the heading the server decides, Overdue first and then by the day its current window ends ...</td>
 </tr>
 <tr>
 <td><code>CmInboxController</code></td>
 <td>class</td>
-<td></td>
+<td>The Cyber Manager&#x27;s action inbox, read-only.</td>
 </tr>
 <tr>
 <td><code>CycleMatrix</code></td>
 <td>class</td>
-<td></td>
+<td>The VA POC&#x27;s Cycle matrix (story 64): the whole VA Cycle at once, as a strip of its four Quarters with how many Systems each holds in each state, then one row per System.</td>
 </tr>
 <tr>
 <td><code>CycleMatrixController</code></td>
 <td>class</td>
-<td></td>
+<td>The Cycle matrix, read-only, for a VA POC only: an SMO/Tech Lead, a Cyber Manager, an Auditor or a person with no role gets 403.</td>
 </tr>
 <tr>
 <td><code>ExemptionQueue</code></td>
 <td>class</td>
-<td></td>
+<td>The VA POC&#x27;s queue of Exemption requests waiting on a decision (story 45), in one VA Cycle, oldest first: the Systems of the endorse scope whose VA Submission is Exemption Requested, read through the one dashboard reader (DashboardSystems), each with its pending request and whether segregation of ...</td>
 </tr>
 <tr>
 <td><code>ExemptionQueueController</code></td>
 <td>class</td>
-<td></td>
+<td>The Exemption requests waiting on a VA POC (story 45).</td>
 </tr>
 <tr>
 <td><code>HandledOutside</code></td>
@@ -1223,22 +1234,22 @@ td:first-child {
 <tr>
 <td><code>QuarterBoard</code></td>
 <td>class</td>
-<td></td>
+<td>The Quarter board (story 49): one Quarter of a VA Cycle at once, its Systems in one column per state, from Not Started to Not Endorsed in the order of the spec&#x27;s state table, every column present even when it is empty.</td>
 </tr>
 <tr>
 <td><code>QuarterBoardController</code></td>
 <td>class</td>
-<td></td>
+<td>The Quarter board, read-only, for a Cyber Manager (the Systems assigned to them and nobody else&#x27;s) and a VA POC (every System).</td>
 </tr>
 <tr>
 <td><code>SmoInbox</code></td>
 <td>class</td>
-<td></td>
+<td>The SMO/Tech Lead&#x27;s inbox (stories 18 and 71): the Systems the caller submits for, in one VA Cycle, each in its Quarter with its state, its three due dates and what is needed next.</td>
 </tr>
 <tr>
 <td><code>SmoInboxController</code></td>
 <td>class</td>
-<td></td>
+<td>The SMO/Tech Lead&#x27;s inbox, read-only.</td>
 </tr>
 <tr>
 <td><code>SystemState</code></td>
@@ -1250,7 +1261,8 @@ td:first-child {
 <ul>
 <li><strong>Source files:</strong> 17 under <code>backend/src/main/java/sg/annualva/export/</code></li>
 <li><strong>Purpose:</strong> Exports made in the background and kept 24 hours in the export zone: the management summary in Excel and PDF.</li>
-<li><strong>Dependencies:</strong> access, audit, boundary, cycle, dashboard, finding and web only</li>
+<li><strong>Uses (imports):</strong> access, audit, boundary, cycle, dashboard, finding, jdbc, web</li>
+<li><strong>Used by:</strong> no other module</li>
 </ul>
 <p><strong>Endpoints:</strong></p>
 <div class="table-wrap"><table>
@@ -1260,11 +1272,11 @@ td:first-child {
 </tr></thead>
 <tbody>
 <tr>
-<td>POST</td>
+<td>GET</td>
 <td><code>/api/exports</code></td>
 </tr>
 <tr>
-<td>GET</td>
+<td>POST</td>
 <td><code>/api/exports</code></td>
 </tr>
 <tr>
@@ -1278,7 +1290,7 @@ td:first-child {
 </tbody></table></div>
 <div class="table-wrap"><table>
 <thead><tr>
-<th>Type</th>
+<th>Public type</th>
 <th>Kind</th>
 <th>Description</th>
 </tr></thead>
@@ -1291,7 +1303,7 @@ td:first-child {
 <tr>
 <td><code>ExportController</code></td>
 <td>class</td>
-<td></td>
+<td>Exports, generated in the background and then downloaded (story 81, spec &quot;API contract&quot;).</td>
 </tr>
 <tr>
 <td><code>ExportFormat</code></td>
@@ -1311,20 +1323,20 @@ td:first-child {
 <tr>
 <td><code>ExportWorker</code></td>
 <td>class</td>
-<td></td>
+<td>The export job (ADR 0045): makes the files of queued exports and removes those whose 24 hours are up.</td>
 </tr>
 <tr>
 <td><code>Exports</code></td>
 <td>class</td>
-<td></td>
+<td>Asking for an export, reading where it is, and downloading it (stories 81, 84 and 86).</td>
 </tr>
 </tbody></table></div>
 <h4 id="finding"><code>finding</code></h4>
 <ul>
 <li><strong>Source files:</strong> 43 under <code>backend/src/main/java/sg/annualva/finding/</code></li>
 <li><strong>Purpose:</strong> Findings read from Scan Reports, their status proposals, the Cyber Manager review, the rework queue and the manual Findings.</li>
-<li><strong>Dependencies:</strong> parser, submission, cycle, access, audit and web</li>
-<li><strong>Used by:</strong> dashboard, export, ingestion, app</li>
+<li><strong>Uses (imports):</strong> access, audit, cycle, jdbc, parser, submission, web</li>
+<li><strong>Used by:</strong> dashboard, export, ingestion</li>
 </ul>
 <p><strong>Endpoints:</strong></p>
 <div class="table-wrap"><table>
@@ -1335,23 +1347,27 @@ td:first-child {
 <tbody>
 <tr>
 <td>POST</td>
-<td><code>/api/findings/{id}/reviews</code></td>
-</tr>
-<tr>
-<td>POST</td>
 <td><code>/api/batches/{id}/reviews</code></td>
 </tr>
 <tr>
 <td>GET</td>
-<td><code>/api/submissions/{id}/findings</code></td>
-</tr>
-<tr>
-<td>GET</td>
-<td><code>/api/submissions/{id}/readiness</code></td>
+<td><code>/api/findings/{id}/proposals</code></td>
 </tr>
 <tr>
 <td>POST</td>
 <td><code>/api/findings/{id}/proposals</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/findings/{id}/reviews</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/submissions/{id}/batches</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/submissions/{id}/findings</code></td>
 </tr>
 <tr>
 <td>POST</td>
@@ -1363,19 +1379,7 @@ td:first-child {
 </tr>
 <tr>
 <td>GET</td>
-<td><code>/api/submissions/{id}/batches</code></td>
-</tr>
-<tr>
-<td>GET</td>
-<td><code>/api/submissions/{id}/rework-queue</code></td>
-</tr>
-<tr>
-<td>GET</td>
-<td><code>/api/findings/{id}/proposals</code></td>
-</tr>
-<tr>
-<td>POST</td>
-<td><code>/api/submissions/{id}/reports/{type}/review</code></td>
+<td><code>/api/submissions/{id}/readiness</code></td>
 </tr>
 <tr>
 <td>GET</td>
@@ -1385,10 +1389,18 @@ td:first-child {
 <td>PUT</td>
 <td><code>/api/submissions/{id}/reports/{type}/mode</code></td>
 </tr>
+<tr>
+<td>POST</td>
+<td><code>/api/submissions/{id}/reports/{type}/review</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/submissions/{id}/rework-queue</code></td>
+</tr>
 </tbody></table></div>
 <div class="table-wrap"><table>
 <thead><tr>
-<th>Type</th>
+<th>Public type</th>
 <th>Kind</th>
 <th>Description</th>
 </tr></thead>
@@ -1416,12 +1428,12 @@ td:first-child {
 <tr>
 <td><code>BulkProposals</code></td>
 <td>class</td>
-<td></td>
+<td>Bulk-set (story 37, ADR 0028): the SMO/Tech Lead applies one Finding Status, with one set of its fields, to several Findings of a VA Submission in one step.</td>
 </tr>
 <tr>
 <td><code>FindingController</code></td>
 <td>class</td>
-<td></td>
+<td>The Findings read from a VA Submission&#x27;s Scan Reports (story 28), for anyone who may see its System: its SMO/Tech Lead, its Cyber Manager and the VA POCs.</td>
 </tr>
 <tr>
 <td><code>FindingFilter</code></td>
@@ -1446,7 +1458,7 @@ td:first-child {
 <tr>
 <td><code>Findings</code></td>
 <td>class</td>
-<td></td>
+<td>The Findings of a VA Submission (stories 20a, 25 and 28).</td>
 </tr>
 <tr>
 <td><code>ManualFindingRequest</code></td>
@@ -1456,7 +1468,7 @@ td:first-child {
 <tr>
 <td><code>ManualFindings</code></td>
 <td>class</td>
-<td></td>
+<td>Findings the SMO/Tech Lead types in because the tool cannot export a machine-readable report (story 23, ADR 0030).</td>
 </tr>
 <tr>
 <td><code>ProposalRequest</code></td>
@@ -1526,7 +1538,7 @@ td:first-child {
 <tr>
 <td><code>Reviews</code></td>
 <td>class</td>
-<td></td>
+<td>The Cyber Manager&#x27;s review (story 50): they confirm each proposed Finding Status of a VA Submission In Review, or mark it Disputed with a comment, and do the same for the justification of a Scan Report marked not applicable (ADR 0030 item 3) and, at once, for the members of a Bulk-set batch (story ...</td>
 </tr>
 <tr>
 <td><code>ReworkQueue</code></td>
@@ -1536,7 +1548,7 @@ td:first-child {
 <tr>
 <td><code>ReworkQueues</code></td>
 <td>class</td>
-<td></td>
+<td>The rework queue (stories 60 and 61): the Findings of a VA Submission its SMO/Tech Lead still has to act on, one stage after another (ReworkStage).</td>
 </tr>
 <tr>
 <td><code>ReworkStage</code></td>
@@ -1546,7 +1558,7 @@ td:first-child {
 <tr>
 <td><code>ScanReportController</code></td>
 <td>class</td>
-<td></td>
+<td>How the Scan Reports of a VA Submission are provided (story 23): anyone who may see the System reads them; the SMO/Tech Lead of the System sets each one&#x27;s mode (a Cyber Manager, a VA POC who is not its SMO or an Auditor is refused with 403, an SMO of another System gets 404, ADR 0013).</td>
 </tr>
 <tr>
 <td><code>ScanReportView</code></td>
@@ -1556,14 +1568,15 @@ td:first-child {
 <tr>
 <td><code>ScanReports</code></td>
 <td>class</td>
-<td></td>
+<td>How the three Scan Reports of a VA Submission are provided (story 23, ADR 0030): uploaded (the default), not applicable (Dependency-Check or Burp Suite, with a justification the Cyber Manager reviews like a Finding) or entered by hand (with a justification).</td>
 </tr>
 </tbody></table></div>
 <h4 id="ingestion"><code>ingestion</code></h4>
 <ul>
 <li><strong>Source files:</strong> 21 under <code>backend/src/main/java/sg/annualva/ingestion/</code></li>
 <li><strong>Purpose:</strong> The Scan Report upload pipeline: quarantine, scan job, type and schema checks, parsing, and the file views.</li>
-<li><strong>Dependencies:</strong> submission, scan, parser, access, audit, monitoring and web</li>
+<li><strong>Uses (imports):</strong> access, audit, boundary, cycle, finding, jdbc, monitoring, parser, scan, submission, web</li>
+<li><strong>Used by:</strong> no other module</li>
 </ul>
 <p><strong>Endpoints:</strong></p>
 <div class="table-wrap"><table>
@@ -1573,20 +1586,20 @@ td:first-child {
 </tr></thead>
 <tbody>
 <tr>
-<td>POST</td>
+<td>GET</td>
 <td><code>/api/submissions/{id}/files</code></td>
 </tr>
 <tr>
 <td>POST</td>
-<td><code>/api/submissions/{id}/files/{fileId}/replace</code></td>
-</tr>
-<tr>
-<td>GET</td>
 <td><code>/api/submissions/{id}/files</code></td>
 </tr>
 <tr>
 <td>GET</td>
 <td><code>/api/submissions/{id}/files/{fileId}</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/submissions/{id}/files/{fileId}/content</code></td>
 </tr>
 <tr>
 <td>GET</td>
@@ -1597,13 +1610,13 @@ td:first-child {
 <td><code>/api/submissions/{id}/files/{fileId}/metadata</code></td>
 </tr>
 <tr>
-<td>GET</td>
-<td><code>/api/submissions/{id}/files/{fileId}/content</code></td>
+<td>POST</td>
+<td><code>/api/submissions/{id}/files/{fileId}/replace</code></td>
 </tr>
 </tbody></table></div>
 <div class="table-wrap"><table>
 <thead><tr>
-<th>Type</th>
+<th>Public type</th>
 <th>Kind</th>
 <th>Description</th>
 </tr></thead>
@@ -1626,7 +1639,7 @@ td:first-child {
 <tr>
 <td><code>ReportFileController</code></td>
 <td>class</td>
-<td></td>
+<td>The Scan Report files of a VA Submission.</td>
 </tr>
 <tr>
 <td><code>ReportFileMetadataRequest</code></td>
@@ -1646,24 +1659,24 @@ td:first-child {
 <tr>
 <td><code>ReportFiles</code></td>
 <td>class</td>
-<td></td>
+<td>The Scan Report files of a VA Submission, as the SMO/Tech Lead and the people who review them see them (stories 20, 24, 27 and 78).</td>
 </tr>
 <tr>
 <td><code>ScanPoller</code></td>
 <td>class</td>
-<td></td>
+<td>Walks quarantined Scan Report files through the rest of the pipeline (stories 20, 20a, 24, 26, 27): the malware scan, then the type allowlist, the schema check, the parse and the age check (FileChecks) on the scanner&#x27;s unchanged copy, the age judged against today&#x27;s business date by the Clock bean.</td>
 </tr>
 </tbody></table></div>
 <h4 id="jdbc"><code>jdbc</code></h4>
 <ul>
 <li><strong>Source files:</strong> 2 under <code>backend/src/main/java/sg/annualva/jdbc/</code></li>
 <li><strong>Purpose:</strong> What every store shares about PostgreSQL through JdbcClient: how an instant is written and read.</li>
-<li><strong>Dependencies:</strong> see section 1.3</li>
-<li><strong>Used by:</strong> access, audit, cycle, export, finding, ingestion, notification, register, retention, submission, app</li>
+<li><strong>Uses (imports):</strong> no other module</li>
+<li><strong>Used by:</strong> access, audit, cycle, export, finding, ingestion, notification, register, retention, submission</li>
 </ul>
 <div class="table-wrap"><table>
 <thead><tr>
-<th>Type</th>
+<th>Public type</th>
 <th>Kind</th>
 <th>Description</th>
 </tr></thead>
@@ -1678,12 +1691,12 @@ td:first-child {
 <ul>
 <li><strong>Source files:</strong> 2 under <code>backend/src/main/java/sg/annualva/monitoring/</code></li>
 <li><strong>Purpose:</strong> The key signals (meters) an operator watches, named and registered in one place (ADR 0060).</li>
-<li><strong>Dependencies:</strong> no other module, so any module may record a signal</li>
-<li><strong>Used by:</strong> access, audit, ingestion, notification, scan, submission, app</li>
+<li><strong>Uses (imports):</strong> no other module</li>
+<li><strong>Used by:</strong> access, audit, ingestion, notification, scan, submission</li>
 </ul>
 <div class="table-wrap"><table>
 <thead><tr>
-<th>Type</th>
+<th>Public type</th>
 <th>Kind</th>
 <th>Description</th>
 </tr></thead>
@@ -1691,14 +1704,15 @@ td:first-child {
 <tr>
 <td><code>KeySignals</code></td>
 <td>class</td>
-<td></td>
+<td>The key signals of the application (IM8 lm-16, ADR 0060), the meters the README&#x27;s runbook gives an alert threshold and an operator response for.</td>
 </tr>
 </tbody></table></div>
 <h4 id="notification"><code>notification</code></h4>
 <ul>
 <li><strong>Source files:</strong> 19 under <code>backend/src/main/java/sg/annualva/notification/</code></li>
 <li><strong>Purpose:</strong> In-app notifications, the mail outbox and its dispatcher, deadline reminders.</li>
-<li><strong>Dependencies:</strong> access, boundary, cycle, monitoring, register, submission and web only</li>
+<li><strong>Uses (imports):</strong> access, boundary, cycle, jdbc, monitoring, register, submission, web</li>
+<li><strong>Used by:</strong> no other module</li>
 </ul>
 <p><strong>Endpoints:</strong></p>
 <div class="table-wrap"><table>
@@ -1718,7 +1732,7 @@ td:first-child {
 </tbody></table></div>
 <div class="table-wrap"><table>
 <thead><tr>
-<th>Type</th>
+<th>Public type</th>
 <th>Kind</th>
 <th>Description</th>
 </tr></thead>
@@ -1731,7 +1745,7 @@ td:first-child {
 <tr>
 <td><code>DeadlineReminders</code></td>
 <td>class</td>
-<td></td>
+<td>The deadline reminders (stories 88, 89 and 90, ADR 0052).</td>
 </tr>
 <tr>
 <td><code>Links</code></td>
@@ -1741,12 +1755,12 @@ td:first-child {
 <tr>
 <td><code>MailOutbox</code></td>
 <td>class</td>
-<td></td>
+<td>Email through the mail relay (stories 91 and 94, ADR 0046).</td>
 </tr>
 <tr>
 <td><code>MailProperties</code></td>
 <td>record</td>
-<td></td>
+<td>How mail goes out through the relay (prefix annualva.mail, ADR 0046).</td>
 </tr>
 <tr>
 <td><code>Notice</code></td>
@@ -1761,7 +1775,7 @@ td:first-child {
 <tr>
 <td><code>NotificationController</code></td>
 <td>class</td>
-<td></td>
+<td>Each person&#x27;s in-app notifications (story 92), for every role: only the caller&#x27;s own are ever listed or marked read.</td>
 </tr>
 <tr>
 <td><code>NotificationView</code></td>
@@ -1771,27 +1785,42 @@ td:first-child {
 <tr>
 <td><code>Notifications</code></td>
 <td>class</td>
-<td></td>
+<td>The notifications (stories 92 and 69, ADR 0043): the one port through which anything tells a person something, and each person&#x27;s in-app list.</td>
 </tr>
 </tbody></table></div>
 <h4 id="parser"><code>parser</code></h4>
 <ul>
 <li><strong>Source files:</strong> 24 under <code>backend/src/main/java/sg/annualva/parser/</code></li>
 <li><strong>Purpose:</strong> Reading Scan Report files: the hardened XML reader and one parser per vendor format (Dependency-Check, SCAP, Nessus, Burp Suite).</li>
-<li><strong>Dependencies:</strong> nothing</li>
-<li><strong>Used by:</strong> finding, ingestion, submission, app</li>
+<li><strong>Uses (imports):</strong> no other module</li>
+<li><strong>Used by:</strong> finding, ingestion, submission</li>
 </ul>
 <div class="table-wrap"><table>
 <thead><tr>
-<th>Type</th>
+<th>Public type</th>
 <th>Kind</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
 <tr>
+<td><code>BurpXmlParser</code></td>
+<td>class</td>
+<td>Reads a Burp Suite XML issue export: an issues root that holds one issue per finding of the scan.</td>
+</tr>
+<tr>
 <td><code>Confidence</code></td>
 <td>enum</td>
 <td>How sure a scanner says it is that an issue is real, from the most to the least sure: Burp Suite&#x27;s Certain, Firm and Tentative.</td>
+</tr>
+<tr>
+<td><code>DependencyCheckJsonParser</code></td>
+<td>class</td>
+<td>Reads an OWASP Dependency-Check JSON report: an object with reportSchema, scanInfo, projectInfo (the project&#x27;s name and the report date) and a dependencies array.</td>
+</tr>
+<tr>
+<td><code>DependencyCheckXmlParser</code></td>
+<td>class</td>
+<td>Reads an OWASP Dependency-Check XML report: an analysis root in the DependencyCheck namespace holding projectInfo (the project&#x27;s name and the report date) and dependencies.</td>
 </tr>
 <tr>
 <td><code>FindingKeys</code></td>
@@ -1801,7 +1830,12 @@ td:first-child {
 <tr>
 <td><code>FindingsBuilder</code></td>
 <td>class</td>
-<td>What every parser does with the Findings it reads, so that no vendor format repeats it: it merges what has the same identity key into one Finding with one occurrence per distinct place, merges a place read twice (ParsedReport.Occurrence#merge) and takes the wo</td>
+<td>What every parser does with the Findings it reads, so that no vendor format repeats it: it merges what has the same identity key into one Finding with one occurrence per distinct place, merges a place read twice (Occurrence#merge) and takes the worst severity of a Finding&#x27;s places as the Finding&#x27;s, ...</td>
+</tr>
+<tr>
+<td><code>NessusXmlParser</code></td>
+<td>class</td>
+<td>Reads a Nessus compliance audit: a NessusClientData_v2 document whose Report holds one ReportHost per scanned host, each with its HostProperties and one ReportItem per result.</td>
 </tr>
 <tr>
 <td><code>ParsedReport</code></td>
@@ -1831,37 +1865,7 @@ td:first-child {
 <tr>
 <td><code>ScanReading</code></td>
 <td>class</td>
-<td>What the parser of a scan report holds while it reads one file, so that no format declares it again: the Findings so far, what the file says about the scan itself, and whether the file had any section of the shape its format has (a Report of a Nessus audit, a</td>
-</tr>
-<tr>
-<td><code>Severity</code></td>
-<td>enum</td>
-<td>The five-level severity scale every Finding uses (the implementation plan, section 2.4), from the most to the least serious.</td>
-</tr>
-<tr>
-<td><code>UnparseableReportException</code></td>
-<td>class</td>
-<td>The file cannot be read into Findings.</td>
-</tr>
-<tr>
-<td><code>BurpXmlParser</code></td>
-<td>class</td>
-<td>Reads a Burp Suite XML issue export: an issues root that holds one issue per finding of the scan.</td>
-</tr>
-<tr>
-<td><code>DependencyCheckJsonParser</code></td>
-<td>class</td>
-<td>Reads an OWASP Dependency-Check JSON report: an object with reportSchema, scanInfo, projectInfo (the project&#x27;s name and the report date) and a dependencies array.</td>
-</tr>
-<tr>
-<td><code>DependencyCheckXmlParser</code></td>
-<td>class</td>
-<td>Reads an OWASP Dependency-Check XML report: an analysis root in the DependencyCheck namespace holding projectInfo (the project&#x27;s name and the report date) and dependencies.</td>
-</tr>
-<tr>
-<td><code>NessusXmlParser</code></td>
-<td>class</td>
-<td>Reads a Nessus compliance audit: a NessusClientData_v2 document whose Report holds one ReportHost per scanned host, each with its HostProperties and one ReportItem per result.</td>
+<td>What the parser of a scan report holds while it reads one file, so that no format declares it again: the Findings so far, what the file says about the scan itself, and whether the file had any section of the shape its format has (a Report of a Nessus audit, a TestResult of a SCAP scan, the root of ...</td>
 </tr>
 <tr>
 <td><code>ScapXmlParser</code></td>
@@ -1874,6 +1878,16 @@ td:first-child {
 <td>The only place an XML reader is made (the OWASP rules against XML external entities).</td>
 </tr>
 <tr>
+<td><code>Severity</code></td>
+<td>enum</td>
+<td>The five-level severity scale every Finding uses (the implementation plan, section 2.4), from the most to the least serious.</td>
+</tr>
+<tr>
+<td><code>UnparseableReportException</code></td>
+<td>class</td>
+<td>The file cannot be read into Findings.</td>
+</tr>
+<tr>
 <td><code>XmlCursor</code></td>
 <td>class</td>
 <td>A forward-only walk over the elements of an untrusted XML report, on a reader from SecureXml.</td>
@@ -1883,8 +1897,8 @@ td:first-child {
 <ul>
 <li><strong>Source files:</strong> 31 under <code>backend/src/main/java/sg/annualva/register/</code></li>
 <li><strong>Purpose:</strong> The System Register: the Excel template, upload and preview, the locked apply, the Systems list, SMO Unreachable, the role-holder review.</li>
-<li><strong>Dependencies:</strong> access, audit, cycle, scan and web only</li>
-<li><strong>Used by:</strong> dashboard, notification, retention, submission, app</li>
+<li><strong>Uses (imports):</strong> access, audit, cycle, jdbc, scan, web</li>
+<li><strong>Used by:</strong> dashboard, notification, retention, submission</li>
 </ul>
 <p><strong>Endpoints:</strong></p>
 <div class="table-wrap"><table>
@@ -1903,19 +1917,11 @@ td:first-child {
 </tr>
 <tr>
 <td>POST</td>
-<td><code>/api/role-holders/{grantId}/suspend</code></td>
-</tr>
-<tr>
-<td>POST</td>
 <td><code>/api/role-holders/{grantId}/restore</code></td>
 </tr>
 <tr>
-<td>GET</td>
-<td><code>/api/system-register/template</code></td>
-</tr>
-<tr>
 <td>POST</td>
-<td><code>/api/system-register/uploads</code></td>
+<td><code>/api/role-holders/{grantId}/suspend</code></td>
 </tr>
 <tr>
 <td>GET</td>
@@ -1927,12 +1933,20 @@ td:first-child {
 </tr>
 <tr>
 <td>GET</td>
+<td><code>/api/system-register/template</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/system-register/uploads</code></td>
+</tr>
+<tr>
+<td>GET</td>
 <td><code>/api/systems</code></td>
 </tr>
 </tbody></table></div>
 <div class="table-wrap"><table>
 <thead><tr>
-<th>Type</th>
+<th>Public type</th>
 <th>Kind</th>
 <th>Description</th>
 </tr></thead>
@@ -1975,17 +1989,17 @@ td:first-child {
 <tr>
 <td><code>RegisterApply</code></td>
 <td>class</td>
-<td></td>
+<td>Applies a confirmed Register change preview (stories 2, 3, 4, 73 and 79): in one transaction the Systems it names are added or updated by System ID, the ones the file left out are retired (never deleted, so their history stays), and the SMO/Tech Lead and Cyber Manager grants are made to follow the ...</td>
 </tr>
 <tr>
 <td><code>RegisterSystems</code></td>
 <td>class</td>
-<td></td>
+<td>The Register table (stories 2 and 12): the Systems the caller may see, each with its SMO/Tech Lead, Cyber Manager, Quarter, whether it is retired and, for a VA POC, whether its SMO/Tech Lead is an Unlinked SMO.</td>
 </tr>
 <tr>
 <td><code>RegisterTemplates</code></td>
 <td>class</td>
-<td></td>
+<td>Hands a VA POC the System Register template and records that it did (IM8 lm-4).</td>
 </tr>
 <tr>
 <td><code>RegisterText</code></td>
@@ -1995,22 +2009,22 @@ td:first-child {
 <tr>
 <td><code>RegisterUploads</code></td>
 <td>class</td>
-<td></td>
+<td>The System Register upload (stories 2, 12 and 14): reads a filled-in template, works out what it would change and keeps that as a preview for an hour.</td>
 </tr>
 <tr>
 <td><code>RoleHolderController</code></td>
 <td>class</td>
-<td></td>
+<td>The role-holder review (IM8 ac-4, ticket 47): the VA POCs&#x27; alone (the permissions matrix, &quot;changing roles&quot;).</td>
 </tr>
 <tr>
 <td><code>RoleHolderReviews</code></td>
 <td>class</td>
-<td></td>
+<td>The VA POCs&#x27; role-holder review (IM8 ac-4, story 80a, ticket 47, ADR 0056): every role holder listed against the System Register, the roles that came back by themselves since the last review (ADR 0055), whether a review is due, and the record of each completed review.</td>
 </tr>
 <tr>
 <td><code>SmoReachability</code></td>
 <td>class</td>
-<td></td>
+<td>SMO Unreachable (story 13, ADR 0053): what the mail relay answered about an address, kept on the Systems that name it as their SMO/Tech Lead.</td>
 </tr>
 <tr>
 <td><code>SystemChangeEvent</code></td>
@@ -2020,7 +2034,7 @@ td:first-child {
 <tr>
 <td><code>SystemRegisterController</code></td>
 <td>class</td>
-<td></td>
+<td>The System Register, for the VA POCs only (the path is also restricted to them in the security chain, so a file from anyone else is refused before it is read): the template to fill in, the upload of the filled-in file and the preview of what it would change, and the apply of a confirmed preview (a ...</td>
 </tr>
 <tr>
 <td><code>SystemSnapshot</code></td>
@@ -2030,14 +2044,15 @@ td:first-child {
 <tr>
 <td><code>SystemsController</code></td>
 <td>class</td>
-<td></td>
+<td>The Register&#x27;s Systems, read-only: every System for a VA POC, only their own for an SMO/Tech Lead or Cyber Manager (the service filters by the caller&#x27;s scope; ADR 0013).</td>
 </tr>
 </tbody></table></div>
 <h4 id="retention"><code>retention</code></h4>
 <ul>
 <li><strong>Source files:</strong> 11 under <code>backend/src/main/java/sg/annualva/retention/</code></li>
-<li><strong>Purpose:</strong> Retention and disposal: the disposal list a VA POC approves and the executor that deletes files and records.</li>
-<li><strong>Dependencies:</strong> see section 1.3</li>
+<li><strong>Purpose:</strong> Retention and disposal: the disposal list a VA POC approves and the executor that deletes files, then records, through the one path the append-only tables allow; the database checks every history row it deletes against the approved list (ADR 0050).</li>
+<li><strong>Uses (imports):</strong> access, audit, boundary, cycle, jdbc, register, web</li>
+<li><strong>Used by:</strong> no other module</li>
 </ul>
 <p><strong>Endpoints:</strong></p>
 <div class="table-wrap"><table>
@@ -2057,7 +2072,7 @@ td:first-child {
 </tbody></table></div>
 <div class="table-wrap"><table>
 <thead><tr>
-<th>Type</th>
+<th>Public type</th>
 <th>Kind</th>
 <th>Description</th>
 </tr></thead>
@@ -2065,22 +2080,22 @@ td:first-child {
 <tr>
 <td><code>DisposalController</code></td>
 <td>class</td>
-<td></td>
+<td>The disposal lists (story 87): the VA POCs&#x27; alone (the permission matrix, &quot;Approve disposal&quot;).</td>
 </tr>
 <tr>
 <td><code>DisposalExecutor</code></td>
 <td>class</td>
-<td></td>
+<td>The executor (story 87): disposes of the approved list.</td>
 </tr>
 <tr>
 <td><code>DisposalLists</code></td>
 <td>class</td>
-<td></td>
+<td>The disposal lists as a VA POC reads and approves them (story 87).</td>
 </tr>
 <tr>
 <td><code>DisposalPlanner</code></td>
 <td>class</td>
-<td></td>
+<td>The retention job&#x27;s listing (story 87): what is due for disposal on today&#x27;s business date, written as a DRAFT disposal list for a VA POC to approve.</td>
 </tr>
 <tr>
 <td><code>DisposalReason</code></td>
@@ -2102,12 +2117,12 @@ td:first-child {
 <ul>
 <li><strong>Source files:</strong> 4 under <code>backend/src/main/java/sg/annualva/scan/</code></li>
 <li><strong>Purpose:</strong> Quarantine and malware scan shared by the Scan Report pipeline and the Register upload.</li>
-<li><strong>Dependencies:</strong> boundary and monitoring only</li>
-<li><strong>Used by:</strong> ingestion, register, app</li>
+<li><strong>Uses (imports):</strong> boundary, monitoring</li>
+<li><strong>Used by:</strong> ingestion, register</li>
 </ul>
 <div class="table-wrap"><table>
 <thead><tr>
-<th>Type</th>
+<th>Public type</th>
 <th>Kind</th>
 <th>Description</th>
 </tr></thead>
@@ -2115,25 +2130,25 @@ td:first-child {
 <tr>
 <td><code>CleanFiles</code></td>
 <td>class</td>
-<td></td>
+<td>The clean zone of the file store: the only place a file the scanner passed is kept, and the only bytes the application ever serves back.</td>
 </tr>
 <tr>
 <td><code>MalwareScan</code></td>
 <td>class</td>
-<td></td>
+<td>Quarantine and malware scan (IM8 as-12, story 24): the one way an uploaded file is held and scanned before anything reads it.</td>
 </tr>
 <tr>
 <td><code>ScanProperties</code></td>
 <td>record</td>
-<td></td>
+<td>How the malware scan is driven (prefix annualva.scan).</td>
 </tr>
 </tbody></table></div>
 <h4 id="submission"><code>submission</code></h4>
 <ul>
-<li><strong>Source files:</strong> 34 under <code>backend/src/main/java/sg/annualva/submission/</code></li>
+<li><strong>Source files:</strong> 33 under <code>backend/src/main/java/sg/annualva/submission/</code></li>
 <li><strong>Purpose:</strong> The VA Submission state machine, submit, review steps, endorsement, Exemptions, the Overdue sweep, the Cycle lifecycle and role lapses.</li>
-<li><strong>Dependencies:</strong> access, audit, cycle, monitoring, register, web, and parser for the one text rule only</li>
-<li><strong>Used by:</strong> dashboard, finding, ingestion, notification, app</li>
+<li><strong>Uses (imports):</strong> access, audit, cycle, jdbc, monitoring, parser, register, web</li>
+<li><strong>Used by:</strong> dashboard, finding, ingestion, notification</li>
 </ul>
 <p><strong>Endpoints:</strong></p>
 <div class="table-wrap"><table>
@@ -2152,15 +2167,7 @@ td:first-child {
 </tr>
 <tr>
 <td>POST</td>
-<td><code>/api/systems/{id}/exemptions</code></td>
-</tr>
-<tr>
-<td>POST</td>
 <td><code>/api/exemptions/{id}/approve</code></td>
-</tr>
-<tr>
-<td>POST</td>
-<td><code>/api/exemptions/{id}/va-happened</code></td>
 </tr>
 <tr>
 <td>POST</td>
@@ -2172,15 +2179,19 @@ td:first-child {
 </tr>
 <tr>
 <td>POST</td>
+<td><code>/api/exemptions/{id}/va-happened</code></td>
+</tr>
+<tr>
+<td>POST</td>
 <td><code>/api/submissions</code></td>
 </tr>
 <tr>
-<td>POST</td>
-<td><code>/api/submissions/{id}/submit</code></td>
+<td>GET</td>
+<td><code>/api/submissions/{id}</code></td>
 </tr>
 <tr>
 <td>POST</td>
-<td><code>/api/submissions/{id}/return</code></td>
+<td><code>/api/submissions/{id}/endorse</code></td>
 </tr>
 <tr>
 <td>POST</td>
@@ -2188,20 +2199,24 @@ td:first-child {
 </tr>
 <tr>
 <td>POST</td>
-<td><code>/api/submissions/{id}/endorse</code></td>
+<td><code>/api/submissions/{id}/return</code></td>
 </tr>
 <tr>
 <td>GET</td>
 <td><code>/api/submissions/{id}/returns</code></td>
 </tr>
 <tr>
-<td>GET</td>
-<td><code>/api/submissions/{id}</code></td>
+<td>POST</td>
+<td><code>/api/submissions/{id}/submit</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/systems/{id}/exemptions</code></td>
 </tr>
 </tbody></table></div>
 <div class="table-wrap"><table>
 <thead><tr>
-<th>Type</th>
+<th>Public type</th>
 <th>Kind</th>
 <th>Description</th>
 </tr></thead>
@@ -2209,7 +2224,7 @@ td:first-child {
 <tr>
 <td><code>CycleCloseController</code></td>
 <td>class</td>
-<td></td>
+<td>Closing a VA Cycle early (stories 17 and 68): a VA POC&#x27;s command, after a fresh sign-in.</td>
 </tr>
 <tr>
 <td><code>CycleClosed</code></td>
@@ -2219,22 +2234,22 @@ td:first-child {
 <tr>
 <td><code>CycleLifecycle</code></td>
 <td>class</td>
-<td></td>
+<td>The VA Cycle lifecycle (stories 17 and 68, ADR 0044).</td>
 </tr>
 <tr>
 <td><code>DeclarationController</code></td>
 <td>class</td>
-<td></td>
+<td>The current Declaration wording, for the people who read VA Submissions: the SMO/Tech Lead accepts it when submitting, and the Cyber Manager and the VA POCs read what was declared.</td>
 </tr>
 <tr>
 <td><code>Declarations</code></td>
 <td>class</td>
-<td></td>
+<td>The fixed Declaration wording the SMO/Tech Lead accepts when submitting (stories 40 and 41).</td>
 </tr>
 <tr>
 <td><code>ExemptionController</code></td>
 <td>class</td>
-<td></td>
+<td>Exemptions (ADR 0048).</td>
 </tr>
 <tr>
 <td><code>ExemptionEvent</code></td>
@@ -2249,12 +2264,12 @@ td:first-child {
 <tr>
 <td><code>ExemptionLapse</code></td>
 <td>class</td>
-<td></td>
+<td>The conditional Exemption lapse (story 47, ADR 0051).</td>
 </tr>
 <tr>
 <td><code>Exemptions</code></td>
 <td>class</td>
-<td></td>
+<td>Exemptions (stories 43 to 46, ADR 0048).</td>
 </tr>
 <tr>
 <td><code>OverdueEvent</code></td>
@@ -2264,7 +2279,7 @@ td:first-child {
 <tr>
 <td><code>OverdueSweep</code></td>
 <td>class</td>
-<td></td>
+<td>The Overdue sweep (stories 42 and 71, ADR 0033).</td>
 </tr>
 <tr>
 <td><code>ReviewProgress</code></td>
@@ -2274,12 +2289,12 @@ td:first-child {
 <tr>
 <td><code>RoleLapses</code></td>
 <td>class</td>
-<td></td>
+<td>What the VA Submissions tell the role lapse (ticket 46, ADR 0055): when each System&#x27;s Quarter began, for the daily pass, and when work on a System is handed to a person whose role has lapsed.</td>
 </tr>
 <tr>
 <td><code>SubmissionController</code></td>
 <td>class</td>
-<td></td>
+<td>VA Submissions.</td>
 </tr>
 <tr>
 <td><code>SubmissionEvent</code></td>
@@ -2299,7 +2314,7 @@ td:first-child {
 <tr>
 <td><code>Submissions</code></td>
 <td>class</td>
-<td></td>
+<td>The VA Submission (stories 19, 40 and 41).</td>
 </tr>
 <tr>
 <td><code>SubmitReadiness</code></td>
@@ -2309,15 +2324,15 @@ td:first-child {
 <tr>
 <td><code>WaitingWork</code></td>
 <td>class</td>
-<td></td>
+<td>Where every piece of work that waits on a window stands on a business day, for the deadline reminders (ticket 38, ADR 0052), which act for nobody: each VA Submission whose state waits on a window, and each System with none (Not Started), with the step whose person acts next, the last day of that ...</td>
 </tr>
 </tbody></table></div>
 <h4 id="web"><code>web</code></h4>
 <ul>
 <li><strong>Source files:</strong> 10 under <code>backend/src/main/java/sg/annualva/web/</code></li>
 <li><strong>Purpose:</strong> Cross-cutting HTTP: RFC 9457 problems, the correlation id, the refusal listener, CSRF and session bootstrap.</li>
-<li><strong>Dependencies:</strong> no domain module</li>
-<li><strong>Used by:</strong> access, adapters, audit, cycle, dashboard, export, finding, ingestion, notification, register, retention, submission, app</li>
+<li><strong>Uses (imports):</strong> no other module</li>
+<li><strong>Used by:</strong> access, app, audit, cycle, export, finding, ingestion, notification, register, retention, submission</li>
 </ul>
 <p><strong>Endpoints:</strong></p>
 <div class="table-wrap"><table>
@@ -2333,7 +2348,7 @@ td:first-child {
 </tbody></table></div>
 <div class="table-wrap"><table>
 <thead><tr>
-<th>Type</th>
+<th>Public type</th>
 <th>Kind</th>
 <th>Description</th>
 </tr></thead>
@@ -2341,17 +2356,17 @@ td:first-child {
 <tr>
 <td><code>ApiExceptionHandler</code></td>
 <td>class</td>
-<td></td>
+<td>One handler for every controller error (as-13).</td>
 </tr>
 <tr>
 <td><code>CorrelationIdFilter</code></td>
 <td>class</td>
-<td></td>
+<td>Gives every request a correlation id (lm-15): taken from a well-formed X-Correlation-Id header, otherwise generated.</td>
 </tr>
 <tr>
 <td><code>CsrfController</code></td>
 <td>class</td>
-<td></td>
+<td>Bootstraps the synchronizer CSRF token for the SPA.</td>
 </tr>
 <tr>
 <td><code>Page</code></td>
@@ -2361,7 +2376,7 @@ td:first-child {
 <tr>
 <td><code>ProblemResponses</code></td>
 <td>class</td>
-<td></td>
+<td>Writes RFC 9457 problem responses for refusals that happen in the security filter chain, before any controller runs (as-13: no internal detail; every body carries the traceId).</td>
 </tr>
 <tr>
 <td><code>RefusalListener</code></td>
@@ -2386,7 +2401,7 @@ td:first-child {
 </tbody></table></div>
 <h2 id="3-technology-decisions">3. Technology Decisions</h2>
 <h3 id="3-1-decision-index">3.1 Decision Index</h3>
-<p>Every architecture decision record is under <code>docs/adr/</code> (60 in all). Each states the decision, why it was taken and what it does not do; those with alternatives name them in the record.</p>
+<p>Every architecture decision record is under <code>docs/adr/</code> (60 in all). Each states the decision, why it was taken and what it does not do; those with alternatives name them in the record. The status is the first sentence of the record&#x27;s status line.</p>
 <div class="table-wrap"><table>
 <thead><tr>
 <th>ID</th>
@@ -2614,150 +2629,150 @@ td:first-child {
 <tr>
 <td>ADR 0037</td>
 <td>The VA POC&#x27;s board is the Quarter board for the endorse scope, and the Cycle matrix reads the same rows</td>
-<td>accepted (items 3, 4 and 5 decided 2026-10-25, docs/agents/reviewer-decisions</td>
+<td>accepted (items 3, 4 and 5 decided 2026-10-25, docs/agents/reviewer-decisions.md)</td>
 <td><a href="adr/0037-the-va-poc-board-is-the-quarter-board-for-the-endorse-scope-and-the-cycle-matrix-reads-the-same-rows.md">0037-the-va-poc-board-is-the-quarter-board-for-the-endorse-scope-and-the-cycle-matrix-reads-the-same-rows</a></td>
 </tr>
 <tr>
 <td>ADR 0038</td>
 <td>A Cyber Manager reads the audit history of what they reviewed, through a port the VA Submissions answer</td>
-<td>accepted (items 2, 3 and 5 decided 2026-10-25, see the end</td>
+<td>accepted (items 2, 3 and 5 decided 2026-10-25, see the end; reads of the log are audited, built by ticket 50)</td>
 <td><a href="adr/0038-a-cyber-manager-reads-the-audit-history-of-what-they-reviewed-through-a-port-the-submissions-answer.md">0038-a-cyber-manager-reads-the-audit-history-of-what-they-reviewed-through-a-port-the-submissions-answer</a></td>
 </tr>
 <tr>
 <td>ADR 0039</td>
 <td>A return attaches what is Disputed, and a pass to endorsement needs everything confirmed</td>
-<td>accepted (items 3 and 5 decided 2026-10-25, docs/agents/reviewer-decisions</td>
+<td>accepted (items 3 and 5 decided 2026-10-25, docs/agents/reviewer-decisions.md)</td>
 <td><a href="adr/0039-a-return-attaches-what-is-disputed-and-a-pass-needs-everything-confirmed.md">0039-a-return-attaches-what-is-disputed-and-a-pass-needs-everything-confirmed</a></td>
 </tr>
 <tr>
 <td>ADR 0040</td>
 <td>A Finding changed since its last review is one whose latest review is not of its current proposal</td>
-<td>accepted (item 2 decided 2026-10-25, docs/agents/reviewer-decisions</td>
+<td>accepted (item 2 decided 2026-10-25, docs/agents/reviewer-decisions.md)</td>
 <td><a href="adr/0040-a-finding-changed-since-its-last-review-is-one-whose-latest-review-is-not-of-its-current-proposal.md">0040-a-finding-changed-since-its-last-review-is-one-whose-latest-review-is-not-of-its-current-proposal</a></td>
 </tr>
 <tr>
 <td>ADR 0041</td>
 <td>The rework queue is the needs-attention Findings in stages, for the SMO/Tech Lead alone</td>
-<td>accepted (items 2, 3 and 6 decided 2026-10-25, docs/agents/reviewer-decisions</td>
+<td>accepted (items 2, 3 and 6 decided 2026-10-25, docs/agents/reviewer-decisions.md)</td>
 <td><a href="adr/0041-the-rework-queue-is-the-needs-attention-findings-in-stages-for-the-smo-alone.md">0041-the-rework-queue-is-the-needs-attention-findings-in-stages-for-the-smo-alone</a></td>
 </tr>
 <tr>
 <td>ADR 0042</td>
 <td>An endorsement is a step-up move, and a VA POC counts at the endorsing step only by acting</td>
-<td>accepted (item 2 decided 2026-10-25, docs/agents/reviewer-decisions</td>
+<td>accepted (item 2 decided 2026-10-25, docs/agents/reviewer-decisions.md)</td>
 <td><a href="adr/0042-an-endorsement-is-a-step-up-move-that-a-va-poc-counts-at-only-by-acting.md">0042-an-endorsement-is-a-step-up-move-that-a-va-poc-counts-at-only-by-acting</a></td>
 </tr>
 <tr>
 <td>ADR 0043</td>
 <td>Notifications are written after the commit through one port, and a VA POC pair clears for both</td>
-<td>accepted (items 6 and 7 decided 2026-10-25, the suspended or lapsed addressee in item 2 de</td>
+<td>accepted (items 6 and 7 decided 2026-10-25, the suspended or lapsed addressee in item 2 decided 2026-10-26, docs/agents/reviewer-decisions.md)</td>
 <td><a href="adr/0043-notifications-are-written-after-the-commit-through-one-port-and-a-va-poc-pair-clears-for-both.md">0043-notifications-are-written-after-the-commit-through-one-port-and-a-va-poc-pair-clears-for-both</a></td>
 </tr>
 <tr>
 <td>ADR 0044</td>
 <td>A VA Cycle opens and closes by a stored record, and its close makes everything unfinished Not Endorsed</td>
-<td>accepted (items 4 and 7 decided 2026-10-25, docs/agents/reviewer-decisions</td>
+<td>accepted (items 4 and 7 decided 2026-10-25, docs/agents/reviewer-decisions.md)</td>
 <td><a href="adr/0044-a-cycle-opens-and-closes-by-a-stored-record-and-its-close-makes-the-unfinished-not-endorsed.md">0044-a-cycle-opens-and-closes-by-a-stored-record-and-its-close-makes-the-unfinished-not-endorsed</a></td>
 </tr>
 <tr>
 <td>ADR 0045</td>
 <td>A management summary is read when it is asked for, made into a file in the background, and kept for its requester alone</td>
-<td>accepted (items 4 and 6 decided 2026-10-25, the Exemption Lapsed count and column in item</td>
+<td>accepted (items 4 and 6 decided 2026-10-25, the Exemption Lapsed count and column in item 3 decided 2026-10-26, docs/agents/reviewer-decisions.md)</td>
 <td><a href="adr/0045-a-management-summary-is-read-when-asked-for-and-made-into-a-file-for-its-requester-alone.md">0045-a-management-summary-is-read-when-asked-for-and-made-into-a-file-for-its-requester-alone</a></td>
 </tr>
 <tr>
 <td>ADR 0046</td>
 <td>A required notification is mailed from an outbox, with allow-listed template values only</td>
-<td>accepted (item 2 decided 2026-10-25 and amended 2026-10-26, docs/agents/reviewer-decisions</td>
+<td>accepted (item 2 decided 2026-10-25 and amended 2026-10-26, docs/agents/reviewer-decisions.md)</td>
 <td><a href="adr/0046-a-required-notification-is-mailed-from-an-outbox-with-allow-listed-template-values.md">0046-a-required-notification-is-mailed-from-an-outbox-with-allow-listed-template-values</a></td>
 </tr>
 <tr>
 <td>ADR 0047</td>
 <td>A VA POC return is the return at the endorsing step, with a required comment</td>
-<td>accepted (items 1, 2 and 4 decided 2026-10-25, and the migration ordering in item 6, docs/</td>
+<td>accepted (items 1, 2 and 4 decided 2026-10-25, and the migration ordering in item 6, docs/agents/reviewer-decisions.md)</td>
 <td><a href="adr/0047-a-va-poc-return-is-the-return-at-the-endorsing-step-with-a-required-comment.md">0047-a-va-poc-return-is-the-return-at-the-endorsing-step-with-a-required-comment</a></td>
 </tr>
 <tr>
 <td>ADR 0048</td>
 <td>An Exemption request freezes the VA Submission, and a rejection puts back its state and Overdue flag</td>
-<td>accepted (items 3, 4, 5 and 6 decided 2026-10-25, docs/agents/reviewer-decisions</td>
+<td>accepted (items 3, 4, 5 and 6 decided 2026-10-25, docs/agents/reviewer-decisions.md)</td>
 <td><a href="adr/0048-an-exemption-request-freezes-the-va-submission-and-a-rejection-puts-back-its-state-and-overdue-flag.md">0048-an-exemption-request-freezes-the-va-submission-and-a-rejection-puts-back-its-state-and-overdue-flag</a></td>
 </tr>
 <tr>
 <td>ADR 0049</td>
 <td>A Register change names its effects on in-flight work, and withdraws only what a VA POC confirms</td>
-<td>accepted (item 6 decided 2026-10-25, the suspension exception in item 2 decided 2026-10-26</td>
+<td>accepted (item 6 decided 2026-10-25, the suspension exception in item 2 decided 2026-10-26, docs/agents/reviewer-decisions.md)</td>
 <td><a href="adr/0049-a-register-change-names-its-effects-on-in-flight-work-and-withdraws-only-what-a-va-poc-confirms.md">0049-a-register-change-names-its-effects-on-in-flight-work-and-withdraws-only-what-a-va-poc-confirms</a></td>
 </tr>
 <tr>
 <td>ADR 0050</td>
 <td>Records are disposed of from a list a VA POC approves, through one audited path in the append-only tables</td>
-<td>accepted (items 2, 3, 4 and 8 decided 2026-10-25, the role-holder reviews in item 6 decide</td>
+<td>accepted (items 2, 3, 4 and 8 decided 2026-10-25, the role-holder reviews in item 6 decided 2026-10-26, docs/agents/reviewer-decisions.md; the delete window first accepted under Consequences was narrowed to the rows the approved list names by ticket 62, migration V44; what that check still trusts is tracked by ticket 66, decided 2026-11-22)</td>
 <td><a href="adr/0050-records-are-disposed-of-from-a-list-a-va-poc-approves-through-one-audited-path-in-the-append-only-tables.md">0050-records-are-disposed-of-from-a-list-a-va-poc-approves-through-one-audited-path-in-the-append-only-tables</a></td>
 </tr>
 <tr>
 <td>ADR 0051</td>
 <td>A conditional Exemption is recorded and confirmed, or lapses back with new windows</td>
-<td>accepted (items 2 to 7 decided 2026-10-25, items 8 and 9 decided 2026-10-26, docs/agents/r</td>
+<td>accepted (items 2 to 7 decided 2026-10-25, items 8 and 9 decided 2026-10-26, docs/agents/reviewer-decisions.md)</td>
 <td><a href="adr/0051-a-conditional-exemption-is-recorded-and-confirmed-or-lapses-back-with-new-windows.md">0051-a-conditional-exemption-is-recorded-and-confirmed-or-lapses-back-with-new-windows</a></td>
 </tr>
 <tr>
 <td>ADR 0052</td>
 <td>Deadline reminders are planned daily from the stored windows and written once per person and day</td>
-<td>accepted (items 3, 4 and 5 decided 2026-10-25</td>
+<td>accepted (items 3, 4 and 5 decided 2026-10-25; item 8 and the VA POC reminders&#x27; scope in item 2 decided 2026-10-26, docs/agents/reviewer-decisions.md)</td>
 <td><a href="adr/0052-deadline-reminders-are-planned-daily-from-the-stored-windows-and-written-once-per-person-and-day.md">0052-deadline-reminders-are-planned-daily-from-the-stored-windows-and-written-once-per-person-and-day</a></td>
 </tr>
 <tr>
 <td>ADR 0053</td>
 <td>SMO Unreachable is set by the relay&#x27;s refusal of an address, and cleared by a later delivery or a new SMO</td>
-<td>accepted (items 5 and 6 decided 2026-10-25, item 7 acknowledged the same day, docs/agents/</td>
+<td>accepted (items 5 and 6 decided 2026-10-25, item 7 acknowledged the same day, docs/agents/reviewer-decisions.md)</td>
 <td><a href="adr/0053-smo-unreachable-is-set-by-the-relays-refusal-of-an-address-and-cleared-by-a-later-delivery-or-a-new-smo.md">0053-smo-unreachable-is-set-by-the-relays-refusal-of-an-address-and-cleared-by-a-later-delivery-or-a-new-smo</a></td>
 </tr>
 <tr>
 <td>ADR 0054</td>
 <td>The management summary PDF is a second renderer of the stored summary, made with Apache PDFBox</td>
-<td>accepted (items 2 and 5 decided 2026-10-25, the Exemption Lapsed column in item 3 decided</td>
+<td>accepted (items 2 and 5 decided 2026-10-25, the Exemption Lapsed column in item 3 decided 2026-10-26, docs/agents/reviewer-decisions.md)</td>
 <td><a href="adr/0054-the-management-summary-pdf-is-a-second-renderer-of-the-stored-summary-with-pdfbox.md">0054-the-management-summary-pdf-is-a-second-renderer-of-the-stored-summary-with-pdfbox</a></td>
 </tr>
 <tr>
 <td>ADR 0055</td>
 <td>A role unused for 90 days lapses and comes back when the Register, the Quarter or handed work names the person</td>
-<td>accepted (items 3, 4, 5 and 6 decided 2026-10-25, docs/agents/reviewer-decisions</td>
+<td>accepted (items 3, 4, 5 and 6 decided 2026-10-25, docs/agents/reviewer-decisions.md)</td>
 <td><a href="adr/0055-a-role-unused-for-90-days-lapses-and-comes-back-when-the-register-the-quarter-or-handed-work-names-the-person.md">0055-a-role-unused-for-90-days-lapses-and-comes-back-when-the-register-the-quarter-or-handed-work-names-the-person</a></td>
 </tr>
 <tr>
 <td>ADR 0056</td>
 <td>A role-holder review suspends a role for a System, and a person disabled at the identity provider loses every grant</td>
-<td>accepted (items 3, 6, 7 and 8 decided 2026-10-25</td>
+<td>accepted (items 3, 6, 7 and 8 decided 2026-10-25; item 4, the exception in item 6 and the disposal of reviews decided 2026-10-26, docs/agents/reviewer-decisions.md)</td>
 <td><a href="adr/0056-a-role-holder-review-suspends-a-role-for-a-system-and-a-person-disabled-at-the-identity-provider-loses-every-grant.md">0056-a-role-holder-review-suspends-a-role-for-a-system-and-a-person-disabled-at-the-identity-provider-loses-every-grant</a></td>
 </tr>
 <tr>
 <td>ADR 0057</td>
 <td>The audit list, the state table and the permission matrix are walked whole through the API, and a person&#x27;s sessions are read back whole</td>
-<td>accepted (the filter ids in item 6 decided 2026-10-26, docs/agents/reviewer-decisions</td>
+<td>accepted (the filter ids in item 6 decided 2026-10-26, docs/agents/reviewer-decisions.md)</td>
 <td><a href="adr/0057-the-audit-list-the-state-table-and-the-permission-matrix-are-walked-whole-through-the-api-and-a-persons-sessions-are-read-back-whole.md">0057-the-audit-list-the-state-table-and-the-permission-matrix-are-walked-whole-through-the-api-and-a-persons-sessions-are-read-back-whole</a></td>
 </tr>
 <tr>
 <td>ADR 0058</td>
 <td>A dev-local profile signs in as a persona on local fakes and cannot start anywhere but a developer&#x27;s machine</td>
-<td>accepted (the profile, the persona sign-in, the local fakes and the guards of item 6 decid</td>
+<td>accepted (the profile, the persona sign-in, the local fakes and the guards of item 6 decided 2026-10-27, docs/agents/reviewer-decisions.md)</td>
 <td><a href="adr/0058-a-dev-local-profile-signs-in-as-a-persona-on-local-fakes-and-cannot-start-anywhere-but-a-developers-machine.md">0058-a-dev-local-profile-signs-in-as-a-persona-on-local-fakes-and-cannot-start-anywhere-but-a-developers-machine</a></td>
 </tr>
 <tr>
 <td>ADR 0059</td>
 <td>The file store is S3 with SSE-KMS, switched on by a property, and the other real adapters wait for mock-m-sso</td>
-<td>accepted for the scope (the user&#x27;s decision of 2026-10-29, recorded on ticket 51: build on</td>
+<td>accepted for the scope (the user&#x27;s decision of 2026-10-29, recorded on ticket 51: build only the file store now)</td>
 <td><a href="adr/0059-the-file-store-is-s3-with-sse-kms-switched-on-by-property-and-the-other-real-adapters-wait-for-mock-m-sso.md">0059-the-file-store-is-s3-with-sse-kms-switched-on-by-property-and-the-other-real-adapters-wait-for-mock-m-sso</a></td>
 </tr>
 <tr>
 <td>ADR 0060</td>
 <td>The key signals are counted in one place and scraped with a bearer token, and health says only that the process is up</td>
-<td>accepted for the repository&#x27;s part of ticket 52 (IM8 lm-16, pm-6)</td>
+<td>accepted as provisional for the repository&#x27;s part of ticket 52 (IM8 lm-16, pm-6), by the user&#x27;s decision of 2026-11-22 that ticket 52 lands as provisional</td>
 <td><a href="adr/0060-the-key-signals-are-counted-in-one-place-and-scraped-with-a-bearer-token.md">0060-the-key-signals-are-counted-in-one-place-and-scraped-with-a-bearer-token</a></td>
 </tr>
 </tbody></table></div>
 <h3 id="3-2-decision-details">3.2 Decision Details</h3>
-<p>The decisions that shape the whole architecture, with the alternatives they were chosen over:</p>
+<p>The decisions that shape the whole architecture, with the alternatives they were chosen over. Each table is a summary written for this document: the record itself (section 3.1) is authoritative, and where a record names no alternative in so many words, the one listed here is what its text rules out.</p>
 <h4 id="postgresql-with-jdbcclient-and-flyway-adr-0001">PostgreSQL with JdbcClient and Flyway (ADR 0001)</h4>
 <div class="table-wrap"><table>
 <thead><tr>
@@ -2787,14 +2802,14 @@ td:first-child {
 </tr></thead>
 <tbody>
 <tr>
-<td>A component framework with a state library</td>
+<td>A router, a UI kit, a data-fetching or a form library</td>
 <td>ready-made patterns</td>
-<td>more dependencies and a large attack surface for a thin client</td>
+<td>more surface to review and keep current, with no test seam to protect it</td>
 </tr>
 <tr>
 <td>Vite, React and TypeScript only</td>
-<td>few dependencies, a typed API client</td>
-<td>conventions kept by dependency-cruiser and fallow</td>
+<td>few dependencies, plain <code>fetch</code> wrapped once, a small path router of our own</td>
+<td>no component tests; the rules are kept by dependency-cruiser and fallow</td>
 </tr>
 </tbody></table></div>
 <p><strong>Chosen Option:</strong> Vite, React and TypeScript only <strong>Rationale:</strong> The browser holds no business rule; it renders the API.</p>
@@ -2874,7 +2889,7 @@ td:first-child {
 <tr>
 <td>A table whose trigger refuses update, delete and truncate, written in the action&#x27;s transaction</td>
 <td>the log cannot say something that did not happen</td>
-<td>a deliberate disposal path is needed (ADR 0050)</td>
+<td>a deliberate disposal path is needed (ADR 0050), which the database checks row by row</td>
 </tr>
 </tbody></table></div>
 <p><strong>Chosen Option:</strong> The append-only table, plus an ECS event after the commit <strong>Rationale:</strong> IM8 lm-4 and lm-15.</p>
@@ -2942,10 +2957,10 @@ td:first-child {
 <td>a secret to manage</td>
 </tr>
 </tbody></table></div>
-<p><strong>Chosen Option:</strong> The bearer token <strong>Rationale:</strong> IM8 lm-16; the product and the thresholds wait for ticket 55.</p>
+<p><strong>Chosen Option:</strong> The bearer token, provisionally (decided 2026-11-22: ticket 52 lands as provisional) <strong>Rationale:</strong> IM8 lm-16. Three choices are not final and wait for ticket 55 (choose products and non-functional targets, with a person): the scraper&#x27;s credential (the bearer token stands in; mutual TLS or a platform service identity is the alternative), the alert thresholds of the run book (starting values), and where each environment keeps the token.</p>
 <h2 id="4-database-design">4. Database Design</h2>
 <h3 id="4-1-entity-relationship-diagram">4.1 Entity-Relationship Diagram</h3>
-<p>The schema is the result of applying Flyway migrations V1 to V43 to an empty PostgreSQL 17 database (34 tables, plus Flyway&#x27;s own history table). Report content lives in <code>finding</code> and <code>finding_occurrence</code>; no other table holds it. Foreign keys are drawn parent to child.</p>
+<p>The schema is the result of applying Flyway migrations V1 to V44 (44 files) to an empty PostgreSQL 17 database: 34 tables, plus Flyway&#x27;s own history table. Foreign keys are drawn parent to child.</p>
 <pre class="mermaid">erDiagram
     bulk_batch ||--o{ batch_review : "batch_id"
     app_user ||--o{ batch_review : "reviewed_by"
@@ -3400,7 +3415,7 @@ td:first-child {
 <td><code>audit_entry</code></td>
 <td>12</td>
 <td>id</td>
-<td>The audit log (IM8 lm-4, lm-15, lm-19; story 84): one row per sign-in, sign-out, refused request and, from now on, per action.</td>
+<td>The audit log (IM8 lm-4, lm-15, lm-19; story 84): one row per sign-in, sign-out, refused request and action; append-only (ADR 0014).</td>
 </tr>
 <tr>
 <td><code>batch_review</code></td>
@@ -3424,13 +3439,13 @@ td:first-child {
 <td><code>cycle_register_system</code></td>
 <td>3</td>
 <td>cycle_year, system_id</td>
-<td></td>
+<td>each System that was active when a newer Cycle opened, with its Quarter in the older Cycle.</td>
 </tr>
 <tr>
 <td><code>declaration</code></td>
 <td>7</td>
 <td>id</td>
-<td></td>
+<td>what one SMO/Tech Lead accepted when submitting one VA Submission, kept as it was shown (a snapshot of the text, not a reference only), with who accepted it and when.</td>
 </tr>
 <tr>
 <td><code>declaration_text</code></td>
@@ -3442,7 +3457,7 @@ td:first-child {
 <td><code>disposal_item</code></td>
 <td>8</td>
 <td>list_id, seq</td>
-<td></td>
+<td>one record, or one group of records, the list disposes of, with why.</td>
 </tr>
 <tr>
 <td><code>disposal_list</code></td>
@@ -3466,19 +3481,19 @@ td:first-child {
 <td><code>finding</code></td>
 <td>15</td>
 <td>id</td>
-<td></td>
+<td>one vulnerability or configuration deviation of one VA Submission, identified by its identity key.</td>
 </tr>
 <tr>
 <td><code>finding_occurrence</code></td>
 <td>7</td>
 <td>id</td>
-<td></td>
+<td>one place a Finding was reported, in one file of the Scan Report.</td>
 </tr>
 <tr>
 <td><code>finding_review</code></td>
 <td>9</td>
 <td>id</td>
-<td></td>
+<td>one review of one proposal of a Finding.</td>
 </tr>
 <tr>
 <td><code>finding_status_proposal</code></td>
@@ -3520,13 +3535,13 @@ td:first-child {
 <td><code>report_file_stage</code></td>
 <td>5</td>
 <td>id</td>
-<td></td>
+<td>the order the stages ran in, one row each time a file enters a status.</td>
 </tr>
 <tr>
 <td><code>report_review</code></td>
 <td>10</td>
 <td>id</td>
-<td></td>
+<td>one review of a not-applicable Scan Report&#x27;s justification.</td>
 </tr>
 <tr>
 <td><code>report_slot</code></td>
@@ -3550,19 +3565,19 @@ td:first-child {
 <td><code>spring_session</code></td>
 <td>7</td>
 <td>primary_id</td>
-<td></td>
+<td>Spring Session JDBC&#x27;s own table: one row per server-side session (ADR 0011), with the idle and absolute limits of ADR 0008.</td>
 </tr>
 <tr>
 <td><code>spring_session_attributes</code></td>
 <td>3</td>
 <td>session_primary_id, attribute_name</td>
-<td></td>
+<td>Spring Session JDBC&#x27;s own table: the serialised attributes of each session, among them the signed-in person.</td>
 </tr>
 <tr>
 <td><code>submission_participation</code></td>
 <td>4</td>
 <td>submission_id, user_id, step</td>
-<td></td>
+<td>the segregation-of-duties record (CONTEXT.md): one row per person and step on a VA Submission, written the first time they act at that step.</td>
 </tr>
 <tr>
 <td><code>submission_return</code></td>
@@ -3574,7 +3589,7 @@ td:first-child {
 <td><code>submission_return_item</code></td>
 <td>7</td>
 <td>id</td>
-<td></td>
+<td>what was Disputed when it was returned, each named by the review that Disputed it, so the SMO/Tech Lead and a later reader see exactly what the return was about even after the item is proposed or rewritten again.</td>
 </tr>
 <tr>
 <td><code>va_cycle</code></td>
@@ -3586,7 +3601,7 @@ td:first-child {
 <td><code>va_submission</code></td>
 <td>17</td>
 <td>id</td>
-<td>system_id, cycle_year one VA Submission per System and VA Cycle, whatever its state: a second start is refused quarter 1 to 4: the Quarter the System was in when the submission started state the nine states a row can be in.</td>
+<td>one VA Submission per System and VA Cycle, whatever its state (a second start is refused), with its Quarter, its state, the Overdue and endorsed-late flags and the three windows copied from the Quarter when it started.</td>
 </tr>
 <tr>
 <td><code>va_system</code></td>
@@ -3595,9 +3610,11 @@ td:first-child {
 <td>one row per System, matched by its System ID (the template&#x27;s first column) and never deleted.</td>
 </tr>
 </tbody></table></div>
-<p>Other structures: the RFC 9457 problem body (type, title, status, detail, traceId, and <code>field</code>, <code>reasons</code> or <code>stepUpPath</code> where they apply), the ECS audit event (<code>event.<em></code>, <code>user.</em></code>, <code>labels.*</code>, <code>trace.id</code>), the Prometheus scrape of the key signals, and the Excel and PDF files of the exports (header, footer and first row carry the classification). Business dates are <code>date</code> columns; instants are <code>timestamptz</code> in UTC (<code>jdbc.Timestamps</code>).</p>
+<p>Report content (CVE ids, rule and check names, titles, locators and hosts) is stored in <code>finding</code> and <code>finding_occurrence</code>; <code>report_file</code> keeps the scan date and the target a parsed file names (<code>scan_date_from_file</code>, <code>target_from_file</code>) beside the ones the SMO/Tech Lead confirmed. It is returned as data and rendered only as text, and the audit log holds ids and fixed codes, never report content (ADR 0014).</p>
+<p>Triggers, which the diagram does not show. Ten tables are append-only: <code>audit_entry</code>, <code>declaration_text</code> and the eight history tables <code>bulk_batch</code>, <code>batch_review</code>, <code>declaration</code>, <code>finding_status_proposal</code>, <code>finding_review</code>, <code>report_review</code>, <code>submission_return</code> and <code>submission_return_item</code>. A statement-level <code>_append_only</code> trigger on each refuses every <code>UPDATE</code> and <code>TRUNCATE</code>, and every <code>DELETE</code> outside a transaction that names an <code>APPROVED</code> disposal list (migration V36); <code>declaration_text</code> is never opened. Inside such a transaction a row-level trigger decides row by row: an <code>audit_entry</code> only before the list&#x27;s cutoff (<code>audit_entry_disposal_range</code>, V36), and a row of a history table only when its VA Submission is a <code>SUBMISSION</code> item of that list (<code>history_row_disposal_listed()</code> behind one <code>_disposal_listed</code> trigger per table, migration V44, ticket 62). A statement of the executor that reached another VA Submission&#x27;s history fails the whole disposal. The check trusts the approved list&#x27;s items as stored and a Finding&#x27;s link to its VA Submission; neither is frozen by the database yet, and ticket 66 tracks that (ADR 0050 item 7, decided 2026-11-22). A new append-only history table needs both triggers and a branch in that function; <code>DisposalGuardTest</code> fails until it has them.</p>
+<p>Other structures: the RFC 9457 problem body (type, title, status, detail, traceId, and <code>field</code>, <code>reasons</code> or <code>stepUpPath</code> where they apply; <code>reason</code> only on a refused <code>dev-local</code> persona sign-in), the ECS audit event (<code>event.<em></code>, <code>user.</em></code>, <code>labels.*</code>, <code>trace.id</code>), the Prometheus scrape of the key signals, and the Excel and PDF files of the exports (header, footer and first row carry the classification). Business dates are <code>date</code> columns; instants are <code>timestamptz</code> in UTC (<code>jdbc.Timestamps</code>).</p>
 <h2 id="5-dependency-inventory">5. Dependency Inventory</h2>
-<p>Versions are those Maven resolves (<code>./mvnw dependency:list -DexcludeTransitive</code>) and those pinned in <code>frontend/package-lock.json</code>. Licences are the projects&#x27; published licences, not machine-verified by this scan.</p>
+<p>Versions are those Maven resolves (<code>cd backend &amp;&amp; ./mvnw dependency:list -DexcludeTransitive</code>) and those pinned in <code>frontend/package-lock.json</code>, checked against both on 2026-11-22. Licences are the projects&#x27; published licences, not machine-verified by this scan. This section is written by hand: check it when <code>backend/pom.xml</code> or <code>frontend/package.json</code> changes (section 7).</p>
 <h3 id="5-1-production-dependencies">5.1 Production Dependencies</h3>
 <div class="table-wrap"><table>
 <thead><tr>
@@ -3757,7 +3774,7 @@ td:first-child {
 </tr>
 <tr>
 <td>org.jacoco:jacoco-maven-plugin</td>
-<td>see pom</td>
+<td>0.8.15</td>
 <td>EPL-2.0</td>
 <td>Line and branch coverage gate (80 %)</td>
 </tr>
@@ -3813,15 +3830,15 @@ td:first-child {
 <h3 id="5-3-summary">5.3 Summary</h3>
 <ul>
 <li>Back end: 15 direct production dependencies (the Spring Boot BOM manages most versions) and 6 test dependencies; transitive dependencies are resolved by Maven.</li>
-<li>Front end: 2 production dependencies (<code>react</code>, <code>react-dom</code>) and 9 development dependencies; the production bundle contains React and the application only.</li>
+<li>Front end: 2 production dependencies (<code>react</code>, <code>react-dom</code>) and 10 development dependencies (the three <code>@types</code> packages share a row above); the production bundle contains React and the application only.</li>
 <li>Licences of the direct dependencies: Apache-2.0 (most), MIT, BSD-2-Clause, EPL-2.0 (JaCoCo, build time only).</li>
 </ul>
 <h2 id="6-vulnerability-findings">6. Vulnerability Findings</h2>
-<p>Scan of 2026-11-18 (<code>npm audit --json</code> in <code>frontend/</code>). The Maven scanner (OWASP dependency-check) was not run: it needs the NVD database, which is not downloaded on a developer machine; see 6.3.</p>
+<p>Scan of 2026-11-22 by <code>/dependency-vuln-scan</code>; the full report is <code>artifacts/dependency-vuln-scan/2026-11-22-dependency-vuln-scan.md</code>. <strong>Only the front end has a result.</strong> The back-end scan (OWASP Dependency-Check through Maven) was tried and did not complete, so nothing here says the back end is free of known vulnerabilities; see 6.3.</p>
 <h3 id="6-1-summary">6.1 Summary</h3>
 <ul>
-<li>Critical: 0 | High: 5 | Medium: 0 | Low: 1 (npm audit, all development-only tooling; none reaches the production bundle or the deployed back end)</li>
-<li>Maven (back end): not scanned.</li>
+<li>Front end (<code>npm audit --json</code> in <code>frontend/</code>), by advisory: Critical: 0 | High: 1 | Medium: 4 | Low: 3. By package, as <code>npm audit</code> itself counts: 2 packages (<code>vite</code> high, <code>fallow</code> low). Both are development-only tools; neither reaches the production bundle or the deployed back end.</li>
+<li>Back end (Maven): <strong>not scanned</strong>. The scan did not complete; no counts exist.</li>
 </ul>
 <h3 id="6-2-findings">6.2 Findings</h3>
 <div class="table-wrap"><table>
@@ -3836,27 +3853,35 @@ td:first-child {
 <tbody>
 <tr>
 <td>High</td>
-<td>GHSA-fc5q-39xc-vjpf</td>
-<td>picomatch (via dependency-cruiser, fdir, tinyglobby, vite)</td>
-<td>4.0.7</td>
-<td>after 4.0.7</td>
-<td>ReDoS through single-branch repeated extglobs</td>
-</tr>
-<tr>
-<td>High</td>
-<td>GHSA-698v-4r3x-3vcv, GHSA-r825-w8mm-5pxw, GHSA-587h-7wmj-h5pm</td>
+<td>GHSA-587h-7wmj-h5pm</td>
 <td>vite (launch-editor)</td>
 <td>8.3.2</td>
-<td>after 8.3.2</td>
-<td>launch-editor command-argument handling on Windows (dev server)</td>
+<td>after 8.3.2 (<code>npm audit fix</code>)</td>
+<td>an existence check can be bypassed on Windows (dev server)</td>
 </tr>
 <tr>
-<td>High</td>
-<td>GHSA-9jrq-w75r-8gcw, GHSA-rq7h-c2jc-7f22, GHSA-vfpm-58rq-9qcg</td>
+<td>Medium</td>
+<td>GHSA-698v-4r3x-3vcv, GHSA-r825-w8mm-5pxw</td>
+<td>vite (launch-editor)</td>
+<td>8.3.2</td>
+<td>after 8.3.2 (<code>npm audit fix</code>)</td>
+<td>command-argument escaping and editor flag handling (dev server)</td>
+</tr>
+<tr>
+<td>Medium</td>
+<td>GHSA-rq7h-c2jc-7f22, GHSA-vfpm-58rq-9qcg</td>
 <td>vite</td>
 <td>8.3.2</td>
-<td>after 8.3.2</td>
-<td>dev-server middleware and file-serving issues (dev server)</td>
+<td>after 8.3.2 (<code>npm audit fix</code>)</td>
+<td>files outside the allowed folders can be served or partly read (dev server)</td>
+</tr>
+<tr>
+<td>Low</td>
+<td>GHSA-9jrq-w75r-8gcw</td>
+<td>vite</td>
+<td>8.3.2</td>
+<td>after 8.3.2 (<code>npm audit fix</code>)</td>
+<td>cross-origin script execution through custom middleware (dev server)</td>
 </tr>
 <tr>
 <td>Low</td>
@@ -3864,15 +3889,51 @@ td:first-child {
 <td>fallow</td>
 <td>3.31.0</td>
 <td>3.34.0</td>
-<td>analysis of an untrusted repository (build-time tool)</td>
+<td>analysis of an untrusted repository can reach outside the project root (build-time tool)</td>
 </tr>
 </tbody></table></div>
+<p>The <code>picomatch</code> advisory that the scan of 2026-11-18 listed against <code>dependency-cruiser</code>, <code>fdir</code>, <code>tinyglobby</code> and <code>vite</code> is no longer reported by <code>npm audit</code> for the installed versions.</p>
 <h3 id="6-3-remediation">6.3 Remediation</h3>
 <ul>
-<li>All five High findings and the Low one are in tools used only while developing or building (<code>vite</code> dev server, <code>dependency-cruiser</code>, <code>fallow</code>); the deployed application serves the built bundle, not the dev server. Upgrade them with <code>npm audit fix</code> (vite and fallow within their major lines) and review the dependency-cruiser advice, which suggests a downgrade, before accepting it.</li>
-<li>Run the back-end scan where the NVD data is available: <code>cd backend &amp;&amp; ./mvnw org.owasp:dependency-check-maven:check -DfailBuildOnCVSS=7 -Dformat=JSON</code>, and add the result here. Until then the back end is covered only by Spring Boot&#x27;s managed versions.</li>
-<li>Re-run <code>/dependency-vuln-scan</code> and <code>/tech-arch-doc</code> before each release.</li>
+<li>Front end: every finding is in a tool used only while developing or building (<code>vite</code>&#x27;s dev server, <code>fallow</code>); the deployed application serves the built bundle, not the dev server. Upgrade both with <code>cd frontend &amp;&amp; npm audit fix</code> (each stays within its major line), then run <code>npm run check</code>.</li>
+<li>Back end, what happened on 2026-11-22: <code>./mvnw org.owasp:dependency-check-maven:update-only</code> could not finish downloading the NVD data without an NVD API key (no key or other credential was used). Plugin 13.0.0 is refused by the NVD API without a key; plugin 12.2.2 ran without one, was cut off at 86 % when drive C: ran out of space, and on a second try with its data and temporary files on drive D: reached 77 % and stalled on NVD request failures until it was stopped after about an hour. The <code>check</code> goal never ran. The fallback, <code>./mvnw -o dependency:tree -Dscope=runtime</code>, lists 15 direct dependencies and 157 entries in the runtime tree and says nothing about vulnerabilities. Until the scan completes, the back end is covered only by the versions Spring Boot 4.0.8 manages and the pinned versions of section 5.</li>
+<li>To complete the back-end scan: give the plugin an NVD API key from the environment (<code>-DnvdApiKey=...</code>, never committed) or an internal NVD mirror (<code>-DnvdDatafeedUrl=...</code>), keep its data on a drive with at least 2 GB free (<code>-DdataDirectory=...</code> and <code>MAVEN_OPTS=-Djava.io.tmpdir=...</code>), run <code>cd backend &amp;&amp; ./mvnw org.owasp:dependency-check-maven:12.2.2:check -DfailBuildOnCVSS=0 -Dformat=JSON</code>, and put the counts by severity and the findings here.</li>
+<li>Re-run <code>/dependency-vuln-scan</code> before each release (section 7).</li>
 </ul>
+<h2 id="7-keeping-this-document-current">7. Keeping this document current</h2>
+<p>The document is point-in-time and has three kinds of content, each kept current in its own way:</p>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>Content</th>
+<th>Where</th>
+<th>How it is kept current</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Generated blocks, between <code>generated:</code> marker lines in the Markdown</td>
+<td>the table of 1.2, the diagram of 1.3, section 2, section 3.1, section 4.1 and the table of 4.2</td>
+<td><code>python scripts/refresh-tech-arch-doc.py</code> rewrites them from the source, the ADRs and the migrations. Only the description column of the two tables is written by hand, and a refresh keeps it.</td>
+</tr>
+<tr>
+<td>Prose</td>
+<td>the rest of sections 1, 3.2 and 4.2, and this section</td>
+<td>written by hand and read by a person at the doc review; no tool checks that it is right</td>
+</tr>
+<tr>
+<td>Dependencies and vulnerabilities</td>
+<td>sections 5 and 6</td>
+<td>written by hand from <code>./mvnw dependency:list -DexcludeTransitive</code>, <code>frontend/package-lock.json</code> and <code>/dependency-vuln-scan</code>; the scan reports are under <code>artifacts/dependency-vuln-scan/</code></td>
+</tr>
+</tbody></table></div>
+<p>In a change that adds or alters a module, a controller, a public type, an ADR or a migration:</p>
+<ul>
+<li>Run <code>python scripts/refresh-tech-arch-doc.py</code> from the repository root (Python 3, standard library only). It applies every migration, in order, to a throwaway PostgreSQL in Docker (<code>postgres:17-alpine</code>, removed afterwards), rewrites the generated blocks and the <code>Generated</code> line, and rewrites <code>docs/tech-architecture.html</code> with the converter of <code>/tech-arch-doc</code> (<code>.claude/skills/tech-arch-doc/md-to-html.py</code>, which comes with the agent skills and is not tracked in the repository; it is looked for in this checkout and then in the main checkout of a worktree; <code>--html-converter PATH</code> names another copy).</li>
+<li>If it reports a description that says <code>TODO</code>, a module or a table is new: write its description in the table (1.2 or 4.2) and run the script again.</li>
+<li>Update by hand what the script does not own: a new boundary port or adapter in 1.7, a new profile in 1.9, a new job, flow or rule in 1.4 to 1.6, a decision that shapes the architecture in 3.2, a changed <code>pom.xml</code> or <code>package.json</code> in section 5. After editing prose only, run the script again so the HTML follows.</li>
+<li>Check: <code>python scripts/refresh-tech-arch-doc.py --check</code> changes nothing and exits 0 only when every generated block matches the code. It needs Docker, so it is not part of the Maven gate: run it in the change itself, before the review. <code>DocumentationCompletenessTest</code> (part of <code>cd backend &amp;&amp; ./mvnw -B -ntp clean verify</code>) fails when a module, a class of <code>boundary</code> or <code>adapters</code>, a profile or a table the migrations leave is not named in backticks in the Markdown, or an ADR is not linked by its file name.</li>
+<li>Before each release, run <code>/dependency-vuln-scan</code> for both stacks and bring section 6 up to date.</li>
+</ul>
+<p><code>DocumentationCompletenessTest</code> checks names only. It does not fail for a migration that only alters a table (the range and the columns of 4.1 would be stale), for an ADR whose title or status changed, or for a new endpoint or public type: <code>--check</code> reports those. Neither checks the prose.</p>
 <script type="module">
 import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs';
 mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'strict' });
