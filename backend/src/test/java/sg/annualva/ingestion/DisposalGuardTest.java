@@ -23,7 +23,8 @@ import tools.jackson.databind.JsonNode;
  * database connection, as the audit log's append-only test is: whatever the application's code or a bug in it tried, a
  * delete goes through only inside a transaction that names a list a VA POC has approved, and then only for a row of a
  * VA Submission that list names (ticket 62); an update or a truncate never, the Declaration wordings never, and an
- * audit entry only before the approved list's cutoff. Every other removal is a soft delete.
+ * audit entry only before the approved list's cutoff. Every other removal is a soft delete. What that check reads, the
+ * approved list's items and a Finding's VA Submission, cannot change (V45, ticket 66).
  */
 class DisposalGuardTest extends DisposalSeam1 {
 
@@ -31,6 +32,12 @@ class DisposalGuardTest extends DisposalSeam1 {
     private static final String SCANNED_IN_2028 = "2028-02-10T10:00:00+08:00";
     /** A date well after 14 February 2028, for that VA Submission's remediation plan. */
     private static final String LATER_IN_2028 = "2028-12-31";
+
+    /** Puts the VA Submission :sub on the list :list, as the planner would write the item. */
+    private static final String ADD_SUBMISSION = "INSERT INTO disposal_item (list_id, kind, target_id, reason) "
+            + "VALUES (:list, 'SUBMISSION', :sub, 'CYCLE_RETENTION_ENDED')";
+    /** The refusal of an item for a list that is not DRAFT (V45). */
+    private static final String NOT_DRAFT = "disposal_item: an item is inserted only into a DRAFT list";
 
     @Autowired
     private JdbcClient application;
@@ -243,5 +250,84 @@ class DisposalGuardTest extends DisposalSeam1 {
         history.forEach(table -> ofOther.put(table, ofBoth.get(table) - ofListed.get(table)));
         assertThat(rowsIn(history)).as("the listed one's history went with it and the other's is whole")
                 .isEqualTo(ofOther);
+    }
+
+    /**
+     * Ticket 66: the row check reads the approved list's items, so an item is only ever inserted, into a DRAFT list (the
+     * planner's insert). Once the list has left DRAFT nothing can be added, and no item is ever changed or removed,
+     * whatever the transaction names.
+     */
+    @Test
+    void anItemIsOnlyEverInsertedIntoADraftList() {
+        Draft draft = draft();
+        String listId = draftList();
+        Map<String, Object> onTheList = Map.of("list", UUID.fromString(listId),
+                "sub", UUID.fromString(draft.submissionId()));
+        Map<String, String> refused = Map.of(
+                "UPDATE disposal_item SET kind = 'SUBMISSION', target_id = :sub WHERE list_id = :list",
+                "disposal_item is insert-only: UPDATE is not allowed",
+                "DELETE FROM disposal_item WHERE list_id = :list", "disposal_item is insert-only: DELETE is not allowed",
+                "TRUNCATE disposal_item", "disposal_item is insert-only: TRUNCATE is not allowed");
+        refused.forEach((statement, message) -> assertThatThrownBy(() -> asDisposal(listId, statement, onTheList))
+                .as("%s, on a DRAFT list", statement).isInstanceOf(DataAccessException.class)
+                .hasMessageContaining(message));
+        approved(vaPoc(), listId);
+
+        assertThatThrownBy(() -> asDisposal(listId, ADD_SUBMISSION, onTheList)).as("added to the approved list")
+                .isInstanceOf(DataAccessException.class).hasMessageContaining(NOT_DRAFT);
+        refused.forEach((statement, message) -> assertThatThrownBy(() -> asDisposal(listId, statement, onTheList))
+                .as("%s, on the approved list", statement).isInstanceOf(DataAccessException.class)
+                .hasMessageContaining(message));
+    }
+
+    /**
+     * Ticket 66: a transaction naming the approved list that puts a VA Submission on it is refused, so that VA
+     * Submission's history is still there, and the executor then disposes of exactly what the VA POC approved.
+     */
+    @Test
+    void theExecutorDisposesOfExactlyWhatWasApproved() {
+        List<String> history = historyTables();
+        Draft draft = draft();
+        everyKindOfHistory(draft, signedInAs(CM), SCANNED, LATER);
+        Map<String, Long> held = rowsIn(history);
+        String listId = draftList();
+        List<String> approvedItems = items(listIn(vaPoc(), "DRAFT"));
+        approved(vaPoc(), listId);
+
+        assertThatThrownBy(() -> asDisposal(listId, ADD_SUBMISSION, Map.of("list", UUID.fromString(listId),
+                "sub", UUID.fromString(draft.submissionId()))))
+                .as("a VA Submission added to the approved list in the executor's own kind of transaction")
+                .isInstanceOf(DataAccessException.class).hasMessageContaining(NOT_DRAFT);
+        assertThat(rowsIn(history)).as("the history of the VA Submission it named is still there").isEqualTo(held);
+
+        retention();
+
+        JsonNode executed = listIn(vaPoc(), "EXECUTED");
+        assertThat(executed.get("id").asString()).isEqualTo(listId);
+        assertThat(items(executed)).as("the list disposed of what the VA POC approved").isEqualTo(approvedItems);
+        assertThat(read(vaPoc(), draft.submissionId()).status()).isEqualTo(200);
+        assertThat(rowsIn(history)).isEqualTo(held);
+    }
+
+    /**
+     * Ticket 66: a Finding's VA Submission is the hop the row check takes for its proposals and reviews, so it cannot
+     * change; the application's other updates of a Finding (its current proposal and review state) are unchanged.
+     */
+    @Test
+    void aFindingStaysWithItsVaSubmission() {
+        Draft draft = draft();
+        parsedDc(draft, "dc.json", twoFindings(SCANNED));
+        proposeEvery(draft);
+        String other = started(signedInAs(SMO_B), idOf("SYS-F2")).get("id").asString();
+
+        assertThatThrownBy(() -> application.sql("UPDATE finding SET submission_id = :other WHERE submission_id = :sub")
+                .param("other", UUID.fromString(other)).param("sub", UUID.fromString(draft.submissionId())).update())
+                .isInstanceOf(DataAccessException.class)
+                .hasMessageContaining("finding: a Finding stays with the VA Submission it was found in");
+        assertThatCode(() -> application.sql("UPDATE finding SET submission_id = submission_id, review_state = "
+                + "review_state WHERE submission_id = :sub").param("sub", UUID.fromString(draft.submissionId())).update())
+                .as("an update that leaves the VA Submission as it is").doesNotThrowAnyException();
+        assertThat(byIdentifier(findings(draft.smo(), draft.submissionId()), "CVE-2027-0001")).isNotNull();
+        assertThat(findings(signedInAs(SMO_B), other).get("items")).as("nothing moved to the other").isEmpty();
     }
 }

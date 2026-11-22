@@ -301,8 +301,9 @@ public class TestEndpoints {
                 jdbc.sql("DELETE FROM role_holder_review").update();
                 jdbc.sql("DELETE FROM register_upload").update();
                 jdbc.sql("DELETE FROM export_request").update();
-                // The disposal lists (V36) name no other row by key; at most one may wait at a time.
-                jdbc.sql("DELETE FROM disposal_item").update();
+                // The disposal lists (V36) name no other row by key; at most one may wait at a time. An item is only ever
+                // inserted (V45), so the items go with their triggers switched off, like the history.
+                emptyHistory("disposal_item");
                 jdbc.sql("DELETE FROM disposal_list").update();
                 jdbc.sql("DELETE FROM va_system").update();
             });
