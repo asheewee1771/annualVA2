@@ -4,7 +4,7 @@
 **Release:** 1
 **What to build:** A VA POC applies a confirmed preview with a fresh sign-in. Systems are added or updated by System ID, missing ones are retired, and the SMO and Cyber Manager grants are created from the Register so that a former SMO loses access at once.
 **Blocked by:** 08 (Upload the System Register and preview every change), 09 (Step-up: a fresh sign-in before sensitive actions), 05 (Append-only audit log with refused-request logging)
-**Status:** ready-for-agent
+**Status:** closed
 **Effort (orchestrator estimate):** about 30.5 developer days across stories 2 (10.0*), 3 (8.5), 4 (5.0), 73 (5.0), 79 (2.0); `*` marks the critical path. See `reports/dev-report.md`.
 
 - [x] `POST /api/system-register/previews/{id}/apply` (VA POC, step-up) applies ADD, UPDATE and RETIRE rows in one transaction; a retired System keeps its history and is never deleted; re-applying an expired or already applied preview is refused with 409.

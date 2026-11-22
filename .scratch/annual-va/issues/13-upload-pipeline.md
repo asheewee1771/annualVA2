@@ -4,7 +4,7 @@
 **Release:** 1
 **What to build:** An SMO uploads one or more files for a Scan Report type. Each file is quarantined, malware-scanned, type-checked and schema-checked before anything reads it; a bad file is rejected with a plain message, a scan that keeps timing out is rejected after two retries, and nobody can view a file until it is clean.
 **Blocked by:** 12 (Start a VA Submission)
-**Status:** ready-for-agent
+**Status:** closed
 **Effort (orchestrator estimate):** about 18.5 developer days across stories 20 (11.5*), 24 (2.0), 27 (2.0), 78 (3.0); `*` marks the critical path. See `reports/dev-report.md`.
 
 - [x] `POST /api/submissions/{id}/files` (SMO, Draft or Returned for Rework, multipart with report type and kind) quarantines the bytes with a SHA-256 and returns 202 with a file id in state QUARANTINED; the stages then run in the fixed order quarantine, malware scan, type allowlist, schema check, and a test proves that order (parse, pre-fill and age are appended by the parser and metadata tickets, which extend the test).

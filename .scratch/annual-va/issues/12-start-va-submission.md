@@ -4,7 +4,7 @@
 **Release:** 1
 **What to build:** An SMO/Tech Lead starts the VA Submission for one of their Systems, which creates the Draft with its windows taken from the Quarter and records them as the submitter for segregation of duties.
 **Blocked by:** 11 (SMO inbox: my Systems and what to do by when)
-**Status:** ready-for-agent
+**Status:** closed
 **Effort (orchestrator estimate):** about 6.3 developer days across stories 19 (6.3*); `*` marks the critical path. See `reports/dev-report.md`.
 
 - [x] `POST /api/submissions` with a System id (SMO of that System) creates one VA Submission per System and Cycle in state Draft with `submit_due`, `review_due` and `endorse_due` taken from the Quarter, and returns it; a second start answers 409 `invalid-transition`. (Windows from the day a System was added arrive with the Release 2 mid-cycle changes.)

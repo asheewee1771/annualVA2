@@ -4,7 +4,7 @@
 **Release:** 1
 **What to build:** Any user signs in through the organisation's single sign-on (MockPass via Keycloak locally), gets a server-side session, and `GET /api/session` shows who they are. Signing out ends the session. Nobody can sign in any other way.
 **Blocked by:** 02 (Walking skeleton: repository, security baseline and Seam 1 harness)
-**Status:** ready-for-agent
+**Status:** closed
 **Effort (orchestrator estimate):** about 12.0 developer days across stories 72 (12.0); `*` marks the critical path. See `reports/dev-report.md`.
 
 - [x] `GET /oauth2/authorization/mcc-sso-login` starts an authorization-code flow with PKCE S256 and `private_key_jwt` client authentication (ES512 with the configured EC key and kid), scope `openid afcas`, `kc_idp_hint` from configuration and explicit provider endpoints (no `issuer-uri`); `/.well-known/jwks.json` publishes the public key anonymously.

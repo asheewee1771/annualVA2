@@ -4,7 +4,7 @@
 **Release:** 1
 **What to build:** An SMO replaces one file of a Scan Report with a rescan. Only that file's occurrences are compared: matching Findings keep their status and history, new ones are added, and a Finding the rescan no longer reports anywhere becomes Remediated with the rescan as evidence.
 **Blocked by:** 19 (List Findings and propose a Finding Status)
-**Status:** ready-for-agent
+**Status:** closed
 **Effort (orchestrator estimate):** about 10.5 developer days across stories 39 (10.5); `*` marks the critical path. See `reports/dev-report.md`.
 
 - [x] `POST /api/submissions/{id}/files/{fileId}/replace` runs the new file through the whole pipeline and, once parsed, compares identity keys against the old file's occurrences only.

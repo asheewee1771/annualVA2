@@ -4,7 +4,7 @@
 **Release:** 1
 **What to build:** The scan date and target pre-filled from each file are shown for the SMO to confirm or correct; a future-dated file is rejected at upload, and a file older than 90 days at submission time blocks submitting with a message naming that file.
 **Blocked by:** 14 (Dependency-Check parser (XML and JSON))
-**Status:** ready-for-agent
+**Status:** closed
 **Effort (orchestrator estimate):** about 6.3 developer days across stories 25 (4.0), 26 (2.3); `*` marks the critical path. See `reports/dev-report.md`.
 
 - [x] `PUT /api/submissions/{id}/files/{fileId}/metadata` lets the SMO confirm or edit scan date and target; an edited target is flagged, never blocked; Burp dates are shown as export time only.

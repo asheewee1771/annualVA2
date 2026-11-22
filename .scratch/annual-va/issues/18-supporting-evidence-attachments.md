@@ -4,7 +4,7 @@
 **Release:** 1
 **What to build:** An SMO attaches PDF or HTML reports to a Scan Report for people to read; they go through the same pipeline but are never parsed. The same path later carries a Risk Accepted approval memo.
 **Blocked by:** 13 (Scan Report upload pipeline: quarantine, scan, check, store)
-**Status:** ready-for-agent
+**Status:** closed
 **Effort (orchestrator estimate):** about 2.3 developer days across stories 22 (2.3); `*` marks the critical path. See `reports/dev-report.md`.
 
 - [x] Files uploaded with kind EVIDENCE accept `%PDF-` and HTML content up to their limits, run quarantine, scan and type checks, skip schema and parse, and become READY; anything else is rejected.

@@ -4,7 +4,7 @@
 **Release:** 1
 **What to build:** Submit stays disabled until every Finding has a proposed status and the SMO has ticked the fixed Declaration; submitting stores the exact wording agreed and moves the VA Submission to In Review.
 **Blocked by:** 20 (Filter chips, select-all, bulk bar and progress bar), 22 (Mark a Scan Report not applicable or enter Findings by hand), 23 (Confirm scan date and target; enforce the age rules), 15 (Secure Configuration parser: SCAP ARF and XCCDF results), 24 (Agree the Declaration text and its owner)
-**Status:** ready-for-agent
+**Status:** closed
 **Effort (orchestrator estimate):** about 9.0 developer days across stories 40 (4.0), 41 (5.0); `*` marks the critical path. See `reports/dev-report.md`.
 
 - [x] `GET /api/declaration-text` returns the current version and wording (seeded; placeholder until the Declaration text ticket lands).

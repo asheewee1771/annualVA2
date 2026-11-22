@@ -4,7 +4,7 @@
 **Release:** 1
 **What to build:** Every sign-in, sign-out, refused request and (from now on) every action writes an audit entry that nobody can change or delete; a VA POC can read the log in the app.
 **Blocked by:** 04 (Roles held in the app and every endpoint denied by default)
-**Status:** ready-for-agent
+**Status:** closed
 **Effort (orchestrator estimate):** about 7.0 developer days across stories 84 (7.0); `*` marks the critical path. See `reports/dev-report.md`.
 
 - [x] Audit entries hold actor, role, action, outcome, System, VA Submission, Finding id, correlation id and an allow-listed detail; an attempt to update or delete an entry through the application's database connection fails, and a test proves it.

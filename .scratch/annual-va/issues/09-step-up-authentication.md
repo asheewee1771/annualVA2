@@ -4,7 +4,7 @@
 **Release:** 1
 **What to build:** A sensitive action is refused unless the person signed in again within the last five minutes; the app sends them through a fresh sign-in and brings them back to finish the action. The first sensitive action is the Register apply (next ticket), which is where this is demonstrated end to end.
 **Blocked by:** 03 (Sign in through MCC SSO and see my session)
-**Status:** ready-for-agent
+**Status:** closed
 **Effort (orchestrator estimate):** about 3.0 developer days across stories 77 (3.0); `*` marks the critical path. See `reports/dev-report.md`.
 
 - [x] A command marked sensitive calls the step-up check; when the session's `auth_time` is older than the configured freshness window (5 minutes) the API answers 403 with problem type `step-up-required` and a `stepUpPath`.

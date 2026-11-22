@@ -4,7 +4,7 @@
 **Release:** 1
 **What to build:** An SMO sees every Finding read from their reports and proposes a Finding Status for each, supplying the field that status requires; the history of proposals is kept.
 **Blocked by:** 14 (Dependency-Check parser (XML and JSON)), 18 (Attach PDF or HTML reports as supporting evidence)
-**Status:** ready-for-agent
+**Status:** closed
 **Effort (orchestrator estimate):** about 16.5 developer days across stories 28 (9.5*), 35 (7.0*); `*` marks the critical path. See `reports/dev-report.md`.
 
 - [x] `GET /api/submissions/{id}/findings` supports filters (report type, severity, review state, needs attention) and returns identifier, package or rule, severity, confidence, source files, occurrence count, whether the check did not complete, current proposal and review state.

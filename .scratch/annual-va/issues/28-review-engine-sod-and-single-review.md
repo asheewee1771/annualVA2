@@ -4,7 +4,7 @@
 **Release:** 1
 **What to build:** A Cyber Manager confirms each proposed Finding Status or marks it Disputed with a comment, including the not-applicable justifications; anyone who acted at another step on the same VA Submission is blocked from reviewing it.
 **Blocked by:** 27 (Cyber Manager inbox and Quarter board)
-**Status:** ready-for-agent
+**Status:** closed
 **Effort (orchestrator estimate):** about 11.0 developer days across stories 50 (6.0), 58 (5.0); `*` marks the critical path. See `reports/dev-report.md`.
 
 - [x] `POST /api/findings/{id}/reviews` (Cyber Manager assigned to the System, submission In Review) records CONFIRMED or DISPUTED with a comment on the current proposal and records the reviewing step; `POST /api/submissions/{id}/reports/{type}/review` does the same for a not-applicable justification.

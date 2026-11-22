@@ -4,7 +4,7 @@
 **Release:** 1
 **What to build:** An OWASP Dependency-Check XML or JSON export uploaded as the Dependency-Check Scan Report is read into Findings with their severity and occurrences, and the scan date and project name are pre-filled for the SMO to confirm.
 **Blocked by:** 13 (Scan Report upload pipeline: quarantine, scan, check, store)
-**Status:** ready-for-agent
+**Status:** closed
 **Effort (orchestrator estimate):** about 19.8 developer days across stories 20a (5.0*), 21 (1.3), 25 (4.0), 28 (9.5*); `*` marks the critical path. See `reports/dev-report.md`.
 
 - [x] The parser accepts the Dependency-Check XML (`analysis` root in the DependencyCheck namespace) and JSON (`reportSchema`, `scanInfo`, `dependencies[]`) shapes and rejects anything else as REJECTED_SCHEMA.

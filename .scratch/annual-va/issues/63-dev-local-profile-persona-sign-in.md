@@ -4,7 +4,7 @@
 **Release:** 1
 **What to build:** A developer without the `mock-m-sso` stack can run the whole app on one machine with only PostgreSQL in Docker. A local page lists the six dev personas (SMO A/B, Cyber Manager A/B, VA POC 1/2) with their role and email; picking one signs the person in. The boundary adapters that ticket 51 will build for real are replaced by local fakes, so uploading, scanning and mail work too. None of this can run outside a developer's machine.
 **Blocked by:** None (can start immediately)
-**Status:** ready-for-agent
+**Status:** closed
 **Effort (orchestrator estimate):** not estimated; decided by the user on 2026-10-27 (`docs/agents/reviewer-decisions.md`, "A `dev-local` profile signs in as a persona and fakes the boundary adapters").
 
 - [x] A new profile `dev-local` starts the back end with only PostgreSQL running: no Keycloak, MockPass, mock-SFS, mock-MCNS or LocalStack, and no identity-provider discovery at startup. `application-dev-local.yml` binds the server to loopback only and turns the scheduled jobs on.

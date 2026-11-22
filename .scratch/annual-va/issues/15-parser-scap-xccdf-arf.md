@@ -4,7 +4,7 @@
 **Release:** 1
 **What to build:** A CIS-CAT Pro or OpenSCAP results file (ARF or XCCDF) uploaded as the Secure Configuration Scan Report is read into Findings for failed checks and checks that did not complete, with passed and not-applicable results ignored.
 **Blocked by:** 13 (Scan Report upload pipeline: quarantine, scan, check, store)
-**Status:** ready-for-agent
+**Status:** closed
 **Effort (orchestrator estimate):** about 18.8 developer days across stories 20b (2.0), 21 (1.3), 25 (4.0), 28 (9.5*), 29 (2.0); `*` marks the critical path. See `reports/dev-report.md`.
 
 - [x] The parser accepts ARF (`asset-report-collection`) and XCCDF `Benchmark`/`TestResult` (1.1 and 1.2) documents and rejects others as REJECTED_SCHEMA; the ARF size limit and the UI hint to export XCCDF results only when an ARF is too large are in place.

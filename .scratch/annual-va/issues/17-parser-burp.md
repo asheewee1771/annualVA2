@@ -4,7 +4,7 @@
 **Release:** 1
 **What to build:** A Burp Suite XML issue export uploaded as the Burp Scan Report is read into Findings with severity and confidence, so that Tentative issues can later be marked False Positive with a reason.
 **Blocked by:** 13 (Scan Report upload pipeline: quarantine, scan, check, store)
-**Status:** ready-for-agent
+**Status:** closed
 **Effort (orchestrator estimate):** about 19.8 developer days across stories 20d (2.0), 21 (1.3), 25 (4.0), 28 (9.5*), 30 (3.0); `*` marks the critical path. See `reports/dev-report.md`.
 
 - [x] The parser accepts the Burp `issues` export, allowing only Burp's internal DTD subset as Burp writes it (a DOCTYPE is skipped and never obeyed for every other format; DTDs and entities are off for all), and rejects others; the UI hints to export without request and response bodies when the file exceeds the limit.

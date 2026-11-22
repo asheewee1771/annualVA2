@@ -4,7 +4,7 @@
 **Release:** 1
 **What to build:** A VA POC uploads a filled-in template and sees, before anything changes, every System that would be added, updated or retired, the rows that are blocked and why, and which SMO emails are not yet linked to a sign-in. Nothing changes until the apply (next tickets), which is the step-up control the permissions matrix places on the Register upload.
 **Blocked by:** 07 (Download the System Register template), 06 (VA Cycle and Quarter calendar)
-**Status:** ready-for-agent
+**Status:** closed
 **Effort (orchestrator estimate):** about 13.0 developer days across stories 2 (10.0*), 12 (2.0), 14 (1.0); `*` marks the critical path. See `reports/dev-report.md`.
 **Template note (2026-10-05):** ticket 07 fixed the five header texts in `RegisterTemplate.HEADERS` (upload must match them as written), the Quarter notation `Q1` to `Q4`, and an example row `EXAMPLE-001`. Block a System ID that starts `EXAMPLE-` so an unchanged example row cannot be uploaded as a real System. See ADR 0016.
 

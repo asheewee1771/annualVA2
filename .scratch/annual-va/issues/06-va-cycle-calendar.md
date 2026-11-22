@@ -4,7 +4,7 @@
 **Release:** 1
 **What to build:** The app knows the current VA Cycle and Quarter, every Quarter's windows, and which Quarters are handled outside the app, all computed in Singapore time from the controllable clock.
 **Blocked by:** 02 (Walking skeleton: repository, security baseline and Seam 1 harness)
-**Status:** ready-for-agent
+**Status:** closed
 **Effort (orchestrator estimate):** about 13.1 developer days across stories 16 (9.1), 71 (4.0); `*` marks the critical path. See `reports/dev-report.md`.
 
 - [x] A VA Cycle is named after its starting year and has four Quarters starting on the first Monday of February, May, August and November; a Quarter ends the day before the next Quarter starts (12 to 14 weeks), and Q4 ends the day before the next Cycle's Q1.

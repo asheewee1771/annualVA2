@@ -4,7 +4,7 @@
 **Release:** 1
 **What to build:** An SMO whose tool cannot export a machine-readable format ticks a box and types Findings by hand, marked Manually Entered; Dependency-Check and Burp can be marked not applicable with a justification, while Secure Configuration is always required (machine-readable or manual).
 **Blocked by:** 19 (List Findings and propose a Finding Status)
-**Status:** ready-for-agent
+**Status:** closed
 **Effort (orchestrator estimate):** about 4.0 developer days across stories 23 (4.0); `*` marks the critical path. See `reports/dev-report.md`.
 
 - [x] `PUT /api/submissions/{id}/reports/{type}/mode` sets UPLOAD, NOT_APPLICABLE (Dependency-Check or Burp only, justification required) or MANUAL (justification required); Secure Configuration refuses NOT_APPLICABLE with a 400 problem.

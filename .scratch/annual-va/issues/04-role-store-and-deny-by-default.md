@@ -4,7 +4,7 @@
 **Release:** 1
 **What to build:** Roles come only from the app's role store, never from token claims. The two VA POCs are configured at deployment; a person sees only what their active roles allow and a resource they may not see answers exactly like one that does not exist.
 **Blocked by:** 03 (Sign in through MCC SSO and see my session)
-**Status:** ready-for-agent
+**Status:** closed
 **Effort (orchestrator estimate):** about 6.3 developer days across stories 75 (1.3), 76 (2.0), 78 (3.0); `*` marks the critical path. See `reports/dev-report.md`.
 
 - [x] Role grants (role, person or email, System, source, granted, expires, lapsed, suspended, revoked, last used) drive authorisation; authorities are resolved from the store on every request so a revoked grant takes effect on the next call.

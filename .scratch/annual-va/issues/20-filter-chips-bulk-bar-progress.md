@@ -4,7 +4,7 @@
 **Release:** 1
 **What to build:** An SMO works through 100 to 200 Findings with filter chips, tick boxes and select-all, applies one status, one detail and one target date to every selected Finding in one step, and sees how much is left.
 **Blocked by:** 19 (List Findings and propose a Finding Status)
-**Status:** ready-for-agent
+**Status:** closed
 **Effort (orchestrator estimate):** about 11.6 developer days across stories 36 (4.3*), 37 (4.3*), 38 (3.0); `*` marks the critical path. See `reports/dev-report.md`.
 
 - [x] `POST /api/submissions/{id}/findings/bulk-proposals` with a list of Finding ids and one status plus its fields creates one batch and one proposal per Finding carrying the batch id, returning the batch id; Findings not in the submission or not editable are refused as a whole.

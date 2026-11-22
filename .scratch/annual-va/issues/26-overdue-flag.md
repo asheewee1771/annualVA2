@@ -4,7 +4,7 @@
 **Release:** 1
 **What to build:** When a window passes without the next step, the VA Submission (or a Not Started System) is flagged Overdue, visible to everyone concerned, and the SMO can keep working.
 **Blocked by:** 25 (Tick the Declaration and submit for review)
-**Status:** ready-for-agent
+**Status:** closed
 **Effort (orchestrator estimate):** about 10.0 developer days across stories 42 (6.0), 71 (4.0); `*` marks the critical path. See `reports/dev-report.md`.
 
 - [x] A scheduled sweep flags Not Started and Draft after `submit_due`, In Review and Returned for Rework after `review_due`, and Awaiting Endorsement after `endorse_due`, recording when the flag was set; final states and Quarters handled outside the app are skipped; running the sweep twice changes nothing more.
