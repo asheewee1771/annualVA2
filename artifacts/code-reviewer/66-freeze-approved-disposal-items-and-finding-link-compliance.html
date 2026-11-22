@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review — 66-freeze-approved-disposal-items-and-finding-link</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">Overall WARN (no blocker)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">build PASS 0/0/0/0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN 0/0/0/4</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN 0/0/0/4</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">semgrep WARN 0/0/0/1</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 WARN 0/0/0/1</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN 0/0/0/4</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-slate-100 text-slate-700">react N/A</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">worktree-agent-a04f947dd29406d53 / ticket 66</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Executive Summary</h2>
+          <p class="text-xs text-slate-500 mt-1">Ticket 66: freeze approved disposal items and the Finding link (migration V45). Base HEAD f5d1572; <span class="font-mono">git diff | sha1sum</span> of the final tree = <span class="font-mono">59f237c5…</span> (checked, matches). No Critical, High or Medium finding is open. Every check reports Low findings at most.</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2">Check</th><th class="px-4 py-2">Round / tree seen</th><th class="px-4 py-2">Status</th><th class="px-4 py-2">C / H / M / L</th><th class="px-4 py-2">Summary</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2">build</td><td class="px-4 py-2">Round 1, pre-correction (diff sha 09f2a66…). Did not see the correction.</td><td class="px-4 py-2 text-emerald-700 font-semibold">PASS</td><td class="px-4 py-2">0 / 0 / 0 / 0</td><td class="px-4 py-2">Fresh <span class="font-mono">clean verify</span>: 1,363 tests, 0 failures, 1 unrelated skip; ArchUnit pass; JaCoCo line 97.16 %, branch 91.53 %; BUILD SUCCESS. Front end not applicable.</td></tr>
+            <tr><td class="px-4 py-2">thermo-nuclear</td><td class="px-4 py-2">Round 2, final tree.</td><td class="px-4 py-2 text-amber-700 font-semibold">WARN</td><td class="px-4 py-2">0 / 0 / 0 / 4</td><td class="px-4 py-2">Round-one T1 and T2 (Medium) and T3 to T6 (Low) all reported Fixed. Four new Lows (N1 to N4).</td></tr>
+            <tr><td class="px-4 py-2">code-review</td><td class="px-4 py-2">Round 1, pre-correction.</td><td class="px-4 py-2 text-amber-700 font-semibold">WARN</td><td class="px-4 py-2">0 / 0 / 0 / 4</td><td class="px-4 py-2">Spec criteria 1 to 5 met, 6 met for style (gate covered by build). Lows S-Spec1, S-Std1 to S-Std3.</td></tr>
+            <tr><td class="px-4 py-2">semgrep</td><td class="px-4 py-2">Round 1, pre-correction.</td><td class="px-4 py-2 text-amber-700 font-semibold">WARN</td><td class="px-4 py-2">0 / 0 / 0 / 1</td><td class="px-4 py-2">0 P0, 0 P1, 1 P2 (Low) in untouched test-only code. SQL migration not parsed by Semgrep.</td></tr>
+            <tr><td class="px-4 py-2">im8</td><td class="px-4 py-2">Round 1, pre-correction.</td><td class="px-4 py-2 text-amber-700 font-semibold">WARN</td><td class="px-4 py-2">0 / 0 / 0 / 1</td><td class="px-4 py-2">One Low (I1). No Bedrock KB was queried.</td></tr>
+            <tr><td class="px-4 py-2">springboot</td><td class="px-4 py-2">Round 1, pre-correction.</td><td class="px-4 py-2 text-amber-700 font-semibold">WARN</td><td class="px-4 py-2">0 / 0 / 0 / 4</td><td class="px-4 py-2">Four Lows (D1, T1 to T3). Core, web, batch, security and logging: nothing in scope.</td></tr>
+            <tr><td class="px-4 py-2">react</td><td class="px-4 py-2">Round 1, no front-end file.</td><td class="px-4 py-2 text-slate-600 font-semibold">NOTHING TO REVIEW</td><td class="px-4 py-2">0 / 0 / 0 / 0</td><td class="px-4 py-2">Neither a pass nor a review that passed.</td></tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm">None. No Critical, High or Medium finding is open on any check.</p>
+        </div>
+        <div class="space-y-2 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Human decision</h3>
+          <p class="text-sm">2026-11-22, by the user: the <span class="font-mono">disposal_list</span> row itself stays trusted. It is accepted as a residual within ADR 0014's threat model. No follow-up ticket. Not raised again as a finding.</p>
+        </div>
+        <div class="space-y-2 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Evidence for the final tree (implementer-reported, not independently rerun here)</h3>
+          <p class="text-sm">Targeted <span class="font-mono">Disposal*Test, MigrationSequenceTest, FindingProposal*Test, ReplaceFile*Test</span>: 62 tests, 0 failures, BUILD SUCCESS. One mutant (insert into an APPROVED list) caught. The full suite runs on <span class="font-mono">main</span> after the merge.</p>
+        </div>
+        <div class="space-y-2 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Round history</h3>
+          <p class="text-sm">Round one ran all seven checks on the first tree. A correction pass made the <span class="font-mono">disposal_item</span> trigger insert-only, removed dead test code, split a test, pinned exact messages, and trimmed the V45 header and the wording in ADR 0050, the README and the decision log. Round two reran thermo-nuclear only, on the final tree. Findings below from the round-one checks may refer to code the correction changed; line numbers can be stale. Thermo-nuclear round two reports the overlapping items (dead statements, over-broad trigger, header wording, weak message checks) as Fixed.</p>
+        </div>
+      </div>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none"><span class="font-medium">build (round 1, pre-correction)</span><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span></summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50"><tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody><tr><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td></tr></tbody>
+        </table>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none"><span class="font-medium">thermo-nuclear (round 2, final tree)</span><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50"><tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/retention/DisposalStore.java</td><td class="px-4 py-2">159-160</td><td class="px-4 py-2">N1: one javadoc line is about 136 characters; the rest wrap at 120. Re-wrap.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/harness/TestEndpoints.java</td><td class="px-4 py-2">306, 315-322</td><td class="px-4 py-2">N2: the reset helper's javadoc still describes an append-only history table with two triggers; <span class="font-mono">disposal_item</span> is neither. Generalise it.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/DisposalGuardTest.java</td><td class="px-4 py-2">276-277 vs 297-300</td><td class="px-4 py-2">N3: the same NOT_DRAFT assertion appears in two tests; the second proves more.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/DisposalGuardTest.java</td><td class="px-4 py-2">262</td><td class="px-4 py-2">N4: <span class="font-mono">draft()</span> builds a whole VA Submission for a value <span class="font-mono">UUID.randomUUID()</span> would supply (no foreign key on <span class="font-mono">target_id</span>).</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none"><span class="font-medium">code-review (round 1, pre-correction)</span><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50"><tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">docs/adr/0050-records-are-disposed-of-from-a-list…</td><td class="px-4 py-2">3</td><td class="px-4 py-2">S-Spec1: the Status line names the V45 freeze but not the residual acceptance of 2026-11-22.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/DisposalGuardTest.java</td><td class="px-4 py-2">274-284</td><td class="px-4 py-2">S-Std1: duplicates the <span class="font-mono">asDisposal</span> helper by hand (judgement call). Round two reports the attack now goes through <span class="font-mono">asDisposal</span>.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/DisposalGuardTest.java</td><td class="px-4 py-2">260</td><td class="px-4 py-2">S-Std2: misleading test text and dead statements after the throwing INSERT. Round two reports it fixed.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V45__…sql</td><td class="px-4 py-2">20-32</td><td class="px-4 py-2">S-Std3: the trigger allowed UPDATE and DELETE on a DRAFT list's items, which no code does (judgement call). Round two reports it insert-only.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none"><span class="font-medium">semgrep (round 1, pre-correction)</span><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50"><tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody><tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/harness/TestEndpoints.java</td><td class="px-4 py-2">488</td><td class="px-4 py-2">P2, <span class="font-mono">tainted-sql-string</span>: existing test-only fault endpoint the diff does not touch; the input is checked against <span class="font-mono">[A-Z_]+</span> and the class does not ship. No action for this ticket. The SQL migration was not parsed by Semgrep.</td></tr></tbody>
+        </table>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none"><span class="font-medium">im8 (round 1, pre-correction)</span><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50"><tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody><tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V45__disposal_item_and_finding_freeze.sql; ADR 0050 item 7</td><td class="px-4 py-2">7</td><td class="px-4 py-2">I1: items freeze when the approval commits, not when the VA POC read the list; the claim "what a VA POC approved" is imprecise. No application statement does this. Reword, or bind approval to the items seen (a new ticket). The user's decision covers the <span class="font-mono">disposal_list</span> row only; whether I1 was reworded by the correction is not confirmed in a final-tree check.</td></tr></tbody>
+        </table>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none"><span class="font-medium">springboot (round 1, pre-correction)</span><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span></summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50"><tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/resources/db/migration/V45__…sql; application.yml</td><td class="px-4 py-2">54-57, 37-43; 16-18</td><td class="px-4 py-2">D1: no <span class="font-mono">lock_timeout</span>; <span class="font-mono">CREATE TRIGGER</span> could queue behind a long transaction on <span class="font-mono">finding</span> during a deploy. Add <span class="font-mono">SET LOCAL lock_timeout</span> or confirm deploys stop the old instance first.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/DisposalGuardTest.java</td><td class="px-4 py-2">286-292</td><td class="px-4 py-2">T1: weak message check on UPDATE, DELETE and TRUNCATE. Thermo-nuclear round two reports exact messages now pinned.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/DisposalGuardTest.java</td><td class="px-4 py-2">281, 286</td><td class="px-4 py-2">T2: loops in tests (matches the file's style); optional <span class="font-mono">@ParameterizedTest</span>.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/DisposalGuardTest.java</td><td class="px-4 py-2">256-310</td><td class="px-4 py-2">T3: unproven paths: the concurrent-approval race claimed in V45, a SUPERSEDED list, and DELETE from a DRAFT list. Optional two-connection test.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none"><span class="font-medium">react (round 1)</span><span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-slate-100 text-slate-700">NOTHING TO REVIEW</span></summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50"><tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody><tr><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings (no front-end file changed; no review ran)</td></tr></tbody>
+        </table>
+      </details>
+
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-2">
+        <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">What this verdict does not cover</h3>
+        <ul class="list-disc pl-5 text-sm space-y-1">
+          <li>Build, code-review, semgrep, im8 and springboot did not see the corrected tree. Only thermo-nuclear (round two) did.</li>
+          <li>The full back-end suite and coverage gate were not run on the final tree. The 1,363-test run is pre-correction; the final-tree evidence is the implementer's targeted run (62 tests). The full suite runs on <span class="font-mono">main</span> after the merge.</li>
+          <li>Semgrep has no SQL parser, so the migration was reviewed by hand only. No Bedrock KB was queried for im8.</li>
+          <li>The concurrent-approval race, SUPERSEDED lists and a DRAFT-list delete are untested (springboot T3).</li>
+          <li>Accepted residuals: the <span class="font-mono">disposal_list</span> row (user decision 2026-11-22, ADR 0014 threat model, no follow-up ticket), and a table owner or superuser who can switch triggers off (ticket 55).</li>
+          <li>React was not reviewed; no front-end file changed.</li>
+        </ul>
+      </div>
+    </main>
+  </body>
+</html>
