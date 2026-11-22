@@ -4,7 +4,7 @@
 **Release:** 1
 **What to build:** Operators can see the signals that matter (overdue submissions, scan failures and timeouts, mail failures, step-up refusals, audit-write failures) and the system is documented for hand-over.
 **Blocked by:** 51 (Production adapters: S3 with SSE-KMS, SFS scanner, MCNS mail, MCC service client)
-**Status:** ready-for-agent
+**Status:** ready-for-human
 
 - [x] Meters for the listed signals are registered and exposed on an authenticated `/actuator/prometheus`; `/actuator/health` stays anonymous and liveness-only; a Seam 1 test reads each meter after the triggering action.
 - [x] The README gains a runbook section with the alert threshold and the operator response for each signal, and a profiles and secrets section for SIT, UAT and production.
@@ -57,3 +57,24 @@ Lows left: thermo L3 (count mail failures inside `settled()`), L4 (`mailFailed` 
 ### Open finding for a follow-up ticket (im8 F2, recorded 2026-11-22; not built here; raised as ticket 67)
 
 **No signal when a scheduled job stops.** The scan poller, the mail dispatcher and the Overdue sweep have no heartbeat or last-run gauge, so a dead scan poller shows zero scan failures and a dead mail dispatcher zero mail failures, which read as healthy (the held Overdue gauges stay flat as well). This is new monitoring scope (one `last_success` gauge per job in `KeySignals` and a staleness alert), not a fix to ticket 52: the orchestrator is to raise it as its own ticket, next to ticket 55, which sets the alert thresholds. ADR 0060 ("Not done here") and the run book ("Not covered, on purpose") already name the gap.
+
+### Merged, provisional (2026-11-23); box 3 waits on people
+
+**What landed.** Boxes 1 and 2 and the agent's part of box 3 are merged into `main` by `09ebcc2`, provisional until ticket 55 (ADR 0060):
+- the key signals, counted once at their source;
+- the authenticated scrape endpoint;
+- the run book;
+- the profiles and secrets section;
+- `docs/tech-architecture.md` with its refresh script (`python scripts/refresh-tech-arch-doc.py`, `--check`) and `DocumentationCompletenessTest`.
+
+The document was refreshed after `main` (tickets 53, 60, 61, 66; migrations V1 to V47) was merged into the branch. The prose about the disposal checks and the report-file flow was updated by hand. Commits since the last note: `5f260f5` (correction pass), `cb39ac9` (docs and the refresh script), `4226a8b` (merge of `main`), `1040593` (document refresh), `b25b81f` (ticket 67 cited), `df5cc23` (report).
+
+**How it was verified.**
+- Back-end gate on the merged branch, whose tree is the one on `main`: `./mvnw -B -ntp clean verify` passed. 1,424 tests, 0 failures, 1 skipped; line coverage 97.24 %, branch 91.54 %; BUILD SUCCESS.
+- Front-end gate: `npm run check` exits 0. `refresh-tech-arch-doc.py --check` is clean.
+- `/code-reviewer`: WARN, no Critical or High (`artifacts/code-reviewer/52-monitoring-and-system-documentation-compliance.html`). The one Medium is im8 pm-6: the back-end dependency vulnerability scan, open by the decision of 2026-11-22. The five content checks reviewed the corrected tree before the merge of `main` and the document refresh; only the build check saw the final tree.
+
+**Still open, for a person (why the status is `ready-for-human`).**
+- Box 3: a person reads the document's prose (sections 1.1, 1.4 to 1.9, 3.2 and the hand-written descriptions).
+- The back-end dependency vulnerability scan is run with an NVD API key (`/dependency-vuln-scan`), and section 6 of the document is filled from it. The scan also belongs among the pre-go-live gates of ticket 59.
+- The provisional choices are settled by ticket 55. The scheduled-job stop signal is ticket 67.
