@@ -1,5 +1,5 @@
 # Technical Architecture Document
-> Generated: 2026-11-22T16:34:15Z
+> Generated: 2026-11-22T18:35:13Z
 > Project: Annual VA (annualVA2): `frontend/` (React) and `backend/` (Spring Boot)
 > Laid out as `/tech-arch-doc` lays it out, for ticket 52 (IM8 pm-6). A point-in-time document: the tables and diagrams that can be read from the code are rewritten by `python scripts/refresh-tech-arch-doc.py`, the prose is written and reviewed by a person, and `DocumentationCompletenessTest` fails the build when a module, boundary port or adapter, profile, ADR or table is not named here. Section 7 says how to refresh it in the change that adds one.
 
@@ -21,7 +21,7 @@ Annual VA is the internal application that runs the organisation's annual vulner
 |---|---|---|
 | `access` | 64 | Sign-in through MCC SSO, users, sessions, the role store, step-up and the per-System ownership check. |
 | `adapters` | 21 | The production and local implementations of the boundary ports (identity provider, malware scanner, mail relay, file store, account status). |
-| `app` | 5 | The composition root: the Spring Boot entry point, the clock bean, the security filter chains (the application and the metrics scrape). |
+| `app` | 6 | The composition root: the Spring Boot entry point, the clock bean, the scheduler switch, the security filter chains (the application and the metrics scrape). |
 | `audit` | 15 | The append-only audit log: writing entries in the action's transaction or on their own, the ECS event after the commit, and the read scope port. |
 | `boundary` | 7 | The ports at the edge of the application: identity provider, account status, malware scanner, mail relay, file store. The only things Seam 1 tests fake (with the clock). |
 | `config` | 3 | Shared configuration: application properties and the dev-local and not-dev-local profile markers. |
@@ -31,7 +31,7 @@ Annual VA is the internal application that runs the organisation's annual vulner
 | `finding` | 43 | Findings read from Scan Reports, their status proposals, the Cyber Manager review, the rework queue and the manual Findings. |
 | `ingestion` | 21 | The Scan Report upload pipeline: quarantine, scan job, type and schema checks, parsing, and the file views. |
 | `jdbc` | 2 | What every store shares about PostgreSQL through JdbcClient: how an instant is written and read. |
-| `monitoring` | 2 | The key signals (meters) an operator watches, named and registered in one place (ADR 0060). |
+| `monitoring` | 3 | The key signals (meters) an operator watches, named and registered in one place (ADR 0060). |
 | `notification` | 19 | In-app notifications, the mail outbox and its dispatcher, deadline reminders. |
 | `parser` | 24 | Reading Scan Report files: the hardened XML reader and one parser per vendor format (Dependency-Check, SCAP, Nessus, Burp Suite). |
 | `register` | 31 | The System Register: the Excel template, upload and preview, the locked apply, the Systems list, SMO Unreachable, the role-holder review. |
@@ -41,7 +41,7 @@ Annual VA is the internal application that runs the organisation's annual vulner
 | `web` | 10 | Cross-cutting HTTP: RFC 9457 problems, the correlation id, the refusal listener, CSRF and session bootstrap. |
 | `frontend` | see section 1.8 | The React single-page application. |
 
-20 back-end modules, 359 source files.
+20 back-end modules, 361 source files.
 <!-- /generated:module-summary -->
 
 ### 1.3 Module Interaction Diagram
@@ -105,6 +105,7 @@ graph TD
   export --> dashboard
   export --> finding
   export --> jdbc
+  export --> monitoring
   export --> web
   finding --> access
   finding --> audit
@@ -143,6 +144,7 @@ graph TD
   retention --> boundary
   retention --> cycle
   retention --> jdbc
+  retention --> monitoring
   retention --> register
   retention --> web
   scan --> boundary
@@ -166,7 +168,7 @@ Platform modules: `web`, `config`, `jdbc`, `boundary`, `monitoring`, `audit`, `a
 - **Sign-in and roles (`access`).** The browser is sent to MCC SSO through the OIDC authorization-code flow; the callback links the sign-in to a user (by `sso_id`, else pre-registered email, else new), rotates the session and audits it. Roles live in `role_grant` and are read into a `RoleAuthentication` on every request. `AccessGuard` is the one ownership check every service path that addresses a System calls. `StepUp.require(intent)` makes a sensitive command need a sign-in within five minutes.
 - **Register and submissions.** A VA POC uploads the System Register workbook; `register` scans it synchronously through `scan`, reads it into a preview, and applies a confirmed preview in one locked transaction that also grants the SMO/Tech Lead and Cyber Manager roles through `access` and withdraws in-flight work through the `InFlightWork` port the `submission` module implements. An SMO/Tech Lead starts a VA Submission (`submission`), uploads Scan Reports (`ingestion`), proposes Finding statuses (`finding`), submits; a Cyber Manager reviews and passes or returns it; a VA POC endorses with a fresh sign-in.
 - **Files.** `ingestion` puts every upload in the quarantine zone of the file store through `scan`, the scan job asks the scanner for a verdict, and only the scanner's unchanged copy is type-checked, schema-checked and parsed (`parser`) into Findings (`finding`). Nobody can view a file until it is clean (ADR 0021). While the VA Submission is editable, an SMO/Tech Lead can delete a report file, which is deleted softly and re-rates the Findings it touched through `finding`, or a Manually Entered Finding that never had a proposal (ADR 0061).
-- **Time-driven work.** `@Scheduled` jobs (only where `annualva.scheduling.enabled`; Seam 1 runs each by hand) sweep Overdue (`submission`), open and close Cycles, lapse Exemptions and roles, plan deadline reminders and dispatch the mail outbox (`notification`), make exports (`export`) and propose disposal lists (`retention`). The jobs coordinate through the database, without ShedLock (ADR 0012): each claims its rows (`FOR UPDATE SKIP LOCKED`, a lease on a claimed mail, a write guarded by the status it read) and is idempotent, so two instances do not double the work. ADR 0012 also names a `scheduler_lock` table: no migration creates one and no code uses one.
+- **Time-driven work.** `@Scheduled` jobs (the scheduler runs only where `annualva.scheduling.enabled`; Seam 1 runs each job's bean by hand) sweep Overdue (`submission`), open and close Cycles, lapse Exemptions and roles, plan deadline reminders and dispatch the mail outbox (`notification`), make exports (`export`) and propose disposal lists (`retention`). The jobs coordinate through the database, without ShedLock (ADR 0012): each claims its rows (`FOR UPDATE SKIP LOCKED`, a lease on a claimed mail, a write guarded by the status it read) and is idempotent, so two instances do not double the work. ADR 0012 also names a `scheduler_lock` table: no migration creates one and no code uses one.
 - **Notifications and mail.** Workflow modules publish events inside their transaction; `notification` writes the in-app notice and queues the mail after the commit, and `MailOutbox` hands it to the mail relay with allow-listed values only (ADR 0043, 0046).
 - **Audit.** Modules that act call `AuditLog.record` in their own transaction (`recordIndependently` for refusals and sign-ins); the entry is also emitted as an ECS event on the `annualva.audit` logger after the commit. The audit read scope is a port (`AuditReaders`) the `submission` module answers (ADR 0038).
 - **Monitoring.** `monitoring.KeySignals` is injected by the modules that have a signal to record; the endpoint `/actuator/prometheus` is served behind its own security chain (section 1.9, ADR 0060).
@@ -175,7 +177,7 @@ Platform modules: `web`, `config`, `jdbc`, `boundary`, `monitoring`, `audit`, `a
 
 **Request lifecycle.** `CorrelationIdFilter` assigns or accepts a correlation id; the security chain (the application's, or the scrape chain for `/actuator/prometheus`) authenticates and applies CSRF (synchronizer token), the CSP and HSTS headers; `RoleResolutionFilter` loads the caller's grants; the controller's `@PreAuthorize` rule and `AccessGuard` decide; a service runs the command in one transaction that includes its audit entry; `ApiExceptionHandler` turns any failure into an RFC 9457 problem with the correlation id and reports each 401 or 403 to the refusal listener, which audits it.
 
-**Background processes.** Each is a `*Job` class that exists only where `annualva.scheduling.enabled` is true and calls a plain bean, which a Seam 1 test runs through a test-only endpoint. Defaults: the scan job every 10 s (`ScanPollerJob`), the export worker every 5 s (`ExportWorkerJob`), mail dispatch every 30 s (`MailDispatchJob`), the Overdue sweep, the Cycle lifecycle, the Exemption lapse and the role lapse each hourly and once at start (`OverdueSweepJob`, `CycleLifecycleJob`, `ExemptionLapseJob`, `RoleLapseJob`), deadline reminders on the hour from 08:00 to 23:00 business time, written once per person and day (`DeadlineReminderJob`, ADR 0052), and retention (`RetentionJob`): the disposal list at 02:30 business time and the executor every 5 minutes.
+**Background processes.** Each is a `*Job` bean that calls a plain bean. The bean exists in every profile; the scheduler that calls it is enabled only where `annualva.scheduling.enabled` is true (`app.SchedulingConfig`, ADR 0012), so a Seam 1 test runs the job's own bean through a test-only endpoint. Defaults: the scan job every 10 s (`ScanPollerJob`), the export worker every 5 s (`ExportWorkerJob`), mail dispatch every 30 s (`MailDispatchJob`), the Overdue sweep, the Cycle lifecycle, the Exemption lapse and the role lapse each hourly and once at start (`OverdueSweepJob`, `CycleLifecycleJob`, `ExemptionLapseJob`, `RoleLapseJob`), deadline reminders on the hour from 08:00 to 23:00 business time, written once per person and day (`DeadlineReminderJob`, ADR 0052), and retention (`RetentionJob`): the disposal list at 02:30 business time and the executor every 5 minutes. Each scheduled method records its last completed run in `KeySignals` (ticket 67, section 1.9); `ScheduledJobSignalTest` finds every `@Scheduled` method of the context's beans and runs it as the scheduler would.
 
 **Initialisation.** Flyway applies `db/migration` (the range is in section 4.1; gapless: `MigrationSequenceTest`); the two VA POCs are synced from `annualva.va-pocs`; configuration is validated at start and a missing secret stops the application (ADR 0005).
 
@@ -281,7 +283,7 @@ Configuration of the adapters: `LocalAdapterProperties` (`adapters.local`), `Mcc
 
 UAT and production run the base configuration with every value supplied by the environment. The README's "Profiles, secrets and environments" section lists the variables.
 
-Monitoring (IM8 lm-16, ADR 0060): `monitoring.KeySignals` registers the Overdue gauges and the counters for scan failures and timeouts, mail failures, step-up refusals and audit write failures. `/actuator/prometheus` has its own security chain with a bearer token (`app.MetricsScrapeSecurity`); `/actuator/health` is anonymous and liveness-only. The README's run book gives each signal's alert threshold and the operator response. Provisional (decided 2026-11-22, ADR 0060): the bearer token as the scraper's credential, the alert thresholds (starting values) and where each environment keeps the token are not final; ticket 55 (products and non-functional targets, with a person) decides them.
+Monitoring (IM8 lm-16, ADR 0060): `monitoring.KeySignals` registers the Overdue gauges and the counters for scan failures and timeouts, mail failures, step-up refusals and audit write failures, and one gauge per scheduled job holding when it last completed a run (`annualva_job_last_completed_seconds`, tag `kind` from the closed enum `KeySignals.Job`; each `*Job` method records it as its last step, so a run that throws, or that caught the failure of all its work (every piece of an export pass, a failed listing included, a disposal, the retention listing, every reminder due, every file of a scan pass, a refused discard included), does not move it; ticket 67, ADR 0060 item 8). `/actuator/prometheus` has its own security chain with a bearer token (`app.MetricsScrapeSecurity`); `/actuator/health` is anonymous and liveness-only. The README's run book gives each signal's alert threshold and the operator response. Provisional (decided 2026-11-22, ADR 0060): the bearer token as the scraper's credential, the alert thresholds (starting values) and where each environment keeps the token are not final; ticket 55 (products and non-functional targets, with a person) decides them.
 
 ## 2. Software Module Catalog
 
@@ -358,8 +360,8 @@ Each module lists its purpose, the modules it imports and the modules that impor
 | `MccSsoProperties` | record | MCC SSO settings (prefix annualva.mcc). |
 
 #### `app`
-- **Source files:** 5 under `backend/src/main/java/sg/annualva/app/`
-- **Purpose:** The composition root: the Spring Boot entry point, the clock bean, the security filter chains (the application and the metrics scrape).
+- **Source files:** 6 under `backend/src/main/java/sg/annualva/app/`
+- **Purpose:** The composition root: the Spring Boot entry point, the clock bean, the scheduler switch, the security filter chains (the application and the metrics scrape).
 - **Uses (imports):** access, web
 - **Used by:** no other module
 
@@ -483,7 +485,7 @@ Each module lists its purpose, the modules it imports and the modules that impor
 #### `export`
 - **Source files:** 17 under `backend/src/main/java/sg/annualva/export/`
 - **Purpose:** Exports made in the background and kept 24 hours in the export zone: the management summary in Excel and PDF.
-- **Uses (imports):** access, audit, boundary, cycle, dashboard, finding, jdbc, web
+- **Uses (imports):** access, audit, boundary, cycle, dashboard, finding, jdbc, monitoring, web
 - **Used by:** no other module
 
 **Endpoints:**
@@ -608,14 +610,15 @@ Each module lists its purpose, the modules it imports and the modules that impor
 | `Timestamps` | class | How every store hands an instant to PostgreSQL and reads one back: a timestamptz is written as the instant at offset UTC, as every timestamp is stored (AGENTS.md), and read back as the instant it names. |
 
 #### `monitoring`
-- **Source files:** 2 under `backend/src/main/java/sg/annualva/monitoring/`
+- **Source files:** 3 under `backend/src/main/java/sg/annualva/monitoring/`
 - **Purpose:** The key signals (meters) an operator watches, named and registered in one place (ADR 0060).
 - **Uses (imports):** no other module
-- **Used by:** access, audit, ingestion, notification, scan, submission
+- **Used by:** access, audit, export, ingestion, notification, retention, scan, submission
 
 | Public type | Kind | Description |
 |---|---|---|
 | `KeySignals` | class | The key signals of the application (IM8 lm-16, ADR 0060), the meters the README's runbook gives an alert threshold and an operator response for. |
+| `PassTally` | class | Whether a scheduled job's pass did its work, for the job's last-completed-run signal (ticket 67, ADR 0060 item 8): it did unless it had work and none of it went through. |
 
 #### `notification`
 - **Source files:** 19 under `backend/src/main/java/sg/annualva/notification/`
@@ -715,7 +718,7 @@ Each module lists its purpose, the modules it imports and the modules that impor
 #### `retention`
 - **Source files:** 11 under `backend/src/main/java/sg/annualva/retention/`
 - **Purpose:** Retention and disposal: the disposal list a VA POC approves and the executor that deletes files, then records, through the one path the append-only tables allow; the database checks every history row it deletes against the approved list (ADR 0050).
-- **Uses (imports):** access, audit, boundary, cycle, jdbc, register, web
+- **Uses (imports):** access, audit, boundary, cycle, jdbc, monitoring, register, web
 - **Used by:** no other module
 
 **Endpoints:**

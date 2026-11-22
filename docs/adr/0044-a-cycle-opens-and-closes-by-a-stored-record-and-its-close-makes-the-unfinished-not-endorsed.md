@@ -27,6 +27,6 @@ Ticket 41 (stories 17 and 68) gives the VA Cycle its lifecycle: it opens when it
 
 8. **The shell's Cycle selector.** The front end reads `GET /api/cycles` once in the shell (`CycleChoiceProvider`); while two Cycles are `open` the header shows one VA Cycle selector, and its choice is the `cycle` of every dashboard call (the SMO and Cyber Manager inboxes, the Quarter boards, the Cycle matrix), replacing each screen's own selector. A choice of a Cycle that has since closed falls back to the Cycle running today. The Cycle matrix offers the close, with a confirm dialog, while the shown Cycle is `CLOSING`.
 
-Consequences: a Cycle's report is final once it closes; every reader of a Cycle's Systems goes through `RegisterSystems`; a new step command gets the closed-Cycle refusal by going through `atStep`; tests run a pass through `POST /api/test/jobs/cycle-lifecycle` after moving the clock, and the test reset empties the three new tables.
+Consequences: a Cycle's report is final once it closes; every reader of a Cycle's Systems goes through `RegisterSystems`; a new step command gets the closed-Cycle refusal by going through `atStep`; tests run a pass through `POST /api/test/scheduled-jobs/CycleLifecycleJob.run` (`Arrange.cycleLifecycle`; the job bean, since ticket 67) after moving the clock, and the test reset empties the three new tables.
 
 Amends ADR 0015 items 1 and 3, ADR 0019 (the SMO inbox's Not Endorsed label) and ADR 0033 item 3 (Not Started by the Cycle's own Quarter).

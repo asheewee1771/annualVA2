@@ -4,6 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import sg.annualva.harness.ApiClient;
 import tools.jackson.databind.JsonNode;
 
@@ -13,13 +17,29 @@ import tools.jackson.databind.JsonNode;
  * them, and the approve call it makes. VA Cycle 2027 is closed early on 14 February 2028 by these tests, so its records
  * are kept through 14 February 2031 and due on the 15th; the Cycle after it starts on 7 February 2028.
  */
+@ExtendWith(OutputCaptureExtension.class)
 abstract class DisposalSeam1 extends CycleLifecycleSeam1 {
 
     static final String DISPOSAL_LISTS = "/api/disposal-lists";
 
-    /** One pass of the retention job. */
+    /** The application's log, as the job writes it, so a pass can be checked for a listing that failed. */
+    private CapturedOutput log;
+
+    @BeforeEach
+    void readTheLog(CapturedOutput output) {
+        log = output;
+    }
+
+    /**
+     * One pass of the retention job, which must have listed what is due. The job catches a listing that fails, logs it
+     * ({@code disposal-list-failed}) and answers as any pass does (ticket 67), so a test that then finds nothing listed
+     * could not otherwise tell "nothing is due" from "the listing crashed". The job's series cannot tell either when two
+     * passes run at one instant, which these tests do, so this reads the log the pass wrote instead.
+     */
     protected void retention() {
+        int from = log.getAll().length();
         arrange.retention();
+        assertThat(log.getAll().substring(from)).as("the listing completed").doesNotContain("disposal-list-failed");
     }
 
     /** The disposal lists, newest first, as this person's screen reads them (200). */

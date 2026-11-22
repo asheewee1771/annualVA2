@@ -1,6 +1,7 @@
 package sg.annualva.export;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import sg.annualva.boundary.FileStore;
 import sg.annualva.harness.ApiClient;
+import sg.annualva.harness.Metrics;
 import tools.jackson.databind.JsonNode;
 
 /**
@@ -137,6 +139,32 @@ class ExportLifecycleTest extends ExportSeam1 {
         fileStore.refuseDeletes(false);
         exportJob();
         assertThat(fileStore.count(FileStore.Zone.EXPORT)).isZero();
+    }
+
+    /**
+     * Ticket 67: the export job catches a removal the store refuses and goes on, so a pass in which every expired file
+     * stayed returns like any other. It is not a completed run of the job, since nothing else counts it; the pass that
+     * removes them is.
+     */
+    @Test
+    void aPassInWhichTheStoreRefusedEveryRemovalIsNotACompletedRunOfTheJob() {
+        requested(vaPoc(), WHOLE_CYCLE);
+        exportJob();
+        clock.advance(Duration.ofHours(25));
+        Metrics before = metrics();
+        fileStore.refuseDeletes(true);
+
+        exportJob();
+        Metrics afterRefusal = metrics();
+        fileStore.refuseDeletes(false);
+        clock.advance(Duration.ofSeconds(1));
+        exportJob();
+
+        assertThat(afterRefusal.value(Metrics.job("export_worker"))).as("the one removal was refused")
+                .isEqualTo(before.value(Metrics.job("export_worker")));
+        assertThat(fileStore.count(FileStore.Zone.EXPORT)).isZero();
+        assertThat(metrics().value(Metrics.job("export_worker")))
+                .isCloseTo(clock.instant().toEpochMilli() / 1000.0, within(0.001));
     }
 
     @Test

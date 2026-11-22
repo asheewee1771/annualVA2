@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import sg.annualva.boundary.FileStore;
+import sg.annualva.monitoring.PassTally;
 
 /**
  * The export job (ADR 0045): makes the files of queued exports and removes those whose 24 hours are up. A pass:
@@ -49,10 +50,20 @@ public class ExportWorker {
         this.clock = clock;
     }
 
-    /** One pass. */
-    public void run() {
-        each(() -> store.queued(BATCH), ExportStore.Queued::id, this::make);
-        each(() -> store.expiring(clock.instant(), BATCH), ExportStore.Expiring::id, this::remove);
+    /**
+     * One pass. Both steps are tried whatever the other met, in one tally for the pass. A piece of work is one export: one
+     * that the make step marks failed went through (its requester sees it and asks again), one whose step threw
+     * ({@code export-step-failed}, a removal the store refused, say) did not. A listing that fails is caught here
+     * ({@code export-pass-failed}) and is one piece that did not go through.
+     *
+     * @return true unless the pass had work and none of it went through (ADR 0060 item 8); the job records a completed run
+     *     only on true
+     */
+    public boolean run() {
+        PassTally pass = new PassTally();
+        each(pass, () -> store.queued(BATCH), ExportStore.Queued::id, this::make);
+        each(pass, () -> store.expiring(clock.instant(), BATCH), ExportStore.Expiring::id, this::remove);
+        return pass.didItsWork();
     }
 
     private void make(ExportStore.Queued queued) {
@@ -80,19 +91,25 @@ public class ExportWorker {
         store.expired(expiring.id());
     }
 
-    /** Lists the work and handles each item on its own, so one failure, the listing's included, stops nothing else. */
-    private static <T> void each(Supplier<List<T>> list, Function<T, UUID> id, Consumer<T> handle) {
+    /**
+     * Lists the work and handles each item on its own, so one failure, the listing's included, stops nothing else. Counts
+     * each item in the pass's tally, and a listing that failed as one piece that did not go through.
+     */
+    private static <T> void each(PassTally pass, Supplier<List<T>> list, Function<T, UUID> id, Consumer<T> handle) {
         List<T> items;
         try {
             items = list.get();
         } catch (RuntimeException e) {
             logFailure("export-pass-failed", null, e);
+            pass.add(false);
             return;
         }
         for (T item : items) {
             try {
                 handle.accept(item);
+                pass.add(true);
             } catch (RuntimeException e) {
+                pass.add(false);
                 logFailure("export-step-failed", id.apply(item), e);
             }
         }

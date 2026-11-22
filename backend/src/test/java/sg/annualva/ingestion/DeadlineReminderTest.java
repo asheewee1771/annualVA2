@@ -1,12 +1,15 @@
 package sg.annualva.ingestion;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import sg.annualva.harness.ApiClient;
+import sg.annualva.harness.Metrics;
 import sg.annualva.harness.CapturingMailRelay.Sent;
 import tools.jackson.databind.JsonNode;
 
@@ -311,6 +314,35 @@ class DeadlineReminderTest extends MailSeam1 {
         assertThat(actions(signedInAs(SMO_B))).containsExactly("SUBMIT_DUE_SOON");
         assertThat(outboxOf(SMO_A)).hasSize(1);
         assertThat(onlyMailOf(SMO_B).get("template").asString()).isEqualTo("REMINDER_DUE_SOON");
+    }
+
+    /**
+     * Ticket 67: the planner catches each reminder that fails and goes on, so a pass in which every due reminder failed
+     * returns like any other. It is not a completed run of the job, since nothing else counts it; the rerun that writes
+     * them is.
+     */
+    @Test
+    void aPassThatCouldWriteNoReminderIsNotACompletedRunOfTheJob() {
+        draft();
+        today("2027-08-10");
+        Metrics before = metrics();
+        clock.advance(Duration.ofMinutes(1));
+
+        arrange.notificationFault("on");
+        try {
+            arrange.reminders();
+        } finally {
+            arrange.notificationFault("off");
+        }
+        Metrics afterFailure = metrics();
+        clock.advance(Duration.ofMinutes(1));
+        arrange.reminders();
+
+        assertThat(afterFailure.value(Metrics.job("deadline_reminders"))).as("both reminders due failed")
+                .isEqualTo(before.value(Metrics.job("deadline_reminders")));
+        assertThat(metrics().value(Metrics.job("deadline_reminders")))
+                .isCloseTo(clock.instant().toEpochMilli() / 1000.0, within(0.001));
+        assertThat(actions(signedInAs(SMO_A))).as("the rerun wrote them").containsExactly("SUBMIT_DUE_SOON");
     }
 
     @Test
