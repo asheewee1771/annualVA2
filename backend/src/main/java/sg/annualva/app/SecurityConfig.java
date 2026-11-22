@@ -57,6 +57,9 @@ class SecurityConfig {
                         // The Register is the VA POCs' alone. Also a method rule on each endpoint (ac-1); this one
                         // refuses a stranger before a multipart body is read, so nobody else's file is ever spooled.
                         .requestMatchers("/api/system-register/**").hasRole("VA_POC")
+                        // The Declaration's versions are the VA POCs' alone (also a method rule); this one refuses
+                        // anyone else before a publish's body is read and checked, so they get 403, never its 400.
+                        .requestMatchers("/api/declaration-text/versions").hasRole("VA_POC")
                         // Only an SMO/Tech Lead uploads a Scan Report file (also a method rule); a file of up to 50 MB is
                         // not spooled for anyone else.
                         .requestMatchers(HttpMethod.POST, "/api/submissions/*/files", "/api/submissions/*/files/*/replace")

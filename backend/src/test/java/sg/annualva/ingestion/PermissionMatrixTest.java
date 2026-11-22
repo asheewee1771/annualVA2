@@ -145,6 +145,8 @@ class PermissionMatrixTest extends ExemptionSeam1 {
             get("/api/notifications", SIGNED_IN),
             post("/api/notifications/{random}/read", null, NO_SUCH),
             get("/api/declaration-text", PREPARERS),
+            get("/api/declaration-text/versions", POC),
+            post("/api/declaration-text/versions", "{}", POC_STEP).stepUp("declaration-publish"),
             get("/api/systems", PREPARERS),
             get("/api/audit-entries", CM_OR_POC),
             get("/api/dashboards/smo-inbox", SMO_ROLE),
@@ -301,7 +303,8 @@ class PermissionMatrixTest extends ExemptionSeam1 {
         List<Endpoint> stepUps = MATRIX.stream().filter(endpoint -> endpoint.intent() != null).toList();
         assertThat(stepUps.stream().map(Endpoint::intent).collect(Collectors.toSet())).as("the step-up list (ac-2)")
                 .containsExactlyInAnyOrder("submission-endorse", "submission-return", "exemption-decide", "cycle-close",
-                        "register-apply", "role-suspend", "role-restore", "export-mgmt-summary", "disposal-approve");
+                        "register-apply", "role-suspend", "role-restore", "export-mgmt-summary", "disposal-approve",
+                        "declaration-publish");
 
         ApiClient stale = vaPocSignedIn(Duration.ofMinutes(5).plusSeconds(1));
         for (Endpoint endpoint : stepUps) {

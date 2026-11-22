@@ -94,6 +94,13 @@ public enum AuditAction {
      */
     SUBMISSION_SUBMITTED("submission-submitted", "database"),
     /**
+     * A VA POC published a new version of the Declaration text with a fresh sign-in (ticket 61; SUCCESS, with the
+     * {@code declaration_version} it became), or was refused because the wording is missing or too long once cleaned
+     * (REFUSED, with the fixed {@code reason} {@code invalid-field}). A refusal for want of a fresh sign-in or of the role
+     * is the {@code REQUEST_REFUSED} entry of every refusal. About no one System; never the wording.
+     */
+    DECLARATION_PUBLISHED("declaration-published", "configuration"),
+    /**
      * The Overdue sweep flagged a VA Submission, or a System with none (Not Started), Overdue because its window passed
      * (stories 42 and 71; SUCCESS, with the {@code state} it was in). Written by the scheduled job, so it has no actor.
      * About the System and, when there is one, the VA Submission.

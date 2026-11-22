@@ -156,7 +156,8 @@ class DisposalStore {
      * replaced go in one statement. The proposals, batches, reviews, returns, Declarations and audit entries are
      * append-only; V36 lets these deletes through only while the list named by {@link #RUNNING} is APPROVED, and an audit
      * entry only before that list's cutoff ({@code audit_entry_disposal_range}); V44 lets a row of the other history
-     * tables through only when its VA Submission is one that list names. A statement here that reached further would
+     * tables through only when its VA Submission is one that list names, and V45 freezes what that check reads (an
+     * item is only ever inserted, into a DRAFT list, and a Finding keeps its VA Submission). A statement here that reached further would
      * fail the whole disposal. A schema test checks that every table naming a table deleted from here is deleted from
      * here too.
      */

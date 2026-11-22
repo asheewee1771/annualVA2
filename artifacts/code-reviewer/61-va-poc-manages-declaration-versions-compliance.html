@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review — 61-va-poc-manages-declaration-versions</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">Overall WARN (no FAIL)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">build 0/0/0/0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear 0/0/0/6</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review 0/0/0/5</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">im8 0/0/0/3</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">semgrep 0/0/0/1</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">react 0/0/0/4</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot 0/0/0/5</span>
+      <span class="ml-auto font-mono text-sm text-slate-500">worktree-agent-a48ea8cc47c7fc143</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report: ticket 61, VA POC manages Declaration versions</h2>
+          <p class="text-xs text-slate-500 mt-1">Verdict: PASS (no Critical or High finding in any check; Low findings only). Counts are Critical / High / Medium / Low. Change: <span class="font-mono">git diff</span> at HEAD <span class="font-mono">f5d1572</span>, <span class="font-mono">git diff | sha1sum</span> = <span class="font-mono">5c497aff707741336d539c5f5108e3287eb43c15</span> (checked by the aggregator).</p>
+        </div>
+        <table class="w-full text-sm text-left border border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <tr><th class="px-4 py-2">Check</th><th class="px-4 py-2">Status</th><th class="px-4 py-2">C / H / M / L</th><th class="px-4 py-2">Round and tree seen</th><th class="px-4 py-2">Summary</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2">build</td><td class="px-4 py-2 text-emerald-700 font-semibold">PASS</td><td class="px-4 py-2">0 / 0 / 0 / 0 (1 info)</td><td class="px-4 py-2">Round one; pre-correction tree (did not see corrections 1 or 2)</td><td class="px-4 py-2">Fresh <span class="font-mono text-xs">clean verify</span>: 1367 tests, 0 failures; line 97.17 %, branch 91.50 %. Front end <span class="font-mono text-xs">npm run check</span> clean.</td></tr>
+            <tr><td class="px-4 py-2">thermo-nuclear</td><td class="px-4 py-2 text-amber-700 font-semibold">WARN</td><td class="px-4 py-2">0 / 0 / 0 / 6</td><td class="px-4 py-2">Round two; saw correction 1, not correction 2</td><td class="px-4 py-2">Round-one Medium (two stores own <span class="font-mono text-xs">declaration_text</span>) fixed.</td></tr>
+            <tr><td class="px-4 py-2">code-review</td><td class="px-4 py-2 text-amber-700 font-semibold">WARN</td><td class="px-4 py-2">0 / 0 / 0 / 5 (4 info)</td><td class="px-4 py-2">Round three; final tree</td><td class="px-4 py-2">S1 (Medium, 400 before 403) fixed by the <span class="font-mono text-xs">SecurityConfig</span> URL rule and a test. Spec criteria met.</td></tr>
+            <tr><td class="px-4 py-2">im8</td><td class="px-4 py-2 text-amber-700 font-semibold">WARN</td><td class="px-4 py-2">0 / 0 / 0 / 3</td><td class="px-4 py-2">Round three; final tree</td><td class="px-4 py-2">I1 (Medium, lm-4 mis-filed audit) fixed. No Bedrock KB was queried.</td></tr>
+            <tr><td class="px-4 py-2">semgrep</td><td class="px-4 py-2 text-amber-700 font-semibold">WARN</td><td class="px-4 py-2">0 / 0 / 0 / 1 (0 P0, 0 P1, 1 P2)</td><td class="px-4 py-2">Round one; pre-correction tree</td><td class="px-4 py-2">One P2 in test-only harness code outside the diff, a false positive.</td></tr>
+            <tr><td class="px-4 py-2">react</td><td class="px-4 py-2 text-amber-700 font-semibold">WARN</td><td class="px-4 py-2">0 / 0 / 0 / 4</td><td class="px-4 py-2">Round one; pre-correction tree</td><td class="px-4 py-2">Accessibility and duplication notes only.</td></tr>
+            <tr><td class="px-4 py-2">springboot</td><td class="px-4 py-2 text-amber-700 font-semibold">WARN</td><td class="px-4 py-2">0 / 0 / 0 / 5</td><td class="px-4 py-2">Round one; pre-correction tree</td><td class="px-4 py-2">Seven sub-reviews combined. Lock, step-up and logging sound.</td></tr>
+          </tbody>
+        </table>
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-700">None. No Critical, High or Medium finding is recorded in any active check. Both Mediums raised earlier (two stores owning <span class="font-mono text-xs">declaration_text</span>; a non-VA-POC's oversized body answered 400 and audited as a refused publish) were fixed in correction passes 1 and 2 and confirmed by the later rounds.</p>
+        </div>
+        <div class="space-y-2 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Evidence for the final tree</h3>
+          <ul class="list-disc pl-5 text-sm text-slate-700 space-y-1">
+            <li>Reported by the implementer: targeted run of <span class="font-mono text-xs">DeclarationPublishTest, PermissionMatrixTest, SubmitTest, ArchitectureTest, MethodAuthorisationTest, MigrationSequenceTest</span>, 42 tests, 0 failures.</li>
+            <li>The build check's full <span class="font-mono text-xs">clean verify</span> ran on the first tree (diff sha1 <span class="font-mono text-xs">3b853286c48f…</span>), not on the final tree (<span class="font-mono text-xs">5c497aff7077…</span>). The full suite runs on <span class="font-mono text-xs">main</span> after the merge, where the migration is renumbered from V45 to V46 (ticket 66's V45 is on <span class="font-mono text-xs">main</span>).</li>
+          </ul>
+        </div>
+        <div class="space-y-2 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Human decisions recorded</h3>
+          <ul class="list-disc pl-5 text-sm text-slate-700 space-y-1">
+            <li>Three decisions of 2026-11-22, folded into the ticket: one VA POC with step-up and no second approver; a published version is current at once; versions are listed with status and a count.</li>
+            <li>Two known behaviours recorded in the ticket as product choices: identical wording is not refused; two close publishes both succeed.</li>
+          </ul>
+        </div>
+        <div class="space-y-2 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Medium findings still recorded</h3>
+          <p class="text-sm text-slate-700">None.</p>
+        </div>
+      </div>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build (round one, pre-correction tree)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS 0/0/0/0</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50"><tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-slate-500">Info</td><td class="px-4 py-2 font-mono text-xs">artifacts/do-work/verify/backend-verify.log</td><td class="px-4 py-2"></td><td class="px-4 py-2">27 server-side ERROR lines from negative-path tests (for example a <span class="font-mono text-xs">role_grant_va_poc_check</span> violation in <span class="font-mono text-xs">VaPocRolesTest</span>). No test failed because of them.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear (round two; saw correction 1, not correction 2)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN 0/0/0/6</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50"><tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/.../submission/DeclarationController.java</td><td class="px-4 py-2">64-67</td><td class="px-4 py-2">N1: the local handler answers every validation failure as "text too long". Correct while <span class="font-mono text-xs">@Size</span> is the only constraint.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/.../submission/Declarations.java</td><td class="px-4 py-2">72</td><td class="px-4 py-2">N2: the too-long sentence is written twice (also <span class="font-mono text-xs">ReportText.java:78</span>); a test pins them equal.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/.../submission/Declarations.java</td><td class="px-4 py-2">127</td><td class="px-4 py-2">N3: <span class="font-mono text-xs">sentTooLong()</span> is an exception factory that writes an audit row.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/.../config/SecurityConfig.java</td><td class="px-4 py-2">57-63</td><td class="px-4 py-2">N4 (structural option): a URL rule would remove the 400-before-403 ordering. Done in correction 2, which this round did not see.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/.../harness/TestEndpoints.java</td><td class="px-4 py-2">278-282, 332</td><td class="px-4 py-2">L3: two cleanup mechanisms; the test endpoint makes a publisher-less row production cannot make.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/DeclarationScreen.tsx; frontend/src/api/declarations.ts</td><td class="px-4 py-2">18-30; 14-18</td><td class="px-4 py-2">Carried Lows (L4 flat optional trio in <span class="font-mono text-xs">Version</span>, L6 copied <span class="font-mono text-xs">UNREACHABLE</span> and <span class="font-mono text-xs">problemOf</span>, L7 hand-written draft extractor, L8 Declaration API split across two modules, L2 submit reads current without the lock) are listed in the artifact; the check's own count is 6 Low.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review (round three; final tree)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN 0/0/0/5</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50"><tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/.../submission/Declarations.java</td><td class="px-4 py-2">72-73</td><td class="px-4 py-2">Duplicated code: <span class="font-mono text-xs">TOO_LONG</span> re-spells <span class="font-mono text-xs">ReportText</span>'s sentence.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/.../submission/DeclarationController.java</td><td class="px-4 py-2">64-67</td><td class="px-4 py-2">The handler assumes <span class="font-mono text-xs">text</span> is the only constraint.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/.../submission/Declarations.java</td><td class="px-4 py-2">127</td><td class="px-4 py-2">Mysterious name: <span class="font-mono text-xs">sentTooLong()</span> writes an audit row.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/DeclarationScreen.tsx; VaPocArea.tsx</td><td class="px-4 py-2">170, 181; 140</td><td class="px-4 py-2">Glossary: "Declaration" is used for the versioned text; <span class="font-mono text-xs">CONTEXT.md:110-111</span> defines Declaration as the acceptance. Use "Declaration text".</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">docs/adr/0032-…md</td><td class="px-4 py-2">last paragraph</td><td class="px-4 py-2">The amendment does not record that publish is gated twice (URL rule and method rule), or that a VA POC without a fresh sign-in gets 400 before <span class="font-mono text-xs">step-up-required</span> for an over-8000-unit body.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-400">Info</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/.../harness/TestEndpoints.java</td><td class="px-4 py-2"></td><td class="px-4 py-2">Two cleanup mechanisms.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-400">Info</td><td class="px-4 py-2 font-mono text-xs">DeclarationScreen.tsx; Submissions.java</td><td class="px-4 py-2"></td><td class="px-4 py-2"><span class="font-mono text-xs">pre-line</span> collapses tabs; submit and publish take no shared lock (accepted).</td></tr>
+            <tr><td class="px-4 py-2 text-slate-400">Info</td><td class="px-4 py-2 font-mono text-xs">SecurityConfig.java:62; DeclarationController.java:26</td><td class="px-4 py-2"></td><td class="px-4 py-2">The path appears in both places; the repo's existing pattern, and the new test catches drift.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-400">Info</td><td class="px-4 py-2 font-mono text-xs">SecurityConfig.java</td><td class="px-4 py-2">60-62</td><td class="px-4 py-2">PUT and DELETE now get 403 for a non-VA-POC instead of 405; harmless.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8 (round three; final tree)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN 0/0/0/3</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50"><tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/.../ingestion/DeclarationPublishTest.java</td><td class="px-4 py-2"></td><td class="px-4 py-2">I2 (as-1/lm-4): no concurrent-publish test, so the advisory lock is unproven. The primary key is the backstop.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/DeclarationScreen.tsx</td><td class="px-4 py-2">88</td><td class="px-4 py-2">I3 (as-1): <span class="font-mono text-xs">maxLength</span> counts UTF-16 units, the back end counts code points. The client is stricter; usability only.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/api/declarations.ts</td><td class="px-4 py-2"></td><td class="px-4 py-2">I4 (as-1): responses are not parsed at runtime. Repo-wide pattern; rendered as text only.</td></tr>
+          </tbody>
+        </table>
+        <p class="px-4 py-3 text-xs text-slate-500 border-t border-slate-100">Manual review: confirm the identity provider enforces MFA on the fresh sign-in that step-up starts (the app checks only <span class="font-mono">auth_time</span>); confirm the draft wording kept in sessionStorage across a step-up round trip is acceptable.</p>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep (round one; pre-correction tree)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN 0/0/0/1</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50"><tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-slate-500">Low (P2)</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/harness/TestEndpoints.java</td><td class="px-4 py-2">487</td><td class="px-4 py-2"><span class="font-mono text-xs">tainted-sql-string</span> in a test-only harness endpoint, after a <span class="font-mono text-xs">[A-Z_]+</span> check. Existing code outside the diff; false positive in practice.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react (round one; pre-correction tree)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN 0/0/0/4</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50"><tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/DeclarationScreen.tsx</td><td class="px-4 py-2">180-182</td><td class="px-4 py-2">The <span class="font-mono text-xs">role="status"</span> paragraph is mounted with its text, so some screen readers may not announce it. Keep it mounted and fill it later.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/DeclarationScreen.tsx</td><td class="px-4 py-2">136</td><td class="px-4 py-2">The Version cell is a <span class="font-mono text-xs">&lt;td&gt;</span>; use <span class="font-mono text-xs">&lt;th scope="row"&gt;</span>.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/screens/va-poc/DeclarationScreen.tsx</td><td class="px-4 py-2">17-22</td><td class="px-4 py-2">Another copy of the Singapore <span class="font-mono text-xs">WHEN</span> formatter (about 8 copies) and of <span class="font-mono text-xs">UNREACHABLE</span> and <span class="font-mono text-xs">problemOf</span>. Optional.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">frontend/src/api/declarations.ts</td><td class="px-4 py-2">4</td><td class="px-4 py-2"><span class="font-mono text-xs">MAX_DECLARATION_LENGTH = 4000</span> copies the server's constant; the two can drift.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm" open>
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot (round one; pre-correction tree)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN 0/0/0/5</span>
+        </summary>
+        <table class="w-full text-sm border-t border-slate-100">
+          <thead class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50"><tr><th class="px-4 py-2 text-left">Severity</th><th class="px-4 py-2 text-left">File</th><th class="px-4 py-2 text-left">Line</th><th class="px-4 py-2 text-left">Description</th></tr></thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/submission/DeclarationController.java</td><td class="px-4 py-2">47-51</td><td class="px-4 py-2">The 201 has no <span class="font-mono text-xs">Location</span> header; acceptable because no single-version GET exists.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/.../submission/Submissions.java; DeclarationStore.java</td><td class="px-4 py-2">446; 52</td><td class="px-4 py-2"><span class="font-mono text-xs">submit</span> reads the current version without the publish lock; logically ordered before the publish, so acceptable.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/.../submission/Declarations.java</td><td class="px-4 py-2">111</td><td class="px-4 py-2">After the insert the whole list is read again to return one row. Fixed by correction 1 (<span class="font-mono text-xs">store.version(version)</span>), as confirmed by thermo-nuclear round two.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/.../harness/TestEndpoints.java</td><td class="px-4 py-2">277-283</td><td class="px-4 py-2"><span class="font-mono text-xs">ALTER TABLE ... DISABLE/ENABLE TRIGGER</span> now runs on every reset (ACCESS EXCLUSIVE lock). Guard it.</td></tr>
+            <tr><td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/.../ingestion/DeclarationPublishTest.java</td><td class="px-4 py-2"></td><td class="px-4 py-2">No test publishes twice at once to show distinct, consecutive versions.</td></tr>
+          </tbody>
+        </table>
+      </details>
+
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-2">
+        <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">What this verdict does not cover</h3>
+        <ul class="list-disc pl-5 text-sm text-slate-700 space-y-1">
+          <li>The full back-end suite and JaCoCo gate on the final tree: the build check ran on the pre-correction tree, and the implementer reports only the 42-test targeted run. The full suite runs on <span class="font-mono text-xs">main</span> after the merge.</li>
+          <li>The V45 to V46 renumbering at merge (ticket 66's V45 is on <span class="font-mono text-xs">main</span>) and the merged tree.</li>
+          <li>Semgrep, react, springboot and build did not see corrections 1 and 2; thermo-nuclear did not see correction 2. Their findings are as of the earlier trees, and the entries fixed since are noted in place.</li>
+          <li>No Bedrock KB was queried for im8. The identity provider's MFA on the step-up sign-in is a manual item. No browser run was done.</li>
+        </ul>
+      </div>
+    </main>
+  </body>
+</html>
