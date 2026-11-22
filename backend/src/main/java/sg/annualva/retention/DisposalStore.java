@@ -154,8 +154,11 @@ class DisposalStore {
     /**
      * The disposal, in foreign-key order (ADR 0050): what names a record goes before it, and a rescan and the file it
      * replaced go in one statement. The proposals, batches, reviews, returns, Declarations and audit entries are
-     * append-only; V36 lets these deletes through only while the list named by {@link #RUNNING} is APPROVED. A schema test
-     * checks that every table naming a table deleted from here is deleted from here too.
+     * append-only; V36 lets these deletes through only while the list named by {@link #RUNNING} is APPROVED, and an audit
+     * entry only before that list's cutoff ({@code audit_entry_disposal_range}); V44 lets a row of the other history
+     * tables through only when its VA Submission is one that list names. A statement here that reached further would
+     * fail the whole disposal. A schema test checks that every table naming a table deleted from here is deleted from
+     * here too.
      */
     static final List<Step> STEPS = List.of(
             new Step("DELETE FROM mail_outbox WHERE notification_id IN " + LISTED_NOTIFICATIONS, null),

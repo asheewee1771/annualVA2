@@ -537,8 +537,9 @@ Human decisions on reviewer findings. Check here before asking again. Each entry
   - Records belonging to no single VA Submission (audit log, Register previews, notifications) are disposed of up to the next Cycle's first day.
   - Retired Systems with nothing left outside the due Cycles are disposed of with their grants.
   - Only Endorsed VA Submissions dispose of superseded file content early; `FAILED` exports are not listed (a follow-up if they should go).
-  - The delete window is accepted as provisional until ticket 62 makes every append-only history table's delete trigger check, row by row, that the row is on the `APPROVED` list.
-- **When to reuse:** any retention date or disposal question; any new append-only table (its delete trigger needs ticket 62's per-row check).
+  - The delete window was accepted as provisional until ticket 62 made every append-only history table's delete trigger check, row by row, that the row is on the `APPROVED` list.
+  - **Built by ticket 62 (2026-11-22, migration V44):** every append-only history table's delete trigger now checks, row by row, that the row's VA Submission is on the running `APPROVED` list. The rule, what it still trusts and what proves it are in ADR 0050 item 7; what it trusts was decided on 2026-11-22 (the entry "Ticket 62: what the per-row disposal check still trusts goes to ticket 66" below).
+- **When to reuse:** any retention date or disposal question; any new append-only table (ADR 0050 item 7 and the README's "Retention and disposal" say what it needs).
 
 ## Whole-branch review of the integration branch: six decisions
 
@@ -575,3 +576,10 @@ Decided by the user on 2026-10-26 (all recommendations accepted) after the two-a
 - **Finding:** four open choices in the first real adapter: how it is switched on, where the Export zone lives, how long quarantined and exported objects live in the bucket, and whether `sit` and production are wired now.
 - **Chosen action:** (1) switch on by `annualva.aws.enabled` (`dev-mcc` sets it true; a deployment that forgets it keeps the fail-closed stand-in); (2) a third bucket `annualva-export-dev` under `annualva.aws.export-bucket`; (3) lifecycle expiry of 1 day on quarantine and 2 days on export as the second line behind the application's own deletes, and no bucket or key check at start-up (revisit the quarantine days with the scanner half of ticket 51, because no upper bound on the scan retry window was found); (4) `sit` and production wiring (buckets, IAM role, bucket policy denying unencrypted puts) is left to the deployment ticket, with the `ANNUALVA_AWS_*` settings in the README. Decided by the user 2026-11-17 ("all recommended").
 - **When to reuse:** any later real adapter: switch it on by one property that fails closed, give each file-store zone its own bucket, and keep deployed wiring out of the application ticket.
+
+## Ticket 62: what the per-row disposal check still trusts goes to ticket 66
+
+- **Area:** retention and disposal (ticket 62, migration V44, ADR 0050 item 7)
+- **Finding:** ticket 62's row check deletes a history row only when its VA Submission is on the running `APPROVED` list, but it trusts two things the database does not freeze: an approved list's items (`disposal_item` has no guard, so a transaction could add a VA Submission to an approved list and then delete its history) and a Finding's link to its VA Submission (`finding.submission_id` can still be updated, and it is the hop for the proposals and the Finding reviews). No application code does either. The code review of ticket 62 (finding S1) asked for a person to decide this, not only for it to be written down.
+- **Chosen action:** raise a follow-up ticket; the two are not accepted as permanent, and ticket 62 lands without those guards. Ticket 66 (`.scratch/annual-va/issues/66-freeze-approved-disposal-items-and-finding-link.md`) makes the database refuse both. Decided by the user 2026-11-22.
+- **When to reuse:** any finding that a database guard rests on rows another transaction could still change: say what it trusts in the ADR and raise the freeze as its own ticket; do not record it as accepted without a decision.

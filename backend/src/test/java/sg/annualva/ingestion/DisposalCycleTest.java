@@ -36,13 +36,6 @@ class DisposalCycleTest extends DisposalSeam1 {
             "audit_entry", "disposal_list", "disposal_item", "flyway_schema_history", "spring_session",
             "spring_session_attributes");
 
-    /** Two Findings read from a file, so a batch, a rescan and a return can be made of them. */
-    private static byte[] twoFindings() {
-        return jsonReportOf("{\"name\":\"throwaway-project\",\"reportDate\":\"" + SCANNED + "\"}",
-                dependency(PKG_A, "/app/alpha.js", "CVE-2027-0001", "9.8"),
-                dependency(PKG_B, "/app/bravo.js", "CVE-2027-0002", "7.5"));
-    }
-
     /** The rescan: alpha at a new path, and bravo gone, so the rescan proposes bravo Remediated naming the first file. */
     private static byte[] rescanWithoutBravo() {
         return jsonReportOf("{\"name\":\"throwaway-project\",\"reportDate\":\"" + SCANNED + "\"}",
@@ -56,15 +49,13 @@ class DisposalCycleTest extends DisposalSeam1 {
         String f1 = draft.systemId();
         String f2 = idOf("SYS-F2");
         ApiClient smo = draft.smo();
-        String first = parsedDc(draft, "first.json", twoFindings());
+        // Two Findings read from a file, so a batch, a rescan and a return can be made of them.
+        String first = parsedDc(draft, "first.json", twoFindings(SCANNED));
         String rescan = replacedAndSettled(draft, first, "rescan.json", rescanWithoutBravo()).get("id").asString();
         assertThat(state(draft).get("dc|CVE-2027-0002|" + PKG_B)).as("a RESCAN proposal names the first file")
                 .endsWith("/REMEDIATED");
         String memo = settledEvidence(draft, DEPENDENCY_CHECK, "memo.pdf", Samples.pdf()).get("id").asString();
-        modeSet(smo, sub, SECURE_CONFIGURATION, mode(MANUAL, "The scanner exports PDF only."));
-        entered(smo, sub, manualFinding(SECURE_CONFIGURATION, "Password policy too weak", "SC-PWD-1",
-                "password-min-length", "HIGH"));
-        modeSet(smo, sub, BURP_SUITE, mode(NOT_APPLICABLE, "The System has no web interface."));
+        enteredByHandAndNotApplicable(draft);
         JsonNode page = findings(smo, sub);
         String alpha = byIdentifier(page, "CVE-2027-0001").get("id").asString();
         String bravo = byIdentifier(page, "CVE-2027-0002").get("id").asString();
