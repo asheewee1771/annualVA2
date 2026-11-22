@@ -52,6 +52,16 @@ final class ProposalFields {
         return new Parsed(FindingStatus.REMEDIATED, evidence, null, null, null, null, null, null, null);
     }
 
+    /**
+     * The Remediated proposal a deleted report file makes for a Finding no file reports any more (ticket 60): the evidence
+     * names the deleted file, the business date it was uploaded and the business date it was deleted.
+     */
+    static Parsed remediatedByDeletion(String name, LocalDate uploadedOn, LocalDate deletedOn) {
+        String evidence = "Not reported by any file of this Scan Report since the file " + name + " (uploaded " + uploadedOn
+                + ") was deleted on " + deletedOn + ".";
+        return new Parsed(FindingStatus.REMEDIATED, evidence, null, null, null, null, null, null, null);
+    }
+
     /** The fields in the order they are checked, so the first problem reported is always the same one. */
     private enum Field {
         EVIDENCE("evidence"),

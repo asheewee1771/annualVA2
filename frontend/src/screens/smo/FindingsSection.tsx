@@ -136,7 +136,15 @@ function useSelection() {
   }, []);
   const replace = useCallback((ids: readonly string[]) => setSelected(new Set(ids)), []);
   const clear = useCallback(() => setSelected(new Set()), []);
-  return { selected, toggle, togglePage, replace, clear };
+  // A deleted Finding leaves the selection, so the bulk bar never names it.
+  const forget = useCallback((id: string) => {
+    setSelected((current) => {
+      const next = new Set(current);
+      next.delete(id);
+      return next;
+    });
+  }, []);
+  return { selected, toggle, togglePage, replace, clear, forget };
 }
 
 type Selection = ReturnType<typeof useSelection>;
@@ -218,6 +226,7 @@ function FindingsList({
   memos,
   classification,
   onProposed,
+  onDeleted,
 }: {
   submissionId: string;
   filter: FindingFilter;
@@ -229,6 +238,7 @@ function FindingsList({
   memos: readonly ReportFile[];
   classification: string;
   onProposed: () => void;
+  onDeleted: (findingId: string) => void;
 }) {
   const { data, error } = findings;
   if (!data) {
@@ -260,6 +270,7 @@ function FindingsList({
         memos={memos}
         classification={classification}
         onProposed={onProposed}
+        onDeleted={onDeleted}
       />
       {pages > 1 ? <Pager page={page} pages={pages} total={data.total} onPage={onPage} /> : null}
     </>
@@ -346,6 +357,12 @@ export function FindingsSection({
         memos={memos}
         classification={classification}
         onProposed={reload}
+        onDeleted={(findingId) => {
+          // The deleted Finding's row goes with its buttons: the focus goes to the heading, above the new counts.
+          selection.forget(findingId);
+          reload();
+          heading.current?.focus();
+        }}
       />
       {selection.selected.size > 0 ? (
         <Editable>

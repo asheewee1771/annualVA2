@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,8 +25,8 @@ import sg.annualva.web.RejectedRequestException;
 
 /**
  * The Scan Report files of a VA Submission. The SMO/Tech Lead of the System uploads (a Cyber Manager, a VA POC who is not
- * its SMO or an Auditor is refused with 403, an SMO of another System gets 404, ADR 0013) and confirms the scan date and target
- * of a parsed report file; anyone who may see the System reads a file's status and, once it is clean, downloads it as an
+ * its SMO or an Auditor is refused with 403, an SMO of another System gets 404, ADR 0013), confirms the scan date and target
+ * of a parsed report file and deletes a report file uploaded by mistake; anyone who may see the System reads a file's status and, once it is clean, downloads it as an
  * attachment.
  */
 @RestController
@@ -59,6 +60,20 @@ public class ReportFileController {
     public ResponseEntity<ReportFileView> replace(@PathVariable UUID id, @PathVariable UUID fileId,
             @RequestParam("file") MultipartFile file) {
         return accepted(id, files.replace(id, fileId, nameOf(file), bytesOf(file)));
+    }
+
+    /**
+     * Deletes a report file uploaded by mistake (ticket 60), answered with 204 and no body. Its places go; a Finding it
+     * leaves reported by no file is removed if it never had a proposal, and otherwise is proposed Remediated for the
+     * Cyber Manager. A parsed rescan is deleted like any file, and the file it replaced can be deleted once it is gone.
+     * Supporting evidence, and a file replaced by a rescan that is not deleted, are 409 {@code file-not-deletable}; a VA
+     * Submission not in Draft or Returned for Rework is 409 {@code invalid-transition}.
+     */
+    @DeleteMapping("/api/submissions/{id}/files/{fileId}")
+    @PreAuthorize("hasRole('SMO')")
+    public ResponseEntity<Void> delete(@PathVariable UUID id, @PathVariable UUID fileId) {
+        files.delete(id, fileId);
+        return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
     }
 
     private static ResponseEntity<ReportFileView> accepted(UUID submissionId, ReportFileView uploaded) {

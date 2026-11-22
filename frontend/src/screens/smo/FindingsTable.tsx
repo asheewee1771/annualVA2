@@ -17,6 +17,7 @@ export function FindingsTable({
   memos,
   classification,
   onProposed,
+  onDeleted,
 }: {
   submissionId: string;
   items: readonly Finding[];
@@ -26,6 +27,7 @@ export function FindingsTable({
   memos: readonly ReportFile[];
   classification: string;
   onProposed: () => void;
+  onDeleted: (findingId: string) => void;
 }) {
   const ticked = items.filter((item) => selected.has(item.id)).length;
   const pageTicked = items.length > 0 && ticked === items.length;
@@ -74,6 +76,7 @@ export function FindingsTable({
               memos={memos}
               classification={classification}
               onProposed={onProposed}
+              onDeleted={onDeleted}
             />
           ))}
         </tbody>

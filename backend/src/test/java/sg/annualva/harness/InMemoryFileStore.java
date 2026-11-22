@@ -19,9 +19,15 @@ public final class InMemoryFileStore implements FileStore {
     private final AtomicBoolean refusingWrites = new AtomicBoolean();
     private final AtomicBoolean refusingReads = new AtomicBoolean();
     private final AtomicBoolean refusingDeletes = new AtomicBoolean();
+    private volatile Runnable beforeQuarantine;
 
     @Override
     public void put(Zone zone, String key, byte[] content) {
+        Runnable hook = beforeQuarantine;
+        if (zone == Zone.QUARANTINE && hook != null) {
+            beforeQuarantine = null;
+            hook.run();
+        }
         if (refusingWrites.get()) {
             throw new BoundaryFailureException("The fake store refuses writes");
         }
@@ -60,6 +66,14 @@ public final class InMemoryFileStore implements FileStore {
         return zone(zone).get(key);
     }
 
+    /**
+     * Runs once, just before the next upload's bytes are quarantined: after the request's first checks, before the
+     * transaction that keeps the file, so a test can change the world in between.
+     */
+    public void beforeNextQuarantine(Runnable hook) {
+        beforeQuarantine = hook;
+    }
+
     public void refuseWrites(boolean refuse) {
         refusingWrites.set(refuse);
     }
@@ -80,6 +94,7 @@ public final class InMemoryFileStore implements FileStore {
         refusingWrites.set(false);
         refusingReads.set(false);
         refusingDeletes.set(false);
+        beforeQuarantine = null;
     }
 
     private Map<String, byte[]> zone(Zone zone) {

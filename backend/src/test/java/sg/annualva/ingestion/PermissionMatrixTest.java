@@ -67,7 +67,7 @@ class PermissionMatrixTest extends ExemptionSeam1 {
 
     /** How a request is sent: a multipart upload is an HTTP POST. */
     enum Verb {
-        GET, POST, PUT, MULTIPART;
+        GET, POST, PUT, DELETE, MULTIPART;
 
         String http() {
             return this == MULTIPART ? "POST" : name();
@@ -109,6 +109,10 @@ class PermissionMatrixTest extends ExemptionSeam1 {
 
     static Endpoint put(String path, String body, String row) {
         return new Endpoint(Verb.PUT, path, body, answers(row), null);
+    }
+
+    static Endpoint delete(String path, String row) {
+        return new Endpoint(Verb.DELETE, path, null, answers(row), null);
     }
 
     static Endpoint multipart(String path, String row) {
@@ -176,6 +180,8 @@ class PermissionMatrixTest extends ExemptionSeam1 {
             get("/api/submissions/{f1}/files/{file}/metadata", SEES_F1),
             put("/api/submissions/{f1}/files/{file}/metadata", "{\"scanDate\":\"2027-07-20\"}", SMO_F1),
             get("/api/submissions/{f1}/files/{file}/content", SEES_F1),
+            delete("/api/submissions/{f1}/files/{file}", SMO_F1),
+            delete("/api/findings/{finding}", SMO_F1),
             get("/api/findings/{finding}/proposals", SEES_F1),
             post("/api/findings/{finding}/proposals", "{\"status\":\"FALSE_POSITIVE\",\"justification\":\"No.\"}",
                     SMO_F1),
@@ -382,6 +388,7 @@ class PermissionMatrixTest extends ExemptionSeam1 {
             case GET -> client.get(path);
             case POST -> client.postJson(path, endpoint.body() == null ? "" : filled(endpoint.body()));
             case PUT -> client.putJson(path, filled(endpoint.body()));
+            case DELETE -> client.delete(path);
             case MULTIPART -> client.postMultipart(path, Map.of("reportType", DEPENDENCY_CHECK, "kind",
                     MACHINE_READABLE), "file", "file.json", "application/octet-stream",
                     "{}".getBytes(StandardCharsets.UTF_8));
