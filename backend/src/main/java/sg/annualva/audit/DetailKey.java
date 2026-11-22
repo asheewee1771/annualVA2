@@ -37,7 +37,11 @@ public enum DetailKey {
     ROLES_REVOKED,
     /** The Finding Status a proposal was for: one of four fixed codes such as {@code RISK_ACCEPTED}. */
     FINDING_STATUS,
-    /** The Scan Report file a rescan replaced (ticket 21); {@link #FILE_ID} is the rescan. */
+    /**
+     * The Scan Report file a rescan replaced (ticket 21); {@link #FILE_ID} is the rescan. On a proposal made because no file
+     * reports its Finding any more, the file it was last reported in: the one a rescan replaced, or the deleted one
+     * ({@code proposed_as} FILE_DELETED, ticket 60).
+     */
     REPLACED_FILE_ID,
     /** Who a proposal was made as: a fixed code such as {@code RESCAN} (ticket 21). */
     PROPOSED_AS,

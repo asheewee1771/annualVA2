@@ -67,7 +67,7 @@ class PermissionMatrixTest extends ExemptionSeam1 {
 
     /** How a request is sent: a multipart upload is an HTTP POST. */
     enum Verb {
-        GET, POST, PUT, MULTIPART;
+        GET, POST, PUT, DELETE, MULTIPART;
 
         String http() {
             return this == MULTIPART ? "POST" : name();
@@ -111,6 +111,10 @@ class PermissionMatrixTest extends ExemptionSeam1 {
         return new Endpoint(Verb.PUT, path, body, answers(row), null);
     }
 
+    static Endpoint delete(String path, String row) {
+        return new Endpoint(Verb.DELETE, path, null, answers(row), null);
+    }
+
     static Endpoint multipart(String path, String row) {
         return new Endpoint(Verb.MULTIPART, path, null, answers(row), null);
     }
@@ -141,6 +145,8 @@ class PermissionMatrixTest extends ExemptionSeam1 {
             get("/api/notifications", SIGNED_IN),
             post("/api/notifications/{random}/read", null, NO_SUCH),
             get("/api/declaration-text", PREPARERS),
+            get("/api/declaration-text/versions", POC),
+            post("/api/declaration-text/versions", "{}", POC_STEP).stepUp("declaration-publish"),
             get("/api/systems", PREPARERS),
             get("/api/audit-entries", CM_OR_POC),
             get("/api/dashboards/smo-inbox", SMO_ROLE),
@@ -174,6 +180,8 @@ class PermissionMatrixTest extends ExemptionSeam1 {
             get("/api/submissions/{f1}/files/{file}/metadata", SEES_F1),
             put("/api/submissions/{f1}/files/{file}/metadata", "{\"scanDate\":\"2027-07-20\"}", SMO_F1),
             get("/api/submissions/{f1}/files/{file}/content", SEES_F1),
+            delete("/api/submissions/{f1}/files/{file}", SMO_F1),
+            delete("/api/findings/{finding}", SMO_F1),
             get("/api/findings/{finding}/proposals", SEES_F1),
             post("/api/findings/{finding}/proposals", "{\"status\":\"FALSE_POSITIVE\",\"justification\":\"No.\"}",
                     SMO_F1),
@@ -295,7 +303,8 @@ class PermissionMatrixTest extends ExemptionSeam1 {
         List<Endpoint> stepUps = MATRIX.stream().filter(endpoint -> endpoint.intent() != null).toList();
         assertThat(stepUps.stream().map(Endpoint::intent).collect(Collectors.toSet())).as("the step-up list (ac-2)")
                 .containsExactlyInAnyOrder("submission-endorse", "submission-return", "exemption-decide", "cycle-close",
-                        "register-apply", "role-suspend", "role-restore", "export-mgmt-summary", "disposal-approve");
+                        "register-apply", "role-suspend", "role-restore", "export-mgmt-summary", "disposal-approve",
+                        "declaration-publish");
 
         ApiClient stale = vaPocSignedIn(Duration.ofMinutes(5).plusSeconds(1));
         for (Endpoint endpoint : stepUps) {
@@ -379,6 +388,7 @@ class PermissionMatrixTest extends ExemptionSeam1 {
             case GET -> client.get(path);
             case POST -> client.postJson(path, endpoint.body() == null ? "" : filled(endpoint.body()));
             case PUT -> client.putJson(path, filled(endpoint.body()));
+            case DELETE -> client.delete(path);
             case MULTIPART -> client.postMultipart(path, Map.of("reportType", DEPENDENCY_CHECK, "kind",
                     MACHINE_READABLE), "file", "file.json", "application/octet-stream",
                     "{}".getBytes(StandardCharsets.UTF_8));

@@ -10,6 +10,7 @@ import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -154,6 +155,18 @@ public class FindingController {
     public ResponseEntity<FindingView> enter(@PathVariable UUID id, @RequestBody ManualFindingRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore())
                 .body(manual.enter(id, request));
+    }
+
+    /**
+     * Deletes a Finding the SMO/Tech Lead entered by hand by mistake (ticket 60), answered with 204 and no body. A parsed
+     * Finding is 409 {@code not-manually-entered} (it goes with its file), one that has had a proposal 409
+     * {@code finding-has-history}, and a VA Submission not in Draft or Returned for Rework 409 {@code invalid-transition}.
+     */
+    @DeleteMapping("/api/findings/{id}")
+    @PreAuthorize("hasRole('SMO')")
+    public ResponseEntity<Void> deleteManual(@PathVariable UUID id) {
+        manual.delete(id);
+        return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
     }
 
     /**

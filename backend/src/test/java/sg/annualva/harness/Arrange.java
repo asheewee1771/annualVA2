@@ -212,7 +212,10 @@ public final class Arrange {
         return value == null ? "null" : "\"" + value + "\"";
     }
 
-    /** Adds the next version of the Declaration wording, not a placeholder, as a later migration will; returns it. */
+    /**
+     * Adds the next version of the Declaration wording, not a placeholder, as a VA POC publishes it (ticket 61) but with no
+     * publisher or sign-in; returns it.
+     */
     public int declarationVersion() {
         var response = client.post("/api/test/declaration-text");
         assertThat(response.status()).as(response.body()).isEqualTo(200);

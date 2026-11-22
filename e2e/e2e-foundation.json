@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "protected_files": [
+    {
+      "path": "package.json",
+      "sha256": "75b412ebd9e51ad6e00e785834def18c4efb1158fc3bb2f39b8b50dc63c84f56"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "ddaf1b8a02021de1b01350235f63b2b06910aaee6234cbce344e434965dee74a"
+    },
+    {
+      "path": "playwright.config.ts",
+      "sha256": "31f95c7a4db5239ba3a8b945877fd9d0d263f8d8fe88a00337f70103e2ba0254"
+    },
+    {
+      "path": "compose.e2e.yml",
+      "sha256": "dbaf182fc28f6616efde5a880cf691cd7c560baa8d640ef4058950c51ea364ca"
+    },
+    {
+      "path": "fixtures/global-setup.ts",
+      "sha256": "e52de995edb434b5ecabe2963dfc91e2f4ba0597c0aad66a5487b743bcd8d271"
+    },
+    {
+      "path": "fixtures/journeys.ts",
+      "sha256": "89ed307a31f36d66a14d8c2938e6518467da6b1acc5e5bed3f28a30f452c1fd3"
+    },
+    {
+      "path": "fixtures/scan-reports.ts",
+      "sha256": "68a6192c90381da3e3dc3e2a04c323a780c458fd77552834d515bb405fe899c4"
+    },
+    {
+      "path": "fixtures/stack.ts",
+      "sha256": "3b0f5a90c35ac35bd43dd320e0d9ec851ce26d0987ae6004457ed409a5572cbd"
+    },
+    {
+      "path": "fixtures/test.ts",
+      "sha256": "91cd3c21080ec33255196fddf1d3bcef1ea81a66b3e604752aab99a6fe122a89"
+    },
+    {
+      "path": "foundation-tests/foundation.smoke.spec.ts",
+      "sha256": "68ecd760013759545357a768f55aa197c4be0121ab7150da7082079487f8ff94"
+    },
+    {
+      "path": "scripts/check-evidence.mjs",
+      "sha256": "b1e3ce3ce09642e344bd610c5bb26714a05faaf2037f347833750955de683003"
+    },
+    {
+      "path": "scripts/run.mjs",
+      "sha256": "522cf4daff62f758383e92ac4c66b6a6e65eb56cad16133bf196d7094e0fb83d"
+    },
+    {
+      "path": "scripts/stack.mjs",
+      "sha256": "a551890fa3657f44547f1a5d67e5940dadd020ecb6f9896e978a76a426f6b1b6"
+    },
+    {
+      "path": "scripts/lib/baseline.mjs",
+      "sha256": "e2d366762dd0721a118dda096d5d8814935f836eea883142757bd9c2cf622468"
+    },
+    {
+      "path": "scripts/lib/config.mjs",
+      "sha256": "11bafc0ffc2c3f9d49a2de456509c1688eb6cc5d85ae62fa28fe799e92dff2f0"
+    },
+    {
+      "path": "scripts/lib/http.mjs",
+      "sha256": "a039111fd27d30b544b2b902ce33452ed6fefb104c27b2d778eacf846804903c"
+    },
+    {
+      "path": "scripts/lib/proc.mjs",
+      "sha256": "4ee3adfecb8e68f44ae8400312628a9c3e8e1619e2c6ba3b8c674e3ac5c8b8cb"
+    },
+    {
+      "path": "scripts/lib/stories.mjs",
+      "sha256": "754364b31a111f90cfd9cc9d8369f2b5f9af1638104a3b1afe7caa42c7d75bc9"
+    },
+    {
+      "path": "scripts/lib/xlsx.mjs",
+      "sha256": "648d8fe2d204c326b7237205d92420c97a42c55411b36d0abef56b4d902bdccd"
+    }
+  ]
+}

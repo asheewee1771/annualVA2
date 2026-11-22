@@ -124,15 +124,24 @@ public class Findings {
         List<UUID> touched = store.findingsOf(replacedFileId);
         keep(submissionId, systemId, reportType, rescan.fileId(), rescan.uploadedBy(), parsed, now, touched,
                 replacedFileId);
-        List<UUID> gone = store.unreported(touched);
-        if (gone.isEmpty()) {
-            return;
-        }
         Instant scanned = rescan.scannedAt();
-        ProposalFields.Parsed remediated = ProposalFields.remediatedByRescan(rescan.name(),
-                scanned == null ? null : calendar.dateOf(scanned), calendar.dateOf(rescan.uploadedAt()));
-        proposals.write(submissionId, systemId, gone, remediated, null,
+        proposeRemediatedWhereUnreported(submissionId, systemId, touched,
+                ProposalFields.remediatedByRescan(rescan.name(), scanned == null ? null : calendar.dateOf(scanned),
+                        calendar.dateOf(rescan.uploadedAt())),
                 Proposals.Proposer.rescan(rescan.uploadedBy(), rescan.fileId(), rescan.replaced()));
+    }
+
+    /**
+     * The rescan rule (ADR 0029 item 5), written once for a rescan and a deleted file (ADR 0061 item 3): each of these
+     * Findings that no file reports any more gets a Remediated proposal through the one write path, unless its current
+     * proposal is Remediated already. Their places must have changed already, in the caller's transaction.
+     */
+    private void proposeRemediatedWhereUnreported(UUID submissionId, UUID systemId, List<UUID> touched,
+            ProposalFields.Parsed remediated, Proposals.Proposer by) {
+        List<UUID> gone = store.unreported(touched);
+        if (!gone.isEmpty()) {
+            proposals.write(submissionId, systemId, gone, remediated, null, by);
+        }
     }
 
     /**
@@ -170,13 +179,53 @@ public class Findings {
             store.removeOccurrences(replacedFileId);
         }
         store.rerate(locked);
-        for (UUID findingId : store.withdrawRescanProposals(submissionId, hashes)) {
+        for (FindingStore.Withdrawn withdrawal : store.withdrawUnreportedProposals(submissionId, hashes)) {
             AuditEvent withdrawn = AuditEvent.of(AuditAction.PROPOSAL_WITHDRAWN, AuditOutcome.SUCCESS);
             audit.record(actor.onBehalfOf(withdrawn, uploadedBy)
-                    .onSystem(systemId).onSubmission(submissionId).onFinding(findingId)
-                    .with(DetailKey.PROPOSED_AS, ProposedAs.RESCAN.name())
+                    .onSystem(systemId).onSubmission(submissionId).onFinding(withdrawal.findingId())
+                    .with(DetailKey.PROPOSED_AS, withdrawal.proposedAs().name())
                     .with(DetailKey.FILE_ID, reportFileId));
         }
+    }
+
+    /**
+     * What deleting a report file does to the Findings it reported (ticket 60, ADR 0061). It must run in the transaction
+     * that marks the file deleted, by the SMO/Tech Lead who deleted it, and holds the VA Submission's settlement lock until
+     * that commits, so no settlement of the VA Submission runs in between; then every Finding with a place in the file is
+     * locked, in one statement in id order, as a settlement and a proposal lock them.
+     * <ul>
+     *   <li>The file's places are removed, and every Finding it reported is rated by the places it has left (ADR 0022 item
+     *       4); one still reported by another file keeps those places and its status.
+     *   <li>A Finding then reported by no file that never had a proposal is removed, with a {@code FINDING_DELETED} entry
+     *       naming the file: nothing refers to it.
+     *   <li>One that has had a proposal stays with its history and follows the rescan rule (ADR 0029 item 5): unless its
+     *       current proposal is Remediated already, it gets a Remediated proposal made as FILE_DELETED, by the caller,
+     *       whose evidence names the deleted file and the dates it was uploaded and deleted, and which names the file it
+     *       was last reported in; its review goes back to PENDING. A file that reports it again takes that proposal away
+     *       as current, as it does a rescan's.
+     * </ul>
+     *
+     * @param deletedFile the deleted file, with the name it is shown under
+     * @param uploadedAt when the deleted file was uploaded (UTC); its business date is named in the evidence
+     * @return how many Findings were removed
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public int fileDeleted(Submissions.EditTarget target, ProposalView.ReplacedFile deletedFile, Instant uploadedAt) {
+        UUID submissionId = target.submissionId();
+        store.serialiseSettlements(submissionId);
+        List<UUID> touched = store.lockForSettlement(submissionId, List.of(), store.findingsOf(deletedFile.id()));
+        store.removeOccurrences(deletedFile.id());
+        store.rerate(touched);
+        List<UUID> removed = store.removeUnproposed(touched);
+        for (UUID findingId : removed) {
+            audit.record(actor.attribute(AuditEvent.of(AuditAction.FINDING_DELETED, AuditOutcome.SUCCESS))
+                    .onSystem(target.systemId()).onSubmission(submissionId).onFinding(findingId)
+                    .with(DetailKey.FILE_ID, deletedFile.id()));
+        }
+        proposeRemediatedWhereUnreported(submissionId, target.systemId(), touched,
+                ProposalFields.remediatedByDeletion(deletedFile.name(), calendar.dateOf(uploadedAt), calendar.today()),
+                proposals.deletion(deletedFile));
+        return removed.size();
     }
 
     /**
@@ -264,7 +313,7 @@ public class Findings {
         ProposalFields.Parsed fields = proposals.fields(target, request);
         List<UUID> one = List.of(findingId);
         if (!proposals.lock(target, one)) {
-            // Located a moment ago in this VA Submission; Findings are never moved or removed.
+            // Located a moment ago in this VA Submission and never moved: it was removed since (ticket 60).
             throw new ResourceNotFoundException();
         }
         return proposals.write(target.submissionId(), target.systemId(), one, fields, null, proposals.caller())

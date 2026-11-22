@@ -22,7 +22,10 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 import sg.annualva.cycle.Quarter;
 
-/** The VA Submission tables and the Declaration. Constant SQL, named parameters (as-2). */
+/**
+ * The VA Submission tables and the Declarations accepted at a submit; the wordings are {@link DeclarationStore}'s. Constant
+ * SQL, named parameters (as-2).
+ */
 @Repository
 class SubmissionStore {
 
@@ -358,10 +361,6 @@ class SubmissionStore {
             "SELECT user_id, step, first_at FROM submission_participation WHERE submission_id = :id "
             + "ORDER BY first_at, step, user_id";
 
-    /** The current wording: the highest version (a new wording is a new version, V19). */
-    private static final String CURRENT_DECLARATION_TEXT =
-            "SELECT version, text, placeholder FROM declaration_text ORDER BY version DESC LIMIT 1";
-
     /** A snapshot of the wording accepted, copied from its version in the one statement. */
     private static final String INSERT_DECLARATION =
             "INSERT INTO declaration (submission_id, version, text, accepted_by, accepted_at) "
@@ -665,14 +664,6 @@ class SubmissionStore {
         return jdbc.sql(PARTICIPATION).param("id", submissionId).query((rs, row) -> new Submissions.Acted(
                 SubmissionStep.valueOf(rs.getString("step")), rs.getObject("user_id", UUID.class),
                 requiredInstant(rs, "first_at"))).list();
-    }
-
-    /** The current Declaration wording; V19 seeds a version, so there always is one. */
-    Declarations.Text currentDeclarationText() {
-        return jdbc.sql(CURRENT_DECLARATION_TEXT)
-                .query((rs, row) -> new Declarations.Text(rs.getInt("version"), rs.getString("text"),
-                        rs.getBoolean("placeholder")))
-                .single();
     }
 
     /** Keeps the wording of this version as accepted by the person now. */

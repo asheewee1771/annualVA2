@@ -125,6 +125,15 @@ public final class ApiClient {
         return send(request.build());
     }
 
+    /** A bodiless DELETE, the way the SPA deletes a file or a Finding, with the CSRF token when there is one. */
+    public Response delete(String path) {
+        var request = HttpRequest.newBuilder(URI.create(baseUrl + path)).DELETE();
+        if (csrfToken != null && csrfHeader != null) {
+            request.header(csrfHeader, csrfToken);
+        }
+        return send(request.build());
+    }
+
     /** A bodiless POST, the way the SPA signs out. */
     public Response post(String path) {
         return postJson(path, "");

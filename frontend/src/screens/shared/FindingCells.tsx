@@ -1,7 +1,20 @@
-import type { Finding } from "../../api/findings.ts";
-import { proposalDetail, REVIEW_LABELS, SEVERITY_LABELS, severityClass, statusSpec } from "./findingStatuses.ts";
+import type { Finding, Proposal } from "../../api/findings.ts";
+import {
+  PROPOSED_AS_LABELS,
+  proposalDetail,
+  REVIEW_LABELS,
+  SEVERITY_LABELS,
+  severityClass,
+  statusSpec,
+} from "./findingStatuses.ts";
 import { LatestReview } from "./LatestReview.tsx";
 import { reportTitle } from "./scanReports.ts";
+
+/** Marks a proposal the SMO/Tech Lead did not write themselves: one a rescan or a deleted file made; nothing otherwise. */
+export function ProposedAsMark({ proposal }: { proposal: Proposal }) {
+  if (proposal.proposedAs === "SMO") return null;
+  return <span className="muted"> · {PROPOSED_AS_LABELS[proposal.proposedAs]}</span>;
+}
 
 /**
  * The cells every reader of a VA Submission's Findings shows in the same order: the severity, what the Finding is
@@ -31,7 +44,7 @@ export function FindingCells({ finding }: { finding: Finding }) {
           <>
             <strong>{statusSpec(proposal.status).label}</strong>
             {proposal.batchId ? <span className="muted"> · Bulk-set</span> : null}
-            {proposal.proposedAs === "RESCAN" ? <span className="muted"> · Rescan</span> : null}
+            <ProposedAsMark proposal={proposal} />
             <p className="muted finding-detail">{proposalDetail(proposal)}</p>
           </>
         ) : (

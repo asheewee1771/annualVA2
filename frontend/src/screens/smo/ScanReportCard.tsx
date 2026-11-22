@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { ApiError, type Problem } from "../../api/problem.ts";
 import {
+  deleteReportFile,
   EVIDENCE_UPLOAD_LIMITS,
   fetchReportFileContent,
   REPORT_UPLOAD_LIMITS,
@@ -14,6 +15,7 @@ import type { ScanReportMode } from "../../api/scanReports.ts";
 import { ClassifiedField } from "../../components/ClassifiedField.tsx";
 import { ErrorPanel } from "../../components/ErrorPanel.tsx";
 import { saveFile } from "../shared/saveFile.ts";
+import { ConfirmDelete } from "./ConfirmDelete.tsx";
 import { Editable } from "./Editable.tsx";
 import { ManualFindingForm } from "./ManualFindingForm.tsx";
 import { ScanDateForm } from "./ScanDateForm.tsx";
@@ -197,12 +199,14 @@ function ReplaceForm({
 }
 
 /** A replaced file says so, and says when its content has been disposed of (its record is kept, ticket 49). */
-function ReplacedFlags({ file }: { file: ReportFile }) {
+function ReplacedFlags({ file, files }: { file: ReportFile; files: readonly ReportFile[] }) {
   if (file.supersededBy === null) return null;
   return (
     <>
       {" "}
-      <span className="flag">Replaced by a rescan</span>
+      <span className="flag">
+        {hasLiveRescan(file, files) ? "Replaced by a rescan" : "Replaced by a rescan that was deleted"}
+      </span>
       {file.contentDisposedAt === null ? null : (
         <>
           {" "}
@@ -213,14 +217,90 @@ function ReplacedFlags({ file }: { file: ReportFile }) {
   );
 }
 
+/**
+ * Whether the rescan that replaced this file is still there. The list leaves out deleted files, so a replaced file whose
+ * rescan is not in it had that rescan deleted (ticket 60).
+ */
+function hasLiveRescan(file: ReportFile, files: readonly ReportFile[]): boolean {
+  return file.supersededBy !== null && files.some((other) => other.id === file.supersededBy);
+}
+
+/**
+ * A report file that can be deleted (ticket 60), in any status, still being checked, rejected or a parsed rescan
+ * included: any one but supporting evidence and a file a rescan that is still there has replaced. The server decides; this
+ * only offers the control where it can succeed.
+ */
+function isDeletable(file: ReportFile, files: readonly ReportFile[]): boolean {
+  return file.kind === "MACHINE_READABLE" && !hasLiveRescan(file, files);
+}
+
 /** A file whose content is held and may be downloaded: it passed every check and has not been disposed of. */
 function isDownloadable(file: ReportFile): boolean {
   return isAccepted(file) && file.contentDisposedAt === null;
 }
 
 /**
+ * The controls that change a file, in one {@link Editable} group: Replace for a report file that can be replaced with a
+ * rescan, and Delete for one uploaded by mistake (ticket 60); nothing when neither applies.
+ */
+function FileChanges({
+  submissionId,
+  file,
+  files,
+  onReplace,
+  onDeleted,
+  onProblem,
+}: {
+  submissionId: string;
+  file: ReportFile;
+  files: readonly ReportFile[];
+  onReplace: (file: ReportFile) => void;
+  onDeleted: (deleted: boolean) => void;
+  onProblem: (problem: Problem | undefined) => void;
+}) {
+  const replaceable = isReplaceable(file, files);
+  const deletable = isDeletable(file, files);
+  if (!replaceable && !deletable) return null;
+
+  async function remove(): Promise<boolean> {
+    onProblem(undefined);
+    let deleted = false;
+    try {
+      await deleteReportFile(submissionId, file.id);
+      deleted = true;
+    } catch (failure) {
+      onProblem(problemOf(failure));
+    }
+    onDeleted(deleted);
+    return deleted;
+  }
+
+  return (
+    <>
+      {" "}
+      <Editable>
+        {replaceable ? (
+          <button type="button" className="button button--secondary" onClick={() => onReplace(file)}>
+            Replace<span className="visually-hidden"> {file.name}</span>
+          </button>
+        ) : null}
+        {deletable ? (
+          <ConfirmDelete
+            name={file.name}
+            what="file"
+            consequence="Delete this file? A Finding no other file reports is removed if it never had a status; one that had a status stays and is proposed Remediated."
+            onDelete={remove}
+          />
+        ) : null}
+      </Editable>
+    </>
+  );
+}
+
+/**
  * One file with its pipeline status and, when it was rejected, the server's plain message; a rescan names the file it
- * replaces, a replaced file says so, and a report file that can be replaced offers Replace.
+ * replaces, a replaced file says so, a report file that can be replaced offers Replace, and one uploaded by mistake can be
+ * deleted.
  */
 function FileRow({
   submissionId,
@@ -228,6 +308,7 @@ function FileRow({
   file,
   files,
   onReplace,
+  onDeleted,
   onProblem,
 }: {
   submissionId: string;
@@ -235,6 +316,8 @@ function FileRow({
   file: ReportFile;
   files: readonly ReportFile[];
   onReplace: (file: ReportFile) => void;
+  /** The deletion was answered: whether the file was deleted. The files are read again either way. */
+  onDeleted: (deleted: boolean) => void;
   onProblem: (problem: Problem | undefined) => void;
 }) {
   const replaced = file.replacesId === null ? undefined : files.find((other) => other.id === file.replacesId);
@@ -250,7 +333,7 @@ function FileRow({
     <li>
       <strong>{file.name}</strong> <span className="muted">({megabytes(file.sizeBytes)})</span>{" "}
       <span className={isRejected(file) ? "flag flag--danger" : "flag"}>{STATUS_LABELS[file.status]}</span>
-      <ReplacedFlags file={file} />
+      <ReplacedFlags file={file} files={files} />
       {isDownloadable(file) ? (
         <>
           {" "}
@@ -259,16 +342,14 @@ function FileRow({
           </button>
         </>
       ) : null}
-      {isReplaceable(file, files) ? (
-        <>
-          {" "}
-          <Editable>
-            <button type="button" className="button button--secondary" onClick={() => onReplace(file)}>
-              Replace<span className="visually-hidden"> {file.name}</span>
-            </button>
-          </Editable>
-        </>
-      ) : null}
+      <FileChanges
+        submissionId={submissionId}
+        file={file}
+        files={files}
+        onReplace={onReplace}
+        onDeleted={onDeleted}
+        onProblem={onProblem}
+      />
       {replaced ? <p className="muted">Rescan of {replaced.name}</p> : null}
       {file.message ? <p>{file.message}</p> : null}
       {file.status === "REJECTED_TOO_LARGE" && file.kind === "MACHINE_READABLE" && report.tooLargeHint ? (
@@ -403,6 +484,7 @@ function FileList({
   evidence,
   files,
   onReplace,
+  onDeleted,
   onProblem,
 }: {
   submissionId: string;
@@ -410,6 +492,7 @@ function FileList({
   evidence: boolean;
   files: readonly ReportFile[];
   onReplace: (file: ReportFile) => void;
+  onDeleted: (deleted: boolean) => void;
   onProblem: (problem: Problem | undefined) => void;
 }) {
   if (files.length === 0) {
@@ -425,6 +508,7 @@ function FileList({
           file={file}
           files={files}
           onReplace={onReplace}
+          onDeleted={onDeleted}
           onProblem={onProblem}
         />
       ))}
@@ -477,6 +561,12 @@ function FileSection({
         evidence={evidence}
         files={files}
         onReplace={(file) => setReplacingId(file.id)}
+        onDeleted={(deleted) => {
+          // A deleted file's row and its buttons go: the focus goes back to the files' heading. A refused deletion keeps
+          // the row, its Delete button takes the focus back, and the problem shows beside it.
+          if (deleted) heading.current?.focus();
+          onChanged();
+        }}
         onProblem={setProblem}
       />
       {replacing ? (

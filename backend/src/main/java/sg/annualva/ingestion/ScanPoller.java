@@ -310,19 +310,24 @@ public class ScanPoller {
 
     /**
      * Keeps what the parser read. A rescan (story 39) instead supersedes the file it replaces first, then takes the
-     * Findings over from it and is audited as the replacement, all in the same transaction. A unique index lets only one
-     * rescan of a file be live, so nothing else can have superseded it; if something had, the settlement stops before it
-     * writes a Finding and rolls back.
+     * Findings over from it and is audited as the replacement, all in the same transaction. A rescan of a file the SMO/Tech
+     * Lead deleted while the rescan was being checked (ticket 60) has nothing left to replace, so it is kept as an
+     * ordinary upload. A unique index lets only one rescan of a file be live, so nothing else can have superseded it; if
+     * something had, the settlement stops before it writes a Finding and rolls back.
      */
     private void keepFindings(ReportFileStore.Row file, ParsedReport parsed, Instant now) {
         UUID replaced = file.replacesId();
+        if (replaced != null && !store.supersede(replaced, file.id(), now)) {
+            if (store.find(replaced).map(row -> row.deletedAt() == null).orElse(true)) {
+                throw new IllegalStateException("The replaced file was no longer a parsed file that nothing superseded");
+            }
+            store.forgetReplaced(file.id(), now);
+            replaced = null;
+        }
         if (replaced == null) {
             findings.record(file.submissionId(), file.systemId(), file.reportType(), file.id(), file.uploadedBy(), parsed,
                     now);
             return;
-        }
-        if (!store.supersede(replaced, file.id(), now)) {
-            throw new IllegalStateException("The replaced file was no longer a parsed file that nothing superseded");
         }
         String replacedName = store.find(replaced).orElseThrow().displayName();
         findings.replace(file.submissionId(), file.systemId(), file.reportType(),

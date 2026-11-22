@@ -271,16 +271,16 @@ public class TestEndpoints {
                 jdbc.sql("DELETE FROM report_file").update();
                 jdbc.sql("DELETE FROM report_slot").update();
                 // The accepted Declarations are append-only too (V19). The versions of the wording the migrations added are
-                // kept; one a test added is removed, after the Declarations that name it.
+                // kept; one a test added, or a VA POC published through the API (ticket 61), is removed, after the
+                // Declarations that name it.
                 emptyHistory("declaration");
-                if (!addedDeclarationVersions.isEmpty()) {
-                    jdbc.sql("ALTER TABLE declaration_text DISABLE TRIGGER declaration_text_append_only").update();
-                    for (int version : addedDeclarationVersions) {
-                        jdbc.sql("DELETE FROM declaration_text WHERE version = :version").param("version", version)
-                                .update();
-                    }
-                    jdbc.sql("ALTER TABLE declaration_text ENABLE TRIGGER declaration_text_append_only").update();
+                jdbc.sql("ALTER TABLE declaration_text DISABLE TRIGGER declaration_text_append_only").update();
+                for (int version : addedDeclarationVersions) {
+                    jdbc.sql("DELETE FROM declaration_text WHERE version = :version").param("version", version)
+                            .update();
                 }
+                jdbc.sql("DELETE FROM declaration_text WHERE published_by IS NOT NULL").update();
+                jdbc.sql("ALTER TABLE declaration_text ENABLE TRIGGER declaration_text_append_only").update();
                 jdbc.sql("DELETE FROM submission_participation").update();
                 jdbc.sql("DELETE FROM not_started_overdue").update();
                 // The VA Cycle lifecycle's records (V30): what the opening kept of the Register, and the opens and closes.
@@ -301,8 +301,9 @@ public class TestEndpoints {
                 jdbc.sql("DELETE FROM role_holder_review").update();
                 jdbc.sql("DELETE FROM register_upload").update();
                 jdbc.sql("DELETE FROM export_request").update();
-                // The disposal lists (V36) name no other row by key; at most one may wait at a time.
-                jdbc.sql("DELETE FROM disposal_item").update();
+                // The disposal lists (V36) name no other row by key; at most one may wait at a time. An item is only ever
+                // inserted (V45), so the items go with their triggers switched off, like the history.
+                emptyHistory("disposal_item");
                 jdbc.sql("DELETE FROM disposal_list").update();
                 jdbc.sql("DELETE FROM va_system").update();
             });
@@ -326,8 +327,8 @@ public class TestEndpoints {
         }
 
         /**
-         * A new version of the Declaration wording, the agreed one, as a later migration adds it (ticket 24): the version
-         * after the highest. The reset removes it.
+         * A new version of the Declaration wording, the agreed one (ticket 24), as a VA POC publishes it (ticket 61) but
+         * with no publisher: the version after the highest. The reset removes it.
          */
         @PostMapping("/api/test/declaration-text")
         public Map<String, Integer> declarationText() {

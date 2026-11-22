@@ -1,0 +1,21 @@
+# The browser-test stack's own PostgreSQL. It is a separate Compose project, on its own port, with its
+# data in memory: nothing here is the developer's `postgres` service of ../compose.yml, its volume or its `annualva`
+# database, and `docker compose down -v` on this project removes only what this file made. Every credential is a mock.
+# Started and removed by e2e/scripts/stack.mjs; do not start it by hand.
+name: annualva-e2e
+services:
+  postgres:
+    image: postgres:17-alpine
+    ports:
+      - "127.0.0.1:${E2E_DB_PORT:-5433}:5432"
+    environment:
+      POSTGRES_DB: annualva_e2e
+      POSTGRES_USER: annualva
+      POSTGRES_PASSWORD: annualva-e2e-local
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U annualva -d annualva_e2e"]
+      interval: 1s
+      timeout: 5s
+      retries: 30

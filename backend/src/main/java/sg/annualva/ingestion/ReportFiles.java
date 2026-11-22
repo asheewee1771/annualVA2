@@ -21,6 +21,8 @@ import sg.annualva.audit.AuditLog;
 import sg.annualva.audit.AuditOutcome;
 import sg.annualva.audit.DetailKey;
 import sg.annualva.cycle.CycleCalendar;
+import sg.annualva.finding.Findings;
+import sg.annualva.finding.ProposalView;
 import sg.annualva.finding.ReportType;
 import sg.annualva.finding.ScanReports;
 import sg.annualva.scan.CleanFiles;
@@ -48,9 +50,12 @@ public class ReportFiles {
     static final int MAX_FILES_PER_REPORT = 20;
     private static final int MAX_NAME_CODE_POINTS = 100;
     private static final String FALLBACK_NAME = "file";
+    private static final String NOT_REPLACEABLE =
+            "Only a report file whose findings were read, and that no rescan has replaced, can be replaced.";
 
     private final Submissions submissions;
     private final ScanReports scanReports;
+    private final Findings findings;
     private final ReportFileStore store;
     private final MalwareScan scan;
     private final CleanFiles cleanFiles;
@@ -62,11 +67,12 @@ public class ReportFiles {
     private final Clock clock;
     private final TransactionTemplate transaction;
 
-    ReportFiles(Submissions submissions, ScanReports scanReports, ReportFileStore store, MalwareScan scan,
-            CleanFiles cleanFiles, AccessGuard guard, CurrentUser user, AuditActor actor, AuditLog audit,
+    ReportFiles(Submissions submissions, ScanReports scanReports, Findings findings, ReportFileStore store,
+            MalwareScan scan, CleanFiles cleanFiles, AccessGuard guard, CurrentUser user, AuditActor actor, AuditLog audit,
             CycleCalendar calendar, Clock clock, TransactionTemplate transaction) {
         this.submissions = submissions;
         this.scanReports = scanReports;
+        this.findings = findings;
         this.store = store;
         this.scan = scan;
         this.cleanFiles = cleanFiles;
@@ -125,7 +131,7 @@ public class ReportFiles {
         // Only a machine-readable file is ever PARSED (supporting evidence rests in READY, V13).
         if (replaced.status() != PipelineStatus.PARSED || replaced.supersededBy() != null) {
             throw refused(target, replaced.id(), "not-replaceable", HttpStatus.CONFLICT, "file-not-replaceable",
-                    "Only a report file whose findings were read, and that no rescan has replaced, can be replaced.");
+                    NOT_REPLACEABLE);
         }
         try {
             return quarantinedAndKept(target, replaced.reportType(), FileKind.MACHINE_READABLE, originalName, content,
@@ -135,6 +141,57 @@ public class ReportFiles {
             throw refused(target, replaced.id(), "replace-in-progress", HttpStatus.CONFLICT, "replace-in-progress",
                     "A rescan of this file is already being checked. Wait for it to finish.");
         }
+    }
+
+    /**
+     * Deletes a report file uploaded by mistake (ticket 60, ADR 0061) in any status: on its way through the checks,
+     * rejected, parsed (a parsed rescan included), or superseded by a rescan that was deleted since (it stays superseded;
+     * the user's decision of 2026-11-22). It is a soft delete: the row and its content are kept until the VA Cycle is
+     * disposed of, and nothing lists, reads, counts or scans it any more. In the same transaction its places go and the
+     * Findings it reported are dealt with as {@link Findings#fileDeleted} says. The checks run in the order the file (one
+     * that is not of this VA Submission, or is deleted already, is "not found"), ownership (another SMO's VA Submission is
+     * the same 404), the state of the VA Submission, then, in the one statement that marks it, that it is a report file
+     * that no live rescan supersedes; a refusal after the file was found is audited in an entry of its own with the file's
+     * id and a fixed reason. The deletion is a {@code FILE_DELETED} entry with the file's id, its Scan Report and the
+     * number of Findings removed.
+     *
+     * @throws ResourceNotFoundException for a file that is not one of this VA Submission's (or was deleted, a concurrent
+     *     deletion included), or a VA Submission the caller is not the SMO/Tech Lead of
+     * @throws RejectedRequestException 409 {@code invalid-transition} when the VA Submission takes no changes now, 409
+     *     {@code file-not-deletable} for supporting evidence or a file a rescan that is not deleted has replaced
+     */
+    @Transactional
+    public void delete(UUID submissionId, UUID fileId) {
+        ReportFileStore.Row row = file(submissionId, fileId);
+        Submissions.EditTarget target = submissions.lockForEdit(submissionId, (submission, system) ->
+                refusedDeletion(submission, system, fileId, "state-not-editable", "invalid-transition",
+                        "This VA Submission's files cannot be changed in its present state."));
+        // One statement decides it, with the row held: a settlement of it, or the supersede of it by a rescan, waits for
+        // the deletion or has won already, and then the statement changes nothing.
+        if (!store.delete(target, fileId, user.id(), clock.instant())) {
+            // Read again after the statement, so the answer is about the row as it now is: another deletion of it that
+            // committed first is the same "not found" a later request gets.
+            if (store.find(fileId).map(current -> current.deletedAt() != null).orElse(true)) {
+                throw new ResourceNotFoundException();
+            }
+            throw refusedDeletion(submissionId, target.systemId(), fileId, "not-deletable", "file-not-deletable",
+                    "Only a report file can be deleted, and one a rescan has replaced only once that rescan is deleted. "
+                    + "Supporting evidence is kept.");
+        }
+        int removed = findings.fileDeleted(target, new ProposalView.ReplacedFile(fileId, row.displayName()),
+                row.uploadedAt());
+        audit.record(actor.attribute(AuditEvent.of(AuditAction.FILE_DELETED, AuditOutcome.SUCCESS))
+                .onSystem(target.systemId()).onSubmission(submissionId).with(DetailKey.FILE_ID, fileId)
+                .with(DetailKey.REPORT_TYPE, row.reportType().name()).with(DetailKey.COUNT, removed));
+    }
+
+    /** A refused deletion, audited in an entry of its own with the file and a fixed reason. */
+    private RejectedRequestException refusedDeletion(UUID submissionId, UUID systemId, UUID fileId, String reason,
+            String type, String detail) {
+        audit.recordIndependently(actor.attribute(AuditEvent.of(AuditAction.FILE_DELETED, AuditOutcome.REFUSED))
+                .onSystem(systemId).onSubmission(submissionId).with(DetailKey.FILE_ID, fileId)
+                .with(DetailKey.REASON, reason));
+        return new RejectedRequestException(HttpStatus.CONFLICT, type, detail);
     }
 
     private ReportFileView quarantinedAndKept(Submissions.ReadTarget target, ReportType reportType, FileKind kind,
@@ -305,8 +362,9 @@ public class ReportFiles {
         return (base.isEmpty() ? FALLBACK_NAME : base) + EvidenceFormat.valueOf(format).extension();
     }
 
+    /** A file of this VA Submission; one of another, or one that was deleted, is "not found". */
     private ReportFileStore.Row file(UUID submissionId, UUID fileId) {
-        return store.find(fileId).filter(row -> row.submissionId().equals(submissionId))
+        return store.find(fileId).filter(row -> row.submissionId().equals(submissionId) && row.deletedAt() == null)
                 .orElseThrow(ResourceNotFoundException::new);
     }
 
@@ -336,8 +394,18 @@ public class ReportFiles {
                     + "files. Supporting evidence can still be attached.");
         }
         Instant now = clock.instant();
+        // A live rescan of the same file is refused here, by the one-live-rescan index (replace-in-progress).
         UUID id = store.insert(target, reportType, kind, name, size, held.sha256(), held.key(),
                 user.id(), now, replacesId);
+        // Then the rescan's file is held until the rescan is kept, and checked again: between the first check and now a
+        // rescan of it may have superseded it and been deleted (ticket 60), which frees that index, and a rescan kept for a
+        // superseded file could never settle. The row is taken only after the insert, so this never holds the file while
+        // waiting on another rescan's index entry (whose settlement holds that rescan and waits for this file); a
+        // settlement that supersedes the file, or a deletion of it, waits here instead. The refusal rolls the insert back.
+        if (replacesId != null && !store.lockReplaceable(replacesId)) {
+            throw refused(target.submissionId(), target.systemId(), replacesId, "not-replaceable", HttpStatus.CONFLICT,
+                    "file-not-replaceable", NOT_REPLACEABLE);
+        }
         AuditEvent uploaded = actor.attribute(AuditEvent.of(AuditAction.FILE_UPLOADED, AuditOutcome.SUCCESS))
                 .onSystem(target.systemId()).onSubmission(target.submissionId()).with(DetailKey.FILE_ID, id);
         audit.record(replacesId == null ? uploaded : uploaded.with(DetailKey.REPLACED_FILE_ID, replacesId));

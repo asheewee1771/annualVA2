@@ -231,14 +231,27 @@ class FindingStore {
             "SELECT DISTINCT o.finding_id FROM finding_occurrence o WHERE o.report_file_id = :file ORDER BY o.finding_id";
 
     /**
-     * A Finding a rescan proposed Remediated that a file reports again: the proposal no longer holds, so the Finding has no
-     * current proposal and no review (the proposal stays in its history). The ids of those of these keys whose current
-     * proposal was a rescan's.
+     * A Finding a rescan or a deleted file proposed Remediated (no file reported it any more) that a file reports again:
+     * the proposal no longer holds, so the Finding has no current proposal and no review (the proposal stays in its
+     * history). The ids of those of these keys whose current proposal was such a one, with who it was made as.
      */
-    private static final String WITHDRAW_RESCAN_PROPOSALS =
+    private static final String WITHDRAW_UNREPORTED_PROPOSALS =
             "UPDATE finding f SET current_proposal_id = NULL, review_state = NULL FROM finding_status_proposal p "
-            + "WHERE p.id = f.current_proposal_id AND p.proposed_as = 'RESCAN' AND f.submission_id = :submission "
-            + "AND f.identity_hash = ANY(CAST(:hashes AS text[])) RETURNING f.id";
+            + "WHERE p.id = f.current_proposal_id AND p.proposed_as IN ('RESCAN', 'FILE_DELETED') "
+            + "AND f.submission_id = :submission AND f.identity_hash = ANY(CAST(:hashes AS text[])) "
+            + "RETURNING f.id, p.proposed_as";
+
+    /**
+     * The one place the rule "a Finding that never had a proposal may go" is written (ticket 60, ADR 0061): those of these
+     * Findings that no file reports and that never had a proposal are removed, both those a deleted file left with no
+     * place and one entered by hand (which never has a place). Nothing else refers to such a Finding, since a review and a
+     * return item are each about a proposal. A Finding that has had one is kept, as its proposals and their history are
+     * never deleted. The ids removed.
+     */
+    private static final String REMOVE_UNPROPOSED =
+            "DELETE FROM finding f WHERE f.id = ANY(CAST(:ids AS uuid[])) "
+            + "AND NOT EXISTS (SELECT 1 FROM finding_occurrence o WHERE o.finding_id = f.id) "
+            + "AND NOT EXISTS (SELECT 1 FROM finding_status_proposal p WHERE p.finding_id = f.id) RETURNING f.id";
 
     private static final String REMOVE_OCCURRENCES = "DELETE FROM finding_occurrence WHERE report_file_id = :file";
 
@@ -538,10 +551,24 @@ class FindingStore {
         return jdbc.sql(FINDINGS_OF_FILE).param("file", fileId).query(UUID.class).list();
     }
 
-    /** Withdraws the current proposal of each of these keys where a rescan made it; those Findings' ids. */
-    List<UUID> withdrawRescanProposals(UUID submissionId, List<String> hashes) {
-        return jdbc.sql(WITHDRAW_RESCAN_PROPOSALS).param("submission", submissionId)
-                .param("hashes", hashes.toArray(String[]::new)).query(UUID.class).list();
+    /** A proposal taken away as current: the Finding, and who the proposal was made as. */
+    record Withdrawn(UUID findingId, ProposedAs proposedAs) {}
+
+    /**
+     * Withdraws the current proposal of each of these keys where a rescan or a deleted file made it, because no file
+     * reported it any more; those Findings.
+     */
+    List<Withdrawn> withdrawUnreportedProposals(UUID submissionId, List<String> hashes) {
+        return jdbc.sql(WITHDRAW_UNREPORTED_PROPOSALS).param("submission", submissionId)
+                .param("hashes", hashes.toArray(String[]::new))
+                .query((rs, row) -> new Withdrawn(rs.getObject("id", UUID.class),
+                        ProposedAs.valueOf(rs.getString("proposed_as"))))
+                .list();
+    }
+
+    /** Removes those of these Findings that no file reports and that never had a proposal; the ids removed. */
+    List<UUID> removeUnproposed(List<UUID> findingIds) {
+        return jdbc.sql(REMOVE_UNPROPOSED).param("ids", ids(findingIds)).query(UUID.class).list();
     }
 
     /** Removes every place this file reported. */

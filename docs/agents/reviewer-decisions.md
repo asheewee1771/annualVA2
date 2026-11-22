@@ -539,6 +539,7 @@ Human decisions on reviewer findings. Check here before asking again. Each entry
   - Only Endorsed VA Submissions dispose of superseded file content early; `FAILED` exports are not listed (a follow-up if they should go).
   - The delete window was accepted as provisional until ticket 62 made every append-only history table's delete trigger check, row by row, that the row is on the `APPROVED` list.
   - **Built by ticket 62 (2026-11-22, migration V44):** every append-only history table's delete trigger now checks, row by row, that the row's VA Submission is on the running `APPROVED` list. The rule, what it still trusts and what proves it are in ADR 0050 item 7; what it trusts was decided on 2026-11-22 (the entry "Ticket 62: what the per-row disposal check still trusts goes to ticket 66" below).
+  - **Closed by ticket 66 (2026-11-22, migration V45):** the two things that check trusted are frozen. An item is only ever inserted, into a `DRAFT` list (no update, delete or truncate of the items, on any list), whatever the transaction names; a Finding's VA Submission cannot change. The check now still trusts only the list's own row as stored (its status, and its cutoff for the audit log), which no statement of the application moves except by its guarded transitions, and, as ADR 0014 says, nothing guards against the database owner or a superuser. The list's row was accepted as a residual by the user on 2026-11-22 (the entry "Ticket 66: the disposal list's own row stays trusted" below; ADR 0050 item 7, "Still trusted").
 - **When to reuse:** any retention date or disposal question; any new append-only table (ADR 0050 item 7 and the README's "Retention and disposal" say what it needs).
 
 ## Whole-branch review of the integration branch: six decisions
@@ -581,8 +582,36 @@ Decided by the user on 2026-10-26 (all recommendations accepted) after the two-a
 
 - **Area:** retention and disposal (ticket 62, migration V44, ADR 0050 item 7)
 - **Finding:** ticket 62's row check deletes a history row only when its VA Submission is on the running `APPROVED` list, but it trusts two things the database does not freeze: an approved list's items (`disposal_item` has no guard, so a transaction could add a VA Submission to an approved list and then delete its history) and a Finding's link to its VA Submission (`finding.submission_id` can still be updated, and it is the hop for the proposals and the Finding reviews). No application code does either. The code review of ticket 62 (finding S1) asked for a person to decide this, not only for it to be written down.
-- **Chosen action:** raise a follow-up ticket; the two are not accepted as permanent, and ticket 62 lands without those guards. Ticket 66 (`.scratch/annual-va/issues/66-freeze-approved-disposal-items-and-finding-link.md`) makes the database refuse both. Decided by the user 2026-11-22.
+- **Chosen action:** raise a follow-up ticket; the two are not accepted as permanent, and ticket 62 lands without those guards. Ticket 66 (`.scratch/annual-va/issues/66-freeze-approved-disposal-items-and-finding-link.md`) makes the database refuse both. Decided by the user 2026-11-22. Built by ticket 66 (migration V45; ADR 0050 item 7 names what is still trusted).
 - **When to reuse:** any finding that a database guard rests on rows another transaction could still change: say what it trusts in the ADR and raise the freeze as its own ticket; do not record it as accepted without a decision.
+
+## Ticket 66: the disposal list's own row stays trusted
+
+- **Area:** retention and disposal (ticket 66, migration V45, ADR 0050 item 7)
+- **Finding:** with the items and a Finding's VA Submission frozen, the per-row disposal check still trusts the `disposal_list` row as stored (its status, and its cutoff for the audit log). A transaction could move an `APPROVED` list back to `DRAFT`, add items to it and approve it again by hand, getting past both the item freeze and the row check.
+- **Chosen action:** accept it as a residual within ADR 0014's threat model (application bugs, not hand-written SQL), because no application statement does it: `DisposalStore` makes only the guarded moves DRAFT to SUPERSEDED or APPROVED, and APPROVED to EXECUTED. No follow-up ticket. Decided by the user 2026-11-22.
+- **When to reuse:** a database guard that rests on a row the application moves only through guarded transitions: accept the residual under ADR 0014 rather than freezing the row, unless application code gains another writer of it.
+
+## Ticket 60: a Manually Entered Finding that has had a proposal is not deleted
+
+- **Area:** deleting a report file or a Manually Entered Finding (ticket 60, ADR 0061 item 4), the append-only proposal history (ADR 0027, ADR 0050)
+- **Finding:** the ticket lets the SMO/Tech Lead delete a Manually Entered Finding, and also says proposals and their history are never deleted. A Finding that has had a proposal cannot be deleted without deleting its proposals, so the build refuses it with 409 `finding-has-history` (audited `FINDING_DELETED` `REFUSED`, `reason` `has-history`). The alternatives were a soft delete of Findings (a flag every Finding read and count would have to filter) or another rule.
+- **Chosen action:** keep the refusal. A Manually Entered Finding can be deleted only while it has never had a proposal; once it has one, the SMO/Tech Lead proposes a fitting status instead. The screen offers Delete only where it can succeed (a Finding entered by hand with no current proposal), and a Seam 1 test pins the 409. Decided by the user 2026-11-22.
+- **When to reuse:** any request to delete a record that an append-only history row refers to: refuse it and leave the record to its status, rather than deleting or soft-deleting it.
+
+## Ticket 60: a Finding that never had a proposal is hard-deleted, an exception to the soft-delete rule
+
+- **Area:** deleting a report file or a Manually Entered Finding (ticket 60, ADR 0061 items 3 and 4), retention and disposal (ADR 0050 item 8), the spec's data handling rules (`.scratch/annual-va/spec.md` line 285, "Soft-delete is allowed only before retention ends", and line 470, "every other removal before retention ends is a soft-delete")
+- **Finding:** the code review of ticket 60 (finding S1, High) found that a Finding with no proposal and no history is removed with a hard delete (`FindingStore.REMOVE_UNPROPOSED`): one a deleted report file leaves reported by no file, and a Manually Entered Finding deleted before any proposal. The spec allows only a soft delete before retention ends, and the earlier decisions said such a Finding is "removed" without saying hard or soft. The alternative was a soft delete (`finding.deleted_at`), filtered from every Finding read and count.
+- **Chosen action:** accept the hard delete of such a Finding as an exception to the spec's soft-delete rule, with no code change. Nothing refers to such a Finding (a review and a return item are each about a proposal), its deletion is audited with its id (`FINDING_DELETED`), and a deleted report file's row and content are kept until the Cycle is disposed of. Every other removal before retention ends stays a soft delete. Decided by the user 2026-11-22.
+- **When to reuse:** any removal before retention ends of a record nothing refers to, that holds nothing a person decided or reviewed, and whose source is kept: a hard delete with an audit entry is acceptable; anything else stays a soft delete.
+
+## Ticket 60: a parsed rescan and then the file it replaced can both be deleted
+
+- **Area:** deleting a report file (ticket 60, ADR 0061 items 1 and 5), rescans (ADR 0029), the mode rule (ADR 0030 item 4)
+- **Finding:** the second code review of ticket 60 (finding S7, Medium) found that refusing to delete a parsed rescan (409 `rescan-not-deletable`, added to keep the file it superseded from being stranded) narrowed AC1 ("any status other than superseded") without a decision, and left a Scan Report that had ever had a parsed rescan with two files that could never be deleted, so its mode could never unlock (AC4).
+- **Chosen action:** let both be deleted. In the user's words: "Allow deleting a parsed rescan, and then allow deleting the file it superseded too, so the Scan Report can be emptied." A parsed rescan is deleted by the ordinary rules (places removed, Findings re-rated, a Finding that never had a proposal removed, otherwise a Remediated `FILE_DELETED` proposal). Once it is gone, the file it superseded stays superseded (its Findings are not restored; undoing a rescan stays out of scope) and can be deleted too; it counts as content under the mode rule (AC4, ADR 0030 item 4) until it is deleted itself. The refusal is removed. Decided by the user 2026-11-22.
+- **When to reuse:** any delete that would leave another record pointing at what was deleted: keep the pointer as history and let the record that is left be deleted in turn.
 
 ## Ticket 52 lands as provisional: the scrape credential, the alert thresholds and where the token is kept wait for ticket 55
 

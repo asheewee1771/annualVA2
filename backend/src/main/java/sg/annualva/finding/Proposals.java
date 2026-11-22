@@ -114,7 +114,8 @@ class Proposals {
      * the actor of the audit entry, with {@code proposed_as} RESCAN, the rescan's file and the file it replaced.
      *
      * @param rescanFileId the rescan whose settlement made the proposals; null for the caller's
-     * @param replacedFile the file the rescan replaced; null for the caller's
+     * @param replacedFile the file the Findings were last reported in: the one the rescan replaced, or the one the caller
+     *     deleted ({@link #deletion}); null for the caller's own proposals
      */
     record Proposer(
             UUID id, ProposedAs as, @Nullable UUID rescanFileId, ProposalView.@Nullable ReplacedFile replacedFile) {
@@ -127,6 +128,14 @@ class Proposals {
     /** The SMO/Tech Lead of the current request, as the one who proposes. */
     Proposer caller() {
         return new Proposer(user.id(), ProposedAs.SMO, null, null);
+    }
+
+    /**
+     * The SMO/Tech Lead of the current request, who deleted a report file (ticket 60): the proposals are made as
+     * FILE_DELETED and name the deleted file, where their Findings were last reported.
+     */
+    Proposer deletion(ProposalView.ReplacedFile deletedFile) {
+        return new Proposer(user.id(), ProposedAs.FILE_DELETED, null, deletedFile);
     }
 
     /**
@@ -162,7 +171,8 @@ class Proposals {
     }
 
     private AuditEvent attributed(AuditEvent event, Proposer by) {
-        return by.as() == ProposedAs.SMO ? actor.attribute(event) : actor.onBehalfOf(event, by.id());
+        // Only a rescan's are written by the scan job; the others are the request's own caller's.
+        return by.as() == ProposedAs.RESCAN ? actor.onBehalfOf(event, by.id()) : actor.attribute(event);
     }
 
     private static AuditEvent withId(AuditEvent event, DetailKey key, @Nullable UUID id) {
