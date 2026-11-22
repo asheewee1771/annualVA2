@@ -257,30 +257,22 @@ public class TestEndpoints {
                 // The returns (V23) name the reviews, and the reviews (V21, V22) name the proposals, the batches and the
                 // Scan Reports, so they go first, a return before the reviews it names and a Finding's review before the
                 // batch review it names; all are append-only.
-                for (String review : new String[] {"submission_return_item", "submission_return", "finding_review",
+                for (String table : new String[] {"submission_return_item", "submission_return", "finding_review",
                         "batch_review", "report_review"}) {
-                    jdbc.sql("ALTER TABLE " + review + " DISABLE TRIGGER " + review + "_append_only").update();
-                    jdbc.sql("DELETE FROM " + review).update();
-                    jdbc.sql("ALTER TABLE " + review + " ENABLE TRIGGER " + review + "_append_only").update();
+                    emptyHistory(table);
                 }
                 jdbc.sql("UPDATE finding SET current_proposal_id = NULL, review_state = NULL").update();
                 // The proposals are append-only for the application; only this reset, which owns the test schema, removes them.
-                jdbc.sql("ALTER TABLE finding_status_proposal DISABLE TRIGGER finding_status_proposal_append_only").update();
-                jdbc.sql("DELETE FROM finding_status_proposal").update();
-                jdbc.sql("ALTER TABLE finding_status_proposal ENABLE TRIGGER finding_status_proposal_append_only").update();
+                emptyHistory("finding_status_proposal");
                 // The Bulk-set batches likewise (V15), after the proposals that name them.
-                jdbc.sql("ALTER TABLE bulk_batch DISABLE TRIGGER bulk_batch_append_only").update();
-                jdbc.sql("DELETE FROM bulk_batch").update();
-                jdbc.sql("ALTER TABLE bulk_batch ENABLE TRIGGER bulk_batch_append_only").update();
+                emptyHistory("bulk_batch");
                 jdbc.sql("DELETE FROM finding").update();
                 jdbc.sql("DELETE FROM report_file_stage").update();
                 jdbc.sql("DELETE FROM report_file").update();
                 jdbc.sql("DELETE FROM report_slot").update();
                 // The accepted Declarations are append-only too (V19). The versions of the wording the migrations added are
                 // kept; one a test added is removed, after the Declarations that name it.
-                jdbc.sql("ALTER TABLE declaration DISABLE TRIGGER declaration_append_only").update();
-                jdbc.sql("DELETE FROM declaration").update();
-                jdbc.sql("ALTER TABLE declaration ENABLE TRIGGER declaration_append_only").update();
+                emptyHistory("declaration");
                 if (!addedDeclarationVersions.isEmpty()) {
                     jdbc.sql("ALTER TABLE declaration_text DISABLE TRIGGER declaration_text_append_only").update();
                     for (int version : addedDeclarationVersions) {
@@ -317,6 +309,20 @@ public class TestEndpoints {
             systems.clear();
             addedDeclarationVersions.clear();
             return Map.of("reset", "yes");
+        }
+
+        /**
+         * Removes every row of an append-only history table with its own triggers switched off: the one that refuses the
+         * statement and the one that refuses each row no approved disposal list names. {@code USER} leaves the foreign
+         * keys' internal triggers on. Call it only inside the reset's transaction: the triggers are off from the
+         * {@code DISABLE} to the {@code ENABLE}, under the table lock the {@code ALTER TABLE} holds until the
+         * transaction ends, and a failure in between rolls the {@code DISABLE} back. Only the reset, which owns the test
+         * schema, does this.
+         */
+        private void emptyHistory(String table) {
+            jdbc.sql("ALTER TABLE " + table + " DISABLE TRIGGER USER").update();
+            jdbc.sql("DELETE FROM " + table).update();
+            jdbc.sql("ALTER TABLE " + table + " ENABLE TRIGGER USER").update();
         }
 
         /**
