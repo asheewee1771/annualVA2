@@ -7,7 +7,7 @@
 **Status:** ready-for-agent
 **Effort (orchestrator estimate):** not estimated; raised by the ticket 60 review of 2026-11-22. Small to medium: a refactor with no behaviour change.
 
-- [ ] One definition of "a live report file" (for example a view, a single predicate constant, or a status the reads already filter on) is used by every read that must ignore deleted files; the reads that must see deleted files (`ReportFileStore.FIND`, `FindingStore.REPLACED_FILE`, the disposal reads) say so explicitly.
+- [ ] One definition of "a live report file" (for example a view, a single predicate constant, or a status the reads already filter on) is used by every read that must ignore deleted files; the reads that must see deleted files (`ReportFileStore.FIND`, `FindingStore.REPLACED_FILE`, the disposal reads) say so explicitly. The definition also covers "no live rescan supersedes it" (not rejected, not deleted, not superseded), which ticket 60 writes in `ReportFileStore.COUNT_LIVE`, `ScanReportStore.HAS_CONTENT` and the `ReportFileStore.DELETE` guard.
 - [ ] A test fails when a new read of `report_file` bypasses the definition without saying why (an ArchUnit or source-scan test, or an equivalent guard).
 - [ ] No behaviour changes: the existing Seam 1 tests of uploads, rescans, deletes, the 20-file cap, readiness, the mode rule, settlement and disposal pass unchanged in what they assert.
 - [ ] ADR 0061 records the definition. The back-end gate passes; the front-end gate applies only if the front end changes.
