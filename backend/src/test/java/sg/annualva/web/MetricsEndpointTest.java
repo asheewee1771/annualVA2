@@ -42,6 +42,24 @@ class MetricsEndpointTest extends Seam1Test {
     }
 
     @Test
+    void theScrapePathWithATrailingSlashIsClosedToEveryone() {
+        String slash = PROMETHEUS + "/";
+        var anonymous = api.get(slash);
+        var token = api.get(slash, Map.of("Authorization", "Bearer " + Metrics.TOKEN));
+        SignIn.signedIn(api, issuer, TestIdentity.of("af-5202", "slash@ci.annualva.test", "Slash")
+                .withAuthTime(clock.instant()));
+        var session = api.get(slash);
+
+        assertThat(anonymous.status()).isEqualTo(401);
+        assertThat(token.status()).as("the token is for the exact path only").isEqualTo(401);
+        assertThat(session.status()).as("a session passes the application's chain, and nothing serves the path")
+                .isEqualTo(404);
+        for (var refused : new ApiClient.Response[] {anonymous, token, session}) {
+            assertThat(refused.body()).as("no metric").doesNotContain("annualva_");
+        }
+    }
+
+    @Test
     void theTokenOpensTheScrapeAndNothingElseUnderActuator() {
         var scrape = api.get(PROMETHEUS, Map.of("Authorization", "Bearer " + Metrics.TOKEN));
         assertThat(scrape.status()).isEqualTo(200);
@@ -57,18 +75,13 @@ class MetricsEndpointTest extends Seam1Test {
         }
     }
 
+    /**
+     * Each is registered at start, so it is on every scrape, whatever has happened. The shared context means a counter's
+     * value here is whatever earlier tests left; an Overdue gauge is not-a-number until the first sweep.
+     */
     @Test
-    void everyKeySignalIsOnTheScrapeBeforeAnythingHasHappened() {
-        Metrics scrape = metrics();
-
-        for (String series : new String[] {"annualva_scan_failures_total", "annualva_scan_timeouts_total",
-                "annualva_audit_write_failures_total", "annualva_mail_failures_total{kind=\"send_failed\"}",
-                "annualva_mail_failures_total{kind=\"abandoned\"}", "annualva_mail_failures_total{kind=\"record_failed\"}",
-                "annualva_mail_failures_total{kind=\"refused\"}", "annualva_mail_failures_total{kind=\"address_rejected\"}",
-                "annualva_stepup_refusals_total{kind=\"required\"}", "annualva_stepup_refusals_total{kind=\"failed\"}",
-                "annualva_submissions_overdue{kind=\"submission\"}", "annualva_submissions_overdue{kind=\"not_started\"}"}) {
-            assertThat(scrape.value(series)).as(series).isGreaterThanOrEqualTo(0);
-        }
+    void everyKeySignalIsOnEveryScrape() {
+        assertThat(metrics().names()).containsAll(Metrics.KEY_SIGNALS);
     }
 
     @Test

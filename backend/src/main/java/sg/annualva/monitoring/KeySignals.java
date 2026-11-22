@@ -6,9 +6,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.util.EnumMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.function.IntSupplier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.concurrent.atomic.AtomicLong;
 import org.springframework.stereotype.Component;
 
 /**
@@ -19,25 +17,35 @@ import org.springframework.stereotype.Component;
  *
  * <p>Prometheus writes a name with underscores and a counter with {@code _total}: {@code annualva.audit.write.failures}
  * is {@code annualva_audit_write_failures_total}.
+ *
+ * <p>Nothing here reads the database: a scrape only reads values held in memory, so a slow or unreachable database cannot
+ * hold the scrape past the scraper's timeout. The Overdue gauges hold what the last committed sweep counted.
  */
 @Component
 public class KeySignals {
 
     /** A VA Submission, or a System with none, flagged Overdue and not yet finished; tag {@code kind}. A gauge. */
-    public static final String OVERDUE = "annualva.submissions.overdue";
+    private static final String OVERDUE = "annualva.submissions.overdue";
     /** A scanner or store call that failed for a Scan Report file or the Register workbook; the attempt is made again. */
-    public static final String SCAN_FAILURES = "annualva.scan.failures";
+    private static final String SCAN_FAILURES = "annualva.scan.failures";
     /** A file, or a workbook, given up on because every scan attempt timed out or failed. */
-    public static final String SCAN_TIMEOUTS = "annualva.scan.timeouts";
+    private static final String SCAN_TIMEOUTS = "annualva.scan.timeouts";
     /** A mail the relay did not take or the outbox could not settle; tag {@code kind} ({@link MailFailure}). */
-    public static final String MAIL_FAILURES = "annualva.mail.failures";
+    private static final String MAIL_FAILURES = "annualva.mail.failures";
     /** A sensitive action refused for want of a fresh sign-in, or a step-up round trip that did not prove one; tag {@code kind}. */
-    public static final String STEP_UP_REFUSALS = "annualva.stepup.refusals";
+    private static final String STEP_UP_REFUSALS = "annualva.stepup.refusals";
     /** An audit entry that could not be written. The action it described is not done, or the refusal it recorded is unrecorded. */
-    public static final String AUDIT_WRITE_FAILURES = "annualva.audit.write.failures";
+    private static final String AUDIT_WRITE_FAILURES = "annualva.audit.write.failures";
 
-    private static final Logger log = LoggerFactory.getLogger(KeySignals.class);
     private static final String KIND = "kind";
+
+    /** What is Overdue: a VA Submission, or an active System with none in that VA Cycle (Not Started). */
+    public enum Overdue {
+        /** VA Submissions flagged Overdue and not yet in a final state. */
+        SUBMISSION,
+        /** Active Systems flagged Overdue as Not Started that still have no VA Submission in that VA Cycle. */
+        NOT_STARTED
+    }
 
     /** What went wrong with a mail. {@link #ADDRESS_REJECTED} is the recipient's mailbox, the others are ours or the relay's. */
     public enum MailFailure {
@@ -61,15 +69,15 @@ public class KeySignals {
         FAILED
     }
 
-    private final MeterRegistry registry;
     private final Counter scanFailures;
     private final Counter scanTimeouts;
     private final Counter auditWriteFailures;
     private final Map<MailFailure, Counter> mailFailures = new EnumMap<>(MailFailure.class);
     private final Map<StepUpRefusal, Counter> stepUpRefusals = new EnumMap<>(StepUpRefusal.class);
+    /** The bits of each gauge's double; not-a-number until the first sweep has committed. */
+    private final Map<Overdue, AtomicLong> overdue = new EnumMap<>(Overdue.class);
 
     KeySignals(MeterRegistry registry) {
-        this.registry = registry;
         scanFailures = Counter.builder(SCAN_FAILURES)
                 .description("Scanner or file store calls that failed during a malware scan").register(registry);
         scanTimeouts = Counter.builder(SCAN_TIMEOUTS)
@@ -83,6 +91,13 @@ public class KeySignals {
         for (StepUpRefusal kind : StepUpRefusal.values()) {
             stepUpRefusals.put(kind, Counter.builder(STEP_UP_REFUSALS).tag(KIND, tag(kind))
                     .description("Step-ups refused").register(registry));
+        }
+        for (Overdue kind : Overdue.values()) {
+            AtomicLong bits = new AtomicLong(Double.doubleToLongBits(Double.NaN));
+            overdue.put(kind, bits);
+            Gauge.builder(OVERDUE, bits, held -> Double.longBitsToDouble(held.get())).tag(KIND, tag(kind))
+                    .description("VA Submissions, and Systems with none, flagged Overdue and not yet finished")
+                    .register(registry);
         }
     }
 
@@ -116,26 +131,11 @@ public class KeySignals {
     }
 
     /**
-     * Registers the Overdue gauge for one kind of Overdue item; its value is read from the supplier at each scrape. A
-     * supplier that fails reads as not-a-number, with a log line that names the kind and no error text, so a database that
-     * is down shows as a gap in the series and not as zero overdue.
-     *
-     * @param kind a fixed word: {@code submission} or {@code not_started}
+     * What the sweep counted as Overdue, once its transaction has committed. The gauge holds it until the next sweep: a
+     * rise is seen at the sweep that flags it, and a fall (a VA Submission finished, a System retired or moved) at the next
+     * sweep. Before the first sweep after a start the gauge is not-a-number, not zero.
      */
-    public void overdueGauge(String kind, IntSupplier count) {
-        Gauge.builder(OVERDUE, () -> read(kind, count)).tag(KIND, kind)
-                .description("VA Submissions, and Systems with none, flagged Overdue and not yet finished")
-                .register(registry);
-    }
-
-    private static double read(String kind, IntSupplier count) {
-        try {
-            return count.getAsInt();
-        } catch (RuntimeException failure) {
-            log.atWarn().setMessage("The overdue count could not be read")
-                    .addKeyValue("event.action", "overdue-gauge-failed").addKeyValue("labels.kind", kind)
-                    .addKeyValue("error.type", failure.getClass().getSimpleName()).log();
-            return Double.NaN;
-        }
+    public void overdue(Overdue kind, int count) {
+        overdue.get(kind).set(Double.doubleToLongBits(count));
     }
 }

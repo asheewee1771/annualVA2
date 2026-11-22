@@ -87,9 +87,6 @@ class AccessAudit implements RefusalListener {
     /** Called as the 401 or 403 is written; the caller is whoever the request's security context names, if anyone. */
     @Override
     public void refused(Refusal refusal) {
-        if ("step-up-required".equals(refusal.reason())) {
-            signals.stepUpRefused(StepUpRefusal.REQUIRED);
-        }
         AuditEvent event = AuditEvent.of(AuditAction.REQUEST_REFUSED, AuditOutcome.REFUSED)
                 .with(DetailKey.STATUS, refusal.status())
                 .with(DetailKey.REASON, refusal.reason());

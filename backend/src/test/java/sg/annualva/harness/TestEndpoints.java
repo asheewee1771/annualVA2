@@ -517,18 +517,28 @@ public class TestEndpoints {
         }
 
         /**
-         * Makes the write of an audit entry of the probe's action ({@code ROLE_GRANTED}) fail inside the database ("on"), so a
-         * test can prove that an audit entry that cannot be written is counted and that the action it described is not done;
-         * "off" removes it. Other actions are untouched, so signing in and the scrape itself still work while it is on.
+         * Makes an audit write fail inside the database, so a test can prove that an audit entry that cannot be written is
+         * counted. "on": the insert of an entry of the probe's action ({@code ROLE_GRANTED}) fails, in the action's
+         * transaction. "commit": an entry of a refused request ({@code REQUEST_REFUSED}) is inserted and its own transaction
+         * fails at the commit (a deferred constraint trigger), which is a failure outside the insert. "off" removes both.
+         * Other actions are untouched, so signing in and the scrape itself still work while one is on.
          */
         @PostMapping("/api/test/faults/audit/{mode}")
         public Map<String, String> auditFault(@PathVariable String mode) {
             jdbc.sql("DROP TRIGGER IF EXISTS test_audit_fault ON audit_entry").update();
+            jdbc.sql("DROP TRIGGER IF EXISTS test_audit_commit_fault ON audit_entry").update();
+            if ("off".equals(mode)) {
+                return Map.of("fault", mode);
+            }
+            jdbc.sql("CREATE OR REPLACE FUNCTION test_audit_fault() RETURNS trigger LANGUAGE plpgsql AS "
+                    + "$$ BEGIN RAISE EXCEPTION 'injected fault'; END $$").update();
             if ("on".equals(mode)) {
-                jdbc.sql("CREATE OR REPLACE FUNCTION test_audit_fault() RETURNS trigger LANGUAGE plpgsql AS "
-                        + "$$ BEGIN RAISE EXCEPTION 'injected fault'; END $$").update();
                 jdbc.sql("CREATE TRIGGER test_audit_fault BEFORE INSERT ON audit_entry FOR EACH ROW "
                         + "WHEN (NEW.action = 'ROLE_GRANTED') EXECUTE FUNCTION test_audit_fault()").update();
+            } else if ("commit".equals(mode)) {
+                jdbc.sql("CREATE CONSTRAINT TRIGGER test_audit_commit_fault AFTER INSERT ON audit_entry "
+                        + "DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (NEW.action = 'REQUEST_REFUSED') "
+                        + "EXECUTE FUNCTION test_audit_fault()").update();
             }
             return Map.of("fault", mode);
         }

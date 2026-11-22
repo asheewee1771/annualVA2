@@ -1,6 +1,7 @@
 package sg.annualva.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static sg.annualva.harness.Metrics.AUDIT_WRITE_FAILURES;
 
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -10,12 +11,11 @@ import sg.annualva.harness.Metrics;
 import sg.annualva.harness.Seam1Test;
 
 /**
- * IM8 lm-16 (ticket 52, ADR 0060): an audit entry that cannot be written is counted, and the action it described is not
- * done (the entry is written in the action's transaction).
+ * IM8 lm-16 (ticket 52, ADR 0060): an audit entry that cannot be written is counted once. In the action's transaction the
+ * action is not done; in a transaction of its own (a refusal), a failure anywhere in that transaction, its commit
+ * included, is counted, and the request is still refused.
  */
 class AuditFailureSignalTest extends Seam1Test {
-
-    private static final String WRITES_FAILED = "annualva_audit_write_failures_total";
 
     @AfterEach
     void faultOff() {
@@ -25,23 +25,34 @@ class AuditFailureSignalTest extends Seam1Test {
     @Test
     void anAuditEntryTheDatabaseRefusesIsCountedOnceAndTheActionIsNotDone() {
         ApiClient poc = freshVaPoc();
-        double before = metrics().value(WRITES_FAILED);
+        Metrics before = metrics();
         arrange.auditFault("on");
 
         var response = poc.postJson(probe("commit"), "");
 
         assertThat(response.status()).isEqualTo(500);
-        assertThat(metrics().value(WRITES_FAILED)).isEqualTo(before + 1);
+        assertThat(metrics().since(before, AUDIT_WRITE_FAILURES)).isEqualTo(1);
     }
 
     @Test
     void aWrittenEntryIsNotCounted() {
         ApiClient poc = freshVaPoc();
-        double before = metrics().value(WRITES_FAILED);
+        Metrics before = metrics();
 
         assertThat(poc.postJson(probe("commit"), "").status()).isEqualTo(200);
 
-        assertThat(metrics().value(WRITES_FAILED)).isEqualTo(before);
+        assertThat(metrics().since(before, AUDIT_WRITE_FAILURES)).isZero();
+    }
+
+    @Test
+    void aRefusalWhoseOwnAuditTransactionFailsToCommitIsCountedOnceAndStillRefused() {
+        Metrics before = metrics();
+        arrange.auditFault("commit");
+
+        var refused = api.get("/api/systems");
+
+        assertThat(refused.status()).isEqualTo(401);
+        assertThat(metrics().since(before, AUDIT_WRITE_FAILURES)).isEqualTo(1);
     }
 
     private static String probe(String ending) {

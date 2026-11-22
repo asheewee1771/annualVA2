@@ -1,6 +1,8 @@
 package sg.annualva.ingestion;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static sg.annualva.harness.Metrics.SCAN_FAILURES;
+import static sg.annualva.harness.Metrics.SCAN_TIMEOUTS;
 
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
@@ -8,13 +10,12 @@ import sg.annualva.harness.Metrics;
 import sg.annualva.harness.Samples;
 
 /**
- * IM8 lm-16 (ticket 52, ADR 0060): a scanner that cannot be reached is counted as a failure at each call, and a file
- * given up on after its third attempt is counted as a timeout; a file the scanner passes, or blocks, is neither.
+ * IM8 lm-16 (ticket 52, ADR 0060): a scanner or store call that fails is counted as a failure at each call, an upload the
+ * store cannot quarantine included, and a file given up on after its third attempt is counted as a timeout; a file the
+ * scanner passes, or blocks, is neither.
  */
 class ScanSignalTest extends IngestionSeam1 {
 
-    private static final String FAILURES = "annualva_scan_failures_total";
-    private static final String TIMEOUTS = "annualva_scan_timeouts_total";
     private static final Duration PAST_THE_TIMEOUT = Duration.ofMinutes(3);
 
     @Test
@@ -25,8 +26,23 @@ class ScanSignalTest extends IngestionSeam1 {
         settled(draft, DEPENDENCY_CHECK, "report_quarantined.xml", Samples.dependencyCheckXml());
 
         Metrics after = metrics();
-        assertThat(after.value(FAILURES)).isEqualTo(before.value(FAILURES));
-        assertThat(after.value(TIMEOUTS)).isEqualTo(before.value(TIMEOUTS));
+        assertThat(after.since(before, SCAN_FAILURES)).isZero();
+        assertThat(after.since(before, SCAN_TIMEOUTS)).isZero();
+    }
+
+    @Test
+    void anUploadTheStoreCannotQuarantineIsOneFailureAndNoTimeout() {
+        Draft draft = draft();
+        fileStore.refuseWrites(true);
+        Metrics before = metrics();
+
+        var response = upload(draft.smo(), draft.submissionId(), DEPENDENCY_CHECK, MACHINE_READABLE, "dc.xml",
+                Samples.dependencyCheckXml());
+
+        assertThat(response.status()).isEqualTo(503);
+        Metrics after = metrics();
+        assertThat(after.since(before, SCAN_FAILURES)).isEqualTo(1);
+        assertThat(after.since(before, SCAN_TIMEOUTS)).as("no scan attempt was made").isZero();
     }
 
     @Test
@@ -44,10 +60,10 @@ class ScanSignalTest extends IngestionSeam1 {
         pass();
         Metrics last = metrics();
 
-        assertThat(first.value(FAILURES)).isEqualTo(before.value(FAILURES) + 1);
-        assertThat(first.value(TIMEOUTS)).as("one attempt is not a timeout").isEqualTo(before.value(TIMEOUTS));
-        assertThat(last.value(FAILURES)).as("three submissions failed").isEqualTo(before.value(FAILURES) + 3);
-        assertThat(last.value(TIMEOUTS)).isEqualTo(before.value(TIMEOUTS) + 1);
+        assertThat(first.since(before, SCAN_FAILURES)).isEqualTo(1);
+        assertThat(first.since(before, SCAN_TIMEOUTS)).as("one attempt is not a timeout").isZero();
+        assertThat(last.since(before, SCAN_FAILURES)).as("three submissions failed").isEqualTo(3);
+        assertThat(last.since(before, SCAN_TIMEOUTS)).isEqualTo(1);
     }
 
     @Test
@@ -63,7 +79,7 @@ class ScanSignalTest extends IngestionSeam1 {
         }
 
         Metrics after = metrics();
-        assertThat(after.value(TIMEOUTS)).isEqualTo(before.value(TIMEOUTS) + 1);
-        assertThat(after.value(FAILURES)).as("the scanner answered; it only never finished").isEqualTo(before.value(FAILURES));
+        assertThat(after.since(before, SCAN_TIMEOUTS)).isEqualTo(1);
+        assertThat(after.since(before, SCAN_FAILURES)).as("the scanner answered; it only never finished").isZero();
     }
 }

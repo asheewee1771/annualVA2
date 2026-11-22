@@ -20,8 +20,8 @@ import sg.annualva.audit.DetailKey;
 import sg.annualva.boundary.MalwareScanner.Verdict;
 import sg.annualva.cycle.CycleCalendar;
 import sg.annualva.finding.Findings;
-import sg.annualva.monitoring.KeySignals;
 import sg.annualva.finding.ProposalView;
+import sg.annualva.monitoring.KeySignals;
 import sg.annualva.parser.ParsedReport;
 import sg.annualva.scan.CleanFiles;
 import sg.annualva.scan.MalwareScan;
@@ -138,10 +138,7 @@ public class ScanPoller {
             case BLOCKED -> reject(file, RejectCode.MALWARE, now);
             case CLEAN_SANITIZED -> reject(file, RejectCode.SANITIZED, now);
             case CLEAN_UNCHANGED -> accept(file, now);
-            case ERROR -> {
-                signals.scanFailed();
-                retryOrGiveUp(file, now);
-            }
+            case ERROR -> retryOrGiveUp(file, now);
             case PROCESSING -> {
                 if (expired(file, now)) {
                     retryOrGiveUp(file, now);
@@ -155,7 +152,6 @@ public class ScanPoller {
         try {
             return scan.check(Objects.requireNonNull(file.scanTicket()));
         } catch (RuntimeException e) {
-            signals.scanFailed();
             return Verdict.PROCESSING;
         }
     }
@@ -170,21 +166,19 @@ public class ScanPoller {
      * checks refuse), keep the copy, then write the whole outcome at once.
      */
     private void accept(ReportFileStore.Row file, Instant now) {
-        byte[] bytes;
+        Optional<byte[]> unchanged;
         try {
-            Optional<byte[]> unchanged = scan.fetchUnchanged(Objects.requireNonNull(file.scanTicket()),
-                    file.uploadSha256());
-            if (unchanged.isEmpty()) {
-                reject(file, RejectCode.HASH_MISMATCH, now);
-                return;
-            }
-            bytes = unchanged.get();
+            unchanged = scan.fetchUnchanged(Objects.requireNonNull(file.scanTicket()), file.uploadSha256());
         } catch (RuntimeException e) {
             // The verdict stands but the copy could not be fetched: try again next pass, until the attempt is due.
-            signals.scanFailed();
             retryWhenDue(file, now);
             return;
         }
+        if (unchanged.isEmpty()) {
+            reject(file, RejectCode.HASH_MISMATCH, now);
+            return;
+        }
+        byte[] bytes = unchanged.get();
         String cleanSha = MalwareScan.sha256(bytes);
         LocalDate today = calendar.dateOf(now);
         FileChecks.Outcome checked = FileChecks.run(file.reportType(), file.kind(), bytes,
@@ -198,7 +192,6 @@ public class ScanPoller {
         try {
             cleanKey = cleanFiles.put(file.id(), bytes);
         } catch (RuntimeException e) {
-            signals.scanFailed();
             retryWhenDue(file, now);
             return;
         }
@@ -257,7 +250,6 @@ public class ScanPoller {
         try {
             ticket = scan.submit(Objects.requireNonNull(file.quarantineKey()), file.displayName(), HINT);
         } catch (RuntimeException e) {
-            signals.scanFailed();
             failAttempt(file, now);
             return;
         }

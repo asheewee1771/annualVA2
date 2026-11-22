@@ -1,9 +1,12 @@
 package sg.annualva.access;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static sg.annualva.harness.Metrics.STEP_UP_FAILED;
+import static sg.annualva.harness.Metrics.STEP_UP_REQUIRED;
 
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
+import sg.annualva.harness.Metrics;
 import sg.annualva.harness.Seam1Test;
 import sg.annualva.harness.SignIn;
 import sg.annualva.harness.TestIdentity;
@@ -14,8 +17,6 @@ import sg.annualva.harness.TestIdentity;
  */
 class StepUpSignalTest extends Seam1Test {
 
-    private static final String REQUIRED = "annualva_stepup_refusals_total{kind=\"required\"}";
-    private static final String FAILED = "annualva_stepup_refusals_total{kind=\"failed\"}";
     private static final String START = "/auth/step-up?intent=probe-sensitive";
 
     @Test
@@ -24,14 +25,14 @@ class StepUpSignalTest extends Seam1Test {
                 .withAuthTime(clock.instant());
         SignIn.signedIn(api, issuer, identity);
         api.withCsrf();
-        double before = metrics().value(REQUIRED);
+        Metrics before = metrics();
 
         assertThat(api.post("/api/probe/sensitive").status()).isEqualTo(200);
-        assertThat(metrics().value(REQUIRED)).as("a fresh sign-in is not a refusal").isEqualTo(before);
+        assertThat(metrics().since(before, STEP_UP_REQUIRED)).as("a fresh sign-in is not a refusal").isZero();
         clock.advance(Duration.ofMinutes(6));
         assertThat(api.post("/api/probe/sensitive").status()).isEqualTo(403);
 
-        assertThat(metrics().value(REQUIRED)).isEqualTo(before + 1);
+        assertThat(metrics().since(before, STEP_UP_REQUIRED)).isEqualTo(1);
     }
 
     @Test
@@ -41,12 +42,12 @@ class StepUpSignalTest extends Seam1Test {
         SignIn.signedIn(api, issuer, identity);
         api.withCsrf();
         clock.advance(Duration.ofMinutes(10));
-        double before = metrics().value(FAILED);
+        Metrics before = metrics();
 
         // The provider ignored prompt=login and answered with the sign-in from ten minutes ago.
         var flow = SignIn.stepUp(api, issuer, START, identity.withAuthTime(clock.instant().minus(Duration.ofMinutes(10))));
 
         assertThat(flow.callback().header("location")).contains("stepup=refused");
-        assertThat(metrics().value(FAILED)).isEqualTo(before + 1);
+        assertThat(metrics().since(before, STEP_UP_FAILED)).isEqualTo(1);
     }
 }

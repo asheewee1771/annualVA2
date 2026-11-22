@@ -108,7 +108,10 @@ public final class Arrange {
         assertThat(client.post("/api/test/faults/notification/" + mode).status()).isEqualTo(200);
     }
 
-    /** Makes the write of the probe's audit entry fail in the database ("on"); "off" removes the fault. */
+    /**
+     * Makes an audit write fail in the database: "on" the insert of the probe's entry, "commit" the commit of a refused
+     * request's own audit transaction; "off" removes the fault.
+     */
     public void auditFault(String mode) {
         assertThat(client.post("/api/test/faults/audit/" + mode).status()).isEqualTo(200);
     }

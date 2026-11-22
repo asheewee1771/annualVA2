@@ -1,6 +1,10 @@
 package sg.annualva.ingestion;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static sg.annualva.harness.Metrics.MAIL_ABANDONED;
+import static sg.annualva.harness.Metrics.MAIL_ADDRESS_REJECTED;
+import static sg.annualva.harness.Metrics.MAIL_REFUSED;
+import static sg.annualva.harness.Metrics.MAIL_SEND_FAILED;
 
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
@@ -12,11 +16,6 @@ import sg.annualva.harness.Metrics;
  */
 class MailSignalTest extends MailSeam1 {
 
-    private static final String SEND_FAILED = "annualva_mail_failures_total{kind=\"send_failed\"}";
-    private static final String ABANDONED = "annualva_mail_failures_total{kind=\"abandoned\"}";
-    private static final String REFUSED = "annualva_mail_failures_total{kind=\"refused\"}";
-    private static final String ADDRESS_REJECTED = "annualva_mail_failures_total{kind=\"address_rejected\"}";
-
     @Test
     void aMailTheRelayTakesIsNotAFailure() {
         returnedForRework();
@@ -26,8 +25,8 @@ class MailSignalTest extends MailSeam1 {
 
         assertThat(mailTo(SMO_A)).hasSize(1);
         Metrics after = metrics();
-        for (String kind : new String[] {SEND_FAILED, ABANDONED, REFUSED, ADDRESS_REJECTED}) {
-            assertThat(after.value(kind)).as(kind).isEqualTo(before.value(kind));
+        for (String kind : Metrics.MAIL_FAILURES) {
+            assertThat(after.since(before, kind)).as(kind).isZero();
         }
     }
 
@@ -45,10 +44,10 @@ class MailSignalTest extends MailSeam1 {
         dispatched();
         Metrics after = metrics();
 
-        assertThat(beforeTheLast.value(SEND_FAILED)).isEqualTo(before.value(SEND_FAILED) + 4);
-        assertThat(beforeTheLast.value(ABANDONED)).isEqualTo(before.value(ABANDONED));
-        assertThat(after.value(SEND_FAILED)).as("five failed attempts").isEqualTo(before.value(SEND_FAILED) + 5);
-        assertThat(after.value(ABANDONED)).isEqualTo(before.value(ABANDONED) + 1);
+        assertThat(beforeTheLast.since(before, MAIL_SEND_FAILED)).isEqualTo(4);
+        assertThat(beforeTheLast.since(before, MAIL_ABANDONED)).isZero();
+        assertThat(after.since(before, MAIL_SEND_FAILED)).as("five failed attempts").isEqualTo(5);
+        assertThat(after.since(before, MAIL_ABANDONED)).isEqualTo(1);
     }
 
     @Test
@@ -63,8 +62,8 @@ class MailSignalTest extends MailSeam1 {
         dispatched();
 
         Metrics after = metrics();
-        assertThat(after.value(ADDRESS_REJECTED)).isEqualTo(before.value(ADDRESS_REJECTED) + 1);
-        assertThat(after.value(REFUSED)).isGreaterThan(before.value(REFUSED));
-        assertThat(after.value(SEND_FAILED)).as("neither is the relay failing").isEqualTo(before.value(SEND_FAILED));
+        assertThat(after.since(before, MAIL_ADDRESS_REJECTED)).isEqualTo(1);
+        assertThat(after.since(before, MAIL_REFUSED)).isPositive();
+        assertThat(after.since(before, MAIL_SEND_FAILED)).as("neither is the relay failing").isZero();
     }
 }
