@@ -38,7 +38,7 @@ Not done here, on purpose:
 - A monitoring product, dashboards, alert rules in a product's syntax, a pager or an on-call rota (ticket 55; the run book gives the content).
 - Request-rate and latency alerts: the server's `http_server_requests` meters exist, but without a target there is nothing to alert on.
 - A distributed trace or log shipping; lm-15's ECS logs are unchanged.
-- Alerting on the sweep or a scheduled job not running at all (no heartbeat meter): the Overdue gauge staying flat after a window has passed is the only hint today.
+- Alerting on the sweep or a scheduled job not running at all (no heartbeat meter): the Overdue gauge staying flat after a window has passed is the only hint today. Ticket 67 adds a last-completed-run signal for each scheduled job.
 
 Decided 2026-11-22 (the user, recorded on ticket 52 and in `docs/agents/reviewer-decisions.md`): ticket 52 lands as provisional. Nothing below is final, and none of it is to be presented as final, until ticket 55 (choose products and non-functional targets, with a person) decides it:
 - Item 2: the scraper authenticates with a bearer token. It stands in until ticket 55 chooses; the alternative is mutual TLS or a service identity from the platform, if the hosting tier provides one.
