@@ -22,3 +22,5 @@ Consequences: a key reported again leaves the Finding with no current proposal, 
 Amends ADR 0021 (a file can be superseded and the live count excludes it), ADR 0022 (a rescan's Findings replace another file's places in the same settlement) and ADR 0027 (a proposal records who made it).
 
 Amended by ADR 0050 (item 7): once its VA Submission is Endorsed, a superseded file is listed for disposal and an approved disposal deletes its content only; the row stays until its Cycle is disposed of, `contentDisposedAt` says when, and a download answers `410 disposed`.
+
+Amended by ADR 0061: deleting a report file removes its places like a rescan; a Finding it leaves reported nowhere is removed if it never had a proposal and otherwise gets a Remediated proposal made as `FILE_DELETED` (item 5), which a file reporting it again withdraws (item 10); a rescan of a file deleted while it was checked settles as an ordinary upload, and a parsed rescan can be deleted, after which the file it superseded stays superseded but can be deleted too.
