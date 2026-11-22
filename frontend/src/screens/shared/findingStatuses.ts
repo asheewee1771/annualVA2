@@ -78,6 +78,15 @@ export const REVIEW_LABELS: Readonly<Record<ReviewState, string>> = {
   DISPUTED: "Disputed",
 };
 
+/**
+ * What a proposal the SMO/Tech Lead did not write themselves is marked with: one a rescan made, or one the deletion of the
+ * file that last reported the Finding made (ticket 60).
+ */
+export const PROPOSED_AS_LABELS: Readonly<Record<Exclude<Proposal["proposedAs"], "SMO">, string>> = {
+  RESCAN: "Rescan",
+  FILE_DELETED: "File deleted",
+};
+
 export const SEVERITY_LABELS: Readonly<Record<Severity, string>> = {
   CRITICAL: "Critical",
   HIGH: "High",

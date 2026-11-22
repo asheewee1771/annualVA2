@@ -37,15 +37,17 @@ public class ManualFindings {
 
     private final ScanReports scanReports;
     private final ScanReportStore store;
+    private final FindingStore findings;
     private final Proposals proposals;
     private final AuditActor actor;
     private final AuditLog audit;
     private final Clock clock;
 
-    ManualFindings(ScanReports scanReports, ScanReportStore store, Proposals proposals, AuditActor actor, AuditLog audit,
-            Clock clock) {
+    ManualFindings(ScanReports scanReports, ScanReportStore store, FindingStore findings, Proposals proposals,
+            AuditActor actor, AuditLog audit, Clock clock) {
         this.scanReports = scanReports;
         this.store = store;
+        this.findings = findings;
         this.proposals = proposals;
         this.actor = actor;
         this.audit = audit;
@@ -85,6 +87,54 @@ public class ManualFindings {
         return new FindingView(id, target.systemId(), finding.reportType(), finding.key(), finding.identifier(),
                 finding.packageOrRule(), finding.severity(), false, null, 0, List.of(), null, null, FindingSource.MANUAL,
                 finding.title(), null);
+    }
+
+    /**
+     * Deletes a Finding the SMO/Tech Lead entered by mistake (ticket 60, ADR 0061). Proposals and their history are never
+     * deleted, so only one that has never had a proposal goes; one that has had one is given a Finding Status instead. A
+     * parsed Finding goes only with the file that reports it. The checks run in the order the Finding and ownership (one
+     * that does not exist, or of a System the caller is not SMO/Tech Lead of, is "not found", ADR 0013), the state of the
+     * VA Submission (Draft or Returned for Rework), then, with the Finding's row held (a proposal for it waits, or it for
+     * the proposal), that it was entered by hand and that it has no proposal history. Each 409 is audited in an entry of
+     * its own about the Finding (ADR 0014); the deletion is a {@code FINDING_DELETED} entry with its Scan Report.
+     *
+     * @throws ResourceNotFoundException for a Finding that does not exist or of a System the caller is not SMO/Tech Lead
+     *     of
+     * @throws RejectedRequestException 409 {@code invalid-transition} when the VA Submission takes no changes now, 409
+     *     {@code not-manually-entered} for a parsed Finding, 409 {@code finding-has-history} for one that has had a proposal
+     */
+    @Transactional
+    public void delete(UUID findingId) {
+        ScanReportStore.Entered found = store.entered(findingId).orElseThrow(ResourceNotFoundException::new);
+        Submissions.EditTarget target = proposals.editable(found.submissionId(), AuditAction.FINDING_DELETED, findingId,
+                "This VA Submission's Findings cannot be changed in its present state.");
+        if (!proposals.lock(target, List.of(findingId))) {
+            // Located a moment ago in this VA Submission and never moved: it was deleted since.
+            throw new ResourceNotFoundException();
+        }
+        if (found.source() != FindingSource.MANUAL) {
+            throw refusedDeletion(target, findingId, "not-manually-entered", "not-manually-entered",
+                    "Only a Finding entered by hand can be deleted. A Finding read from a report file goes when that "
+                    + "file is deleted.");
+        }
+        if (findings.removeUnproposed(List.of(findingId)).isEmpty()) {
+            // Entered by hand (so it has no place) and held: only a proposal it has had keeps it.
+            throw refusedDeletion(target, findingId, "has-history", "finding-has-history",
+                    "This Finding has had a proposed Finding Status, and that history is kept. Propose the status that "
+                    + "fits it instead.");
+        }
+        audit.record(actor.attribute(AuditEvent.of(AuditAction.FINDING_DELETED, AuditOutcome.SUCCESS))
+                .onSystem(target.systemId()).onSubmission(target.submissionId()).onFinding(findingId)
+                .with(DetailKey.REPORT_TYPE, found.reportType().name()));
+    }
+
+    /** A refused deletion, audited in an entry of its own about the Finding with a fixed reason. */
+    private RejectedRequestException refusedDeletion(Submissions.EditTarget target, UUID findingId, String reason,
+            String type, String detail) {
+        audit.recordIndependently(actor.attribute(AuditEvent.of(AuditAction.FINDING_DELETED, AuditOutcome.REFUSED))
+                .onSystem(target.systemId()).onSubmission(target.submissionId()).onFinding(findingId)
+                .with(DetailKey.REASON, reason));
+        return new RejectedRequestException(HttpStatus.CONFLICT, type, detail);
     }
 
     /** Audits a refusal in an entry of its own, then answers 409 with the reason as its type; fixed text only. */

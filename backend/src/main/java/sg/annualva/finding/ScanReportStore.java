@@ -52,11 +52,12 @@ class ScanReportStore {
 
     /**
      * Whether the Scan Report holds anything a mode change would leave behind: a report file that was not rejected (on
-     * its way through the checks, parsed or superseded), or a Finding. Supporting evidence is not a report.
+     * its way through the checks, parsed or superseded) and not deleted, or a Finding (ADR 0030 item 4, ADR 0061 item 5).
+     * A superseded file counts until it is deleted itself. Supporting evidence is not a report.
      */
     private static final String HAS_CONTENT =
             "SELECT EXISTS (SELECT 1 FROM report_file WHERE submission_id = :submission AND report_type = :type "
-            + "AND kind = 'MACHINE_READABLE' AND reject_code IS NULL) "
+            + "AND kind = 'MACHINE_READABLE' AND reject_code IS NULL AND deleted_at IS NULL) "
             + "OR EXISTS (SELECT 1 FROM finding WHERE submission_id = :submission AND report_type = :type)";
 
     /**
@@ -78,6 +79,10 @@ class ScanReportStore {
             + "package_or_rule, severity, source, title, created_at) "
             + "VALUES (:submission, :system, :type, :key, :hash, :identifier, :subject, :severity, 'MANUAL', :title, :now) "
             + "ON CONFLICT (submission_id, identity_hash) DO NOTHING RETURNING id";
+
+    /** A Finding as its deletion by hand needs it: where it is, and whether it was entered by hand. */
+    private static final String ENTERED =
+            "SELECT f.submission_id, f.report_type, f.source FROM finding f WHERE f.id = :id";
 
     private final JdbcClient jdbc;
 
@@ -144,6 +149,17 @@ class ScanReportStore {
                 .param("title", finding.title())
                 .param("now", utc(now))
                 .query(UUID.class)
+                .optional();
+    }
+
+    /** A Finding as {@link #entered} reads it. */
+    record Entered(UUID submissionId, ReportType reportType, FindingSource source) {}
+
+    /** The Finding, or nothing for one that does not exist. */
+    Optional<Entered> entered(UUID findingId) {
+        return jdbc.sql(ENTERED).param("id", findingId)
+                .query((rs, row) -> new Entered(rs.getObject("submission_id", UUID.class),
+                        ReportType.valueOf(rs.getString("report_type")), FindingSource.valueOf(rs.getString("source"))))
                 .optional();
     }
 

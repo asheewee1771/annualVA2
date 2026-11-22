@@ -169,7 +169,8 @@ class AuditCompletenessTest extends ExemptionSeam1 {
 
     /**
      * The audited actions this walk does not make, each with the Seam 1 test that asserts its entry (its source must name
-     * the action): what needs a failing identity provider, a rescan or a refused mail address is set up better there.
+     * the action): what needs a failing identity provider, a rescan, a deletion or a refused mail address is set up better
+     * there.
      */
     static final Map<AuditAction, String> COVERED_ELSEWHERE = Map.of(
             AuditAction.SIGN_IN_FAILED, "audit/AuditTrailTest",
@@ -177,6 +178,8 @@ class AuditCompletenessTest extends ExemptionSeam1 {
             AuditAction.STEP_UP_FAILED, "audit/AuditTrailTest",
             AuditAction.FILE_REPLACED, "ingestion/ReplaceFileRulesTest",
             AuditAction.PROPOSAL_WITHDRAWN, "ingestion/ReplaceFileTest",
+            AuditAction.FILE_DELETED, "ingestion/DeleteReportFileTest",
+            AuditAction.FINDING_DELETED, "ingestion/DeleteManualFindingTest",
             AuditAction.SMO_UNREACHABLE, "ingestion/SmoUnreachableTest",
             AuditAction.SMO_UNREACHABLE_CLEARED, "ingestion/SmoUnreachableTest",
             AuditAction.EXEMPTION_LAPSED, "ingestion/StateTableTest");

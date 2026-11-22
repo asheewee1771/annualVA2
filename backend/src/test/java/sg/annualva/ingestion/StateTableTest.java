@@ -71,7 +71,9 @@ class StateTableTest extends ExemptionSeam1 {
         BULK_PROPOSE(Actor.SMO, Needs.FINDING, "BATCH_PROPOSED", DRAFT, RETURNED_FOR_REWORK),
         UPLOAD(Actor.SMO, Needs.SUBMISSION, "FILE_UPLOADED", DRAFT, RETURNED_FOR_REWORK),
         REPLACE(Actor.SMO, Needs.FILE, "FILE_UPLOADED", DRAFT, RETURNED_FOR_REWORK),
-        CONFIRM_SCAN_DATE(Actor.SMO, Needs.FILE, "FILE_METADATA_CONFIRMED", DRAFT, RETURNED_FOR_REWORK);
+        CONFIRM_SCAN_DATE(Actor.SMO, Needs.FILE, "FILE_METADATA_CONFIRMED", DRAFT, RETURNED_FOR_REWORK),
+        DELETE_FILE(Actor.SMO, Needs.FILE, "FILE_DELETED", DRAFT, RETURNED_FOR_REWORK),
+        DELETE_FINDING(Actor.SMO, Needs.FINDING, "FINDING_DELETED", DRAFT, RETURNED_FOR_REWORK);
 
         final Actor actor;
         final Needs needs;
@@ -321,6 +323,8 @@ class StateTableTest extends ExemptionSeam1 {
             case UPLOAD -> upload(client, sub, DEPENDENCY_CHECK, MACHINE_READABLE, "dc.json", bytes);
             case REPLACE -> ReplaceSeam1.replace(client, sub, at.fileId(), "dc.json", bytes);
             case CONFIRM_SCAN_DATE -> confirm(client, sub, at.fileId(), confirmation("2027-07-20", "app.example"));
+            case DELETE_FILE -> DeleteSeam1.deleteFile(client, sub, at.fileId());
+            case DELETE_FINDING -> DeleteSeam1.deleteFinding(client, at.findingId());
         };
     }
 

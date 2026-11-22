@@ -38,13 +38,14 @@ export interface Proposal {
   /** The Bulk-set batch it was proposed in; null for a proposal made for one Finding alone. */
   batchId: string | null;
   /**
-   * Who made it: the SMO/Tech Lead, or a rescan that no longer reported the Finding anywhere (Remediated, with the rescan
-   * named in the evidence, for the Cyber Manager to review).
+   * Who made it: the SMO/Tech Lead; a rescan that no longer reported the Finding anywhere; or the deletion of the report
+   * file that last reported it (both Remediated, with the file named in the evidence, for the Cyber Manager to review).
    */
-  proposedAs: "SMO" | "RESCAN";
+  proposedAs: "SMO" | "RESCAN" | "FILE_DELETED";
   /**
-   * For a rescan's proposal, the file the rescan replaced: where the Finding was last reported. It is kept and downloaded
-   * like any file; null for every other proposal.
+   * For a rescan's or a deletion's proposal, where the Finding was last reported: the file the rescan replaced, which is
+   * kept and downloaded like any file, or the deleted file, which can no longer be downloaded; null for every other
+   * proposal.
    */
   replacedFile: SourceFile | null;
 }
@@ -204,6 +205,14 @@ export async function fetchMatchingIds(submissionId: string, filter: FindingFilt
  */
 export function proposeStatus(findingId: string, input: ProposalInput): Promise<Proposal> {
   return request<Proposal>("POST", `/api/findings/${encodeURIComponent(findingId)}/proposals`, input);
+}
+
+/**
+ * DELETE /api/findings/{id}: deletes a Finding the SMO/Tech Lead entered by hand by mistake (ticket 60), answered with 204.
+ * A parsed Finding goes only with its file, and one that has had a proposal is kept with its history (409).
+ */
+export function deleteManualFinding(findingId: string): Promise<void> {
+  return request<void>("DELETE", `/api/findings/${encodeURIComponent(findingId)}`);
 }
 
 /** The most Findings one Bulk-set batch may hold: the server's limit. */

@@ -132,6 +132,17 @@ export function replaceReportFile(submissionId: string, fileId: string, file: Fi
   return request<ReportFile>("POST", `${files(submissionId)}/${encodeURIComponent(fileId)}/replace`, form);
 }
 
+/**
+ * DELETE /api/submissions/{id}/files/{fileId}: deletes a report file uploaded by mistake (the SMO/Tech Lead of the System,
+ * in Draft or Returned for Rework; ticket 60), answered with 204. Its places go; a Finding no other file reports is removed
+ * if it never had a proposal, and otherwise is proposed Remediated for the Cyber Manager. A parsed rescan is deleted like
+ * any file, and the file it replaced can then be deleted too (it stays marked replaced). Supporting evidence, and a file
+ * replaced by a rescan that is still there, are refused.
+ */
+export function deleteReportFile(submissionId: string, fileId: string): Promise<void> {
+  return request<void>("DELETE", `${files(submissionId)}/${encodeURIComponent(fileId)}`);
+}
+
 /** The longest a confirmed target may be: the server's limit. */
 export const MAX_TARGET_LENGTH = 200;
 

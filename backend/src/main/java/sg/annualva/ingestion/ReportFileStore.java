@@ -43,6 +43,8 @@ class ReportFileStore {
      * @param supersededBy the rescan that replaced this file; null while it has not been
      * @param scanDateConfirmed the business date the SMO/Tech Lead says the scan was made; null until they confirm it
      * @param targetConfirmed the target the SMO/Tech Lead confirmed or corrected; null until they confirm it
+     * @param deletedAt when the SMO/Tech Lead deleted this report file (ticket 60); null while it has not been. A deleted file
+     *     is kept until its Cycle is disposed of, but nothing lists, reads, counts or scans it
      */
     record Row(
             UUID id, UUID submissionId, UUID systemId, ReportType reportType, FileKind kind, String displayName,
@@ -51,7 +53,7 @@ class ReportFileStore {
             @Nullable String scanTicket, int scanAttempts, @Nullable Instant scanSubmittedAt, UUID uploadedBy,
             Instant uploadedAt, @Nullable Instant scanDateFromFile, @Nullable String targetFromFile,
             @Nullable UUID replacesId, @Nullable UUID supersededBy, @Nullable LocalDate scanDateConfirmed,
-            @Nullable String targetConfirmed, @Nullable Instant contentDisposedAt) {}
+            @Nullable String targetConfirmed, @Nullable Instant contentDisposedAt, @Nullable Instant deletedAt) {}
 
     /** One entry of the order a file went through. */
     record Stage(UUID fileId, PipelineStatus status, Instant at) {}
@@ -82,12 +84,14 @@ class ReportFileStore {
             + "f.upload_sha256, f.detected_format, f.quarantine_key, f.clean_key, f.pipeline_status, f.reject_code, "
             + "f.scan_ticket, f.scan_attempts, f.scan_submitted_at, f.uploaded_by, f.uploaded_at, f.scan_date_from_file, "
             + "f.target_from_file, f.replaces_id, f.superseded_by, f.scan_date_confirmed, f.target_confirmed, "
-            + "f.content_disposed_at "
+            + "f.content_disposed_at, f.deleted_at "
             + "FROM report_file f JOIN va_submission s ON s.id = f.submission_id ";
 
     private static final String FIND = COLUMNS + "WHERE f.id = :id";
 
-    private static final String OF_SUBMISSION = COLUMNS + "WHERE f.submission_id = :submission ORDER BY f.seq";
+    /** The VA Submission's files but the deleted ones, which are no longer part of it. */
+    private static final String OF_SUBMISSION =
+            COLUMNS + "WHERE f.submission_id = :submission AND f.deleted_at IS NULL ORDER BY f.seq";
 
     private static final String INSERT =
             "INSERT INTO report_file (submission_id, report_type, kind, display_name, size_bytes, upload_sha256, "
@@ -102,18 +106,19 @@ class ReportFileStore {
             "SELECT file_id, status, entered_at FROM report_file_stage WHERE file_id = ANY(CAST(:files AS uuid[])) "
             + "ORDER BY seq";
 
-    /** Files that still count against a Scan Report's limit: every one but the rejected and the superseded. */
+    /** Files that still count against a Scan Report's limit: every one but the rejected, the superseded and the deleted. */
     private static final String COUNT_LIVE =
             "SELECT count(*) FROM report_file WHERE submission_id = :submission AND report_type = :type "
-            + "AND kind = :kind AND reject_code IS NULL AND superseded_by IS NULL";
+            + "AND kind = :kind AND reject_code IS NULL AND superseded_by IS NULL AND deleted_at IS NULL";
 
     /**
      * A parsed file is superseded by its rescan, in the transaction that records the rescan as parsed. Only a parsed file
-     * that nothing has superseded yet; a unique index lets only one rescan of a file be live, so this always applies.
+     * that nothing has superseded yet and that was not deleted; a unique index lets only one rescan of a file be live, so
+     * this applies unless the SMO/Tech Lead deleted the file while its rescan was being checked.
      */
     private static final String SUPERSEDE =
             "UPDATE report_file SET superseded_by = :rescan, superseded_at = :now, updated_at = :now "
-            + "WHERE id = :id AND pipeline_status = 'PARSED' AND superseded_by IS NULL";
+            + "WHERE id = :id AND pipeline_status = 'PARSED' AND superseded_by IS NULL AND deleted_at IS NULL";
 
     /**
      * The scan date and target the SMO/Tech Lead confirmed, only on a parsed file that no rescan has replaced: a file that
@@ -121,29 +126,40 @@ class ReportFileStore {
      */
     private static final String CONFIRM =
             "UPDATE report_file SET scan_date_confirmed = :scanDate, target_confirmed = :target, updated_at = :now "
-            + "WHERE id = :id AND submission_id = :submission AND pipeline_status = 'PARSED' AND superseded_by IS NULL";
+            + "WHERE id = :id AND submission_id = :submission AND pipeline_status = 'PARSED' AND superseded_by IS NULL "
+            + "AND deleted_at IS NULL";
 
+    /** The files with the scanner; one deleted while it was there is left, and its verdict is never asked for. */
     private static final String IN_FLIGHT =
-            "SELECT id FROM report_file WHERE pipeline_status = 'SCAN_SUBMITTED' ORDER BY seq";
+            "SELECT id FROM report_file WHERE pipeline_status = 'SCAN_SUBMITTED' AND deleted_at IS NULL ORDER BY seq";
 
     private static final String COUNT_IN_FLIGHT =
-            "SELECT count(*) FROM report_file WHERE pipeline_status = 'SCAN_SUBMITTED'";
+            "SELECT count(*) FROM report_file WHERE pipeline_status = 'SCAN_SUBMITTED' AND deleted_at IS NULL";
 
-    /** Quarantined files whose next attempt is due: never tried, or last tried at least an attempt timeout ago. */
+    /**
+     * Quarantined files whose next attempt is due: never tried, or last tried at least an attempt timeout ago. A deleted
+     * file is never sent.
+     */
     private static final String WAITING =
-            "SELECT id FROM report_file WHERE pipeline_status = 'QUARANTINED' "
+            "SELECT id FROM report_file WHERE pipeline_status = 'QUARANTINED' AND deleted_at IS NULL "
             + "AND (scan_submitted_at IS NULL OR scan_submitted_at <= :due) ORDER BY seq LIMIT :limit";
+
+    /**
+     * The row as the job read it: its status and attempts unchanged, and not deleted since. A pass that lost a race, or
+     * read a file the SMO/Tech Lead has since deleted, changes nothing.
+     */
+    private static final String AS_READ =
+            "WHERE id = :id AND pipeline_status = :from AND scan_attempts = :attempts AND deleted_at IS NULL";
 
     /** A scan attempt began: the file is with the scanner, under a new ticket. Applies only to the row the job read. */
     private static final String ATTEMPT_STARTED =
             "UPDATE report_file SET pipeline_status = 'SCAN_SUBMITTED', scan_ticket = :ticket, "
-            + "scan_attempts = scan_attempts + 1, scan_submitted_at = :now, updated_at = :now "
-            + "WHERE id = :id AND pipeline_status = :from AND scan_attempts = :attempts";
+            + "scan_attempts = scan_attempts + 1, scan_submitted_at = :now, updated_at = :now " + AS_READ;
 
     /** An attempt could not be made: it still counts, and the next one waits the attempt timeout from now. */
     private static final String ATTEMPT_FAILED =
             "UPDATE report_file SET scan_attempts = scan_attempts + 1, scan_submitted_at = :now, updated_at = :now "
-            + "WHERE id = :id AND pipeline_status = :from AND scan_attempts = :attempts";
+            + AS_READ;
 
     /** The file rests in a new status: every column the checks learnt is written at once. */
     private static final String SETTLE =
@@ -151,13 +167,46 @@ class ReportFileStore {
             + "clean_key = COALESCE(:clean, clean_key), clean_sha256 = COALESCE(:sha, clean_sha256), "
             + "detected_format = COALESCE(:format, detected_format), scan_ticket = NULL, scan_attempts = :after, "
             + "scan_date_from_file = :scanDate, target_from_file = :target, "
-            + "updated_at = :now "
-            + "WHERE id = :id AND pipeline_status = :from AND scan_attempts = :attempts";
+            + "updated_at = :now " + AS_READ;
 
-    /** Settled files that still hold quarantined bytes: the bytes are deleted after the commit that settled them. */
+    /**
+     * Settled files that still hold quarantined bytes: the bytes are deleted after the commit that settled them. A file
+     * deleted while it was still being checked is as good as settled: nothing will scan its bytes any more.
+     */
     private static final String LEFTOVERS =
             "SELECT id, pipeline_status, quarantine_key FROM report_file WHERE quarantine_key IS NOT NULL "
-            + "AND pipeline_status NOT IN ('QUARANTINED', 'SCAN_SUBMITTED') ORDER BY updated_at, seq LIMIT 200";
+            + "AND (pipeline_status NOT IN ('QUARANTINED', 'SCAN_SUBMITTED') OR deleted_at IS NOT NULL) "
+            + "ORDER BY updated_at, seq LIMIT 200";
+
+    /**
+     * The SMO/Tech Lead deletes a report file (ticket 60): only a machine-readable one of this VA Submission that is not
+     * deleted already and that no live rescan supersedes: one never superseded, or one whose rescan was deleted since (the
+     * user's decision of 2026-11-22: it stays superseded, and can then go too). A parsed rescan is deleted like any file.
+     * This one statement decides it and holds the row until the transaction ends: a settlement of the file, or the
+     * supersede of it by a rescan, waits for the deletion, or the deletion for them, and the second sees the first's row.
+     * The rescan the check reads is another row: one whose deletion has not committed yet still counts as live, so the
+     * answer is a refusal, never a file superseded by nothing live and still held.
+     */
+    private static final String DELETE =
+            "UPDATE report_file f SET deleted_at = :now, deleted_by = :by, updated_at = :now "
+            + "WHERE f.id = :id AND f.submission_id = :submission AND f.kind = 'MACHINE_READABLE' AND f.deleted_at IS NULL "
+            + "AND (f.superseded_by IS NULL OR EXISTS (SELECT 1 FROM report_file r WHERE r.id = f.superseded_by "
+            + "AND r.deleted_at IS NOT NULL))";
+
+    /**
+     * A file a rescan is about to be kept for, held until the transaction ends: whether it is still a parsed file that no
+     * rescan has superseded and that is not deleted.
+     */
+    private static final String LOCK_REPLACEABLE =
+            "SELECT count(*) FROM (SELECT id FROM report_file WHERE id = :id AND pipeline_status = 'PARSED' "
+            + "AND superseded_by IS NULL AND deleted_at IS NULL FOR UPDATE) held";
+
+    /**
+     * A rescan whose replaced file was deleted while it was being checked settles as an ordinary upload, and no longer
+     * says it replaces anything.
+     */
+    private static final String FORGET_REPLACED =
+            "UPDATE report_file SET replaces_id = NULL, updated_at = :now WHERE id = :id";
 
     /** A delete that failed moves the file to the back of the sweep, so the files not yet tried come first. */
     private static final String DEFER_RELEASE = "UPDATE report_file SET updated_at = :now WHERE id = :id";
@@ -199,6 +248,27 @@ class ReportFileStore {
     /** @return whether the file was a parsed one that nothing had superseded */
     boolean supersede(UUID fileId, UUID rescanId, Instant now) {
         return jdbc.sql(SUPERSEDE).param("id", fileId).param("rescan", rescanId).param("now", utc(now)).update() == 1;
+    }
+
+    /**
+     * Marks a report file of the VA Submission deleted, by this person, now.
+     *
+     * @return whether it was a report file that no live rescan supersedes (never superseded, or its rescan deleted) and
+     *     that was not deleted already; false means nothing was written
+     */
+    boolean delete(Submissions.EditTarget submission, UUID fileId, UUID by, Instant now) {
+        return jdbc.sql(DELETE).param("id", fileId).param("submission", submission.submissionId()).param("by", by)
+                .param("now", utc(now)).update() == 1;
+    }
+
+    /** Holds the file a rescan replaces; whether it can still be replaced (parsed, not superseded, not deleted). */
+    boolean lockReplaceable(UUID fileId) {
+        return jdbc.sql(LOCK_REPLACEABLE).param("id", fileId).query(Long.class).single() == 1;
+    }
+
+    /** The rescan no longer replaces anything: the file it was a rescan of was deleted while it was being checked. */
+    void forgetReplaced(UUID rescanId, Instant now) {
+        jdbc.sql(FORGET_REPLACED).param("id", rescanId).param("now", utc(now)).update();
     }
 
     /** @return whether the file was still a parsed one that no rescan had replaced; false means nothing was written */
@@ -327,7 +397,7 @@ class ReportFileStore {
                 instant(rs, "scan_date_from_file"), rs.getString("target_from_file"),
                 rs.getObject("replaces_id", UUID.class), rs.getObject("superseded_by", UUID.class),
                 rs.getObject("scan_date_confirmed", LocalDate.class), rs.getString("target_confirmed"),
-                instant(rs, "content_disposed_at"));
+                instant(rs, "content_disposed_at"), instant(rs, "deleted_at"));
     }
 
 }

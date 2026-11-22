@@ -118,6 +118,14 @@ public enum AuditAction {
      * {@code replaced_file_id}; never a name or content.
      */
     FILE_REPLACED("file-replaced", "file"),
+    /**
+     * An SMO/Tech Lead deleted a report file uploaded by mistake (ticket 60; SUCCESS, with the {@code file_id}, its
+     * {@code report_type} and the {@code count} of Findings the deletion removed), or was refused because the VA Submission
+     * takes no changes in its present state or the file is supporting evidence or was replaced by a rescan that is not
+     * deleted (REFUSED, with the {@code file_id} and a fixed reason). About the System and the VA Submission; never the
+     * file's name or content.
+     */
+    FILE_DELETED("file-deleted", "file"),
     /** Someone but the System's own SMO/Tech Lead read a file's pipeline status, or the list of a VA Submission's files. */
     FILE_VIEWED("file-viewed", "file"),
     /** A clean file's bytes were downloaded, by anyone who may see the System. */
@@ -145,17 +153,18 @@ public enum AuditAction {
      * An SMO/Tech Lead proposed a Finding Status (SUCCESS, with the status as a fixed code, and the memo file's id when a
      * Risk Accepted proposal has one, and the batch id when it was made in a Bulk-set batch), or was refused because the
      * VA Submission takes no proposals in its present state (REFUSED, with a fixed reason). A Remediated proposal a rescan
-     * makes (story 39) is by the SMO/Tech Lead who uploaded the rescan, with {@code rescan_file_id} and {@code replaced_file_id}; every entry
-     * carries {@code proposed_as}. About the System, the VA Submission and the Finding; never the evidence,
+     * makes (story 39) is by the SMO/Tech Lead who uploaded the rescan, with {@code rescan_file_id} and {@code replaced_file_id}; one a
+     * deletion of a report file makes (ticket 60) is by the SMO/Tech Lead who deleted it, with {@code proposed_as}
+     * FILE_DELETED and the deleted file as {@code replaced_file_id}; every entry carries {@code proposed_as}. About the System, the VA Submission and the Finding; never the evidence,
      * justification, reason, approver, plan or date.
      */
     STATUS_PROPOSED("status-proposed", "database"),
     /**
-     * A file reported again a Finding whose current proposal a rescan had made (Remediated, because the rescan reported it
-     * nowhere), so that proposal is no longer current: the Finding has no current proposal and no review (a Confirmed one
-     * included), and the proposal stays in its history (story 39). Written by the scan job for the SMO/Tech Lead who
-     * uploaded the file, who is its actor. About the System, the VA Submission and the Finding, with the file's
-     * {@code file_id} and {@code proposed_as} RESCAN; never any text.
+     * A file reported again a Finding whose current proposal a rescan or a deleted file had made (Remediated, because no
+     * file reported it any more), so that proposal is no longer current: the Finding has no current proposal and no review
+     * (a Confirmed one included), and the proposal stays in its history (story 39, ticket 60). Written by the scan job for
+     * the SMO/Tech Lead who uploaded the file, who is its actor. About the System, the VA Submission and the Finding, with
+     * the file's {@code file_id} and the withdrawn proposal's {@code proposed_as} (RESCAN or FILE_DELETED); never any text.
      */
     PROPOSAL_WITHDRAWN("proposal-withdrawn", "database"),
     /**
@@ -202,6 +211,14 @@ public enum AuditAction {
      * Submission; never the title, identifier, package or rule.
      */
     FINDING_ENTERED("finding-entered", "database"),
+    /**
+     * A Finding was removed (ticket 60; SUCCESS): an SMO/Tech Lead deleted a Finding they entered by hand (with its
+     * {@code report_type}), or deleted the report file that alone reported a Finding that never had a proposal (with that
+     * file's {@code file_id}). Or a deletion of a Finding was refused because the VA Submission takes no changes in its
+     * present state, the Finding was not entered by hand, or it has a proposal history, which is never deleted (REFUSED,
+     * with a fixed reason). About the System, the VA Submission and the Finding; never its title, identifier or package.
+     */
+    FINDING_DELETED("finding-deleted", "database"),
     /**
      * A Cyber Manager confirmed or Disputed the current proposal of a Finding (story 50; SUCCESS, with the
      * {@code decision}), or was refused because segregation of duties does not allow them to review this VA Submission, it
