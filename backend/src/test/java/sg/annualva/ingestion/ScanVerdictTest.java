@@ -1,6 +1,7 @@
 package sg.annualva.ingestion;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -8,6 +9,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import sg.annualva.boundary.FileStore;
 import sg.annualva.harness.ApiClient;
+import sg.annualva.harness.Metrics;
 import sg.annualva.harness.Samples;
 import tools.jackson.databind.JsonNode;
 
@@ -268,6 +270,60 @@ class ScanVerdictTest extends IngestionSeam1 {
         assertThat(file(draft, id).get("status").asString()).isEqualTo("PARSED");
         assertThat(fileStore.count(FileStore.Zone.CLEAN)).isEqualTo(1);
         assertThat(fileStore.count(FileStore.Zone.QUARANTINE)).isZero();
+    }
+
+    /**
+     * Ticket 67: the scan job catches a file that fails and goes on, so a pass in which every file failed returns like any
+     * other. It is not a completed run of the job: nothing else counts a failure that is not the scanner's.
+     */
+    @Test
+    void aPassInWhichEveryFileFailedIsNotACompletedRunOfTheScanJob() {
+        Draft draft = draft();
+        uploadedId(draft, "dc.xml");
+        pass();
+        Metrics before = metrics();
+        clock.advance(Duration.ofSeconds(1));
+        arrange.reportFileFault("PARSED");
+        try {
+            pass();
+        } finally {
+            arrange.reportFileFault("off");
+        }
+        Metrics afterFailure = metrics();
+        clock.advance(Duration.ofSeconds(1));
+
+        pass();
+
+        assertThat(afterFailure.value(Metrics.job("scan_poller"))).as("the one file failed, so the pass did nothing")
+                .isEqualTo(before.value(Metrics.job("scan_poller")));
+        assertThat(metrics().value(Metrics.job("scan_poller")))
+                .isCloseTo(clock.instant().toEpochMilli() / 1000.0, within(0.001));
+    }
+
+    /**
+     * Ticket 67: a leftover whose bytes the store refuses to delete is deferred and the pass goes on, so a pass whose only
+     * work is such leftovers returns like any other. It is not a completed run of the scan job; the pass that deletes them
+     * is.
+     */
+    @Test
+    void aPassWhoseEveryDeleteTheStoreRefusedIsNotACompletedRunOfTheScanJob() {
+        Draft draft = draft();
+        fileStore.refuseDeletes(true);
+        settled(draft, DEPENDENCY_CHECK, "report.xml", Samples.dependencyCheckXml());
+        Metrics before = metrics();
+        clock.advance(Duration.ofSeconds(1));
+
+        pass();
+        Metrics afterRefusal = metrics();
+        fileStore.refuseDeletes(false);
+        clock.advance(Duration.ofSeconds(1));
+        pass();
+
+        assertThat(afterRefusal.value(Metrics.job("scan_poller"))).as("its only work, one delete, was refused")
+                .isEqualTo(before.value(Metrics.job("scan_poller")));
+        assertThat(fileStore.count(FileStore.Zone.QUARANTINE)).isZero();
+        assertThat(metrics().value(Metrics.job("scan_poller")))
+                .isCloseTo(clock.instant().toEpochMilli() / 1000.0, within(0.001));
     }
 
     @Test

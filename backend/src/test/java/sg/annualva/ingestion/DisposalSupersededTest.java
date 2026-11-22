@@ -1,12 +1,16 @@
 package sg.annualva.ingestion;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Set;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import sg.annualva.boundary.FileStore;
 import sg.annualva.harness.ApiClient;
+import sg.annualva.harness.Metrics;
 import tools.jackson.databind.JsonNode;
 
 /**
@@ -15,6 +19,11 @@ import tools.jackson.databind.JsonNode;
  * download of it answers a plain "disposed" problem.
  */
 class DisposalSupersededTest extends DisposalSeam1 {
+
+    @AfterEach
+    void auditFaultOff() {
+        arrange.auditFault("off");
+    }
 
     /** SYS-F1's VA Submission with its first scan replaced by a rescan, taken through review to Endorsed. */
     private record Endorsed(Draft draft, String first, String rescan) {}
@@ -114,5 +123,52 @@ class DisposalSupersededTest extends DisposalSeam1 {
         assertThat(listIn(vaPoc(), "EXECUTED").get("id").asString()).isEqualTo(listId);
         assertThat(fileStore.keys(FileStore.Zone.CLEAN)).doesNotContain(endorsed.first());
         assertThat(status(signedInAs(SMO_A), sub, endorsed.first()).get("contentDisposedAt").isNull()).isFalse();
+    }
+
+    /**
+     * Ticket 67: both retention jobs catch their own failure and return, so the scheduler sees nothing wrong; their series
+     * show it instead. A listing that could not be written and a disposal the store could not finish are not completed
+     * runs; the runs after the cause is gone are.
+     */
+    @Test
+    void aListingOrADisposalThatFailedIsNotACompletedRunOfItsRetentionJob() {
+        Endorsed endorsed = endorsedWithARescan();
+        endorsed(vaPoc(), endorsed.draft().submissionId());
+        Metrics before = metrics();
+        clock.advance(Duration.ofMinutes(5));
+
+        arrange.auditFault("DISPOSAL_LISTED");
+        var listingFailed = arrange.scheduledJob("RetentionJob.list");
+        Metrics afterListingFailed = metrics();
+        arrange.auditFault("off");
+        assertThat(disposalLists(vaPoc())).as("the listing rolled back").isEmpty();
+        clock.advance(Duration.ofMinutes(5));
+        arrange.scheduledJob("RetentionJob.list");
+        Metrics listed = metrics();
+        double listedAt = clock.instant().toEpochMilli() / 1000.0;
+
+        String listId = listIn(vaPoc(), "DRAFT").get("id").asString();
+        approved(vaPoc(), listId);
+        clock.advance(Duration.ofMinutes(5));
+        fileStore.refuseDeletes(true);
+        var disposalFailed = arrange.scheduledJob("RetentionJob.execute");
+        Metrics afterDisposalFailed = metrics();
+        fileStore.refuseDeletes(false);
+        clock.advance(Duration.ofMinutes(5));
+        arrange.scheduledJob("RetentionJob.execute");
+
+        assertThat(listingFailed.status()).as("the job caught it").isEqualTo(200);
+        assertThat(afterListingFailed.value(Metrics.job("retention_list"))).as("a listing that failed")
+                .isEqualTo(before.value(Metrics.job("retention_list")));
+        assertThat(listed.value(Metrics.job("retention_list"))).isCloseTo(listedAt, within(0.001));
+        assertThat(listed.value(Metrics.job("retention_execute")))
+                .as("the listing's executor pass, with no list waiting, is a completed run of the executor")
+                .isCloseTo(listedAt, within(0.001));
+        assertThat(disposalFailed.status()).as("the executor caught it").isEqualTo(200);
+        assertThat(listIn(vaPoc(), "EXECUTED").get("id").asString()).isEqualTo(listId);
+        assertThat(afterDisposalFailed.value(Metrics.job("retention_execute"))).as("a disposal that failed")
+                .isEqualTo(listed.value(Metrics.job("retention_execute")));
+        assertThat(metrics().value(Metrics.job("retention_execute")))
+                .isCloseTo(clock.instant().toEpochMilli() / 1000.0, within(0.001));
     }
 }

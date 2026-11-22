@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 import sg.annualva.cycle.CycleCalendar;
+import sg.annualva.monitoring.PassTally;
 import sg.annualva.submission.WaitingWork;
 import sg.annualva.submission.WaitingWork.Waiting;
 
@@ -57,34 +58,38 @@ public class DeadlineReminders {
 
     /**
      * One pass: every reminder due on today's business date, read once from the clock. Logs one line with how much work
-     * waited and how many pieces could not be reminded (ids, counts and an exception type only).
+     * waited and how many pieces could not be reminded (ids, counts and an exception type only). A piece of work is one
+     * piece of waiting work; one whose reminders could not be written ({@code reminder-failed}) did not go through. A listing that fails throws.
+     *
+     * @return true unless the pass had work and none of it went through (ADR 0060 item 8); the job records a completed run
+     *     only on true
      */
-    public void plan() {
+    public boolean plan() {
         Instant now = clock.instant();
         LocalDate today = calendar.dateOf(now);
-        int waiting = 0;
-        int failed = 0;
+        PassTally pass = new PassTally();
         @Nullable String failure = null;
         for (Waiting item : work.on(today)) {
-            waiting++;
             try {
                 transaction.executeWithoutResult(status -> {
                     if (work.stillWaiting(item)) {
                         remind(item, today, now);
                     }
                 });
+                pass.add(true);
             } catch (RuntimeException e) {
-                failed++;
+                pass.add(false);
                 failure = e.getClass().getName();
             }
         }
         if (failure != null) {
             log.atError().setMessage("Reminders could not be written; a later pass today writes them")
-                    .addKeyValue("event.action", "reminder-failed").addKeyValue("labels.count", failed)
+                    .addKeyValue("event.action", "reminder-failed").addKeyValue("labels.count", pass.failed())
                     .addKeyValue("error.type", failure).log();
         }
         log.atInfo().setMessage("Deadline reminders planned").addKeyValue("event.action", "reminders-planned")
-                .addKeyValue("labels.waiting", waiting).addKeyValue("labels.failed", failed).log();
+                .addKeyValue("labels.waiting", pass.tried()).addKeyValue("labels.failed", pass.failed()).log();
+        return pass.didItsWork();
     }
 
     /** Reminds the person whose step the work waits on, by the step's row of the one table ({@link StepNotices}). */

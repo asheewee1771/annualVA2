@@ -44,11 +44,19 @@ public class DisposalExecutor {
         this.transaction = transaction;
     }
 
-    /** One pass: executes the approved list, if one is waiting. */
-    public void execute() {
+    /**
+     * One pass: executes the approved list, if one is waiting.
+     *
+     * <p>The pass has at most one piece of work, the approved list: a disposal that failed ({@code disposal-failed},
+     * tried again on the next pass) did not go through. Reading the approved list is not caught: a failure throws.
+     *
+     * @return true unless the pass had work and none of it went through (ADR 0060 item 8); the job records a completed run
+     *     only on true
+     */
+    public boolean execute() {
         Optional<DisposalStore.ListRow> approved = transaction.execute(status -> store.approved());
         if (approved == null || approved.isEmpty()) {
-            return;
+            return true;
         }
         UUID listId = approved.get().id();
         try {
@@ -65,7 +73,9 @@ public class DisposalExecutor {
                     .addKeyValue("event.action", "disposal-failed")
                     .addKeyValue("labels.disposal_list_id", listId.toString())
                     .addKeyValue("error.type", e.getClass().getName()).log();
+            return false;
         }
+        return true;
     }
 
     /** The records and the tombstone, under the lock; false when another pass executed the list first. */

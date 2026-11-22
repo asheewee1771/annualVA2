@@ -10,9 +10,11 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.access.AccessDeniedException;
@@ -41,16 +43,6 @@ import sg.annualva.audit.AuditLog;
 import sg.annualva.audit.AuditOutcome;
 import sg.annualva.audit.DetailKey;
 import sg.annualva.access.RoleGrantStore;
-import sg.annualva.export.ExportWorker;
-import sg.annualva.ingestion.ScanPoller;
-import sg.annualva.notification.DeadlineReminders;
-import sg.annualva.notification.MailOutbox;
-import sg.annualva.retention.DisposalExecutor;
-import sg.annualva.retention.DisposalPlanner;
-import sg.annualva.submission.CycleLifecycle;
-import sg.annualva.submission.ExemptionLapse;
-import sg.annualva.submission.OverdueSweep;
-import sg.annualva.submission.RoleLapses;
 import sg.annualva.web.ProblemResponses;
 import sg.annualva.web.ResourceNotFoundException;
 
@@ -62,6 +54,7 @@ import sg.annualva.web.ResourceNotFoundException;
  * method-level rules and {@link AccessGuard} those endpoints must.
  */
 @TestConfiguration(proxyBeanMethods = false)
+@Import(ScheduledJobRuns.class)
 public class TestEndpoints {
 
     @Bean
@@ -101,6 +94,9 @@ public class TestEndpoints {
                 "SELECT id, role, source, system_id, user_id IS NOT NULL AS attached, last_used_at, revoked_at IS NOT NULL AS revoked "
                 + "FROM role_grant WHERE email = CAST(:email AS citext) ORDER BY granted_at, id";
 
+        /** An audit action's name, as a fault on that action names it; checked before it is written into DDL. */
+        private static final Pattern AUDIT_ACTION = Pattern.compile("[A-Z][A-Z_]+");
+
         /** The Systems that "exist", standing in for the System Register's table. */
         private final Set<UUID> systems = ConcurrentHashMap.newKeySet();
 
@@ -115,32 +111,9 @@ public class TestEndpoints {
         private final Clock clock;
         private final AuditLog audit;
         private final TransactionTemplate transaction;
-        private final ScanPoller scanPoller;
-        private final OverdueSweep overdueSweep;
-        private final MailOutbox mailOutbox;
-        private final CycleLifecycle cycleLifecycle;
-        private final ExportWorker exportWorker;
-        private final ExemptionLapse exemptionLapse;
-        private final DisposalExecutor disposalExecutor;
-        private final DisposalPlanner disposalPlanner;
-        private final DeadlineReminders reminders;
-        private final RoleLapses roleLapses;
 
         public TestController(AppUserStore users, RoleGrantStore grants, AccessGuard guard, StepUp stepUp, JdbcClient jdbc,
-                Clock clock, AuditLog audit, TransactionTemplate transaction, ScanPoller scanPoller,
-                OverdueSweep overdueSweep, MailOutbox mailOutbox, CycleLifecycle cycleLifecycle,
-                ExportWorker exportWorker, ExemptionLapse exemptionLapse, DisposalExecutor disposalExecutor,
-                DisposalPlanner disposalPlanner, DeadlineReminders reminders, RoleLapses roleLapses) {
-            this.roleLapses = roleLapses;
-            this.exemptionLapse = exemptionLapse;
-            this.disposalExecutor = disposalExecutor;
-            this.disposalPlanner = disposalPlanner;
-            this.reminders = reminders;
-            this.cycleLifecycle = cycleLifecycle;
-            this.scanPoller = scanPoller;
-            this.overdueSweep = overdueSweep;
-            this.mailOutbox = mailOutbox;
-            this.exportWorker = exportWorker;
+                Clock clock, AuditLog audit, TransactionTemplate transaction) {
             this.users = users;
             this.grants = grants;
             this.guard = guard;
@@ -341,38 +314,6 @@ public class TestEndpoints {
             return Map.of("version", version);
         }
 
-        /** One pass of the scan job, which {@code annualva.scheduling.enabled=false} keeps from running by itself in tests. */
-        @PostMapping("/api/test/jobs/scan")
-        public Map<String, String> scan() {
-            scanPoller.poll();
-            return Map.of("ran", "scan");
-        }
-
-        /** One pass of the Overdue sweep, which {@code annualva.scheduling.enabled=false} keeps from running by itself in tests. */
-        @PostMapping("/api/test/jobs/overdue")
-        public Map<String, String> overdue() {
-            overdueSweep.sweep();
-            return Map.of("ran", "overdue");
-        }
-
-        /** One pass of the deadline reminder planner, which {@code annualva.scheduling.enabled=false} keeps from running by itself in tests. */
-        @PostMapping("/api/test/jobs/reminders")
-        public Map<String, String> reminders() {
-            reminders.plan();
-            return Map.of("ran", "reminders");
-        }
-
-        /** One pass of the mail dispatcher, which {@code annualva.scheduling.enabled=false} keeps from running by itself in tests. */
-        @PostMapping("/api/test/jobs/mail")
-        public Map<String, String> mail() {
-            try {
-                mailOutbox.dispatch();
-            } catch (CapturingMailRelay.DispatcherStopped stopped) {
-                return Map.of("ran", "stopped");
-            }
-            return Map.of("ran", "mail");
-        }
-
         private static final String OUTBOX =
                 "SELECT o.id, u.email::text AS recipient, n.action, o.template, o.status, o.attempts, o.next_attempt_at, "
                 + "o.relay_message_id FROM mail_outbox o JOIN notification n ON n.id = o.notification_id "
@@ -407,45 +348,6 @@ public class TestEndpoints {
                     + "WHERE id = :id").param("name", body.get("name")).param("code", body.get("code")).param("id", id)
                     .update();
             return Map.of("id", id.toString());
-        }
-
-        /** One pass of the VA Cycle lifecycle job, which {@code annualva.scheduling.enabled=false} keeps from running by itself in tests. */
-        @PostMapping("/api/test/jobs/cycle-lifecycle")
-        public Map<String, String> cycleLifecycle() {
-            cycleLifecycle.run();
-            return Map.of("ran", "cycle-lifecycle");
-        }
-
-        /** One pass of the conditional Exemption lapse job (ticket 42), which scheduling being off keeps from running. */
-        @PostMapping("/api/test/jobs/exemption-lapse")
-        public Map<String, String> exemptionLapse() {
-            exemptionLapse.run();
-            return Map.of("ran", "exemption-lapse");
-        }
-
-        /** One pass of the role lapse job (ticket 46), which scheduling being off keeps from running. */
-        @PostMapping("/api/test/jobs/role-lapse")
-        public Map<String, String> roleLapse() {
-            roleLapses.run();
-            return Map.of("ran", "role-lapse");
-        }
-
-        /** One pass of the export job, which {@code annualva.scheduling.enabled=false} keeps from running by itself in tests. */
-        @PostMapping("/api/test/jobs/exports")
-        public Map<String, String> exports() {
-            exportWorker.run();
-            return Map.of("ran", "exports");
-        }
-
-        /**
-         * One pass of the retention job, which {@code annualva.scheduling.enabled=false} keeps from running by itself in
-         * tests: the executor disposes of an approved list, then the listing writes what is due.
-         */
-        @PostMapping("/api/test/jobs/retention")
-        public Map<String, String> retention() {
-            disposalExecutor.execute();
-            disposalPlanner.plan();
-            return Map.of("ran", "retention");
         }
 
         /**
@@ -520,9 +422,15 @@ public class TestEndpoints {
         /**
          * Makes an audit write fail inside the database, so a test can prove that an audit entry that cannot be written is
          * counted. "on": the insert of an entry of the probe's action ({@code ROLE_GRANTED}) fails, in the action's
-         * transaction. "commit": an entry of a refused request ({@code REQUEST_REFUSED}) is inserted and its own transaction
-         * fails at the commit (a deferred constraint trigger), which is a failure outside the insert. "off" removes both.
-         * Other actions are untouched, so signing in and the scrape itself still work while one is on.
+         * transaction. An action's name in capitals ({@code SUBMISSION_OVERDUE}, {@code DISPOSAL_LISTED}): the insert of
+         * an entry of that action fails, so a scheduled job's pass that writes one fails and rolls back (ticket 67).
+         * "commit": an entry of a refused request ({@code REQUEST_REFUSED}) is inserted and its own transaction fails at
+         * the commit (a deferred constraint trigger), which is a failure outside the insert. "off" removes them. Other
+         * actions are untouched, so signing in and the scrape itself still work while one is on.
+         *
+         * <p>Like every fault toggle here, it changes the one database the whole suite shares, so it relies on the tests
+         * running one at a time (no parallel execution is configured) and on the test switching it off in its
+         * {@code @AfterEach}.
          */
         @PostMapping("/api/test/faults/audit/{mode}")
         public Map<String, String> auditFault(@PathVariable String mode) {
@@ -536,10 +444,29 @@ public class TestEndpoints {
             if ("on".equals(mode)) {
                 jdbc.sql("CREATE TRIGGER test_audit_fault BEFORE INSERT ON audit_entry FOR EACH ROW "
                         + "WHEN (NEW.action = 'ROLE_GRANTED') EXECUTE FUNCTION test_audit_fault()").update();
+            } else if (AUDIT_ACTION.matcher(mode).matches()) {
+                jdbc.sql("CREATE TRIGGER test_audit_fault BEFORE INSERT ON audit_entry FOR EACH ROW "
+                        + "WHEN (NEW.action = '" + mode + "') EXECUTE FUNCTION test_audit_fault()").update();
             } else if ("commit".equals(mode)) {
                 jdbc.sql("CREATE CONSTRAINT TRIGGER test_audit_commit_fault AFTER INSERT ON audit_entry "
                         + "DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (NEW.action = 'REQUEST_REFUSED') "
                         + "EXECUTE FUNCTION test_audit_fault()").update();
+            }
+            return Map.of("fault", mode);
+        }
+
+        /**
+         * Makes every read of the export queue fail ("on"): the table is renamed, so both listings of the export job fail
+         * as they would with the database refusing them (ticket 67); "off" puts it back. Every other test would fail while
+         * the table is renamed, so this relies on serial test execution and on the test's {@code @AfterEach} turning it
+         * off, as the audit fault does.
+         */
+        @PostMapping("/api/test/faults/export-listing/{mode}")
+        public Map<String, String> exportListingFault(@PathVariable String mode) {
+            if ("on".equals(mode)) {
+                jdbc.sql("ALTER TABLE export_request RENAME TO export_request_faulted").update();
+            } else {
+                jdbc.sql("ALTER TABLE IF EXISTS export_request_faulted RENAME TO export_request").update();
             }
             return Map.of("fault", mode);
         }

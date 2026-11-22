@@ -2,6 +2,7 @@ package sg.annualva.harness;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.JsonNode;
@@ -40,38 +41,40 @@ public final class Arrange {
 
     /** One pass of the scan job, which a test moves forward by hand because scheduling is off in tests. */
     public void scan() {
-        assertThat(client.post("/api/test/jobs/scan").status()).isEqualTo(200);
+        ranJob("ScanPollerJob.run");
     }
 
     /** One pass of the Overdue sweep, which a test runs by hand after moving the clock, because scheduling is off in tests. */
     public void overdueSweep() {
-        assertThat(client.post("/api/test/jobs/overdue").status()).isEqualTo(200);
+        ranJob("OverdueSweepJob.run");
     }
 
     /** One pass of the deadline reminder planner, which a test runs by hand after moving the clock (ticket 38). */
     public void reminders() {
-        var response = client.post("/api/test/jobs/reminders");
-        assertThat(response.status()).as(response.body()).isEqualTo(200);
+        ranJob("DeadlineReminderJob.run");
     }
 
     /** One pass of the VA Cycle lifecycle job, run by hand after the clock is moved, because scheduling is off in tests. */
     public void cycleLifecycle() {
-        assertThat(client.post("/api/test/jobs/cycle-lifecycle").status()).isEqualTo(200);
+        ranJob("CycleLifecycleJob.run");
     }
 
     /** One pass of the role lapse job (ticket 46), run by hand after the clock is moved. */
     public void roleLapse() {
-        assertThat(client.post("/api/test/jobs/role-lapse").status()).isEqualTo(200);
+        ranJob("RoleLapseJob.run");
     }
 
     /** One pass of the conditional Exemption lapse job (ticket 42), run by hand after the clock is moved. */
     public void exemptionLapse() {
-        assertThat(client.post("/api/test/jobs/exemption-lapse").status()).isEqualTo(200);
+        ranJob("ExemptionLapseJob.run");
     }
 
-    /** One pass of the export job, which produces queued exports and removes expired ones (ticket 44). */
+    /**
+     * The retention job's daily pass ({@code RetentionJob.list}): the executor disposes of an approved list, then the
+     * listing writes what is due. As in production, a listing that fails is logged and does not fail the pass.
+     */
     public void retention() {
-        assertThat(client.post("/api/test/jobs/retention").status()).isEqualTo(200);
+        ranJob("RetentionJob.list");
     }
 
     /** How many rows each table a disposal removes from holds, by table name. */
@@ -81,8 +84,9 @@ public final class Arrange {
         return ApiClient.json(response);
     }
 
+    /** One pass of the export job, which produces queued exports and removes expired ones (ticket 44). */
     public void exports() {
-        assertThat(client.post("/api/test/jobs/exports").status()).isEqualTo(200);
+        ranJob("ExportWorkerJob.run");
     }
 
     /** Makes what a queued export will hold unreadable, as a row written before its shape changed would be. */
@@ -110,10 +114,16 @@ public final class Arrange {
 
     /**
      * Makes an audit write fail in the database: "on" the insert of the probe's entry, "commit" the commit of a refused
-     * request's own audit transaction; "off" removes the fault.
+     * request's own audit transaction, an action's name ({@code SUBMISSION_OVERDUE}, say) the insert of an entry of that
+     * action, so the job pass that writes it fails; "off" removes the fault.
      */
     public void auditFault(String mode) {
         assertThat(client.post("/api/test/faults/audit/" + mode).status()).isEqualTo(200);
+    }
+
+    /** Makes the export job's listings fail in the database ("on"); "off" removes the fault. */
+    public void exportListingFault(String mode) {
+        assertThat(client.post("/api/test/faults/export-listing/" + mode).status()).isEqualTo(200);
     }
 
     /** One pass of the mail dispatcher, which a test runs by hand because scheduling is off in tests. */
@@ -124,6 +134,23 @@ public final class Arrange {
     /** One pass of the mail dispatcher that stops mid-call, as the relay fake was told to make it ({@code stopNext}). */
     public void mailDispatchStopped() {
         mailDispatchEnding("stopped");
+    }
+
+    /** The name of every scheduled job the application runs ({@code SimpleClassName.method}, ticket 67). */
+    public List<String> scheduledJobs() {
+        var response = client.get("/api/test/scheduled-jobs");
+        assertThat(response.status()).as(response.body()).isEqualTo(200);
+        return ApiClient.json(response).valueStream().map(JsonNode::asString).toList();
+    }
+
+    /** One run of a scheduled job's bean as the scheduler starts it; returns the answer, a 500 when the run threw. */
+    public ApiClient.Response scheduledJob(String name) {
+        return client.post("/api/test/scheduled-jobs/" + name);
+    }
+
+    private void ranJob(String name) {
+        var response = scheduledJob(name);
+        assertThat(response.status()).as(response.body()).isEqualTo(200);
     }
 
     private void mailDispatchEnding(String ending) {

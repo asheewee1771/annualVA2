@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,7 @@ import sg.annualva.cycle.CycleCalendar;
 import sg.annualva.finding.Findings;
 import sg.annualva.finding.ProposalView;
 import sg.annualva.monitoring.KeySignals;
+import sg.annualva.monitoring.PassTally;
 import sg.annualva.parser.ParsedReport;
 import sg.annualva.scan.CleanFiles;
 import sg.annualva.scan.MalwareScan;
@@ -87,34 +89,55 @@ public class ScanPoller {
         this.transaction = transaction;
     }
 
-    /** One pass over the files out with the scanner, the files waiting for it, and the bytes left to delete. */
-    public void poll() {
+    /**
+     * One pass over the files out with the scanner, the files waiting for it, and the bytes left to delete. A piece of
+     * work is a file of any of the three stages, in one tally for the pass. One that fails here
+     * ({@code file-pipeline-failed}: the database or the store) did not go through, nor did a leftover whose bytes the
+     * store refused to discard ({@code quarantine-discard-failed}, {@code clean-discard-failed}); a scanner failure is an
+     * attempt, counted where it happens, and does. A listing that fails throws.
+     *
+     * @return true unless the pass had work and none of it went through (ADR 0060 item 8); the job records a completed run
+     *     only on true
+     */
+    public boolean poll() {
+        PassTally pass = new PassTally();
         for (UUID id : store.inFlight()) {
-            handled(id, () -> advance(id));
+            pass.add(handled(id, () -> {
+                advance(id);
+                return true;
+            }));
         }
         int free = properties.maxInFlight() - store.countInFlight();
         if (free > 0) {
             Instant due = clock.instant().minus(properties.attemptTimeout());
             for (UUID id : store.waiting(free, due)) {
-                handled(id, () -> begin(id));
+                pass.add(handled(id, () -> {
+                    begin(id);
+                    return true;
+                }));
             }
         }
         Instant swept = clock.instant();
         for (ReportFileStore.Leftover leftover : store.leftovers()) {
-            handled(leftover.id(), () -> release(leftover, swept));
+            pass.add(handled(leftover.id(), () -> release(leftover, swept)));
         }
+        return pass.didItsWork();
     }
 
-    /** A file that fails here is logged by id and left for the next pass; it never stops the others. */
-    private static void handled(UUID id, Runnable work) {
+    /**
+     * A file that fails here is logged by id and left for the next pass; it never stops the others. Whether the file's work
+     * went through: false when it threw, or when the work itself answers false.
+     */
+    private static boolean handled(UUID id, BooleanSupplier work) {
         try {
-            work.run();
+            return work.getAsBoolean();
         } catch (RuntimeException e) {
             log.atError().setMessage("A Scan Report file could not be advanced")
                     .addKeyValue("event.action", "file-pipeline-failed")
                     .addKeyValue("labels.file_id", id.toString())
                     .addKeyValue("error.type", e.getClass().getSimpleName())
                     .log();
+            return false;
         }
     }
 
@@ -343,15 +366,17 @@ public class ScanPoller {
     /**
      * Deletes the quarantined bytes of a settled file (and, for a rejected one, any copy a failed pass left in the clean
      * zone) and only then forgets the key: a delete that fails leaves the key, and the next pass tries again, after the
-     * files that were not tried yet (so files whose delete keeps failing never starve the others).
+     * files that were not tried yet (so files whose delete keeps failing never starve the others). False when a delete
+     * was refused, so the leftover did not go through.
      */
-    private void release(ReportFileStore.Leftover leftover, Instant now) {
+    private boolean release(ReportFileStore.Leftover leftover, Instant now) {
         if (!scan.discard(leftover.quarantineKey())
                 || (leftover.status().rejected() && !cleanFiles.discard(leftover.id().toString()))) {
             store.deferRelease(leftover.id(), now);
-            return;
+            return false;
         }
         store.clearQuarantineKey(leftover.id(), leftover.quarantineKey());
+        return true;
     }
 
     private static void logged(UUID id, PipelineStatus status, int attempts) {

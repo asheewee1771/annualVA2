@@ -3,9 +3,12 @@ package sg.annualva.monitoring;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.TimeGauge;
+import java.time.Clock;
 import java.util.EnumMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.springframework.stereotype.Component;
 
@@ -19,7 +22,8 @@ import org.springframework.stereotype.Component;
  * is {@code annualva_audit_write_failures_total}.
  *
  * <p>Nothing here reads the database: a scrape only reads values held in memory, so a slow or unreachable database cannot
- * hold the scrape past the scraper's timeout. The Overdue gauges hold what the last committed sweep counted.
+ * hold the scrape past the scraper's timeout. The Overdue gauges hold what the last committed sweep counted, and the job
+ * gauges when each scheduled job last completed a run (ticket 67), read from the {@code Clock} bean.
  */
 @Component
 public class KeySignals {
@@ -36,8 +40,37 @@ public class KeySignals {
     private static final String STEP_UP_REFUSALS = "annualva.stepup.refusals";
     /** An audit entry that could not be written. The action it described is not done, or the refusal it recorded is unrecorded. */
     private static final String AUDIT_WRITE_FAILURES = "annualva.audit.write.failures";
+    /** When a scheduled job last completed a run, in seconds since the epoch; tag {@code kind} ({@link Job}). A gauge. */
+    private static final String JOB_LAST_COMPLETED = "annualva.job.last.completed";
 
     private static final String KIND = "kind";
+
+    /**
+     * Every scheduled job, one per {@code @Scheduled} method ({@code ScheduledJobSignalTest} fails when one has no value
+     * here). Prometheus sets a {@code job} label of its own, the scrape's, so the tag is {@code kind}, as on the others.
+     */
+    public enum Job {
+        /** {@code ScanPollerJob}: the malware scan and parse of uploaded files. */
+        SCAN_POLLER,
+        /** {@code MailDispatchJob}: the mail outbox. */
+        MAIL_DISPATCH,
+        /** {@code ExportWorkerJob}: the queued exports. */
+        EXPORT_WORKER,
+        /** {@code OverdueSweepJob}: the Overdue sweep. */
+        OVERDUE_SWEEP,
+        /** {@code DeadlineReminderJob}: the deadline reminders. */
+        DEADLINE_REMINDERS,
+        /** {@code CycleLifecycleJob}: opening and closing VA Cycles. */
+        CYCLE_LIFECYCLE,
+        /** {@code ExemptionLapseJob}: the lapse of conditional Exemptions. */
+        EXEMPTION_LAPSE,
+        /** {@code RoleLapseJob}: role lapses and returns. */
+        ROLE_LAPSE,
+        /** {@code RetentionJob.execute}: disposing of an approved disposal list. */
+        RETENTION_EXECUTE,
+        /** {@code RetentionJob.list}: listing what is due for disposal. */
+        RETENTION_LIST
+    }
 
     /** What is Overdue: a VA Submission, or an active System with none in that VA Cycle (Not Started). */
     public enum Overdue {
@@ -76,8 +109,12 @@ public class KeySignals {
     private final Map<StepUpRefusal, Counter> stepUpRefusals = new EnumMap<>(StepUpRefusal.class);
     /** The bits of each gauge's double; not-a-number until the first sweep has committed. */
     private final Map<Overdue, AtomicLong> overdue = new EnumMap<>(Overdue.class);
+    /** Each job's last completed run, in milliseconds since the epoch; the start of the application until its first. */
+    private final Map<Job, AtomicLong> lastCompleted = new EnumMap<>(Job.class);
+    private final Clock clock;
 
-    KeySignals(MeterRegistry registry) {
+    KeySignals(MeterRegistry registry, Clock clock) {
+        this.clock = clock;
         scanFailures = Counter.builder(SCAN_FAILURES)
                 .description("Scanner or file store calls that failed during a malware scan").register(registry);
         scanTimeouts = Counter.builder(SCAN_TIMEOUTS)
@@ -97,6 +134,14 @@ public class KeySignals {
             overdue.put(kind, bits);
             Gauge.builder(OVERDUE, bits, held -> Double.longBitsToDouble(held.get())).tag(KIND, tag(kind))
                     .description("VA Submissions, and Systems with none, flagged Overdue and not yet finished")
+                    .register(registry);
+        }
+        long started = clock.millis();
+        for (Job kind : Job.values()) {
+            AtomicLong at = new AtomicLong(started);
+            lastCompleted.put(kind, at);
+            TimeGauge.builder(JOB_LAST_COMPLETED, at, TimeUnit.MILLISECONDS, AtomicLong::get).tag(KIND, tag(kind))
+                    .description("When each scheduled job last completed a run, or the application started if none has")
                     .register(registry);
         }
     }
@@ -137,5 +182,14 @@ public class KeySignals {
      */
     public void overdue(Overdue kind, int count) {
         overdue.get(kind).set(Double.doubleToLongBits(count));
+    }
+
+    /**
+     * A scheduled job completed a run, now by the application clock: its scheduled method calls this as its last step, so
+     * a run that throws never reaches it and a run that found nothing to do does. Until a job's first completed run the
+     * series holds the time the application started, so a job that never runs after a start is alerted on too.
+     */
+    public void jobCompleted(Job kind) {
+        lastCompleted.get(kind).set(clock.millis());
     }
 }
