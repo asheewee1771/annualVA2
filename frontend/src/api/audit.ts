@@ -57,6 +57,7 @@ const ACTION_LABELS: Readonly<Record<string, string>> = {
   SUBMISSION_STARTED: "VA Submission started",
   SUBMISSION_VIEWED: "VA Submission viewed",
   SUBMISSION_SUBMITTED: "VA Submission submitted",
+  DECLARATION_PUBLISHED: "Declaration version published",
   SUBMISSION_OVERDUE: "Overdue",
   FILE_UPLOADED: "File uploaded",
   FILE_REJECTED: "File rejected",

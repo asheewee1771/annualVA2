@@ -4,6 +4,7 @@ import type { AreaProps } from "../shared/AreaProps.ts";
 import { AuditLogScreen } from "../shared/AuditLogScreen.tsx";
 import { QuarterBoardScreen, type BoardFor } from "../shared/QuarterBoardScreen.tsx";
 import { CycleMatrixScreen } from "./CycleMatrixScreen.tsx";
+import { DeclarationScreen } from "./DeclarationScreen.tsx";
 import { DisposalScreen } from "./DisposalScreen.tsx";
 import { EndorseScreen } from "./EndorseScreen.tsx";
 import { ExemptionQueueScreen } from "./ExemptionQueueScreen.tsx";
@@ -23,6 +24,7 @@ const REGISTER_PATH = "/va-poc/register";
 const EXPORTS_PATH = "/va-poc/exports";
 const DISPOSAL_PATH = "/va-poc/disposal";
 const ROLE_HOLDERS_PATH = "/va-poc/role-holders";
+const DECLARATION_PATH = "/va-poc/declaration";
 
 /** A tab of the area: where it is, its name, and what it shows. */
 interface Tab {
@@ -60,7 +62,8 @@ function SubPage({ children }: { children: ReactNode }) {
 /**
  * The VA POC's working area (stories 45, 64 and 65): three tabs, the Quarter board of every System, the Cycle matrix and
  * the Exemption requests waiting on a decision, and, beneath the area, a VA Submission opened from the board (to
- * endorse it), the System Register, the exports, the disposal lists, the role-holder review and the audit log.
+ * endorse it), the System Register, the exports, the disposal lists, the role-holder review, the Declaration's versions
+ * and the audit log.
  */
 export function VaPocArea({ path, classification }: AreaProps) {
   const endorsing = endorsedSubmissionOf(path);
@@ -95,6 +98,13 @@ export function VaPocArea({ path, classification }: AreaProps) {
       </SubPage>
     );
   }
+  if (path === DECLARATION_PATH) {
+    return (
+      <SubPage>
+        <DeclarationScreen classification={classification} />
+      </SubPage>
+    );
+  }
   if (path === AUDIT_LOG_PATH) {
     return (
       <SubPage>
@@ -125,6 +135,9 @@ export function VaPocArea({ path, classification }: AreaProps) {
           </li>
           <li>
             <AppLink path={ROLE_HOLDERS_PATH}>Role-holder review</AppLink>
+          </li>
+          <li>
+            <AppLink path={DECLARATION_PATH}>Declaration</AppLink>
           </li>
           <li>
             <AppLink path={AUDIT_LOG_PATH}>Audit log</AppLink>

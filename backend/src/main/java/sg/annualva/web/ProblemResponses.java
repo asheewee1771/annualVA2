@@ -73,6 +73,18 @@ public class ProblemResponses {
         return withTraceId(problem);
     }
 
+    /** The problem of a domain module's refusal: its fixed type and sentence, and the field or reasons it names. */
+    public static ProblemDetail rejected(RejectedRequestException ex) {
+        ProblemDetail problem = problem(ex.status(), ex.type(), ex.getMessage());
+        if (ex.field() != null) {
+            problem.setProperty("field", ex.field());
+        }
+        if (!ex.reasons().isEmpty()) {
+            problem.setProperty("reasons", ex.reasons());
+        }
+        return problem;
+    }
+
     public static ProblemDetail withTraceId(ProblemDetail problem) {
         problem.setProperty("traceId", CorrelationIdFilter.current());
         return problem;

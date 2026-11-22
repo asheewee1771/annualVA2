@@ -321,12 +321,14 @@ public class Submissions {
     private final ReviewProgress progress;
     private final StepUp stepUp;
     private final ExemptionStore exemptions;
+    private final DeclarationStore declarations;
 
     Submissions(SubmissionStore store, RegisterSystems register, CycleCalendar calendar, AccessGuard guard,
             CurrentUser user, AuditActor actor, AuditLog audit, Clock clock, SubmitReadiness readiness,
             ApplicationEventPublisher events, SegregationOfDuties sod, ReviewProgress progress, StepUp stepUp,
-            ExemptionStore exemptions) {
+            ExemptionStore exemptions, DeclarationStore declarations) {
         this.exemptions = exemptions;
+        this.declarations = declarations;
         this.store = store;
         this.register = register;
         this.calendar = calendar;
@@ -443,7 +445,7 @@ public class Submissions {
     public Submission submit(UUID id, DeclarationAnswer answer) {
         AtStep target = atStep(id, SUBMITTING,
                 actor.attribute(AuditEvent.of(AuditAction.SUBMISSION_SUBMITTED, AuditOutcome.REFUSED)), Hold.EXCLUSIVE);
-        Declarations.Text declaration = store.currentDeclarationText();
+        Declarations.Text declaration = declarations.current();
         List<SubmitReadiness.Blocker> blockers = new ArrayList<>(readiness.blockers(id));
         declarationBlocker(answer, declaration.version()).ifPresent(blockers::add);
         if (!blockers.isEmpty()) {
