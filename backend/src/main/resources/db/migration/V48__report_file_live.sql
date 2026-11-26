@@ -1,0 +1,22 @@
+-- One rule for "a live report file" (ticket 68, ADR 0061 item 8). Ticket 60 deletes a report file softly
+-- (report_file.deleted_at, V47), and every statement that must ignore a deleted file wrote its own deleted_at IS NULL. This
+-- view is the one definition: a live report file is one the SMO/Tech Lead has not deleted. The application reads and
+-- writes report files through it; the few statements that must see deleted files too name the table itself, and a test
+-- (LiveReportFileReadsTest) lists each with why. A constraint or an index can name only the table, so V47's
+-- report_file_deleted_check, report_file_quarantine_copy_check and report_file_one_live_rescan_idx keep their own
+-- deleted_at.
+--
+-- report_file_live
+--   every column of report_file, for the rows that are not deleted. It is a simple view, so PostgreSQL updates and locks
+--   the table's rows through it (UPDATE and SELECT ... FOR UPDATE), the view's condition joining the statement's own and
+--   checked again on a row a concurrent transaction changed, as a condition written in the statement is. A row updated to
+--   deleted through it leaves it (no CHECK OPTION). The column list is fixed when the view is made: a migration that adds
+--   a column to report_file recreates the view (CREATE OR REPLACE VIEW, the new column last; LiveReportFileViewTest fails
+--   until it does), and one that drops a column or changes its type must drop the view first and create it again
+--   (PostgreSQL refuses both while the view depends on the column).
+--
+-- "Live" here means not deleted, the glossary's live report file. The index report_file_one_live_rescan_idx (V16, V47)
+-- keeps its name but uses the word in an older, narrower sense: one rescan of a file that is neither rejected nor
+-- deleted, which the glossary calls an active rescan.
+CREATE VIEW report_file_live AS
+    SELECT * FROM report_file WHERE deleted_at IS NULL;

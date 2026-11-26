@@ -70,6 +70,10 @@ class DisposalStore {
     private static final String SUBMISSIONS_OF = "SELECT id, system_id, cycle_year FROM va_submission "
             + "WHERE cycle_year = :cycle ORDER BY started_at NULLS LAST, id";
 
+    /**
+     * A Cycle's files. The disposal reads and deletes the table, not the {@code report_file_live} view: a file the SMO/Tech
+     * Lead deleted is kept until its Cycle is disposed of, and goes with it (ADR 0061 items 2 and 8).
+     */
     private static final String FILES_OF = "SELECT f.id, s.system_id, s.cycle_year FROM report_file f "
             + "JOIN va_submission s ON s.id = f.submission_id WHERE s.cycle_year = :cycle ORDER BY f.seq";
 

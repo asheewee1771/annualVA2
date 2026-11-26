@@ -53,11 +53,12 @@ class ScanReportStore {
     /**
      * Whether the Scan Report holds anything a mode change would leave behind: a report file that was not rejected (on
      * its way through the checks, parsed or superseded) and not deleted, or a Finding (ADR 0030 item 4, ADR 0061 item 5).
-     * A superseded file counts until it is deleted itself. Supporting evidence is not a report.
+     * A superseded file counts until it is deleted itself. Supporting evidence is not a report. A live file is one of the
+     * {@code report_file_live} view, the one definition (ticket 68, ADR 0061 item 8).
      */
     private static final String HAS_CONTENT =
-            "SELECT EXISTS (SELECT 1 FROM report_file WHERE submission_id = :submission AND report_type = :type "
-            + "AND kind = 'MACHINE_READABLE' AND reject_code IS NULL AND deleted_at IS NULL) "
+            "SELECT EXISTS (SELECT 1 FROM report_file_live WHERE submission_id = :submission AND report_type = :type "
+            + "AND kind = 'MACHINE_READABLE' AND reject_code IS NULL) "
             + "OR EXISTS (SELECT 1 FROM finding WHERE submission_id = :submission AND report_type = :type)";
 
     /**

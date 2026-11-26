@@ -127,6 +127,7 @@ class ArchitectureTest {
         String[][] writes = {
             {"sg.annualva.ingestion.ReportFileStore", "insert"},
             {"sg.annualva.ingestion.ReportFileStore", "confirm"},
+            {"sg.annualva.ingestion.ReportFileStore", "delete"},
             {"sg.annualva.finding.ScanReportStore", "lock"},
             {"sg.annualva.finding.ScanReportStore", "set"},
             {"sg.annualva.finding.ScanReportStore", "insertManual"},

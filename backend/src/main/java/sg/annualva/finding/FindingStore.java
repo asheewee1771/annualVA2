@@ -75,7 +75,10 @@ class FindingStore {
             + "p.approval_memo_file_id, p.plan, p.target_date, p.proposed_at, p.batch_id, p.proposed_as, "
             + "p.replaced_file_id, rp.display_name AS replaced_file_name ";
 
-    /** The file a rescan proposal names as the one it replaced, for its name. */
+    /**
+     * The file a rescan or deletion proposal names as the one it replaced, for its name: the table, not the live view, as a
+     * {@code FILE_DELETED} proposal names the deleted file (ADR 0061 item 3).
+     */
     private static final String REPLACED_FILE = "LEFT JOIN report_file rp ON rp.id = p.replaced_file_id ";
 
     /** The Finding's current proposal as {@code p}, for the page, the count and their filters; none when it has none. */
@@ -272,9 +275,9 @@ class FindingStore {
             + "AND NOT EXISTS (SELECT 1 FROM finding_status_proposal p WHERE p.id = f.current_proposal_id "
             + "AND p.status = 'REMEDIATED') ORDER BY f.id";
 
-    /** A memo is a supporting evidence file of this VA Submission that has passed every check. */
+    /** A memo is a live supporting evidence file of this VA Submission that has passed every check. */
     private static final String IS_READY_EVIDENCE =
-            "SELECT count(*) FROM report_file WHERE id = :file AND submission_id = :submission AND kind = 'EVIDENCE' "
+            "SELECT count(*) FROM report_file_live WHERE id = :file AND submission_id = :submission AND kind = 'EVIDENCE' "
             + "AND pipeline_status = 'READY'";
 
     /**
@@ -301,10 +304,13 @@ class FindingStore {
             "SELECT " + PROPOSAL_COLUMNS + "FROM finding_status_proposal p " + REPLACED_FILE
             + "WHERE p.finding_id = :finding ORDER BY p.seq DESC";
 
-    /** The uploaded files each of these Findings was read from, in the order the files were uploaded. */
+    /**
+     * The uploaded files each of these Findings was read from, in the order the files were uploaded. A deleted file has no
+     * places left (its deletion removed them), so the live files are all there are.
+     */
     private static final String SOURCES =
             "SELECT o.finding_id, rf.id AS file_id, rf.display_name "
-            + "FROM finding_occurrence o JOIN report_file rf ON rf.id = o.report_file_id "
+            + "FROM finding_occurrence o JOIN report_file_live rf ON rf.id = o.report_file_id "
             + "WHERE o.finding_id = ANY(CAST(:ids AS uuid[])) "
             + "GROUP BY o.finding_id, rf.id, rf.display_name, rf.seq ORDER BY o.finding_id, rf.seq";
 
