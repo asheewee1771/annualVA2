@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code Review — 68-one-rule-for-a-live-report-file</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <div class="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-6 py-3 flex items-center gap-3 flex-wrap">
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Overall PASS (warnings only)</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">build PASS C0 H0 M0 L0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">thermo-nuclear WARN C0 H0 M0 L4</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">code-review WARN C0 H0 M0 L12</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">semgrep PASS C0 H0 M0 L0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">im8 PASS C0 H0 M0 L0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">react PASS C0 H0 M0 L0</span>
+      <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">springboot WARN C0 H0 M0 L4</span>
+      <span class="font-mono text-sm text-slate-500 ml-auto">worktree-agent-af72016bedd128996</span>
+    </div>
+    <main class="max-w-5xl mx-auto px-6 py-10 space-y-6">
+
+      <div class="rounded-lg border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Consolidated Code Review &amp; Compliance Report</h1>
+          <p class="text-sm text-slate-500 mt-1">Ticket 68, one rule for a live report file: the report_file_live view (V48) as the single definition, the server-computed supersededByLiveRescan field, the StaticSql-based LiveReportFileReadsTest guard, and the single lock-then-check ReportFileStore.delete. Round three. Base: main at 563955a plus the out-of-scope script fix 0275ba6.</p>
+        </div>
+
+        <div class="rounded-md border border-sky-200 bg-sky-50 p-4 text-sm text-slate-700 space-y-2">
+          <p class="font-semibold text-slate-900">Where each check's artifact comes from</p>
+          <ul class="list-disc pl-5 space-y-1">
+            <li><span class="font-medium">build, thermo-nuclear, code-review, semgrep</span>: round three, all run on tree fingerprint <span class="font-mono text-xs">9c73af78e396088b5bf6eceae41227a363e6b9a2</span> (git diff | sha1sum, confirmed before and after each run).</li>
+            <li><span class="font-medium">im8</span>: round one (diff <span class="font-mono text-xs">0f9eb16c45cc902c4525a9dbea134fb8f527f402</span>), reused under the approved fast mode.</li>
+            <li><span class="font-medium">react</span>: round one (diff <span class="font-mono text-xs">0f9eb16c45cc902c4525a9dbea134fb8f527f402</span>), reused; the two front-end files have not changed since.</li>
+            <li><span class="font-medium">springboot</span>: round two (diff <span class="font-mono text-xs">fb72bdb10c65293ddf7ffd4f5f4d80cd53f086b2</span>), reused.</li>
+          </ul>
+          <p>Fast mode, approved by the user: only failing checks plus build are rerun. im8, react and springboot passed (no Critical or High) in their rounds and are carried over unchanged, so their evidence describes an earlier tree than the final one.</p>
+        </div>
+
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Executive Summary</h2>
+          <p class="text-xs text-slate-500 mt-1">Overall compliance evaluation status across all active checks.</p>
+        </div>
+        <p class="text-sm text-slate-700">Overall <span class="font-semibold">PASS</span>. No check reports a Critical, High or Medium finding. Both round-two Mediums are closed: thermo-nuclear N1 (ReportFileStore.delete lost its EditTarget and submission_id scope) is fixed, and the scan job's live-read behaviour change was accepted by the user on 2026-11-26 ("Keep it"), with AC3 and ADR 0061 item 8 amended and DeletedWhileQueuedTest pinning it. Twenty Low findings remain across thermo-nuclear, code-review and springboot; several overlap (see the per-check notes).</p>
+
+        <table class="w-full text-sm text-left border border-slate-100">
+          <tr class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50">
+            <th class="px-4 py-2">Check</th><th class="px-4 py-2">Status</th><th class="px-4 py-2">Counts</th><th class="px-4 py-2">Round</th><th class="px-4 py-2">Summary</th>
+          </tr>
+          <tr class="border-t border-slate-100">
+            <td class="px-4 py-2 font-medium">build</td><td class="px-4 py-2">PASS</td><td class="px-4 py-2">C0 H0 M0 L0</td><td class="px-4 py-2">3 (final tree)</td>
+            <td class="px-4 py-2">Back-end verify: BUILD SUCCESS, 1,439 tests, 0 failures, 0 errors, 1 skipped; JaCoCo line 97.97 %, branch 91.77 %. Race-test, scan-job-skip and two guard mutants all bite. Architecture document current. Front-end check exit 0.</td>
+          </tr>
+          <tr class="border-t border-slate-100">
+            <td class="px-4 py-2 font-medium">thermo-nuclear</td><td class="px-4 py-2">WARN</td><td class="px-4 py-2">C0 H0 M0 L4</td><td class="px-4 py-2">3 (final tree)</td>
+            <td class="px-4 py-2">N1 (Medium) and N2 fixed. Carried Lows N3, N4, L1, L2 remain, in files untouched since round two. Reviewer reported PASS; Low-only maps to WARN.</td>
+          </tr>
+          <tr class="border-t border-slate-100">
+            <td class="px-4 py-2 font-medium">code-review</td><td class="px-4 py-2">WARN</td><td class="px-4 py-2">C0 H0 M0 L12</td><td class="px-4 py-2">3 (final tree)</td>
+            <td class="px-4 py-2">Round-two Spec Medium accepted by user decision. S10, S13, P7 fixed. Open Lows: Standards S6, S7, S11, S12, S14; Spec P2, P4, P5, P6, P8, plus new P9, P10. Reviewer reported PASS; Low-only maps to WARN.</td>
+          </tr>
+          <tr class="border-t border-slate-100">
+            <td class="px-4 py-2 font-medium">semgrep</td><td class="px-4 py-2">PASS</td><td class="px-4 py-2">C0 H0 M0 L0</td><td class="px-4 py-2">3 (final tree)</td>
+            <td class="px-4 py-2">p/security-audit and p/default over all 19 changed code files, 0 errors, no finding in the change. One pre-existing false positive in test code and 7 pre-existing results in untouched files, not counted.</td>
+          </tr>
+          <tr class="border-t border-slate-100">
+            <td class="px-4 py-2 font-medium">im8</td><td class="px-4 py-2">PASS</td><td class="px-4 py-2">C0 H0 M0 L0</td><td class="px-4 py-2">1 (reused)</td>
+            <td class="px-4 py-2">as-1, as-2, as-3, as-7, as-12, as-13, lm-4, lm-19, pm-6 PASS; others N/A. Three informational manual-review items.</td>
+          </tr>
+          <tr class="border-t border-slate-100">
+            <td class="px-4 py-2 font-medium">react</td><td class="px-4 py-2">PASS</td><td class="px-4 py-2">C0 H0 M0 L0</td><td class="px-4 py-2">1 (reused)</td>
+            <td class="px-4 py-2">ReplacedFlags and isDeletable read the server's supersededByLiveRescan; hasLiveRescan removed; narrower props, fixed-literal rendering. No findings.</td>
+          </tr>
+          <tr class="border-t border-slate-100">
+            <td class="px-4 py-2 font-medium">springboot</td><td class="px-4 py-2">WARN</td><td class="px-4 py-2">C0 H0 M0 L4</td><td class="px-4 py-2">2 (reused)</td>
+            <td class="px-4 py-2">Round-one L1 to L4 fixed; lock-then-check judged sound. Four Low (R2-L1 to R2-L4); round-three evidence shows R2-L3 and R2-L4 since addressed. Reviewer reported PASS; Low-only maps to WARN.</td>
+          </tr>
+        </table>
+
+        <div class="space-y-3 pt-3 border-t border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">High-Priority Issues</h3>
+          <p class="text-sm text-slate-600">None. No check reports a Critical or High finding.</p>
+          <p class="text-sm text-slate-600">Resolved since round two (for context):</p>
+          <ul class="list-disc pl-5 text-sm text-slate-600 space-y-1">
+            <li>Medium N1 (thermo-nuclear): fixed. <span class="font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/ReportFileStore.java</span> line 307 now takes the EditTarget, runs LOCK_DELETABLE (FOR NO KEY UPDATE) then DELETE, both filtered on submission_id, and returns a closed Deletion result; ArchitectureTest's edit-lock gate lists it.</li>
+            <li>Medium, scan-job behaviour change against AC3 (code-review): accepted by the user on 2026-11-26 and recorded in <span class="font-mono text-xs">docs/agents/reviewer-decisions.md</span> line 631; pinned by <span class="font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/DeletedWhileQueuedTest.java</span>, whose mutant fails on the intended assertion.</li>
+          </ul>
+        </div>
+      </div>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">build (round 3)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <div class="px-5 pb-4 text-sm text-slate-600 space-y-2">
+          <p>Back end: <span class="font-mono text-xs">./mvnw -B -ntp clean verify</span>, BUILD SUCCESS in 25:02 min; 1,439 tests, 0 failures, 0 errors, 1 skipped; line 97.97 %, branch 91.77 %, all coverage checks met. Includes ArchUnit, LiveReportFileReadsTest, LiveReportFileViewTest, ModuleConventionsArchTest, DocumentationCompletenessTest, MigrationSequenceTest, the SupersededByLiveRescanTest race test and DeletedWhileQueuedTest.</p>
+          <p>Mutants (each reverted afterwards): disabling the lock makes the deletion answer 204 instead of 409; pointing ScanPoller.begin/advance back at a table read fails DeletedWhileQueuedTest line 27; pointing ScanReportStore.HAS_CONTENT back at the table fails both guard rules; a stale HOLDS_CLEAN_COPY entry fails the stale-entry check.</p>
+          <p>Architecture document check exit 0. Front end <span class="font-mono text-xs">npm run check</span> exit 0.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <tr><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th></tr>
+          <tr><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td></tr>
+        </table>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">thermo-nuclear (round 3)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-4 text-sm text-slate-600 space-y-2">
+          <p>Recheck of the round-two findings and the code changed since. N1 (Medium) fixed: deletion is one store method with a closed Deletion result, FOR NO KEY UPDATE chosen to keep ADR 0061 item 2's lock order. N2 fixed: ADR 0061 items 1, 2 and 8 now agree. FakeMalwareScanner.beforeNextSubmit and DeletedWhileQueuedTest judged clean. The four Lows below are carried unchanged; none blocks the ticket.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <tr><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th></tr>
+          <tr class="border-t border-slate-100">
+            <td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/arch/StaticSql.java</td><td class="px-4 py-2">-</td>
+            <td class="px-4 py-2">N3: the "every statement is a static String" premise is stated, not checked; the DisposalStore exemption is declared twice; a checked reflection exception leaks. Turn the premise into a check, declare the exemption once, wrap the exception.</td>
+          </tr>
+          <tr class="border-t border-slate-100">
+            <td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/SupersededByLiveRescanTest.java</td><td class="px-4 py-2">-</td>
+            <td class="px-4 py-2">N4: failure paths hide their cause (hold future never completed exceptionally, termination assertion in finally, non-idempotent CREATE FUNCTION/TRIGGER, no note that the suite must run sequentially).</td>
+          </tr>
+          <tr class="border-t border-slate-100">
+            <td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/ReportFileView.java; frontend/src/screens/smo/ScanReportCard.tsx</td><td class="px-4 py-2">-</td>
+            <td class="px-4 py-2">L1 (optional): two overlapping API fields, supersededBy and supersededByLiveRescan; isReplaceable still infers from the list.</td>
+          </tr>
+          <tr class="border-t border-slate-100">
+            <td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/finding/FindingStore.java; backend/src/main/java/sg/annualva/ingestion/ReadyEvidence.java</td><td class="px-4 py-2">-</td>
+            <td class="px-4 py-2">L2: "ready evidence" is defined twice across the module boundary (IS_READY_EVIDENCE and isReadyEvidence). Raise a follow-up ticket.</td>
+          </tr>
+        </table>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">code-review (round 3)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-4 text-sm text-slate-600 space-y-2">
+          <p>Two-axis recheck. Standards: S10 and S13 fixed; S6, S7, S11, S12, S14 open. Spec: round-two Medium accepted by the user's decision of 2026-11-26; P7 fixed; P2 and P4 partly fixed; P5, P6, P8 open; P9 and P10 new. Acceptance criteria 1 to 4 met (AC2 with gaps P2, AC3 as amended). P5 duplicates S6.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <tr><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th></tr>
+          <tr class="border-t border-slate-100">
+            <td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">docs/tech-architecture.md; docs/tech-architecture.html</td><td class="px-4 py-2">1027-1028</td>
+            <td class="px-4 py-2">S6: the finding/finding_status_proposal lines of finding_review are swapped in the ER diagram, from 0275ba6's regeneration. Commit it with 0275ba6's change or revert it here.</td>
+          </tr>
+          <tr class="border-t border-slate-100">
+            <td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/ReportFileView.java</td><td class="px-4 py-2">-</td>
+            <td class="px-4 py-2">S7 (smell): two overlapping fields in Row/ReportFileView.</td>
+          </tr>
+          <tr class="border-t border-slate-100">
+            <td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">docs/adr/0061-a-report-file-is-deleted-softly-and-a-finding-goes-only-if-it-never-had-a-proposal.md</td><td class="px-4 py-2">9</td>
+            <td class="px-4 py-2">S11: item 2 still says "live rescan" in the older sense where the glossary now says "active rescan"; Findings.java line 123 likewise.</td>
+          </tr>
+          <tr class="border-t border-slate-100">
+            <td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">CONTEXT.md</td><td class="px-4 py-2">-</td>
+            <td class="px-4 py-2">S12 (judgement): the glossary entry names code and defines "active rescan" inline.</td>
+          </tr>
+          <tr class="border-t border-slate-100">
+            <td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/retention/DisposalStore.java</td><td class="px-4 py-2">-</td>
+            <td class="px-4 py-2">S14 (smell): the DisposalStore exemption is written twice (overlaps thermo-nuclear N3).</td>
+          </tr>
+          <tr class="border-t border-slate-100">
+            <td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/arch/StaticSql.java; backend/src/test/java/sg/annualva/arch/LiveReportFileReadsTest.java</td><td class="px-4 py-2">-</td>
+            <td class="px-4 py-2">P2 (partly fixed): guard gaps remain for SQL built in a method body and for a *Store without @Repository (overlaps springboot R2-L2).</td>
+          </tr>
+          <tr class="border-t border-slate-100">
+            <td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/retention/DisposalStore.java</td><td class="px-4 py-2">-</td>
+            <td class="px-4 py-2">P4 (partly fixed): some disposal reads of the table give no reason at the statement.</td>
+          </tr>
+          <tr class="border-t border-slate-100">
+            <td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">docs/tech-architecture.md</td><td class="px-4 py-2">1027-1028</td>
+            <td class="px-4 py-2">P5: the ER line swap, same as S6.</td>
+          </tr>
+          <tr class="border-t border-slate-100">
+            <td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">.scratch/annual-va/issues/68-one-rule-for-a-live-report-file.md</td><td class="px-4 py-2">7, 10-13</td>
+            <td class="px-4 py-2">P6: acceptance boxes unticked and status still ready-for-agent. Tick and set the status when the ticket closes.</td>
+          </tr>
+          <tr class="border-t border-slate-100">
+            <td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">(change set)</td><td class="px-4 py-2">-</td>
+            <td class="px-4 py-2">P8: work the ticket did not ask for (the one-method lock-then-check rewrite, the ModuleConventionsArchTest move onto StaticSql, the "active rescan" glossary term). None is wrong; give each its own commit when the change is split.</td>
+          </tr>
+          <tr class="border-t border-slate-100">
+            <td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">docs/adr/0061-a-report-file-is-deleted-softly-and-a-finding-goes-only-if-it-never-had-a-proposal.md</td><td class="px-4 py-2">3, 32</td>
+            <td class="px-4 py-2">P9 (new): the ADR status line does not cite the 2026-11-26 decision that settles item 8's scan-job bullet (copied into docs/tech-architecture.md line 898), and item 8's last line says "Besides that change" two bullets away from the change it means. Append the decision citation, rerun the architecture-doc refresh, and say "Besides the scan job's change above".</td>
+          </tr>
+          <tr class="border-t border-slate-100">
+            <td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">docs/adr/0061-a-report-file-is-deleted-softly-and-a-finding-goes-only-if-it-never-had-a-proposal.md</td><td class="px-4 py-2">30</td>
+            <td class="px-4 py-2">P10 (new): item 8 says DeletedWhileQueuedTest pins the change, but only the ScanPoller.begin half is pinned; a mutant restoring the table read in advance alone would survive. Narrow the ADR sentence, or add a beforeNextCheck hook and a second test case. AC3 as written is met.</td>
+          </tr>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">semgrep (round 3)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <div class="px-5 pb-4 text-sm text-slate-600 space-y-2">
+          <p>Semgrep (Docker image, worktree mounted read-only) with p/security-audit and p/default, metrics off, over the 19 changed or new .java, .sql, .ts and .tsx files including tests; 19 files scanned, 0 errors.</p>
+          <p>Not counted: one unsafe-reflection warning at <span class="font-mono text-xs">backend/src/test/java/sg/annualva/arch/ArchitectureTest.java</span> line 140, the pre-existing Class.forName loop over a hard-coded test table (ticket 68 only adds a row), a false positive with no outside input; and the 7 pre-existing results in untouched files listed in round two.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <tr><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th></tr>
+          <tr><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td></tr>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">im8 (round 1, reused)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <div class="px-5 pb-4 text-sm text-slate-600 space-y-2">
+          <p>Reviewed diff 0f9eb16c, before the round-two and round-three rework. Controls touched by the change all PASS: as-2 (all SQL is static constants with named parameters), as-7 (no new endpoint or role rule; file lookups still scoped to the VA Submission), as-12 (deleted files not downloadable, not scanned or settled; quarantine sweep still reads the table), as-13 (one new boolean field, error bodies unchanged), as-1, as-3, lm-4, lm-19, pm-6. Other controls N/A.</p>
+          <p>Since this round: its as-7 evidence describes the old single guarded UPDATE, now replaced by the lock-then-check ReportFileStore.delete; and its informational note that ScanPoller.begin may submit a file deleted after the queue read is superseded by the accepted deliberate change (DeletedWhileQueuedTest).</p>
+          <p>Informational manual-review items (not findings): report_file_live runs with the default security_invoker = off, which matters only if a least-privilege runtime role is later split from the migration owner; the view's column list is fixed at creation, so later column changes must recreate it (documented in V48 and ADR 0061 item 8); the race test and the live-read gate passing in the full suite, now confirmed by the round-three build.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <tr><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th></tr>
+          <tr><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td></tr>
+        </table>
+      </details>
+
+      <details class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">react (round 1, reused)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">PASS</span>
+        </summary>
+        <div class="px-5 pb-4 text-sm text-slate-600 space-y-2">
+          <p>Scope: <span class="font-mono text-xs">frontend/src/api/reportFiles.ts</span> and <span class="font-mono text-xs">frontend/src/screens/smo/ScanReportCard.tsx</span>, unchanged since this round. ReplacedFlags and isDeletable now read the server's non-null supersededByLiveRescan; hasLiveRescan and the files prop of ReplacedFlags are gone. Purity, immutability, keys, derived state, conditional rendering and text-only rendering all pass; the TypeScript and Java field types agree. No React test is expected (reviewer decision, ADR 0009).</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <tr><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th></tr>
+          <tr><td colspan="4" class="px-4 py-3 text-slate-400 text-center">No findings</td></tr>
+        </table>
+      </details>
+
+      <details open class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none">
+          <span class="font-medium">springboot (round 2, reused)</span>
+          <span class="text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800">WARN</span>
+        </summary>
+        <div class="px-5 pb-4 text-sm text-slate-600 space-y-2">
+          <p>Reviewed diff fb72bdb1. spring-core, spring-data, spring-test, spring-web and spring-logging applied; spring-security and spring-batch do not apply. Round-one L1 to L4 fixed. The lock-then-update deletion, the view, the StaticSql gate and the race test were judged sound (one transaction, READ COMMITTED snapshots, no deadlock, bounded waits).</p>
+          <p>Status since this round, from the round-three thermo-nuclear and code-review evidence: R2-L3 is addressed (LOCK_DELETABLE now takes FOR NO KEY UPDATE) and R2-L4 is addressed (ReportFileStore.delete takes the EditTarget again and filters on submission_id; thermo-nuclear N1, code-review S13). R2-L1 is still open (same as thermo-nuclear N4) and R2-L2 is still open (same as thermo-nuclear N3 and code-review P2). The counts below are as the artifact reports them.</p>
+        </div>
+        <table class="w-full text-sm border-t border-slate-100">
+          <tr><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Severity</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">File</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Line</th><th class="text-xs uppercase tracking-wider text-slate-500 bg-slate-50 px-4 py-2 text-left">Description</th></tr>
+          <tr class="border-t border-slate-100">
+            <td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/ingestion/SupersededByLiveRescanTest.java</td><td class="px-4 py-2">-</td>
+            <td class="px-4 py-2">R2-L1 (spring-test): the awaitTermination assertion in finally can skip the trigger and function cleanup and replace the real failure. Record the flag, shutdownNow on false, drop in a nested try with a lock_timeout, assert after cleanup.</td>
+          </tr>
+          <tr class="border-t border-slate-100">
+            <td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/test/java/sg/annualva/arch/StaticSql.java</td><td class="px-4 py-2">-</td>
+            <td class="px-4 py-2">R2-L2 (spring-test): the gate assumes, without enforcing, that every statement is a static constant of a @Repository. Add an ArchUnit rule that JdbcClient users are @Repository, and document or guard the static-constant convention.</td>
+          </tr>
+          <tr class="border-t border-slate-100">
+            <td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/ReportFileStore.java</td><td class="px-4 py-2">-</td>
+            <td class="px-4 py-2">R2-L3 (spring-data): LOCK_DELETABLE took FOR UPDATE, stronger than the UPDATE it replaced. Use FOR NO KEY UPDATE. Addressed in round three.</td>
+          </tr>
+          <tr class="border-t border-slate-100">
+            <td class="px-4 py-2 text-slate-500">Low</td><td class="px-4 py-2 font-mono text-xs">backend/src/main/java/sg/annualva/ingestion/ReportFileStore.java</td><td class="px-4 py-2">-</td>
+            <td class="px-4 py-2">R2-L4 (spring-data): delete no longer scoped the write to the VA Submission (EditTarget and submission_id dropped). Addressed in round three.</td>
+          </tr>
+        </table>
+      </details>
+
+    </main>
+  </body>
+</html>
