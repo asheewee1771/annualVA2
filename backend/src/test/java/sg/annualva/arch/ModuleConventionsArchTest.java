@@ -100,21 +100,12 @@ class ModuleConventionsArchTest {
     @Test
     void onlyTheRegisterStoreNamesTheSystemTableInSql() throws IllegalAccessException {
         java.util.regex.Pattern table = java.util.regex.Pattern.compile("\\bva_system\\b");
-        java.util.List<String> offenders = new java.util.ArrayList<>();
-        for (var store : main) {
-            if (!store.isAnnotatedWith(Repository.class) || store.getPackageName().equals("sg.annualva.register")
-                    || store.getName().equals("sg.annualva.retention.DisposalStore")) {
-                continue;
-            }
-            for (java.lang.reflect.Field field : store.reflect().getDeclaredFields()) {
-                if (java.lang.reflect.Modifier.isStatic(field.getModifiers()) && field.getType() == String.class) {
-                    field.setAccessible(true);
-                    if (field.get(null) instanceof String sql && table.matcher(sql).find()) {
-                        offenders.add(store.getSimpleName() + "." + field.getName());
-                    }
-                }
-            }
-        }
+        java.util.List<String> offenders = StaticSql.of(main).stream()
+                .filter(sql -> !sql.packageName().equals("sg.annualva.register")
+                        && !sql.store().equals("sg.annualva.retention.DisposalStore"))
+                .filter(sql -> table.matcher(sql.text()).find())
+                .map(StaticSql.Constant::name)
+                .toList();
         org.assertj.core.api.Assertions.assertThat(offenders)
                 .as("SQL outside the Register's store that reads va_system; read Systems through RegisterSystems")
                 .isEmpty();

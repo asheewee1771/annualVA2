@@ -57,6 +57,10 @@ _Avoid_: scan, result
 **Supporting evidence**:
 A PDF or HTML report attached for people to read; it is never parsed for Findings.
 
+**Live report file**:
+A file of a Scan Report that the SMO/Tech Lead has not deleted. Its one definition is the `report_file_live` view (ADR 0061 item 8); a deleted file is kept until its VA Cycle is disposed of, but nothing lists, serves, counts, scans or settles it. A rescan that is neither rejected nor deleted is an **active rescan**: a file has at most one (the index V47 names "one live rescan" uses the word in that older, narrower sense).
+_Avoid_: current file, undeleted file
+
 **Finding**:
 One vulnerability or configuration deviation read from a Scan Report (or entered by hand), identified within a System by its identity key, which must have a Finding Status before the VA Submission can be submitted.
 _Avoid_: issue, vuln, item

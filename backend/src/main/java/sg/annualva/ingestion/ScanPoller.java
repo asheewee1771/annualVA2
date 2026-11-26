@@ -141,7 +141,10 @@ public class ScanPoller {
         }
     }
 
-    /** First attempt for a quarantined file whose attempt is due. */
+    /**
+     * First attempt for a quarantined file whose attempt is due. It is read live, so a file deleted since the queue was
+     * read is not sent to the scanner (ticket 68).
+     */
     private void begin(UUID id) {
         Optional<ReportFileStore.Row> file = store.find(id);
         if (file.isPresent() && file.get().status() == PipelineStatus.QUARANTINED) {
@@ -149,7 +152,7 @@ public class ScanPoller {
         }
     }
 
-    /** The verdict for a file that is out with the scanner. */
+    /** The verdict for a live file that is out with the scanner; a file deleted since the queue was read is left. */
     private void advance(UUID id) {
         Optional<ReportFileStore.Row> found = store.find(id);
         if (found.isEmpty() || found.get().status() != PipelineStatus.SCAN_SUBMITTED) {
@@ -237,10 +240,11 @@ public class ScanPoller {
      * the very bytes this pass just wrote: they are removed only if the file now does not hold them (the winner rejected
      * it, or started another attempt). A delete that fails is left to the sweep of a rejected file only while that file's
      * quarantine key is still held; once the winner has swept and cleared it, nothing in the application can find the
-     * copy, and it is for the quarantine bucket's lifecycle expiry (ticket 51).
+     * copy, and it is for the quarantine bucket's lifecycle expiry (ticket 51). A file deleted meanwhile keeps its content
+     * until its Cycle is disposed of (ADR 0061 item 2), so a copy its row still holds is kept too.
      */
     private void dropLosersCopy(UUID id, String cleanKey, Instant now) {
-        boolean held = store.find(id).map(row -> cleanKey.equals(row.cleanKey())).orElse(false);
+        boolean held = store.holdsCleanCopy(id, cleanKey);
         if (!held && !cleanFiles.discard(cleanKey)) {
             log.atWarn().setMessage("A clean copy left by a lost race could not be removed")
                     .addKeyValue("event.action", "clean-discard-failed")
@@ -335,13 +339,13 @@ public class ScanPoller {
      * Keeps what the parser read. A rescan (story 39) instead supersedes the file it replaces first, then takes the
      * Findings over from it and is audited as the replacement, all in the same transaction. A rescan of a file the SMO/Tech
      * Lead deleted while the rescan was being checked (ticket 60) has nothing left to replace, so it is kept as an
-     * ordinary upload. A unique index lets only one rescan of a file be live, so nothing else can have superseded it; if
-     * something had, the settlement stops before it writes a Finding and rolls back.
+     * ordinary upload. A unique index lets only one rescan of a file be active (not rejected, not deleted), so nothing
+     * else can have superseded it; if something had, the settlement stops before it writes a Finding and rolls back.
      */
     private void keepFindings(ReportFileStore.Row file, ParsedReport parsed, Instant now) {
         UUID replaced = file.replacesId();
         if (replaced != null && !store.supersede(replaced, file.id(), now)) {
-            if (store.find(replaced).map(row -> row.deletedAt() == null).orElse(true)) {
+            if (store.find(replaced).isPresent()) {
                 throw new IllegalStateException("The replaced file was no longer a parsed file that nothing superseded");
             }
             store.forgetReplaced(file.id(), now);

@@ -1,5 +1,5 @@
 # Technical Architecture Document
-> Generated: 2026-11-22T18:35:13Z
+> Generated: 2026-11-25T11:34:15Z
 > Project: Annual VA (annualVA2): `frontend/` (React) and `backend/` (Spring Boot)
 > Laid out as `/tech-arch-doc` lays it out, for ticket 52 (IM8 pm-6). A point-in-time document: the tables and diagrams that can be read from the code are rewritten by `python scripts/refresh-tech-arch-doc.py`, the prose is written and reviewed by a person, and `DocumentationCompletenessTest` fails the build when a module, boundary port or adapter, profile, ADR or table is not named here. Section 7 says how to refresh it in the change that adds one.
 
@@ -895,7 +895,7 @@ Every architecture decision record is under `docs/adr/` (61 in all). Each states
 | ADR 0058 | A dev-local profile signs in as a persona on local fakes and cannot start anywhere but a developer's machine | accepted (the profile, the persona sign-in, the local fakes and the guards of item 6 decided 2026-10-27, docs/agents/reviewer-decisions.md) | [0058-a-dev-local-profile-signs-in-as-a-persona-on-local-fakes-and-cannot-start-anywhere-but-a-developers-machine](adr/0058-a-dev-local-profile-signs-in-as-a-persona-on-local-fakes-and-cannot-start-anywhere-but-a-developers-machine.md) |
 | ADR 0059 | The file store is S3 with SSE-KMS, switched on by a property, and the other real adapters wait for mock-m-sso | accepted for the scope (the user's decision of 2026-10-29, recorded on ticket 51: build only the file store now) | [0059-the-file-store-is-s3-with-sse-kms-switched-on-by-property-and-the-other-real-adapters-wait-for-mock-m-sso](adr/0059-the-file-store-is-s3-with-sse-kms-switched-on-by-property-and-the-other-real-adapters-wait-for-mock-m-sso.md) |
 | ADR 0060 | The key signals are counted in one place and scraped with a bearer token, and health says only that the process is up | accepted as provisional for the repository's part of ticket 52 (IM8 lm-16, pm-6), by the user's decision of 2026-11-22 that ticket 52 lands as provisional | [0060-the-key-signals-are-counted-in-one-place-and-scraped-with-a-bearer-token](adr/0060-the-key-signals-are-counted-in-one-place-and-scraped-with-a-bearer-token.md) |
-| ADR 0061 | A report file is deleted softly, and a Finding goes only if it never had a proposal | accepted (ticket 60; the user's decisions of 2026-11-22 settle item 3, on the ticket's HITL 2 comment, item 4, docs/agents/reviewer-decisions.md "Ticket 60: a Manually Entered Finding that has had a proposal is not deleted", the hard delete of items 3 and 4, "Ticket 60: a Finding that never had a proposal is hard-deleted, an exception to the soft-delete rule", and items 1 and 5 on a rescan and the file it replaced, "Ticket 60: a parsed rescan and then the file it replaced can both be deleted") | [0061-a-report-file-is-deleted-softly-and-a-finding-goes-only-if-it-never-had-a-proposal](adr/0061-a-report-file-is-deleted-softly-and-a-finding-goes-only-if-it-never-had-a-proposal.md) |
+| ADR 0061 | A report file is deleted softly, and a Finding goes only if it never had a proposal | accepted (ticket 60; the user's decisions of 2026-11-22 settle item 3, on the ticket's HITL 2 comment, item 4, docs/agents/reviewer-decisions.md "Ticket 60: a Manually Entered Finding that has had a proposal is not deleted", the hard delete of items 3 and 4, "Ticket 60: a Finding that never had a proposal is hard-deleted, an exception to the soft-delete rule", and items 1 and 5 on a rescan and the file it replaced, "Ticket 60: a parsed rescan and then the file it replaced can both be deleted"; item 8 added by ticket 68: one definition of a live report file, a refactor that adds `supersededByLiveRescan` to the API and changes nothing else a person sees) | [0061-a-report-file-is-deleted-softly-and-a-finding-goes-only-if-it-never-had-a-proposal](adr/0061-a-report-file-is-deleted-softly-and-a-finding-goes-only-if-it-never-had-a-proposal.md) |
 <!-- /generated:adr-index -->
 
 ### 3.2 Decision Details
@@ -998,7 +998,7 @@ The decisions that shape the whole architecture, with the alternatives they were
 ### 4.1 Entity-Relationship Diagram
 
 <!-- generated:er-diagram by scripts/refresh-tech-arch-doc.py -->
-The schema is the result of applying Flyway migrations V1 to V47 (47 files) to an empty PostgreSQL 17 database: 34 tables, plus Flyway's own history table. Foreign keys are drawn parent to child.
+The schema is the result of applying Flyway migrations V1 to V48 (48 files) to an empty PostgreSQL 17 database: 34 tables, plus Flyway's own history table. Foreign keys are drawn parent to child.
 
 ```mermaid
 erDiagram
@@ -1024,8 +1024,8 @@ erDiagram
     finding ||--o{ finding_occurrence : "finding_id"
     report_file ||--o{ finding_occurrence : "report_file_id"
     batch_review ||--o{ finding_review : "batch_review_id"
-    finding_status_proposal ||--o{ finding_review : "finding_id"
     finding ||--o{ finding_review : "finding_id"
+    finding_status_proposal ||--o{ finding_review : "finding_id"
     app_user ||--o{ finding_review : "reviewed_by"
     report_file ||--o{ finding_status_proposal : "approval_memo_file_id"
     bulk_batch ||--o{ finding_status_proposal : "batch_id"
@@ -1469,7 +1469,7 @@ erDiagram
 | `not_started_overdue` | 3 | system_id, cycle_year | a System with no VA Submission in a VA Cycle (Not Started has no va_submission row) whose Submission Window passed, flagged by the sweep at overdue_since (UTC). |
 | `notification` | 15 | id | one row per person per item; never deleted by the application. |
 | `register_upload` | 8 | id | one uploaded Register file's preview. |
-| `report_file` | 30 | id | one uploaded file of one Scan Report of a VA Submission. |
+| `report_file` | 30 | id | one uploaded file of one Scan Report of a VA Submission. The view `report_file_live` (V48) holds the files not deleted, and the application reads and writes files through it (ADR 0061 item 8). |
 | `report_file_stage` | 5 | id | the order the stages ran in, one row each time a file enters a status. |
 | `report_review` | 10 | id | one review of a not-applicable Scan Report's justification. |
 | `report_slot` | 6 | submission_id, report_type | one Scan Report of a VA Submission. |

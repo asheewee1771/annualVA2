@@ -61,7 +61,7 @@ JOIN information_schema.key_column_usage kcu ON kcu.constraint_name = tc.constra
 WHERE tc.table_schema = 'public' AND tc.constraint_type = 'UNIQUE' GROUP BY tc.table_name, tc.constraint_name ORDER BY 2, 3;
 SELECT 'FK', conrelid::regclass, a.attname, confrelid::regclass FROM pg_constraint c
 JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = ANY(c.conkey)
-WHERE c.contype = 'f' AND c.connamespace = 'public'::regnamespace ORDER BY 2, 3;
+WHERE c.contype = 'f' AND c.connamespace = 'public'::regnamespace ORDER BY 2, 3, confrelid::regclass::text;
 """
 
 

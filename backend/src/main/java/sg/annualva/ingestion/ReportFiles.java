@@ -101,7 +101,7 @@ public class ReportFiles {
     public ReportFileView upload(UUID submissionId, ReportType reportType, FileKind kind, String originalName,
             byte[] content) {
         Submissions.ReadTarget target = submissions.precheckEdit(submissionId, notEditable(null));
-        if (store.countLive(submissionId, reportType, kind) >= MAX_FILES_PER_REPORT) {
+        if (store.countTowardsLimit(submissionId, reportType, kind) >= MAX_FILES_PER_REPORT) {
             throw refused(target, null, "too-many-files", HttpStatus.CONFLICT, "too-many-files",
                     "This Scan Report already holds the most files of this kind it can. "
                     + "A report file can be replaced with its rescan instead.");
@@ -137,7 +137,8 @@ public class ReportFiles {
             return quarantinedAndKept(target, replaced.reportType(), FileKind.MACHINE_READABLE, originalName, content,
                     replaced.id());
         } catch (DuplicateKeyException e) {
-            // The table lets one rescan of a file be live at a time, so two requests that race are settled there too.
+            // The table lets one rescan of a file be active (not rejected, not deleted) at a time, so two requests that
+            // race are settled there too.
             throw refused(target, replaced.id(), "replace-in-progress", HttpStatus.CONFLICT, "replace-in-progress",
                     "A rescan of this file is already being checked. Wait for it to finish.");
         }
@@ -150,8 +151,8 @@ public class ReportFiles {
      * disposed of, and nothing lists, reads, counts or scans it any more. In the same transaction its places go and the
      * Findings it reported are dealt with as {@link Findings#fileDeleted} says. The checks run in the order the file (one
      * that is not of this VA Submission, or is deleted already, is "not found"), ownership (another SMO's VA Submission is
-     * the same 404), the state of the VA Submission, then, in the one statement that marks it, that it is a report file
-     * that no live rescan supersedes; a refusal after the file was found is audited in an entry of its own with the file's
+     * the same 404), the state of the VA Submission, then, with the file's row held, that it is a report file that no
+     * live rescan supersedes; a refusal after the file was found is audited in an entry of its own with the file's
      * id and a fixed reason. The deletion is a {@code FILE_DELETED} entry with the file's id, its Scan Report and the
      * number of Findings removed.
      *
@@ -166,17 +167,15 @@ public class ReportFiles {
         Submissions.EditTarget target = submissions.lockForEdit(submissionId, (submission, system) ->
                 refusedDeletion(submission, system, fileId, "state-not-editable", "invalid-transition",
                         "This VA Submission's files cannot be changed in its present state."));
-        // One statement decides it, with the row held: a settlement of it, or the supersede of it by a rescan, waits for
-        // the deletion or has won already, and then the statement changes nothing.
-        if (!store.delete(target, fileId, user.id(), clock.instant())) {
-            // Read again after the statement, so the answer is about the row as it now is: another deletion of it that
-            // committed first is the same "not found" a later request gets.
-            if (store.find(fileId).map(current -> current.deletedAt() != null).orElse(true)) {
-                throw new ResourceNotFoundException();
-            }
-            throw refusedDeletion(submissionId, target.systemId(), fileId, "not-deletable", "file-not-deletable",
-                    "Only a report file can be deleted, and one a rescan has replaced only once that rescan is deleted. "
-                    + "Supporting evidence is kept.");
+        // The store holds the row, then decides on it: a settlement of it, or the supersede of it by a rescan, waits for
+        // the deletion, or has committed before the deletion reads the row (ADR 0061 item 8). Another deletion of it that
+        // committed first is the same "not found" a later request gets.
+        switch (store.delete(target, fileId, user.id(), clock.instant())) {
+            case NOT_FOUND -> throw new ResourceNotFoundException();
+            case NOT_DELETABLE -> throw refusedDeletion(submissionId, target.systemId(), fileId, "not-deletable",
+                    "file-not-deletable", "Only a report file can be deleted, and one a rescan has replaced only once "
+                    + "that rescan is deleted. Supporting evidence is kept.");
+            case DELETED -> { }
         }
         int removed = findings.fileDeleted(target, new ProposalView.ReplacedFile(fileId, row.displayName()),
                 row.uploadedAt());
@@ -364,7 +363,7 @@ public class ReportFiles {
 
     /** A file of this VA Submission; one of another, or one that was deleted, is "not found". */
     private ReportFileStore.Row file(UUID submissionId, UUID fileId) {
-        return store.find(fileId).filter(row -> row.submissionId().equals(submissionId) && row.deletedAt() == null)
+        return store.find(fileId).filter(row -> row.submissionId().equals(submissionId))
                 .orElseThrow(ResourceNotFoundException::new);
     }
 
@@ -394,7 +393,7 @@ public class ReportFiles {
                     + "files. Supporting evidence can still be attached.");
         }
         Instant now = clock.instant();
-        // A live rescan of the same file is refused here, by the one-live-rescan index (replace-in-progress).
+        // An active rescan of the same file is refused here, by the one-live-rescan index (replace-in-progress).
         UUID id = store.insert(target, reportType, kind, name, size, held.sha256(), held.key(),
                 user.id(), now, replacesId);
         // Then the rescan's file is held until the rescan is kept, and checked again: between the first check and now a
@@ -455,7 +454,8 @@ public class ReportFiles {
         RejectCode code = row.rejectCode();
         return new ReportFileView(row.id(), row.submissionId(), row.reportType(), row.kind(), row.displayName(),
                 row.sizeBytes(), row.uploadSha256(), row.status(), code, code == null ? null : code.message(), row.scanAttempts(),
-                row.detectedFormat(), row.uploadedAt(), row.replacesId(), row.supersededBy(), row.contentDisposedAt(),
+                row.detectedFormat(), row.uploadedAt(), row.replacesId(), row.supersededBy(), row.supersededByLiveRescan(),
+                row.contentDisposedAt(),
                 stages.stream().map(stage -> new ReportFileView.Stage(stage.status(), stage.at())).toList());
     }
 

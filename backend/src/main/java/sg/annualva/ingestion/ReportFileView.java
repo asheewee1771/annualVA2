@@ -21,6 +21,8 @@ import sg.annualva.finding.ReportType;
  * @param replacesId the parsed report file this one is a rescan of (story 39); null for an ordinary upload
  * @param supersededBy the rescan that replaced this file once that rescan was parsed; null while it has not been. A
  *     superseded file is kept, and can still be downloaded, until an approved disposal list disposes of its content
+ * @param supersededByLiveRescan whether a rescan that is still there (not deleted) supersedes this file (ticket 68). A
+ *     file whose rescan was deleted keeps {@code supersededBy} but is false here, and can then be deleted itself (ADR 0061)
  * @param contentDisposedAt when an approved disposal deleted a superseded file's content once its VA Submission was
  *     Endorsed (ticket 49); the record stays and a download answers 410 {@code disposed}. Null while the content is held
  * @param stages the order the file went through its stages, one entry each time it entered a status
@@ -29,7 +31,7 @@ public record ReportFileView(
         UUID id, UUID submissionId, ReportType reportType, FileKind kind, String name, long sizeBytes,
         String uploadSha256, PipelineStatus status, @Nullable RejectCode rejectCode, @Nullable String message, int scanAttempts,
         @Nullable String detectedFormat, Instant uploadedAt, @Nullable UUID replacesId, @Nullable UUID supersededBy,
-        @Nullable Instant contentDisposedAt,
+        boolean supersededByLiveRescan, @Nullable Instant contentDisposedAt,
         List<Stage> stages) {
 
     /** One status the file entered, and when (UTC). */
