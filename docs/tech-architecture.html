@@ -204,7 +204,7 @@ td:first-child {
 </head>
 <body>
 <h1 id="technical-architecture-document">Technical Architecture Document</h1>
-<blockquote><p>Generated: 2026-11-22T18:35:13Z Project: Annual VA (annualVA2): <code>frontend/</code> (React) and <code>backend/</code> (Spring Boot) Laid out as <code>/tech-arch-doc</code> lays it out, for ticket 52 (IM8 pm-6). A point-in-time document: the tables and diagrams that can be read from the code are rewritten by <code>python scripts/refresh-tech-arch-doc.py</code>, the prose is written and reviewed by a person, and <code>DocumentationCompletenessTest</code> fails the build when a module, boundary port or adapter, profile, ADR or table is not named here. Section 7 says how to refresh it in the change that adds one.</p></blockquote>
+<blockquote><p>Generated: 2026-11-25T11:34:15Z Project: Annual VA (annualVA2): <code>frontend/</code> (React) and <code>backend/</code> (Spring Boot) Laid out as <code>/tech-arch-doc</code> lays it out, for ticket 52 (IM8 pm-6). A point-in-time document: the tables and diagrams that can be read from the code are rewritten by <code>python scripts/refresh-tech-arch-doc.py</code>, the prose is written and reviewed by a person, and <code>DocumentationCompletenessTest</code> fails the build when a module, boundary port or adapter, profile, ADR or table is not named here. Section 7 says how to refresh it in the change that adds one.</p></blockquote>
 <h2 id="1-architecture-narrative">1. Architecture Narrative</h2>
 <h3 id="1-1-system-overview">1.1 System Overview</h3>
 <p>Annual VA is the internal application that runs the organisation&#x27;s annual vulnerability assessment (VA): the VA Cycle and its Quarters, the System Register, VA Submissions with their Scan Reports and Findings, Cyber Manager review, VA POC endorsement, Exemptions, notifications, exports, the audit log and retention. Terms are those of <code>CONTEXT.md</code>; the authoritative requirements are the Gate-1-approved spec (<code>.scratch/annual-va/spec.md</code>).</p>
@@ -2796,7 +2796,7 @@ td:first-child {
 <tr>
 <td>ADR 0061</td>
 <td>A report file is deleted softly, and a Finding goes only if it never had a proposal</td>
-<td>accepted (ticket 60; the user&#x27;s decisions of 2026-11-22 settle item 3, on the ticket&#x27;s HITL 2 comment, item 4, docs/agents/reviewer-decisions.md &quot;Ticket 60: a Manually Entered Finding that has had a proposal is not deleted&quot;, the hard delete of items 3 and 4, &quot;Ticket 60: a Finding that never had a proposal is hard-deleted, an exception to the soft-delete rule&quot;, and items 1 and 5 on a rescan and the file it replaced, &quot;Ticket 60: a parsed rescan and then the file it replaced can both be deleted&quot;)</td>
+<td>accepted (ticket 60; the user&#x27;s decisions of 2026-11-22 settle item 3, on the ticket&#x27;s HITL 2 comment, item 4, docs/agents/reviewer-decisions.md &quot;Ticket 60: a Manually Entered Finding that has had a proposal is not deleted&quot;, the hard delete of items 3 and 4, &quot;Ticket 60: a Finding that never had a proposal is hard-deleted, an exception to the soft-delete rule&quot;, and items 1 and 5 on a rescan and the file it replaced, &quot;Ticket 60: a parsed rescan and then the file it replaced can both be deleted&quot;; item 8 added by ticket 68: one definition of a live report file, a refactor that adds <code>supersededByLiveRescan</code> to the API and changes nothing else a person sees)</td>
 <td><a href="adr/0061-a-report-file-is-deleted-softly-and-a-finding-goes-only-if-it-never-had-a-proposal.md">0061-a-report-file-is-deleted-softly-and-a-finding-goes-only-if-it-never-had-a-proposal</a></td>
 </tr>
 </tbody></table></div>
@@ -2989,7 +2989,7 @@ td:first-child {
 <p><strong>Chosen Option:</strong> The bearer token, provisionally (decided 2026-11-22: ticket 52 lands as provisional) <strong>Rationale:</strong> IM8 lm-16. Three choices are not final and wait for ticket 55 (choose products and non-functional targets, with a person): the scraper&#x27;s credential (the bearer token stands in; mutual TLS or a platform service identity is the alternative), the alert thresholds of the run book (starting values), and where each environment keeps the token.</p>
 <h2 id="4-database-design">4. Database Design</h2>
 <h3 id="4-1-entity-relationship-diagram">4.1 Entity-Relationship Diagram</h3>
-<p>The schema is the result of applying Flyway migrations V1 to V47 (47 files) to an empty PostgreSQL 17 database: 34 tables, plus Flyway&#x27;s own history table. Foreign keys are drawn parent to child.</p>
+<p>The schema is the result of applying Flyway migrations V1 to V48 (48 files) to an empty PostgreSQL 17 database: 34 tables, plus Flyway&#x27;s own history table. Foreign keys are drawn parent to child.</p>
 <pre class="mermaid">erDiagram
     bulk_batch ||--o{ batch_review : "batch_id"
     app_user ||--o{ batch_review : "reviewed_by"
@@ -3013,8 +3013,8 @@ td:first-child {
     finding ||--o{ finding_occurrence : "finding_id"
     report_file ||--o{ finding_occurrence : "report_file_id"
     batch_review ||--o{ finding_review : "batch_review_id"
-    finding_status_proposal ||--o{ finding_review : "finding_id"
     finding ||--o{ finding_review : "finding_id"
+    finding_status_proposal ||--o{ finding_review : "finding_id"
     app_user ||--o{ finding_review : "reviewed_by"
     report_file ||--o{ finding_status_proposal : "approval_memo_file_id"
     bulk_batch ||--o{ finding_status_proposal : "batch_id"
@@ -3563,7 +3563,7 @@ td:first-child {
 <td><code>report_file</code></td>
 <td>30</td>
 <td>id</td>
-<td>one uploaded file of one Scan Report of a VA Submission.</td>
+<td>one uploaded file of one Scan Report of a VA Submission. The view <code>report_file_live</code> (V48) holds the files not deleted, and the application reads and writes files through it (ADR 0061 item 8).</td>
 </tr>
 <tr>
 <td><code>report_file_stage</code></td>
