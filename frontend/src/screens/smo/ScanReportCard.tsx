@@ -199,13 +199,13 @@ function ReplaceForm({
 }
 
 /** A replaced file says so, and says when its content has been disposed of (its record is kept, ticket 49). */
-function ReplacedFlags({ file, files }: { file: ReportFile; files: readonly ReportFile[] }) {
+function ReplacedFlags({ file }: { file: ReportFile }) {
   if (file.supersededBy === null) return null;
   return (
     <>
       {" "}
       <span className="flag">
-        {hasLiveRescan(file, files) ? "Replaced by a rescan" : "Replaced by a rescan that was deleted"}
+        {file.supersededByLiveRescan ? "Replaced by a rescan" : "Replaced by a rescan that was deleted"}
       </span>
       {file.contentDisposedAt === null ? null : (
         <>
@@ -218,20 +218,12 @@ function ReplacedFlags({ file, files }: { file: ReportFile; files: readonly Repo
 }
 
 /**
- * Whether the rescan that replaced this file is still there. The list leaves out deleted files, so a replaced file whose
- * rescan is not in it had that rescan deleted (ticket 60).
- */
-function hasLiveRescan(file: ReportFile, files: readonly ReportFile[]): boolean {
-  return file.supersededBy !== null && files.some((other) => other.id === file.supersededBy);
-}
-
-/**
  * A report file that can be deleted (ticket 60), in any status, still being checked, rejected or a parsed rescan
- * included: any one but supporting evidence and a file a rescan that is still there has replaced. The server decides; this
- * only offers the control where it can succeed.
+ * included: any one but supporting evidence and a file a rescan that is still there has replaced, as the server says
+ * (`supersededByLiveRescan`, ticket 68). The server decides; this only offers the control where it can succeed.
  */
-function isDeletable(file: ReportFile, files: readonly ReportFile[]): boolean {
-  return file.kind === "MACHINE_READABLE" && !hasLiveRescan(file, files);
+function isDeletable(file: ReportFile): boolean {
+  return file.kind === "MACHINE_READABLE" && !file.supersededByLiveRescan;
 }
 
 /** A file whose content is held and may be downloaded: it passed every check and has not been disposed of. */
@@ -259,7 +251,7 @@ function FileChanges({
   onProblem: (problem: Problem | undefined) => void;
 }) {
   const replaceable = isReplaceable(file, files);
-  const deletable = isDeletable(file, files);
+  const deletable = isDeletable(file);
   if (!replaceable && !deletable) return null;
 
   async function remove(): Promise<boolean> {
@@ -333,7 +325,7 @@ function FileRow({
     <li>
       <strong>{file.name}</strong> <span className="muted">({megabytes(file.sizeBytes)})</span>{" "}
       <span className={isRejected(file) ? "flag flag--danger" : "flag"}>{STATUS_LABELS[file.status]}</span>
-      <ReplacedFlags file={file} files={files} />
+      <ReplacedFlags file={file} />
       {isDownloadable(file) ? (
         <>
           {" "}

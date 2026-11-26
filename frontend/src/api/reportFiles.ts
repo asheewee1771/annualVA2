@@ -89,6 +89,11 @@ export interface ReportFile {
   /** The rescan that replaced this file once it was parsed; null while none has. A superseded file is kept. */
   supersededBy: string | null;
   /**
+   * Whether a rescan that is still there (not deleted) supersedes this file (ticket 68). A file whose rescan was deleted
+   * keeps `supersededBy` but is false here, and can then be deleted itself.
+   */
+  supersededByLiveRescan: boolean;
+  /**
    * When an approved disposal deleted this superseded file's content once its VA Submission was Endorsed (ticket 49); the
    * record stays, and the content can no longer be downloaded. Null while the content is held.
    */
