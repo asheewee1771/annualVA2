@@ -4,13 +4,36 @@
 **Release:** 1
 **What to build:** Ticket 60 added a soft delete of a report file (`report_file.deleted_at`). Every read that must ignore a deleted file now repeats its own `deleted_at IS NULL` condition: about 15 statements in `ReportFileStore`, `ScanReportStore.HAS_CONTENT`, `ReportFiles.file()` and `ScanPoller.keepFindings`, plus the V47 constraints (the list is in ticket 60's Comments). A future read can forget it and count, serve or settle a deleted file. Give "a live report file" one definition that every such read uses, so a new read cannot miss it, with no change in behaviour.
 **Blocked by:** 60 (Delete a report file or a Manually Entered Finding while the VA Submission is editable)
-**Status:** ready-for-agent
+**Status:** closed
 **Effort (orchestrator estimate):** not estimated; raised by the ticket 60 review of 2026-11-22. Small to medium: a refactor with no behaviour change.
 
-- [ ] One definition of "a live report file" (for example a view, a single predicate constant, or a status the reads already filter on) is used by every read that must ignore deleted files; the reads that must see deleted files (`ReportFileStore.FIND`, `FindingStore.REPLACED_FILE`, the disposal reads) say so explicitly. The definition also covers "no live rescan supersedes it" (not rejected, not deleted, not superseded), which ticket 60 writes in `ReportFileStore.COUNT_LIVE` and the `ReportFileStore.DELETE` guard; the screen's `hasLiveRescan` in `ScanReportCard.tsx` infers it from a deleted rescan being absent from the list, and should read it from the API instead.
-- [ ] A test fails when a new read of `report_file` bypasses the definition without saying why (an ArchUnit or source-scan test, or an equivalent guard).
-- [ ] No behaviour changes but one: the existing Seam 1 tests of uploads, rescans, deletes, the 20-file cap, readiness, the mode rule, settlement and disposal pass unchanged in what they assert. The one deliberate change (decided by the user on 2026-11-26, "Keep it"): a file deleted between the scan job's read of its queue and its read of the file is no longer sent to the scanner (`DeletedWhileQueuedTest`; ADR 0061 item 8).
-- [ ] ADR 0061 records the definition. The back-end gate passes; the front-end gate applies only if the front end changes.
+- [x] One definition of "a live report file" (for example a view, a single predicate constant, or a status the reads already filter on) is used by every read that must ignore deleted files; the reads that must see deleted files (`ReportFileStore.FIND`, `FindingStore.REPLACED_FILE`, the disposal reads) say so explicitly. The definition also covers "no live rescan supersedes it" (not rejected, not deleted, not superseded), which ticket 60 writes in `ReportFileStore.COUNT_LIVE` and the `ReportFileStore.DELETE` guard; the screen's `hasLiveRescan` in `ScanReportCard.tsx` infers it from a deleted rescan being absent from the list, and should read it from the API instead.
+- [x] A test fails when a new read of `report_file` bypasses the definition without saying why (an ArchUnit or source-scan test, or an equivalent guard).
+- [x] No behaviour changes but one: the existing Seam 1 tests of uploads, rescans, deletes, the 20-file cap, readiness, the mode rule, settlement and disposal pass unchanged in what they assert. The one deliberate change (decided by the user on 2026-11-26, "Keep it"): a file deleted between the scan job's read of its queue and its read of the file is no longer sent to the scanner (`DeletedWhileQueuedTest`; ADR 0061 item 8).
+- [x] ADR 0061 records the definition. The back-end gate passes; the front-end gate applies only if the front end changes.
+
+### Verification (2026-11-26)
+
+**What was built.** One definition of a live report file: the view `report_file_live` (V48), recorded as ADR 0061 item 8 and in the glossary ("Live report file", "active rescan").
+- **Reads and writes.** Every statement about a live file goes through the view. The few that must see deleted files name the table and are listed with their reasons in `LiveReportFileReadsTest`; disposal is exempt as a whole.
+- **No live rescan supersedes it.** One fragment, `SUPERSEDED_BY_LIVE_RESCAN`, serves both the API field `supersededByLiveRescan` and the deletion's guard. `ScanReportCard.tsx` reads the field instead of `hasLiveRescan`.
+- **Deletion.** `ReportFileStore.delete` takes the edit lock, filters by VA Submission, holds the file's row (`LOCK_DELETABLE`, `FOR NO KEY UPDATE`), then checks and marks it, so the guard does not depend on a plan shape.
+- **The one behaviour change** (the user's decision of 2026-11-26, "Keep it"; `docs/agents/reviewer-decisions.md`): the scan job reads the file live, so a file deleted while its job is queued is no longer sent to the scanner.
+- **Commits.** `22f33ed` (shared `StaticSql` for the SQL guards), `db19575` (the view and the code and tests), `99909a1` (front end), `aa564e6` (glossary, ADR 0061, run book, architecture document), `2546067` (decision and AC3), `bde44d7` (report), plus `0275ba6` (a stable foreign-key order for the architecture-document check); merged by `e1253d4`.
+
+**How it was verified.**
+- Seam 1 and guards:
+  - `SupersededByLiveRescanTest` races a deletion against a rescan's settlement through the API and the real scan job. With the row lock disabled, the deletion answered 204 instead of 409.
+  - `DeletedWhileQueuedTest` deletes a file while its scan job is submitting another. With the old table read restored, the deleted file was sent to the scanner and the test failed.
+  - `LiveReportFileReadsTest` failed and named the statement when a read bypassed the view, and when a listed exception went stale. `LiveReportFileViewTest` guards the view's columns.
+  - The existing Seam 1 tests of uploads, rescans, deletes, the 20-file cap, readiness, the mode rule, settlement and disposal pass unchanged. `EvidenceDownloadTest`'s field list gains `supersededByLiveRescan`.
+- Back-end gate on the final tree (identical to the merged tree on `main`, fingerprint `9c73af78`): `./mvnw -B -ntp clean verify` passed. 1,439 tests, 0 failures, 1 skipped; line coverage 97.97 %, branch 91.77 %; BUILD SUCCESS. `refresh-tech-arch-doc.py --check` is clean. Front-end gate: `npm run check` passed.
+- Review:
+  - `/code-reviewer`: PASS, no Critical, High or Medium open (`artifacts/code-reviewer/68-one-rule-for-a-live-report-file-compliance.html`). There were three rounds. Round one's High (a hand-written SQL lexer) and the Mediums of every round were fixed, and the scan-job change was accepted by the user. Im8, react and springboot did not see the last passes; the report says which.
+
+**Not covered.** The Lows left are listed in the report. The ones most likely to matter later: `StaticSql` assumes every statement is a static `String` constant, which nothing checks; ADR 0061 item 8 says `DeletedWhileQueuedTest` pins the scan job's change, but it covers `begin` only, not the `advance` half; and item 2 still says "live rescan" where the glossary now says "active rescan".
+
+All four boxes are ticked.
 
 ## Comments
 
